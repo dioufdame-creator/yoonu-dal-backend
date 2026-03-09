@@ -1,0 +1,205 @@
+[
+  {
+    "model": "api.personalvalue",
+    "pk": 1,
+    "fields": {
+      "name": "Sécurité",
+      "description": "Privilégier la stabilité financière et la protection contre les imprévus.",
+      "icon": "shield"
+    }
+  },
+  {
+    "model": "api.personalvalue",
+    "pk": 2,
+    "fields": {
+      "name": "Famille",
+      "description": "Soutenir et subvenir aux besoins de sa famille.",
+      "icon": "home"
+    }
+  },
+  {
+    "model": "api.personalvalue",
+    "pk": 3,
+    "fields": {
+      "name": "Education",
+      "description": "Investir dans l'apprentissage et le développement des compétences.",
+      "icon": "book"
+    }
+  },
+  {
+    "model": "api.personalvalue",
+    "pk": 4,
+    "fields": {
+      "name": "Liberté",
+      "description": "Atteindre l'indépendance financière et la liberté de choix.",
+      "icon": "dove"
+    }
+  },
+  {
+    "model": "api.personalvalue",
+    "pk": 5,
+    "fields": {
+      "name": "Communauté",
+      "description": "Contribuer au bien-être collectif et au développement communautaire.",
+      "icon": "users"
+    }
+  },
+  {
+    "model": "api.personalvalue",
+    "pk": 6,
+    "fields": {
+      "name": "Spiritualité",
+      "description": "Aligner ses finances avec ses valeurs spirituelles et religieuses.",
+      "icon": "pray"
+    }
+  },
+  {
+    "model": "api.personalvalue",
+    "pk": 7,
+    "fields": {
+      "name": "Santé",
+      "description": "Investir dans son bien-être physique et mental.",
+      "icon": "heartbeat"
+    }
+  },
+  {
+    "model": "api.expensecategory",
+    "pk": 1,
+    "fields": {
+      "name": "Logement",
+      "icon": "home",
+      "is_system": true,
+      "user": null
+    }
+  },
+  {
+    "model": "api.expensecategory",
+    "pk": 2,
+    "fields": {
+      "name": "Alimentation",
+      "icon": "utensils",
+      "is_system": true,
+      "user": null
+    }
+  },
+  {
+    "model": "api.expensecategory",
+    "pk": 3,
+    "fields": {
+      "name": "Transport",
+      "icon": "car",
+      "is_system": true,
+      "user": null
+    }
+  },
+  {
+    "model": "api.expensecategory",
+    "pk": 4,
+    "fields": {
+      "name": "Santé",
+      "icon": "medkit",
+      "is_system": true,
+      "user": null
+    }
+  },
+  {
+    "model": "api.expensecategory",
+    "pk": 5,
+    "fields": {
+      "name": "Éducation",
+      "icon": "graduation-cap",
+      "is_system": true,
+      "user": null
+    }
+  },
+  {
+    "model": "api.expensecategory",
+    "pk": 6,
+    "fields": {
+      "name": "Loisirs",
+      "icon": "film",
+      "is_system": true,
+      "user": null
+    }
+  },
+  {
+    "model": "api.expensecategory",
+    "pk": 7,
+    "fields": {
+      "name": "Communication",
+      "icon": "mobile-alt",
+      "is_system": true,
+      "user": null
+    }
+  },
+  {
+    "model": "api.expensecategory",
+    "pk": 8,
+    "fields": {
+      "name": "Famille et solidarité",
+      "icon": "users",
+      "is_system": true,
+      "user": null
+    }
+  },
+  {
+    "model": "api.expensecategory",
+    "pk": 9,
+    "fields": {
+      "name": "Épargne",
+      "icon": "piggy-bank",
+      "is_system": true,
+      "user": null
+    }
+  },
+  {
+    "model": "api.guidecharacter",
+    "pk": 1,
+    "fields": {
+      "name": "Latyr",
+      "story": "Entrepreneur et mentor, Latyr accompagne les jeunes à trouver leur équilibre financier en accord avec leurs valeurs.",
+      "avatar": "",
+      "specialty": "Entrepreneuriat et planification financière"
+    }
+  },
+  {
+    "model": "api.guidecharacter",
+    "pk": 2,
+    "fields": {
+      "name": "Amsatou",
+      "story": "Professionnelle brillante, elle a appris à gérer ses finances de manière à vivre pleinement tout en assurant son avenir.",
+      "avatar": "",
+      "specialty": "Gestion de carrière et équilibre vie-finances"
+    }
+  },
+  {
+    "model": "api.diagnosticquestion",
+    "pk": 1,
+    "fields": {
+      "text": "Comment décririez-vous votre relation actuelle avec l'argent en un mot?",
+      "help_text": "Choisissez un mot qui représente le mieux ce que vous ressentez quand vous pensez à votre situation financière.",
+      "order": 1,
+      "is_active": true
+    }
+  },
+  {
+    "model": "api.diagnosticquestion",
+    "pk": 2,
+    "fields": {
+      "text": "Quelles sont vos trois principales préoccupations financières?",
+      "help_text": "Pensez à ce qui vous inquiète le plus concernant votre argent.",
+      "order": 2,
+      "is_active": true
+    }
+  },
+  {
+    "model": "api.diagnosticquestion",
+    "pk": 3,
+    "fields": {
+      "text": "Quand vous recevez votre salaire ou un revenu, quelle est la première chose que vous faites?",
+      "help_text": "Décrivez votre première action ou pensée quand l'argent arrive.",
+      "order": 3,
+      "is_active": true
+    }
+  }
+]
