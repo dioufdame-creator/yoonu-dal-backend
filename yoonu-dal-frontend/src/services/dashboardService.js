@@ -1,4 +1,4 @@
-// src/services/dashboardService.js - Version pour vraies données uniquement
+// src/services/tontineService.js
 import authService from './authService';
 
 const API_BASE_URL = process.env.REACT_APP_API_URL 
