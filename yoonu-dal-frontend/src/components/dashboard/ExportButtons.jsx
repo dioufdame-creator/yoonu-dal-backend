@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { PremiumButton } from '../subscription/SubscriptionComponents';
+import API from '../../services/api';
 
 const ExportButtons = ({ user, onNavigate, toast }) => {
   const [exportingPDF, setExportingPDF] = useState(false);
@@ -8,19 +9,13 @@ const ExportButtons = ({ user, onNavigate, toast }) => {
   const handleExportPDF = async () => {
     setExportingPDF(true);
     try {
-      const response = await fetch('http://127.0.0.1:8000/api/export/pdf/', {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('yoonu_dal_token')}`
-        }
+      // ✅ CORRECTION : Utiliser API.get au lieu de fetch
+      const response = await API.get('/export/pdf/', {
+        responseType: 'blob'
       });
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Erreur export PDF');
-      }
-
-      const blob = await response.blob();
+      // Créer un blob depuis la réponse
+      const blob = new Blob([response.data], { type: 'application/pdf' });
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
@@ -33,7 +28,7 @@ const ExportButtons = ({ user, onNavigate, toast }) => {
       toast?.showSuccess?.('📄 Rapport PDF téléchargé !');
     } catch (error) {
       console.error('Erreur export PDF:', error);
-      toast?.showError?.(error.message || 'Erreur export PDF');
+      toast?.showError?.(error.response?.data?.error || error.message || 'Erreur export PDF');
     } finally {
       setExportingPDF(false);
     }
@@ -42,19 +37,15 @@ const ExportButtons = ({ user, onNavigate, toast }) => {
   const handleExportExcel = async () => {
     setExportingExcel(true);
     try {
-      const response = await fetch('http://127.0.0.1:8000/api/export/excel/', {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('yoonu_dal_token')}`
-        }
+      // ✅ CORRECTION : Utiliser API.get au lieu de fetch
+      const response = await API.get('/export/excel/', {
+        responseType: 'blob'
       });
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Erreur export Excel');
-      }
-
-      const blob = await response.blob();
+      // Créer un blob depuis la réponse
+      const blob = new Blob([response.data], { 
+        type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' 
+      });
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
@@ -67,7 +58,7 @@ const ExportButtons = ({ user, onNavigate, toast }) => {
       toast?.showSuccess?.('📊 Rapport Excel téléchargé !');
     } catch (error) {
       console.error('Erreur export Excel:', error);
-      toast?.showError?.(error.message || 'Erreur export Excel');
+      toast?.showError?.(error.response?.data?.error || error.message || 'Erreur export Excel');
     } finally {
       setExportingExcel(false);
     }
