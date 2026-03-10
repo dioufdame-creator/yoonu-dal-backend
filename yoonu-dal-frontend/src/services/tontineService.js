@@ -1,7 +1,9 @@
 // src/services/tontineService.js
 import authService from './authService';
 
-const API_BASE_URL = 'http://127.0.0.1:8000/api';
+const API_BASE_URL = process.env.REACT_APP_API_URL 
+  ? `${process.env.REACT_APP_API_URL}/api`
+  : 'https://yoonudal-api.onrender.com/api';
 
 class TontineService {
   constructor() {
