@@ -1,8 +1,8 @@
 import axios from 'axios';
 
-// Créer une instance axios
+// Créer une instance axios avec l'URL de production
 const API = axios.create({
-  baseURL: process.env.REACT_APP_API_URL || 'http://localhost:8000/api',
+  baseURL: process.env.REACT_APP_API_URL || 'https://yoonudal-api.onrender.com/api',
 });
 
 // ✅ Intercepteur request : utiliser la BONNE clé
