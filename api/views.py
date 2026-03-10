@@ -21,7 +21,6 @@ from .models import (
     TontinePayout, DiagnosticResult, Envelope, FinancialLeak, PredictiveAlert
 )
 from .utils.decorators import require_premium, check_usage_limit
-from .models import ScoreHistory  # Ajouter ScoreHistory
 
 
 # ==========================================
@@ -2975,7 +2974,7 @@ def get_yoonu_score(request):
     user = request.user
 
     try:
-        score_obj = calculate_user_score(user)
+        score_data = calculate_yoonu_score(user)
 
         if not score_obj:
             return Response({
@@ -3105,7 +3104,6 @@ def delete_user_values(request):
         }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
-from .calculate_yoonu_score import calculate_user_score
 
 
 @api_view(['POST'])
@@ -3115,7 +3113,7 @@ def trigger_score_calculation(request):
     user = request.user
 
     try:
-        score = calculate_user_score(user)
+        score_data = calculate_yoonu_score(user)
 
         if score:
             return Response({
@@ -3137,39 +3135,14 @@ def trigger_score_calculation(request):
         }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
-# REMPLACER LA FONCTION score_history DANS api/views.py
-
-@api_view(['GET'])
-@permission_classes([IsAuthenticated])
 def score_history(request):
-    """Historique RÉEL du score Yoonu Dal"""
+    """Historique du score Yoonu (30 derniers jours)"""
     try:
-        user = request.user
-
-        # Récupérer l'historique depuis la DB
-        history = ScoreHistory.objects.filter(user=user).order_by('snapshot_date')
-
-        # Formater pour le frontend
-        history_data = [
-            {
-                'date': entry.snapshot_date.strftime('%Y-%m-%d'),
-                'month': entry.snapshot_date.strftime('%b'),  # "Jan", "Feb", etc.
-                'score': entry.total_score,
-                'budget_score': entry.budget_score,
-                'savings_score': entry.savings_score,
-                'discipline_score': entry.discipline_score,
-                'monthly_income': float(entry.monthly_income),
-                'total_expenses': float(entry.total_expenses),
-                'savings_rate': float(entry.savings_rate)
-            }
-            for entry in history
-        ]
-
+        # Pour l'instant, renvoyer des données vides
+        # Tu pourras implémenter un vrai tracking plus tard
         return Response({
-            'history': history_data,
-            'count': len(history_data)
+            'history': []
         })
-
     except Exception as e:
         return Response(
             {'error': str(e)},
