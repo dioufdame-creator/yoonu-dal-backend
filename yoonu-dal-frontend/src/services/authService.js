@@ -233,45 +233,32 @@ class AuthService {
   }
 
   // Inscription
-async register(userData) {
-  try {
-    console.log('🔍 Tentative d\'inscription...', { username: userData.username });
-    
-    const response = await fetch(`${API_BASE_URL}/register/`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(userData)
-    });
+  async register(userData) {
+    try {
+      console.log('🔍 Tentative d\'inscription...', { username: userData.username });
+      
+      const response = await fetch(`${API_BASE_URL}/register/`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(userData)
+      });
 
-    const data = await response.json();
+      const data = await response.json();
 
-    if (!response.ok) {
-      console.error('❌ Erreur d\'inscription:', data);
-      throw new Error(Object.values(data).flat().join(', '));
-    }
+      if (!response.ok) {
+        console.error('❌ Erreur d\'inscription:', data);
+        throw new Error(Object.values(data).flat().join(', '));
+      }
 
-    console.log('✅ Inscription réussie:', data);
-    
-    // ✅ AUTO-LOGIN après inscription
-    const loginResult = await this.login({
-      username: userData.username,
-      password: userData.password
-    });
-    
-    if (loginResult.success) {
+      console.log('✅ Inscription réussie:', data);
+      
       return {
         success: true,
-        user: loginResult.user,
-        message: data.message
+        message: data.message,
+        userId: data.user_id
       };
-    } else {
-      // Inscription OK mais login échoué
-      return {
-        success: true,
-        requiresLogin: true,
-        message: 'Inscription réussie. Connecte-toi maintenant.'
-      };
-    }
     } catch (error) {
       console.error('❌ Erreur d\'inscription:', error);
       return {
