@@ -135,7 +135,7 @@ function App() {
         setIsAuthenticated(true);
         setUser(result.user);
         showSuccess(`Connexion réussie ! Bienvenue ${result.user?.username || result.user?.first_name}`);
-        handleNavigate('dashboard');
+        handleNavigate('onboarding'); 
         return { success: true };
       } else {
         console.log('❌ Connexion échouée:', result.error);
