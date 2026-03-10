@@ -764,11 +764,12 @@ const DashboardV6 = ({ toast, auth, onNavigate, user }) => {
                       </p>
                     )}
                     
-                    {score?.score_change !== 0 && !simulatedScore && (
+                    {score?.score_change !== undefined && score?.score_change !== 0 && !simulatedScore && (
                       <p className={`text-xs ${score.score_change > 0 ? 'text-green-600' : 'text-red-600'}`}>
                         {score.score_change > 0 ? '▲' : '▼'} {Math.abs(score.score_change)} pts
                       </p>
                     )}
+                  
                   </div>
                 </div>
 
