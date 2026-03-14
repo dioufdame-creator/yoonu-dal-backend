@@ -1,5 +1,6 @@
 # api/calculate_yoonu_score.py
 # Fonction de calcul du Score Yoonu Dal
+#aa
 
 from datetime import timedelta
 from django.utils import timezone
