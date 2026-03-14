@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import './App.css';
 import YoonuScorePage from './components/score/YoonuScorePage';
-import AlertsPage from './components/alerts/AlertsPage'; // ✅ NOUVEAU
-import AlertsBadge from './components/alerts/AlertsBadge'; // ✅ NOUVEAU
+import AlertsPage from './components/alerts/AlertsPage';
+import AlertsBadge from './components/alerts/AlertsBadge';
 import SimpleDiagnostic from './components/diagnostic/SimpleDiagnostic';
 
 // Import du service d'authentification réel
 import authService from './services/authService';
+import API from './services/api';
 
 // Import des composants essentiels
 import Navigation from './components/shared/Navigation';
@@ -92,12 +93,11 @@ function App() {
   const handleNavigate = (page, params = {}) => {
     console.log('🧭 Navigation vers:', page);
     
-    // Pages qui nécessitent une authentification - LISTE MISE À JOUR
+    // Pages qui nécessitent une authentification
     const protectedPages = [
       'dashboard', 'expenses', 'envelopes', 'tontines', 
       'tontine-detail', 'tontine-analysis',
-      'profile', 'settings', 'score', 'alerts', // ✅ AJOUTÉ alerts
-      // Pages intégrées accessibles ponctuellement
+      'profile', 'settings', 'score', 'alerts',
       'diagnostic', 'values'
     ];
 
@@ -122,36 +122,43 @@ function App() {
     setPageParams(params);
   };
 
-  // Fonction de connexion réelle
-const handleLogin = async (credentials) => {
-  try {
-    const result = await authService.login(credentials);
-    
-    if (result.user) {
-      setUser(result.user);
+  // ✅ FONCTION DE CONNEXION CORRIGÉE
+  const handleLogin = async (credentials) => {
+    try {
+      const result = await authService.login(credentials);
       
-      // ✅ VÉRIFIER SI ONBOARDING TERMINÉ
-      const onboardingStatus = await fetch(`${API_URL}/api/onboarding/status/`, {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('yoonu_dal_token')}`
+      if (result.user) {
+        setIsAuthenticated(true);
+        setUser(result.user);
+        
+        // ✅ VÉRIFIER SI ONBOARDING TERMINÉ
+        try {
+          const response = await API.get('/onboarding/status/');
+          
+          if (response.data.onboarding_completed) {
+            // ✅ A déjà fait l'onboarding → Dashboard
+            showSuccess(`Bienvenue ${result.user.username} !`);
+            handleNavigate('dashboard');
+          } else {
+            // ❌ N'a pas fait l'onboarding → Onboarding
+            showInfo('Configurons ton compte...');
+            handleNavigate('onboarding');
+          }
+        } catch (error) {
+          console.error('Erreur vérification onboarding:', error);
+          // En cas d'erreur, rediriger vers dashboard par défaut
+          handleNavigate('dashboard');
         }
-      }).then(res => res.json());
-      
-      if (onboardingStatus.onboarding_completed) {
-        // ✅ A déjà fait l'onboarding → Dashboard
-        handleNavigate('dashboard');
-      } else {
-        // ❌ N'a pas fait l'onboarding → Onboarding
-        handleNavigate('onboarding');
       }
+    } catch (error) {
+      console.error('Erreur connexion:', error);
+      const errorMsg = error.response?.data?.detail || 'Nom d\'utilisateur ou mot de passe incorrect';
+      setAuthError(errorMsg);
+      showError(errorMsg);
     }
-  } catch (error) {
-    console.error('Erreur connexion:', error);
-    alert('Erreur de connexion');
-  }
-};
+  };
 
-  // Fonction d'inscription réelle
+  // ✅ FONCTION D'INSCRIPTION CORRIGÉE
   const handleRegister = async (userData) => {
     console.log('📝 Tentative d\'inscription pour:', userData.username);
     setAuthError(null);
@@ -164,7 +171,9 @@ const handleLogin = async (credentials) => {
         setIsAuthenticated(true);
         setUser(result.user);
         showSuccess(`Inscription réussie ! Bienvenue ${result.user?.username || result.user?.first_name}`);
-        handleNavigate('dashboard');
+        
+        // ✅ APRÈS INSCRIPTION → ONBOARDING
+        handleNavigate('onboarding');
         return { success: true };
       } else {
         console.log('❌ Inscription échouée:', result.error);
@@ -487,22 +496,29 @@ const handleLogin = async (credentials) => {
             </div>
           </div>
         );
+
+      // ✅ ONBOARDING AVEC onNavigate PROP
       case 'onboarding':
-        // Créer l'objet toast avec les fonctions disponibles
         const toastHelper = {
-        showSuccess,
-        showError,
-        showWarning,
-        showInfo
+          showSuccess,
+          showError,
+          showWarning,
+          showInfo
         };
-        return <Onboarding toast={toastHelper} onNavigate={handleNavigate} setAuth={setUser} />;
-      // ✅ NOUVEAU : Page Score
+        return (
+          <Onboarding 
+            toast={toastHelper} 
+            onNavigate={handleNavigate}  // ✅ PASSER onNavigate
+            setAuth={setUser} 
+          />
+        );
+
       case 'score':
         if (!isAuthenticated) {
           handleNavigate('login');
           return null;
         }
-        const scoreToast = {  // ← Nom différent
+        const scoreToast = {
           showSuccess,
           showError,
           showWarning,
@@ -510,18 +526,18 @@ const handleLogin = async (credentials) => {
         };
         return (
           <YoonuScorePage 
-            toast={scoreToast}  // ← Utiliser le nouveau nom
+            toast={scoreToast}
             onNavigate={handleNavigate}
           />
         );
 
-      // ✅ NOUVEAU : Page Alertes
       case 'alerts':
         if (!isAuthenticated) {
           handleNavigate('login');
           return null;
         }
         return <AlertsPage />;
+
       case 'pricing':
         return <PricingPage onNavigate={handleNavigate} user={user} toast={toastMethods} />;
 
@@ -534,15 +550,13 @@ const handleLogin = async (credentials) => {
           />
         );
 
-      case 'subscription':  // ✅✅✅ NOUVEAU ✅✅✅
+      case 'subscription':
         if (!isAuthenticated) {
           handleNavigate('login');
           return null;
         }
         return <SubscriptionPage onNavigate={handleNavigate} user={user} toast={toastMethods} />;
-      // ✅✅✅ FIN NOUVEAU ✅✅✅
 
-      // PAGES PRINCIPALES
       case 'dashboard':
         if (!isAuthenticated) {
           handleNavigate('login');
@@ -559,7 +573,7 @@ const handleLogin = async (credentials) => {
           onNavigate={handleNavigate} 
           toast={toastMethods} 
           auth={authMethods}
-          user={user}  // ✅ AJOUTER CETTE LIGNE
+          user={user}
         />;
       
       case 'envelopes':
@@ -576,7 +590,6 @@ const handleLogin = async (credentials) => {
         }
         return <TontinesList onNavigate={handleNavigate} toast={toastMethods} auth={authMethods} />;
 
-      // PAGES INTÉGRÉES (accessibles ponctuellement)
       case 'diagnostic':
         if (!isAuthenticated) {
           handleNavigate('login');
@@ -590,8 +603,6 @@ const handleLogin = async (credentials) => {
           return null;
         }
         return <ValueSelector onNavigate={handleNavigate} toast={toastMethods} auth={authMethods} />;
-
-      // PAGES TONTINES (inchangées pour compatibilité)
 
       case 'tontine-detail':
         if (!isAuthenticated) {
@@ -612,7 +623,6 @@ const handleLogin = async (credentials) => {
         }
         return <TontineAnalysis onNavigate={handleNavigate} toast={toastMethods} auth={authMethods} />;
 
-      // PAGES UTILISATEUR SIMPLIFIÉES
       case 'profile':
         if (!isAuthenticated) {
           handleNavigate('login');
@@ -636,7 +646,6 @@ const handleLogin = async (credentials) => {
                   <p><strong>Membre depuis :</strong> {user?.date_joined ? new Date(user.date_joined).toLocaleDateString() : 'N/A'}</p>
                 </div>
                 
-                {/* Accès aux valeurs personnelles */}
                 <div className="border-t pt-4 mt-6">
                   <button 
                     onClick={() => handleNavigate('values')}
@@ -749,7 +758,6 @@ const handleLogin = async (credentials) => {
         isAuthenticated={isAuthenticated}
         user={user}
         onLogout={handleLogout}
-        // ✅ NOUVEAU : Passer AlertsBadge comme prop
         alertsBadge={isAuthenticated ? (
           <AlertsBadge onClick={() => handleNavigate('alerts')} />
         ) : null}
@@ -768,9 +776,7 @@ const handleLogin = async (credentials) => {
         />
       )}
     </div>
-    
   );
-  
 }
 
 export default App;
