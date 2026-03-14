@@ -7,7 +7,6 @@ import API from '../../services/api';
 // ==========================================
 
 const Onboarding = ({ toast, onNavigate, setAuth }) => {
-  // ✅ UTILISER onNavigate PROP AU LIEU DE useNavigate
   const [currentStep, setCurrentStep] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
   
@@ -23,6 +22,9 @@ const Onboarding = ({ toast, onNavigate, setAuth }) => {
   const [displayScore, setDisplayScore] = useState(0);
   const [showConfetti, setShowConfetti] = useState(false);
 
+  // ✅ Récupérer l'ID user pour le localStorage
+  const [currentUserId, setCurrentUserId] = useState(null);
+
   // Valeurs disponibles
   const availableValues = [
     { id: 'famille', label: 'Famille', icon: '💚', description: 'Proches et relations' },
@@ -35,25 +37,43 @@ const Onboarding = ({ toast, onNavigate, setAuth }) => {
     { id: 'securite', label: 'Sécurité', icon: '🛡️', description: 'Stabilité financière' }
   ];
 
-  // Sauvegarder progression
+  // ✅ Récupérer l'ID user au montage
   useEffect(() => {
-    if (currentStep > 0) {
-      localStorage.setItem('onboarding_progress', JSON.stringify({
+    const getUserId = async () => {
+      try {
+        const response = await API.get('/profile/');
+        const userId = response.data.user.id;
+        setCurrentUserId(userId);
+        
+        // ✅ Charger la progression UNIQUEMENT pour CET utilisateur
+        const savedKey = `onboarding_progress_${userId}`;
+        const saved = localStorage.getItem(savedKey);
+        
+        if (saved) {
+          const { step, data } = JSON.parse(saved);
+          console.log('📦 Progression chargée pour user', userId);
+          setCurrentStep(step);
+          setOnboardingData(data);
+        }
+      } catch (error) {
+        console.error('Erreur récupération user ID:', error);
+      }
+    };
+
+    getUserId();
+  }, []);
+
+  // ✅ Sauvegarder progression AVEC l'ID user
+  useEffect(() => {
+    if (currentStep > 0 && currentUserId) {
+      const savedKey = `onboarding_progress_${currentUserId}`;
+      localStorage.setItem(savedKey, JSON.stringify({
         step: currentStep,
         data: onboardingData
       }));
+      console.log('💾 Progression sauvegardée pour user', currentUserId);
     }
-  }, [currentStep, onboardingData]);
-
-  // Charger progression si existe
-  useEffect(() => {
-    const saved = localStorage.getItem('onboarding_progress');
-    if (saved) {
-      const { step, data } = JSON.parse(saved);
-      setCurrentStep(step);
-      setOnboardingData(data);
-    }
-  }, []);
+  }, [currentStep, onboardingData, currentUserId]);
 
   const totalSteps = 5;
 
@@ -125,7 +145,6 @@ const Onboarding = ({ toast, onNavigate, setAuth }) => {
     setCurrentStep(prev => Math.max(prev - 1, 0));
   };
 
-  // ✅ FONCTION CORRIGÉE : Sauvegarder valeurs et marquer onboarding terminé
   const calculateAndRevealScore = async () => {
     setIsLoading(true);
     
@@ -139,7 +158,7 @@ const Onboarding = ({ toast, onNavigate, setAuth }) => {
         });
       }
 
-      // 2. ✅ MARQUER L'ONBOARDING COMME TERMINÉ + CALCULER SCORE
+      // 2. Marquer l'onboarding comme terminé + calculer score
       const income = parseFloat(onboardingData.monthlyIncome.replace(/\s/g, ''));
       const response = await API.post('/onboarding/complete/', {
         monthly_income: income,
@@ -147,7 +166,7 @@ const Onboarding = ({ toast, onNavigate, setAuth }) => {
       });
 
       // 3. Récupérer le score calculé
-      const score = response.data.score?.total_score || 47; // Fallback si pas de score
+      const score = response.data.score?.total_score || 47;
       setCalculatedScore(score);
 
       // 4. Passer à l'écran de révélation
@@ -187,12 +206,15 @@ const Onboarding = ({ toast, onNavigate, setAuth }) => {
     }, duration / steps);
   };
 
-  // ✅ FONCTION CORRIGÉE : Utiliser onNavigate prop
   const completeOnboarding = () => {
-    // Nettoyer localStorage
-    localStorage.removeItem('onboarding_progress');
+    // ✅ Nettoyer localStorage pour CET utilisateur
+    if (currentUserId) {
+      const savedKey = `onboarding_progress_${currentUserId}`;
+      localStorage.removeItem(savedKey);
+      console.log('🗑️ Progression supprimée pour user', currentUserId);
+    }
     
-    // ✅ REDIRIGER VERS DASHBOARD avec onNavigate prop
+    // Rediriger vers dashboard
     onNavigate('dashboard');
     
     toast?.showSuccess('🎉 Bienvenue dans Yoonu Dal !');
