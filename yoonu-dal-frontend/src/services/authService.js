@@ -1,4 +1,5 @@
-// src/services/authService.js - Version améliorée avec subscription enrichment
+// src/services/authService.js - Version avec auto-login après inscription
+
 const API_BASE_URL = process.env.REACT_APP_API_URL 
   ? `${process.env.REACT_APP_API_URL}/api`
   : 'https://yoonudal-api.onrender.com/api';
@@ -87,7 +88,6 @@ class AuthService {
     }
   }
 
-  // ✅✅✅ MODIFIÉ : Récupérer le profil utilisateur avec enrichissement subscription ✅✅✅
   async getUserProfile() {
     try {
       const token = this.getToken();
@@ -111,7 +111,7 @@ class AuthService {
       const userInfo = await response.json();
       console.log('✅ Profil utilisateur récupéré:', userInfo);
       
-      // ✅ NOUVEAU : Vérifier si les champs subscription sont présents
+      // Vérifier si les champs subscription sont présents
       if (!userInfo.profile.hasOwnProperty('trial_active')) {
         console.log('⚠️ Champs subscription manquants, appel à subscription-status...');
         
@@ -155,7 +155,6 @@ class AuthService {
       return null;
     }
   }
-  // ✅✅✅ FIN MODIFICATION ✅✅✅
 
   // Rafraîchir le token
   async refreshToken() {
@@ -232,11 +231,12 @@ class AuthService {
     }
   }
 
-  // Inscription
+  // ✅ INSCRIPTION AVEC AUTO-LOGIN
   async register(userData) {
     try {
       console.log('🔍 Tentative d\'inscription...', { username: userData.username });
       
+      // 1. Créer le compte
       const response = await fetch(`${API_BASE_URL}/register/`, {
         method: 'POST',
         headers: {
@@ -254,11 +254,31 @@ class AuthService {
 
       console.log('✅ Inscription réussie:', data);
       
-      return {
-        success: true,
-        message: data.message,
-        userId: data.user_id
-      };
+      // ✅ 2. AUTO-LOGIN : Se connecter automatiquement
+      console.log('🔐 Auto-connexion après inscription...');
+      const loginResult = await this.login({
+        username: userData.username,
+        password: userData.password
+      });
+
+      if (loginResult.success) {
+        console.log('✅ Auto-connexion réussie');
+        return {
+          success: true,
+          message: data.message,
+          user: loginResult.user,  // ✅ RETOURNER LE USER
+          userId: data.user_id
+        };
+      } else {
+        // Inscription OK mais auto-login échoué
+        console.warn('⚠️ Inscription OK mais auto-login échoué');
+        return {
+          success: true,
+          message: 'Compte créé, veuillez vous connecter',
+          user: null,
+          userId: data.user_id
+        };
+      }
     } catch (error) {
       console.error('❌ Erreur d\'inscription:', error);
       return {
