@@ -863,34 +863,3 @@ class Transaction(models.Model):
     def __str__(self):
         return f"{self.user.username} - {self.amount} FCFA - {self.status}"
 
-
-# AJOUTER À api/models.py (à la fin du fichier, avant la dernière ligne)
-
-class ScoreHistory(models.Model):
-    """Historique du score Yoonu Dal - Tracking dans le temps"""
-    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='score_history')
-    total_score = models.IntegerField(default=0)
-
-    # Détails du score
-    budget_score = models.IntegerField(default=0)
-    savings_score = models.IntegerField(default=0)
-    discipline_score = models.IntegerField(default=0)
-
-    # Contexte financier au moment du snapshot
-    monthly_income = models.DecimalField(max_digits=15, decimal_places=2, default=0)
-    total_expenses = models.DecimalField(max_digits=15, decimal_places=2, default=0)
-    savings_rate = models.DecimalField(max_digits=5, decimal_places=2, default=0)  # Pourcentage
-
-    # Métadonnées
-    snapshot_date = models.DateField(default=timezone.now)
-    created_at = models.DateTimeField(auto_now_add=True)
-
-    class Meta:
-        ordering = ['-snapshot_date']
-        unique_together = ('user', 'snapshot_date')  # Un seul score par jour
-        indexes = [
-            models.Index(fields=['user', '-snapshot_date']),
-        ]
-
-    def __str__(self):
-        return f"{self.user.username} - {self.snapshot_date} - Score: {self.total_score}"
