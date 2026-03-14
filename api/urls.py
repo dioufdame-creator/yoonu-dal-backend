@@ -67,11 +67,14 @@ urlpatterns = [
     path('user-values/', views.user_values, name='user_values'),
     # Score calculation trigger
     path('calculate-score/', views.trigger_score_calculation, name='trigger_score_calculation'),
-# Payment endpoints
+    # Payment endpoints
     path('payments/mobile-money/', payment_views.mobile_money_payment, name='mobile_money'),
     path('payments/card/', payment_views.card_payment, name='card_payment'),
     path('payments/status/<str:transaction_id>/', payment_views.check_payment_status, name='payment_status'),
     path('payments/start-trial/', payment_views.start_trial, name='start_trial'),
+    # Onboarding
+    path('onboarding/status/', views.check_onboarding_status, name='check_onboarding_status'),
+    path('onboarding/complete/', views.complete_onboarding, name='complete_onboarding'),
     path('payments/subscription-status/', payment_views.subscription_status, name='subscription_status'),
     path('export/excel/', export_views.export_excel),
     path('export/pdf/', export_views.export_pdf),
