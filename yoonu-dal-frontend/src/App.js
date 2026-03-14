@@ -123,34 +123,33 @@ function App() {
   };
 
   // Fonction de connexion réelle
-  const handleLogin = async (credentials) => {
-    console.log('🔐 Tentative de connexion pour:', credentials.username);
-    setAuthError(null);
+const handleLogin = async (credentials) => {
+  try {
+    const result = await authService.login(credentials);
     
-    try {
-      const result = await authService.login(credentials);
+    if (result.user) {
+      setUser(result.user);
       
-      if (result.success) {
-        console.log('✅ Connexion réussie:', result.user?.username);
-        setIsAuthenticated(true);
-        setUser(result.user);
-        showSuccess(`Connexion réussie ! Bienvenue ${result.user?.username || result.user?.first_name}`);
-        handleNavigate('onboarding'); 
-        return { success: true };
+      // ✅ VÉRIFIER SI ONBOARDING TERMINÉ
+      const onboardingStatus = await fetch(`${API_URL}/api/onboarding/status/`, {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('yoonu_dal_token')}`
+        }
+      }).then(res => res.json());
+      
+      if (onboardingStatus.onboarding_completed) {
+        // ✅ A déjà fait l'onboarding → Dashboard
+        handleNavigate('dashboard');
       } else {
-        console.log('❌ Connexion échouée:', result.error);
-        setAuthError(result.error);
-        showError(result.error || 'Erreur de connexion');
-        return { success: false, error: result.error };
+        // ❌ N'a pas fait l'onboarding → Onboarding
+        handleNavigate('onboarding');
       }
-    } catch (error) {
-      console.error('🚨 Erreur lors de la connexion:', error);
-      const errorMsg = 'Erreur de connexion au serveur. Vérifiez que Django fonctionne.';
-      setAuthError(errorMsg);
-      showError(errorMsg);
-      return { success: false, error: errorMsg };
     }
-  };
+  } catch (error) {
+    console.error('Erreur connexion:', error);
+    alert('Erreur de connexion');
+  }
+};
 
   // Fonction d'inscription réelle
   const handleRegister = async (userData) => {
