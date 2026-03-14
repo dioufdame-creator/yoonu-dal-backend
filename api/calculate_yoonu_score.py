@@ -1,5 +1,5 @@
 # api/calculate_yoonu_score.py
-# Fonction de calcul du Score Yoonu Dal - VERSION CORRIGÉE
+# Fonction de calcul du Score Yoonu Dal
 
 from datetime import timedelta
 from django.utils import timezone
@@ -7,7 +7,7 @@ from django.db.models import Sum
 from decimal import Decimal
 
 
-def calculate_user_score(user):
+def calculate_yoonu_score(user):
     """
     Calcule le Score Yoonu Dal pour un utilisateur
     Retourne l'objet YoonuScore
@@ -162,20 +162,15 @@ def calculate_user_score(user):
 
     # ========== 4. AMÉLIORATION CONTINUE (10 points) ==========
 
-    # Calculer la date du mois dernier
     last_month = start_of_month - timedelta(days=1)
     last_month_start = last_month.replace(day=1)
 
     try:
-        # ✅ CORRECTION : Utiliser snapshot_date au lieu de month
-        last_score_entry = ScoreHistory.objects.filter(
+        last_score = ScoreHistory.objects.get(
             user=user,
-            snapshot_date__gte=last_month_start,
-            snapshot_date__lt=start_of_month
-        ).order_by('-snapshot_date').first()
-
-        last_score = last_score_entry.total_score if last_score_entry else 0
-    except Exception:
+            month=last_month_start
+        ).total_score
+    except ScoreHistory.DoesNotExist:
         last_score = 0
 
     current_total = alignment_score + discipline_score + stability_score
@@ -200,7 +195,7 @@ def calculate_user_score(user):
 
     total_score = int(alignment_score + discipline_score + stability_score + improvement_score)
 
-    # Mettre à jour le modèle YoonuScore
+    # Mettre à jour le modèle
     score_obj.previous_score = score_obj.total_score
     score_obj.total_score = total_score
     score_obj.alignment_score = Decimal(str(round(alignment_score, 2)))
@@ -211,22 +206,16 @@ def calculate_user_score(user):
     score_obj.score_change = total_score - score_obj.previous_score
     score_obj.save()
 
-    # ✅ CORRECTION : Sauvegarder dans l'historique avec snapshot_date
-    # Utiliser la date du jour comme snapshot_date
-    today = now.date()
-
+    # Sauvegarder dans l'historique
     ScoreHistory.objects.update_or_create(
         user=user,
-        snapshot_date=today,  # ✅ Utiliser snapshot_date au lieu de month
+        month=start_of_month,
         defaults={
             'total_score': total_score,
-            'budget_score': int(round(discipline_score)),  # ✅ Nouveau champ
-            'savings_score': int(round(stability_score)),  # ✅ Nouveau champ
-            'discipline_score': int(round(alignment_score)),  # ✅ Nouveau champ
-            'monthly_income': Decimal(str(monthly_income)),  # ✅ Nouveau champ
-            'total_expenses': Decimal(str(monthly_expenses_total)),  # ✅ Nouveau champ
-            'savings_rate': Decimal(str(round(savings / monthly_income * 100 if monthly_income > 0 else 0, 2)))
-            # ✅ Nouveau champ
+            'alignment_score': Decimal(str(round(alignment_score, 2))),
+            'discipline_score': Decimal(str(round(discipline_score, 2))),
+            'stability_score': Decimal(str(round(stability_score, 2))),
+            'improvement_score': Decimal(str(round(improvement_score, 2)))
         }
     )
 
