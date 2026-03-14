@@ -197,6 +197,7 @@ def user_profile(request):
                     'is_premium': profile.is_premium_active(),
                     'ai_messages_count': profile.ai_messages_count
                     # ✅✅✅ FIN AJOUT ✅✅✅
+                    'onboarding_completed': profile.onboarding_completed,  # ✅ DOIT ÊTRE LÀ
                 }
             })
         except Exception as e:
