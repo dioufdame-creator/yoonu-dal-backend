@@ -79,5 +79,8 @@ urlpatterns = [
     path('export/excel/', export_views.export_excel),
     path('export/pdf/', export_views.export_pdf),
     path('score-history/', views.score_history),
+    # ✅ 4. AJOUTER DANS api/urls.py (si pas déjà fait)
+    path('onboarding/status/', views.check_onboarding_status, name='check_onboarding_status'),
+    path('onboarding/complete/', views.complete_onboarding, name='complete_onboarding'),
 
 ]
