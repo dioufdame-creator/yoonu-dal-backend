@@ -3273,3 +3273,127 @@ def check_onboarding_status(request):
         return Response({
             'error': f'Erreur: {str(e)}'
         }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+# ==========================================
+# CODE À AJOUTER DANS api/views.py
+# ==========================================
+
+# ✅ 1. AJOUTER CES IMPORTS EN HAUT DU FICHIER (si pas déjà présents)
+from decimal import Decimal
+from .models import Envelope, UserValue
+from .calculate_yoonu_score import calculate_yoonu_score
+
+# ✅ 2. AJOUTER CETTE FONCTION HELPER (avant les endpoints)
+def create_default_envelopes(user):
+    """
+    Créer les enveloppes par défaut pour un nouvel utilisateur
+    """
+    default_envelopes = [
+        {'name': 'Alimentation', 'icon': '🍽️', 'color': '#10B981'},
+        {'name': 'Transport', 'icon': '🚗', 'color': '#3B82F6'},
+        {'name': 'Logement', 'icon': '🏠', 'color': '#8B5CF6'},
+        {'name': 'Santé', 'icon': '💊', 'color': '#EF4444'},
+        {'name': 'Loisirs', 'icon': '🎮', 'color': '#F59E0B'},
+        {'name': 'Épargne', 'icon': '💰', 'color': '#059669'},
+    ]
+    
+    created_count = 0
+    for env_data in default_envelopes:
+        # Créer uniquement si n'existe pas déjà
+        envelope, created = Envelope.objects.get_or_create(
+            user=user,
+            name=env_data['name'],
+            defaults={
+                'icon': env_data['icon'],
+                'color': env_data['color'],
+                'budget_amount': Decimal('0.00'),
+                'current_amount': Decimal('0.00'),
+                'is_default': True
+            }
+        )
+        if created:
+            created_count += 1
+    
+    logger.info(f"✅ {created_count} enveloppes créées pour {user.username}")
+    return created_count
+
+
+# ✅ 3. AJOUTER CES DEUX ENDPOINTS
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def complete_onboarding(request):
+    """Marquer l'onboarding comme terminé et calculer le score initial"""
+    user = request.user
+    
+    try:
+        data = request.data
+        logger.info(f"🎯 Complete onboarding pour {user.username}: {data}")
+        
+        # Mettre à jour le profil avec les données de l'onboarding
+        profile = user.profile
+        
+        if 'monthly_income' in data:
+            profile.monthly_income = Decimal(str(data['monthly_income']))
+            logger.info(f"💰 Revenu mensuel défini: {profile.monthly_income}")
+        
+        if 'financial_goals' in data:
+            profile.financial_goals = data['financial_goals']
+        
+        # Marquer l'onboarding comme terminé
+        profile.onboarding_completed = True
+        profile.save()
+        logger.info(f"✅ Onboarding marqué comme terminé pour {user.username}")
+        
+        # Créer les enveloppes par défaut
+        try:
+            envelopes_created = create_default_envelopes(user)
+            logger.info(f"📬 {envelopes_created} enveloppes créées")
+        except Exception as env_error:
+            logger.warning(f"⚠️ Erreur création enveloppes (non bloquant): {env_error}")
+        
+        # Calculer le score initial
+        try:
+            score_data = calculate_yoonu_score(user)
+            logger.info(f"📊 Score calculé: {score_data}")
+        except Exception as score_error:
+            logger.warning(f"⚠️ Erreur calcul score (non bloquant): {score_error}")
+            score_data = None
+        
+        return Response({
+            'message': 'Onboarding terminé avec succès',
+            'onboarding_completed': True,
+            'score_calculated': score_data is not None,
+            'score': score_data if score_data else {'total_score': 0, 'message': 'Score sera calculé après ajout de dépenses'}
+        }, status=status.HTTP_200_OK)
+        
+    except Exception as e:
+        logger.error(f"❌ Erreur complete_onboarding: {e}", exc_info=True)
+        return Response({
+            'error': f'Erreur: {str(e)}',
+            'detail': str(e)
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def check_onboarding_status(request):
+    """Vérifier si l'utilisateur a terminé l'onboarding"""
+    user = request.user
+    
+    try:
+        profile = user.profile
+        
+        return Response({
+            'onboarding_completed': profile.onboarding_completed,
+            'has_values': UserValue.objects.filter(user=user).exists(),
+            'has_income': profile.monthly_income > 0
+        })
+        
+    except Exception as e:
+        logger.error(f"❌ Erreur check_onboarding_status: {e}", exc_info=True)
+        return Response({
+            'error': f'Erreur: {str(e)}'
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+
