@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
 import API from '../../services/api';
 
 // ==========================================
@@ -7,8 +6,8 @@ import API from '../../services/api';
 // 5 écrans - 70 secondes - Score activé
 // ==========================================
 
-const Onboarding = ({ toast, setAuth }) => {
-  const navigate = useNavigate();
+const Onboarding = ({ toast, onNavigate, setAuth }) => {
+  // ✅ UTILISER onNavigate PROP AU LIEU DE useNavigate
   const [currentStep, setCurrentStep] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
   
@@ -126,39 +125,38 @@ const Onboarding = ({ toast, setAuth }) => {
     setCurrentStep(prev => Math.max(prev - 1, 0));
   };
 
+  // ✅ FONCTION CORRIGÉE : Sauvegarder valeurs et marquer onboarding terminé
   const calculateAndRevealScore = async () => {
     setIsLoading(true);
     
     try {
       // 1. Sauvegarder valeurs avec priorités
-      const valuesPayload = onboardingData.priorities.map((valueId, idx) => ({
-        value: valueId,
-        priority: idx + 1,
-        monthly_budget: 0 // Pourra être ajusté plus tard
-      }));
+      for (let i = 0; i < onboardingData.priorities.length; i++) {
+        const valueId = onboardingData.priorities[i];
+        await API.post('/values/', { 
+          value: valueId,
+          priority: i + 1
+        });
+      }
 
-      await API.post('/user-values/', { values: valuesPayload });
-
-      // 2. Sauvegarder revenus
+      // 2. ✅ MARQUER L'ONBOARDING COMME TERMINÉ + CALCULER SCORE
       const income = parseFloat(onboardingData.monthlyIncome.replace(/\s/g, ''));
-      await API.patch('/users/profile/', {
-        monthly_income: income
+      const response = await API.post('/onboarding/complete/', {
+        monthly_income: income,
+        financial_goals: 'Objectifs définis via onboarding'
       });
 
-      // 3. Calculer score initial (simplifié - 3 valeurs définies = 47 points de base)
-      const baseScore = 47;
-      setCalculatedScore(baseScore);
+      // 3. Récupérer le score calculé
+      const score = response.data.score?.total_score || 47; // Fallback si pas de score
+      setCalculatedScore(score);
 
-      // 4. Marquer onboarding terminé
-      await API.patch('/users/profile/', {
-        onboarding_completed: true
-      });
-
-      // Passer à l'écran de révélation
+      // 4. Passer à l'écran de révélation
       setCurrentStep(4);
       
       // Animation score
-      setTimeout(() => animateScore(baseScore), 300);
+      setTimeout(() => animateScore(score), 300);
+      
+      toast?.showSuccess('Configuration terminée ! 🎉');
       
     } catch (error) {
       console.error('Erreur calcul score:', error);
@@ -189,12 +187,13 @@ const Onboarding = ({ toast, setAuth }) => {
     }, duration / steps);
   };
 
+  // ✅ FONCTION CORRIGÉE : Utiliser onNavigate prop
   const completeOnboarding = () => {
     // Nettoyer localStorage
     localStorage.removeItem('onboarding_progress');
     
-    // Rediriger dashboard
-    navigate('/dashboard');
+    // ✅ REDIRIGER VERS DASHBOARD avec onNavigate prop
+    onNavigate('dashboard');
     
     toast?.showSuccess('🎉 Bienvenue dans Yoonu Dal !');
   };
