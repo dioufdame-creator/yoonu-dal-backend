@@ -195,7 +195,7 @@ def user_profile(request):
                     'trial_expires_at': profile.trial_expires_at,
                     'trial_used': profile.trial_used,
                     'is_premium': profile.is_premium_active(),
-                    'ai_messages_count': profile.ai_messages_count
+                    'ai_messages_count': profile.ai_messages_count,
                     # ✅✅✅ FIN AJOUT ✅✅✅
                     'onboarding_completed': profile.onboarding_completed,  # ✅ DOIT ÊTRE LÀ
                 }
