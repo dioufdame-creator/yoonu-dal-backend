@@ -2762,12 +2762,6 @@ from django.utils import timezone
 from django.db.models import Sum, Count, Avg
 from decimal import decimal
 
-# ==========================================
-# FONCTION À REMPLACER DANS api/views.py
-# Chercher "def get_yoonu_score" (ligne ~3009)
-# Remplacer toute la fonction par celle-ci
-# ==========================================
-
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def get_yoonu_score(request):
