@@ -2760,7 +2760,7 @@ Si le reçu est illisible ou ce n'est pas un reçu :
 from datetime import datetime, timedelta
 from django.utils import timezone
 from django.db.models import Sum, Count, Avg
-from decimal import decimal
+from decimal import Decimal
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
