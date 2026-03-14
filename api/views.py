@@ -2760,249 +2760,13 @@ Si le reçu est illisible ou ce n'est pas un reçu :
 from datetime import datetime, timedelta
 from django.utils import timezone
 from django.db.models import Sum, Count, Avg
-from decimal import Decimal
+from decimal import decimal
 
-
-def calculate_yoonu_score(user):
-    """
-    Calcule le Score Yoonu Dal pour un utilisateur
-
-    Retourne un dict avec tous les détails du score
-    """
-    from .models import YoonuScore, ScoreHistory, Expense, Income, Envelope, UserValue, DiagnosticResult
-
-    # Récupérer ou créer le score
-    score_obj, created = YoonuScore.objects.get_or_create(user=user)
-
-    # Période d'analyse : mois en cours
-    now = timezone.now()
-    start_of_month = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
-
-    # Récupérer les valeurs prioritaires de l'utilisateur (top 3)
-    user_values = UserValue.objects.filter(user=user).order_by('priority')[:3]
-
-    if not user_values.exists():
-        # Pas encore de diagnostic fait
-        return {
-            'total_score': 0,
-            'alignment_score': 0,
-            'discipline_score': 0,
-            'stability_score': 0,
-            'improvement_score': 0,
-            'message': 'Complète ton diagnostic pour activer le Score Yoonu Dal'
-        }
-
-    # ========== 1. ALIGNEMENT VALEURS (35 points) ==========
-
-    # Mapping catégories → valeurs
-    CATEGORY_TO_VALUE = {
-        'famille': 'Famille',
-        'spiritualité': 'Spiritualité',
-        'éducation': 'Éducation',
-        'santé': 'Santé',
-        'alimentation': 'Famille',  # Nourrir la famille
-        'logement': 'Famille',  # Toit familial
-    }
-
-    # Calculer les dépenses par valeur
-    expenses = Expense.objects.filter(user=user, date__gte=start_of_month)
-    total_expenses = expenses.aggregate(total=Sum('amount'))['total'] or 0
-
-    if total_expenses == 0:
-        alignment_score = 0
-    else:
-        alignment_details = {}
-        alignment_total = 0
-
-        for user_value in user_values:
-            value_name = user_value.value.name
-
-            # Trouver les catégories liées à cette valeur
-            related_categories = [cat for cat, val in CATEGORY_TO_VALUE.items() if val == value_name]
-
-            # Calculer % dépenses pour cette valeur
-            value_expenses = expenses.filter(category__in=related_categories).aggregate(
-                total=Sum('amount')
-            )['total'] or 0
-
-            value_percentage = (value_expenses / total_expenses * 100) if total_expenses > 0 else 0
-            alignment_details[value_name.lower()] = round(value_percentage, 1)
-
-            # Score : plus la priorité est haute, plus on attend un % élevé
-            # Priorité 1 : devrait être ~30-40% des dépenses
-            # Priorité 2 : devrait être ~20-30%
-            # Priorité 3 : devrait être ~10-20%
-
-            if user_value.priority == 1:
-                expected_min = 25
-                if value_percentage >= expected_min:
-                    alignment_total += 15  # Max pour priorité 1
-                else:
-                    alignment_total += (value_percentage / expected_min) * 15
-
-            elif user_value.priority == 2:
-                expected_min = 15
-                if value_percentage >= expected_min:
-                    alignment_total += 12  # Max pour priorité 2
-                else:
-                    alignment_total += (value_percentage / expected_min) * 12
-
-            elif user_value.priority == 3:
-                expected_min = 10
-                if value_percentage >= expected_min:
-                    alignment_total += 8  # Max pour priorité 3
-                else:
-                    alignment_total += (value_percentage / expected_min) * 8
-
-        alignment_score = min(alignment_total, 35)  # Cap à 35
-
-    # ========== 2. DISCIPLINE BUDGÉTAIRE (35 points) ==========
-
-    envelopes = Envelope.objects.filter(user=user)
-
-    if not envelopes.exists():
-        discipline_score = 0
-    else:
-        discipline_total = 0
-        overruns = 0
-        total_envelopes = envelopes.count()
-
-        for envelope in envelopes:
-            budget = float(envelope.monthly_budget)
-            spent = float(envelope.current_spent)
-
-            if budget == 0:
-                continue
-
-            usage_pct = (spent / budget) * 100
-
-            if usage_pct <= 80:
-                # Excellent : moins de 80% utilisé
-                discipline_total += 12
-            elif usage_pct <= 100:
-                # Bon : entre 80-100%
-                discipline_total += 10
-            elif usage_pct <= 120:
-                # Acceptable : léger dépassement
-                discipline_total += 5
-                overruns += 1
-            else:
-                # Mauvais : gros dépassement
-                overruns += 1
-
-        # Pénalité pour dépassements multiples
-        if overruns > 0:
-            discipline_total -= (overruns * 3)
-
-        discipline_score = max(0, min(discipline_total, 35))
-
-    # ========== 3. STABILITÉ FINANCIÈRE (20 points) ==========
-
-    monthly_income = Income.objects.filter(
-        user=user, date__gte=start_of_month
-    ).aggregate(total=Sum('amount'))['total'] or 0
-
-    monthly_expenses_total = expenses.aggregate(total=Sum('amount'))['total'] or 0
-
-    stability_total = 0
-
-    # Revenus > Dépenses
-    if monthly_income > monthly_expenses_total:
-        stability_total += 10
-    elif monthly_income > monthly_expenses_total * 0.9:
-        stability_total += 7
-    elif monthly_income > monthly_expenses_total * 0.8:
-        stability_total += 5
-
-    # Épargne ce mois
-    savings = monthly_income - monthly_expenses_total
-    if savings > 0:
-        savings_rate = (savings / monthly_income) * 100 if monthly_income > 0 else 0
-
-        if savings_rate >= 20:
-            stability_total += 10
-        elif savings_rate >= 10:
-            stability_total += 7
-        elif savings_rate >= 5:
-            stability_total += 5
-        else:
-            stability_total += 3
-
-    stability_score = min(stability_total, 20)
-
-    # ========== 4. AMÉLIORATION CONTINUE (10 points) ==========
-
-    # Comparer avec le mois dernier
-    last_month = start_of_month - timedelta(days=1)
-    last_month_start = last_month.replace(day=1)
-
-    try:
-        last_score = ScoreHistory.objects.get(
-            user=user,
-            month=last_month_start
-        ).total_score
-    except ScoreHistory.DoesNotExist:
-        last_score = 0
-
-    current_total = alignment_score + discipline_score + stability_score
-
-    if last_score == 0:
-        improvement_score = 5  # Score de base pour premier mois
-    else:
-        improvement = current_total - last_score
-
-        if improvement >= 10:
-            improvement_score = 10
-        elif improvement >= 5:
-            improvement_score = 8
-        elif improvement > 0:
-            improvement_score = 6
-        elif improvement == 0:
-            improvement_score = 5
-        else:
-            improvement_score = 3  # En baisse
-
-    # ========== TOTAL ==========
-
-    total_score = int(alignment_score + discipline_score + stability_score + improvement_score)
-
-    # Mettre à jour le modèle
-    score_obj.previous_score = score_obj.total_score
-    score_obj.total_score = total_score
-    score_obj.alignment_score = Decimal(str(alignment_score))
-    score_obj.discipline_score = Decimal(str(discipline_score))
-    score_obj.stability_score = Decimal(str(stability_score))
-    score_obj.improvement_score = Decimal(str(improvement_score))
-    score_obj.alignment_details = alignment_details
-    score_obj.score_change = total_score - score_obj.previous_score
-    score_obj.save()
-
-    # Sauvegarder dans l'historique (une fois par mois)
-    ScoreHistory.objects.update_or_create(
-        user=user,
-        month=start_of_month,
-        defaults={
-            'total_score': total_score,
-            'alignment_score': Decimal(str(alignment_score)),
-            'discipline_score': Decimal(str(discipline_score)),
-            'stability_score': Decimal(str(stability_score)),
-            'improvement_score': Decimal(str(improvement_score))
-        }
-    )
-
-    return {
-        'total_score': total_score,
-        'alignment_score': round(alignment_score, 1),
-        'discipline_score': round(discipline_score, 1),
-        'stability_score': round(stability_score, 1),
-        'improvement_score': round(improvement_score, 1),
-        'alignment_details': alignment_details,
-        'score_change': score_obj.score_change,
-        'level': score_obj.score_level,
-        'emoji': score_obj.score_emoji,
-        'previous_score': score_obj.previous_score
-    }
-
+# ==========================================
+# FONCTION À REMPLACER DANS api/views.py
+# Chercher "def get_yoonu_score" (ligne ~3009)
+# Remplacer toute la fonction par celle-ci
+# ==========================================
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
@@ -3011,12 +2775,12 @@ def get_yoonu_score(request):
     user = request.user
 
     try:
-        # ✅ FIX: Utiliser calculate_yoonu_score au lieu de calculate_user_score
+        # calculate_yoonu_score retourne maintenant un DICT
         score_data = calculate_yoonu_score(user)
 
-        # ✅ FIX: Gérer le cas où le score est None ou un dict vide
-        if not score_data or not isinstance(score_data, dict):
-            logger.warning(f"Score non calculé pour {user.username}")
+        # Gérer le cas où le score est None (pas de valeurs définies)
+        if score_data is None:
+            logger.warning(f"Score non calculé pour {user.username} - aucune valeur définie")
             return Response({
                 'total_score': 0,
                 'alignment_score': 0,
@@ -3027,21 +2791,11 @@ def get_yoonu_score(request):
                 'level': 'Débutant',
                 'emoji': '🌱',
                 'alignment_details': {},
-                'message': 'Score non calculé - définissez vos valeurs personnelles'
+                'message': 'Définis tes valeurs personnelles pour calculer ton score'
             }, status=200)
 
-        # ✅ FIX: Retourner les données correctement
-        return Response({
-            'total_score': score_data.get('total_score', 0),
-            'alignment_score': score_data.get('alignment_score', 0),
-            'discipline_score': score_data.get('discipline_score', 0),
-            'stability_score': score_data.get('stability_score', 0),
-            'improvement_score': score_data.get('improvement_score', 0),
-            'score_change': score_data.get('score_change', 0),
-            'level': score_data.get('level', 'Débutant'),
-            'emoji': score_data.get('emoji', '🌱'),
-            'alignment_details': score_data.get('alignment_details', {})
-        }, status=200)
+        # ✅ score_data est maintenant un DICT, on peut le retourner directement
+        return Response(score_data, status=200)
         
     except Exception as e:
         logger.error(f"❌ Erreur get_yoonu_score pour {user.username}: {e}", exc_info=True)
@@ -3054,8 +2808,11 @@ def get_yoonu_score(request):
             'improvement_score': 0,
             'score_change': 0,
             'level': 'Débutant',
-            'emoji': '🌱'
-        }, status=500)
+            'emoji': '🌱',
+            'alignment_details': {},
+            'message': str(e)
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
 
 
 @api_view(['GET'])
