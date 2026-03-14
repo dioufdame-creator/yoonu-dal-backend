@@ -3206,3 +3206,69 @@ def score_history(request):
             {'error': str(e)},
             status=status.HTTP_500_INTERNAL_SERVER_ERROR
         )
+# ==========================================
+# AJOUTER CES FONCTIONS DANS api/views.py
+# ==========================================
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def complete_onboarding(request):
+    """Marquer l'onboarding comme terminé et calculer le score initial"""
+    user = request.user
+    
+    try:
+        data = request.data
+        
+        # Mettre à jour le profil avec les données de l'onboarding
+        profile = user.profile
+        
+        if 'monthly_income' in data:
+            profile.monthly_income = Decimal(str(data['monthly_income']))
+        
+        if 'financial_goals' in data:
+            profile.financial_goals = data['financial_goals']
+        
+        # Marquer l'onboarding comme terminé
+        profile.onboarding_completed = True
+        profile.save()
+        
+        # Créer les enveloppes par défaut
+        create_default_envelopes(user)
+        
+        # Calculer le score initial (peut retourner None si pas de valeurs définies)
+        score_data = calculate_yoonu_score(user)
+        
+        return Response({
+            'message': 'Onboarding terminé avec succès',
+            'onboarding_completed': True,
+            'score_calculated': score_data is not None,
+            'score': score_data if score_data else None
+        }, status=status.HTTP_200_OK)
+        
+    except Exception as e:
+        logger.error(f"❌ Erreur complete_onboarding: {e}", exc_info=True)
+        return Response({
+            'error': f'Erreur: {str(e)}'
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def check_onboarding_status(request):
+    """Vérifier si l'utilisateur a terminé l'onboarding"""
+    user = request.user
+    
+    try:
+        profile = user.profile
+        
+        return Response({
+            'onboarding_completed': profile.onboarding_completed,
+            'has_values': UserValue.objects.filter(user=user).exists(),
+            'has_income': profile.monthly_income > 0
+        })
+        
+    except Exception as e:
+        logger.error(f"❌ Erreur check_onboarding_status: {e}", exc_info=True)
+        return Response({
+            'error': f'Erreur: {str(e)}'
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
