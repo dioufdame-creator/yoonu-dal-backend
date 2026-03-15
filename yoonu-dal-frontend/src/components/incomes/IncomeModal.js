@@ -47,11 +47,11 @@ const IncomeModal = ({ isOpen, onClose, onIncomeAdded }) => {
 
     try {
       const response = await API.post('/incomes/', {
-        source: formData.source,
-        amount: parseFloat(formData.amount),
-        description: formData.description,
-        date: formData.date
-      });
+      source: formData.source,
+      amount: parseFloat(formData.amount),
+      description: formData.description,
+      date: formData.date || new Date().toISOString().split('T')[0]  // ✅ Corrigé
+    });
 
       if (response.data) {
         // Réinitialiser le formulaire
