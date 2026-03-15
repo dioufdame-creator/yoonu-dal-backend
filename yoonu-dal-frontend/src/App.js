@@ -19,6 +19,7 @@ import ValueSelector from './components/consciousness/ValueSelector';
 import ExpenseTracker from './components/control/ExpenseTracker';
 import TontinesList from './components/tontines/TontinesList';
 import TontineDetail from './components/tontines/TontineDetail';
+import IncomesPage from './components/incomes/IncomesPage';
 import TontineAnalysis from './components/tontines/TontineAnalysis';
 import EnvelopeManager from './components/envelopeManager/EnvelopeManager';
 
@@ -589,6 +590,13 @@ function App() {
           return null;
         }
         return <TontinesList onNavigate={handleNavigate} toast={toastMethods} auth={authMethods} />;
+
+      case 'incomes':
+        if (!isAuthenticated) {
+          handleNavigate('login');
+          return null;
+        }
+        return <IncomesPage toast={toastMethods} />;
 
       case 'diagnostic':
         if (!isAuthenticated) {
