@@ -143,6 +143,9 @@ const NavigationV2 = ({ currentPage, onNavigate, isAuthenticated, user, onLogout
                             <button onClick={() => handleNavigation('score')} className="w-full text-left px-4 py-3 hover:bg-gray-50 flex items-center gap-3">
                               <span>🎯</span><span>Mon Score</span>
                             </button>
+                            <button onClick={() => handleNavigation('incomes')} className="w-full text-left px-4 py-3 hover:bg-gray-50 flex items-center gap-3">
+                              <span>💸</span><span>Mes revenus</span>
+                            </button>
                             <button onClick={() => handleNavigation('diagnostic')} className="w-full text-left px-4 py-3 hover:bg-gray-50 flex items-center gap-3">
                               <span>🧭</span><span>Diagnostic</span>
                             </button>
