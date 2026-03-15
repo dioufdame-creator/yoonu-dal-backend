@@ -607,6 +607,11 @@ class Envelope(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
+    is_meta_envelope = models.BooleanField(default=False)
+    parent_envelope_type = models.CharField(max_length=50, blank=True, null=True)
+    name = models.CharField(max_length=100, blank=True, null=True)
+   
+
     class Meta:
         unique_together = ('user', 'envelope_type')
         ordering = ['envelope_type']
@@ -863,3 +868,131 @@ class Transaction(models.Model):
     def __str__(self):
         return f"{self.user.username} - {self.amount} FCFA - {self.status}"
 
+class Debt(models.Model):
+    """
+    Modèle pour tracker les dettes et remboursements
+    Utilisé pour l'enveloppe Libération
+    """
+    DEBT_TYPES = [
+        ('credit_bancaire', 'Crédit bancaire'),
+        ('pret_personnel', 'Prêt personnel'),
+        ('dette_famille', 'Dette familiale'),
+        ('dette_ami', 'Dette à un ami'),
+        ('credit_commerce', 'Crédit commerce'),
+        ('tontine', 'Tontine'),
+        ('autre', 'Autre')
+    ]
+    
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='debts')
+    
+    # Informations de la dette
+    name = models.CharField(max_length=200, help_text="Ex: Crédit moto, Prêt oncle")
+    debt_type = models.CharField(max_length=50, choices=DEBT_TYPES, default='autre')
+    creditor = models.CharField(max_length=200, blank=True, help_text="À qui tu dois")
+    
+    # Montants
+    total_amount = models.DecimalField(max_digits=12, decimal_places=2)
+    amount_paid = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    monthly_payment = models.DecimalField(max_digits=12, decimal_places=2)
+    
+    # Dates
+    start_date = models.DateField()
+    target_end_date = models.DateField(null=True, blank=True)
+    actual_end_date = models.DateField(null=True, blank=True)
+    
+    # Intérêts
+    interest_rate = models.DecimalField(max_digits=5, decimal_places=2, default=0)
+    
+    # Statut
+    is_active = models.BooleanField(default=True)
+    is_fully_paid = models.BooleanField(default=False)
+    
+    # Notes
+    notes = models.TextField(blank=True)
+    
+    # Métadonnées
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    @property
+    def remaining_amount(self):
+        return self.total_amount - self.amount_paid
+    
+    @property
+    def progress_percentage(self):
+        if self.total_amount > 0:
+            return (self.amount_paid / self.total_amount) * 100
+        return 0
+    
+    @property
+    def months_remaining(self):
+        if self.monthly_payment > 0 and self.remaining_amount > 0:
+            return int(self.remaining_amount / self.monthly_payment) + 1
+        return 0
+    
+    @property
+    def status(self):
+        if self.is_fully_paid:
+            return 'paid'
+        elif self.progress_percentage >= 75:
+            return 'almost_done'
+        elif self.progress_percentage >= 50:
+            return 'halfway'
+        elif self.progress_percentage >= 25:
+            return 'in_progress'
+        else:
+            return 'started'
+    
+    def __str__(self):
+        return f"{self.user.username} - {self.name} ({self.remaining_amount} FCFA restants)"
+    
+    class Meta:
+        ordering = ['-is_active', '-created_at']
+        verbose_name = 'Dette'
+        verbose_name_plural = 'Dettes'
+
+
+class DebtPayment(models.Model):
+    """
+    Historique des remboursements de dette
+    """
+    PAYMENT_METHODS = [
+        ('cash', 'Espèces'),
+        ('virement', 'Virement'),
+        ('mobile_money', 'Mobile Money'),
+        ('cheque', 'Chèque'),
+        ('autre', 'Autre')
+    ]
+    
+    debt = models.ForeignKey(Debt, on_delete=models.CASCADE, related_name='payments')
+    amount = models.DecimalField(max_digits=12, decimal_places=2)
+    payment_date = models.DateField()
+    payment_method = models.CharField(max_length=50, choices=PAYMENT_METHODS, default='cash')
+    notes = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    
+    def save(self, *args, **kwargs):
+        """Mettre à jour la dette lors d'un paiement"""
+        super().save(*args, **kwargs)
+        
+        # Recalculer le montant payé
+        from django.db.models import Sum
+        total_paid = self.debt.payments.aggregate(
+            total=Sum('amount')
+        )['total'] or Decimal('0')
+        
+        self.debt.amount_paid = total_paid
+        
+        # Vérifier si entièrement payé
+        if self.debt.amount_paid >= self.debt.total_amount:
+            self.debt.is_fully_paid = True
+            self.debt.is_active = False
+            self.debt.actual_end_date = self.payment_date
+        
+        self.debt.save()
+    
+    def __str__(self):
+        return f"{self.debt.name} - {self.amount} FCFA le {self.payment_date}"
+    
+    class Meta:
+        ordering = ['-payment_date']
