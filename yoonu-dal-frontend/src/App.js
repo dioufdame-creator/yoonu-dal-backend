@@ -23,6 +23,7 @@ import IncomesPage from './components/incomes/IncomesPage';
 import TontineAnalysis from './components/tontines/TontineAnalysis';
 import EnvelopeManager from './components/envelopeManager/EnvelopeManager';
 
+// ✅ Import TransactionsPage (Dépenses + Revenus)
 import TransactionsPage from './components/transactions/TransactionsPage';
 
 import AIChatWidget from './components/ai/AIChatWidget';
@@ -98,7 +99,7 @@ function App() {
     
     // Pages qui nécessitent une authentification
     const protectedPages = [
-      'dashboard', 'expenses', 'envelopes', 'tontines', 
+      'dashboard', 'expenses', 'transactions', 'incomes', 'envelopes', 'tontines', 
       'tontine-detail', 'tontine-analysis',
       'profile', 'settings', 'score', 'alerts',
       'diagnostic', 'values'
@@ -500,18 +501,12 @@ function App() {
           </div>
         );
 
-      // ✅ ONBOARDING AVEC onNavigate PROP
+      // ✅ ONBOARDING
       case 'onboarding':
-        const toastHelper = {
-          showSuccess,
-          showError,
-          showWarning,
-          showInfo
-        };
         return (
           <Onboarding 
-            toast={toastHelper} 
-            onNavigate={handleNavigate}  // ✅ PASSER onNavigate
+            toast={toastMethods} 
+            onNavigate={handleNavigate}
             setAuth={setUser} 
           />
         );
@@ -521,23 +516,40 @@ function App() {
           handleNavigate('login');
           return null;
         }
-        const scoreToast = {
-          showSuccess,
-          showError,
-          showWarning,
-          showInfo
-        };
         return (
           <YoonuScorePage 
-            toast={scoreToast}
+            toast={toastMethods}
             onNavigate={handleNavigate}
           />
         );
 
-    case 'transactions':
-      return <TransactionsPage onNavigate={handleNavigate} toast={toastMethods} />;      
+      // ✅✅✅ TRANSACTIONS (DÉPENSES + REVENUS DANS 1 PAGE) ✅✅✅
+      case 'transactions':
+        if (!isAuthenticated) {
+          handleNavigate('login');
+          return null;
+        }
+        return <TransactionsPage onNavigate={handleNavigate} toast={toastMethods} />;
+      
+      // ✅ COMPATIBILITÉ : Rediriger expenses → transactions
+      case 'expenses':
+        if (!isAuthenticated) {
+          handleNavigate('login');
+          return null;
+        }
+        handleNavigate('transactions');
+        return null;
+      
+      // ✅ COMPATIBILITÉ : Rediriger incomes → transactions
+      case 'incomes':
+        if (!isAuthenticated) {
+          handleNavigate('login');
+          return null;
+        }
+        handleNavigate('transactions');
+        return null;
 
-    case 'alerts':
+      case 'alerts':
         if (!isAuthenticated) {
           handleNavigate('login');
           return null;
@@ -570,18 +582,6 @@ function App() {
         }
         return <Dashboard toast={toastMethods} auth={authMethods} onNavigate={handleNavigate} user={user} />;
       
-      case 'expenses':
-        if (!isAuthenticated) {
-          handleNavigate('login');
-          return null;
-        }
-        return <ExpenseTracker 
-          onNavigate={handleNavigate} 
-          toast={toastMethods} 
-          auth={authMethods}
-          user={user}
-        />;
-      
       case 'envelopes':
         if (!isAuthenticated) {
           handleNavigate('login');
@@ -595,13 +595,6 @@ function App() {
           return null;
         }
         return <TontinesList onNavigate={handleNavigate} toast={toastMethods} auth={authMethods} />;
-
-      case 'incomes':
-        if (!isAuthenticated) {
-          handleNavigate('login');
-          return null;
-        }
-        return <IncomesPage toast={toastMethods} />;
 
       case 'diagnostic':
         if (!isAuthenticated) {
