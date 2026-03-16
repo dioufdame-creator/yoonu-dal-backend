@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import ExpensesPage from './expenses/ExpensesPage';
-import IncomesPage from './incomes/IncomesPage';
+// ✅ BON (chemins corrects)
+import ExpensesPage from '../control/ExpenseTracker';
+import IncomesPage from '../incomes/IncomesPage';
 
 const TransactionsPage = ({ onNavigate, toast }) => {
   const [activeTab, setActiveTab] = useState('expenses'); // 'expenses' ou 'incomes'
