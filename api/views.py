@@ -419,7 +419,6 @@ def manage_incomes(request):
                     'description': income.description,
                     'amount': float(income.amount),
                     'date': income.date.isoformat(),
-                    'is_validated': income.is_validated,
                     'created_at': income.created_at.isoformat()
                 })
 
