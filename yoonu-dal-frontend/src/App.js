@@ -23,6 +23,8 @@ import IncomesPage from './components/incomes/IncomesPage';
 import TontineAnalysis from './components/tontines/TontineAnalysis';
 import EnvelopeManager from './components/envelopeManager/EnvelopeManager';
 
+import TransactionsPage from './components/transactions/TransactionsPage';
+
 import AIChatWidget from './components/ai/AIChatWidget';
 import Onboarding from './components/onboarding/Onboarding';
 
@@ -532,7 +534,10 @@ function App() {
           />
         );
 
-      case 'alerts':
+    case 'transactions':
+      return <TransactionsPage onNavigate={handleNavigate} toast={toastMethods} />;      
+
+    case 'alerts':
         if (!isAuthenticated) {
           handleNavigate('login');
           return null;
