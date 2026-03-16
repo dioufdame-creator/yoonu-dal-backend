@@ -589,7 +589,6 @@ const ExpenseTrackerV2 = ({ toast, onNavigate, auth, user }) => {  // ✅ AJOUTE
       {/* Receipt Scanner */}
       
 
-      // Dans le JSX
       {showScanner && (
         <PremiumGate
           user={user}
