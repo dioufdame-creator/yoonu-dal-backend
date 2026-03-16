@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { SubscriptionBadge } from '../subscription/SubscriptionComponents';  // ✅ AJOUTÉ
+import { SubscriptionBadge } from '../subscription/SubscriptionComponents';
 
 const NavigationV2 = ({ currentPage, onNavigate, isAuthenticated, user, onLogout, alertsBadge }) => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -22,17 +22,18 @@ const NavigationV2 = ({ currentPage, onNavigate, isAuthenticated, user, onLogout
     return 'Utilisateur';
   };
 
-  // ✅ Vérifier si Premium
+  // Vérifier si Premium
   const isPremium = user?.profile?.is_premium || user?.subscription_tier === 'premium' || user?.trial_active;
 
-  // ✅ 5 PAGES PRINCIPALES
+  // ✅✅✅ MODIFIÉ : 5 PAGES PRINCIPALES (Dépenses → Transactions) ✅✅✅
   const mainMenu = [
     { icon: '🏠', label: 'Accueil', page: 'dashboard' },
-    { icon: '💰', label: 'Dépenses', page: 'expenses' },
+    { icon: '💰', label: 'Transactions', page: 'transactions' },  // ← CHANGÉ
     { icon: '📁', label: 'Budgets', page: 'envelopes' },
     { icon: '🦁', label: 'Tontines', page: 'tontines' },
     { icon: '👤', label: 'Profil', page: 'profile' }
   ];
+  // ✅✅✅ FIN MODIFIÉ ✅✅✅
 
   const guestMenu = [
     { icon: '🏠', label: 'Accueil', page: 'home' },
@@ -58,7 +59,7 @@ const NavigationV2 = ({ currentPage, onNavigate, isAuthenticated, user, onLogout
               </div>
               <div className="text-white">
                 <div className="font-bold text-xl">Yoonu Dal</div>
-                <div className="text-xs text-green-100 hidden sm:block">Finance consciente</div>
+                <div className="text-xs text-green-100 hidden sm:block">Finance consciente à l''africaine</div>
               </div>
             </button>
 
@@ -88,7 +89,7 @@ const NavigationV2 = ({ currentPage, onNavigate, isAuthenticated, user, onLogout
                 <>
                   {alertsBadge && <div>{alertsBadge}</div>}
 
-                  {/* ✅✅✅ NOUVEAU : Bouton Premium ✅✅✅ */}
+                  {/* Bouton Premium */}
                   {!isPremium && (
                     <button
                       onClick={() => handleNavigation('pricing')}
@@ -98,7 +99,6 @@ const NavigationV2 = ({ currentPage, onNavigate, isAuthenticated, user, onLogout
                       <span>Premium</span>
                     </button>
                   )}
-                  {/* ✅✅✅ FIN NOUVEAU ✅✅✅ */}
 
                   <div className="relative">
                     <button
@@ -120,16 +120,15 @@ const NavigationV2 = ({ currentPage, onNavigate, isAuthenticated, user, onLogout
                         <div className="fixed inset-0 z-10" onClick={() => setIsUserMenuOpen(false)} />
                         
                         <div className="absolute right-0 mt-2 w-72 bg-white rounded-2xl shadow-2xl py-2 z-20">
-                          {/* ✅✅✅ NOUVEAU : Badge Premium dans dropdown ✅✅✅ */}
+                          {/* Badge Premium dans dropdown */}
                           <div className="px-4 py-3 border-b">
                             <SubscriptionBadge user={user} />
                             <div className="font-bold text-gray-900 mt-2">{getUserDisplayName()}</div>
                             <div className="text-sm text-gray-600">{user?.email}</div>
                           </div>
-                          {/* ✅✅✅ FIN NOUVEAU ✅✅✅ */}
 
                           <div className="py-2">
-                            {/* ✅✅✅ NOUVEAU : Lien Pricing si pas premium ✅✅✅ */}
+                            {/* Lien Pricing si pas premium */}
                             {!isPremium && (
                               <button 
                                 onClick={() => handleNavigation('pricing')} 
@@ -138,25 +137,23 @@ const NavigationV2 = ({ currentPage, onNavigate, isAuthenticated, user, onLogout
                                 <span>💎</span><span>Passer Premium</span>
                               </button>
                             )}
-                            {/* ✅✅✅ FIN NOUVEAU ✅✅✅ */}
 
                             <button onClick={() => handleNavigation('score')} className="w-full text-left px-4 py-3 hover:bg-gray-50 flex items-center gap-3">
                               <span>🎯</span><span>Mon Score</span>
                             </button>
-                            <button onClick={() => handleNavigation('incomes')} className="w-full text-left px-4 py-3 hover:bg-gray-50 flex items-center gap-3">
-                              <span>💸</span><span>Mes revenus</span>
-                            </button>
+                            
+                            {/* ✅✅✅ SUPPRIMÉ : "Mes revenus" n'est plus ici ✅✅✅ */}
+                            {/* Maintenant dans Transactions */}
+                            
                             <button onClick={() => handleNavigation('diagnostic')} className="w-full text-left px-4 py-3 hover:bg-gray-50 flex items-center gap-3">
                               <span>🧭</span><span>Diagnostic</span>
                             </button>
                             <button onClick={() => handleNavigation('settings')} className="w-full text-left px-4 py-3 hover:bg-gray-50 flex items-center gap-3">
                               <span>⚙️</span><span>Paramètres</span>
                             </button>
-                            {/* ✅✅✅ NOUVEAU : Lien Mon Abonnement ✅✅✅ */}
                             <button onClick={() => handleNavigation('subscription')} className="w-full text-left px-4 py-3 hover:bg-gray-50 flex items-center gap-3">
                               <span>💎</span><span>Mon Abonnement</span>
                             </button>
-                            {/* ✅✅✅ FIN NOUVEAU ✅✅✅ */}
                           </div>
 
                           <div className="border-t pt-2">
@@ -205,17 +202,16 @@ const NavigationV2 = ({ currentPage, onNavigate, isAuthenticated, user, onLogout
                     <div className="flex-1">
                       <div className="font-bold">{getUserDisplayName()}</div>
                       <div className="text-sm text-green-100">{user?.email}</div>
-                      {/* ✅✅✅ NOUVEAU : Badge dans mobile menu ✅✅✅ */}
+                      {/* Badge dans mobile menu */}
                       <div className="mt-2">
                         <SubscriptionBadge user={user} />
                       </div>
-                      {/* ✅✅✅ FIN NOUVEAU ✅✅✅ */}
                     </div>
                   </div>
                 </div>
               )}
 
-              {/* ✅✅✅ NOUVEAU : Bouton Premium mobile ✅✅✅ */}
+              {/* Bouton Premium mobile */}
               {isAuthenticated && !isPremium && (
                 <button
                   onClick={() => handleNavigation('pricing')}
@@ -225,7 +221,6 @@ const NavigationV2 = ({ currentPage, onNavigate, isAuthenticated, user, onLogout
                   <span>Passer Premium</span>
                 </button>
               )}
-              {/* ✅✅✅ FIN NOUVEAU ✅✅✅ */}
 
               <div className="space-y-2">
                 {menuItems.map((item) => (
@@ -253,11 +248,9 @@ const NavigationV2 = ({ currentPage, onNavigate, isAuthenticated, user, onLogout
                     <button onClick={() => handleNavigation('settings')} className="w-full flex items-center gap-3 p-3 rounded-xl bg-gray-50">
                       <span>⚙️</span><span>Paramètres</span>
                     </button>
-                    {/* ✅✅✅ NOUVEAU : Lien Mon Abonnement mobile ✅✅✅ */}
                     <button onClick={() => handleNavigation('subscription')} className="w-full flex items-center gap-3 p-3 rounded-xl bg-gray-50">
                       <span>💎</span><span>Mon Abonnement</span>
                     </button>
-                    {/* ✅✅✅ FIN NOUVEAU ✅✅✅ */}
                   </div>
 
                   <button onClick={() => onLogout()} className="w-full mt-4 flex items-center gap-3 p-4 rounded-xl bg-red-50 text-red-600 font-semibold">
