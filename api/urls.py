@@ -82,5 +82,6 @@ urlpatterns = [
     # ✅ 4. AJOUTER DANS api/urls.py (si pas déjà fait)
     path('onboarding/status/', views.check_onboarding_status, name='check_onboarding_status'),
     path('onboarding/complete/', views.complete_onboarding, name='complete_onboarding'),
+    path('meta-envelopes/', views.manage_meta_envelopes, name='manage_meta_envelopes'),
 
 ]
