@@ -3145,5 +3145,85 @@ def check_onboarding_status(request):
             'error': f'Erreur: {str(e)}'
         }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
+# ==========================================
+# SYSTÈME 4 ENVELOPPES HYBRIDES
+# ==========================================
+
+META_ENVELOPES_CONFIG = [
+    {
+        'type': 'essentiels',
+        'name': 'Essentiels',
+        'icon': '🏠',
+        'description': 'Alimentation, Transport, Logement, Santé',
+        'default_percentage': 50,
+        'categories': ['alimentation', 'transport', 'logement', 'sante']
+    },
+    {
+        'type': 'plaisirs',
+        'name': 'Plaisirs',
+        'icon': '🎉',
+        'description': 'Loisirs, Sorties, Vêtements',
+        'default_percentage': 30,
+        'categories': ['loisirs', 'vetements', 'autre']
+    },
+    {
+        'type': 'projets',
+        'name': 'Projets',
+        'icon': '💎',
+        'description': 'Épargne, Investissement, Formation, Famille',
+        'default_percentage': 20,
+        'categories': ['education', 'famille', 'spiritualite']
+    },
+    {
+        'type': 'liberation',
+        'name': 'Libération',
+        'icon': '🔓',
+        'description': 'Dettes, Crédits, Solidarité familiale',
+        'default_percentage': 0,
+        'categories': []
+    }
+]
+
+def get_categories_for_envelope(envelope_type):
+    """Retourne les catégories de dépenses pour un type d'enveloppe."""
+    for config in META_ENVELOPES_CONFIG:
+        if config['type'] == envelope_type:
+            return config['categories']
+    return []
+
+def create_default_meta_envelopes(user):
+    """Crée les 4 méta-enveloppes par défaut pour un utilisateur."""
+    try:
+        profile = user.profile
+        monthly_income = profile.monthly_income or 0
+    except:
+        monthly_income = 0
+    
+    for config in META_ENVELOPES_CONFIG:
+        envelope, created = Envelope.objects.get_or_create(
+            user=user,
+            envelope_type=config['type'],
+            is_meta_envelope=True,
+            defaults={
+                'name': config['name'],
+                'allocated_percentage': config['default_percentage'],
+                'monthly_budget': (monthly_income * config['default_percentage']) / 100,
+                'current_spent': 0
+            }
+        )
+        
+        if not created and envelope.name != config['name']:
+            envelope.name = config['name']
+            envelope.save()
+
+def update_envelope_spending(user):
+    """Met à jour les dépenses pour chaque enveloppe."""
+    from django.utils import timezone
+    from datetime import datetime
+    
+    current_month = timezone.now().replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+    
+    for envelope in Envelope.objects.filter(user=user, is_meta_envelope=True):
+        categories = get_categories_for_envelope(envelope.envelope_type)
 
 
