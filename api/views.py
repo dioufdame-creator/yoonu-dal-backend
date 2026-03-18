@@ -490,7 +490,7 @@ def manage_expenses(request):
                 is_necessary=data.get('is_necessary', True)
             )
 
-            update_envelope_spending(user, expense)
+            update_envelope_spending(user)
 
             # Recharger depuis la base pour avoir les types corrects
             # (date arrive comme string depuis le front, refresh_from_db la convertit en objet date)
