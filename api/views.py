@@ -3225,5 +3225,100 @@ def update_envelope_spending(user):
     
     for envelope in Envelope.objects.filter(user=user, is_meta_envelope=True):
         categories = get_categories_for_envelope(envelope.envelope_type)
+        if categories:
+            total_spent = Expense.objects.filter(
+                user=user,
+                category__in=categories,
+                date__gte=current_month
+            ).aggregate(total=Sum('amount'))['total'] or 0
+            
+            envelope.current_spent = total_spent
+            envelope.save()
+
+@api_view(['GET', 'POST'])
+@permission_classes([IsAuthenticated])
+def manage_meta_envelopes(request):
+    """Gérer les 4 méta-enveloppes."""
+    user = request.user
+    
+    if request.method == 'GET':
+        # Créer les enveloppes si elles n'existent pas
+        if not Envelope.objects.filter(user=user, is_meta_envelope=True).exists():
+            create_default_meta_envelopes(user)
+        
+        # Mettre à jour les dépenses
+        update_envelope_spending(user)
+        
+        # Récupérer toutes les enveloppes
+        envelopes = Envelope.objects.filter(user=user, is_meta_envelope=True).order_by('envelope_type')
+        
+        envelopes_data = []
+        for env in envelopes:
+            config = next((c for c in META_ENVELOPES_CONFIG if c['type'] == env.envelope_type), None)
+            
+            envelopes_data.append({
+                'id': env.id,
+                'envelope_type': env.envelope_type,
+                'name': env.name or (config['name'] if config else ''),
+                'icon': config['icon'] if config else '📁',
+                'description': config['description'] if config else '',
+                'allocated_percentage': float(env.allocated_percentage),
+                'monthly_budget': float(env.monthly_budget),
+                'current_spent': float(env.current_spent),
+                'remaining_budget': float(env.monthly_budget - env.current_spent),
+                'usage_percentage': round((env.current_spent / env.monthly_budget * 100) if env.monthly_budget > 0 else 0, 1),
+                'status': 'over' if env.current_spent > env.monthly_budget else 'warning' if env.current_spent > env.monthly_budget * 0.8 else 'good'
+            })
+        
+        try:
+            monthly_income = user.profile.monthly_income
+        except:
+            monthly_income = 0
+        
+        return Response({
+            'envelopes': envelopes_data,
+            'monthly_income': float(monthly_income)
+        })
+    
+    elif request.method == 'POST':
+        # Modifier les pourcentages
+        data = request.data
+        
+        essentiels_pct = Decimal(str(data.get('essentiels_percentage', 50)))
+        plaisirs_pct = Decimal(str(data.get('plaisirs_percentage', 30)))
+        projets_pct = Decimal(str(data.get('projets_percentage', 20)))
+        liberation_pct = Decimal(str(data.get('liberation_percentage', 0)))
+        
+        total = essentiels_pct + plaisirs_pct + projets_pct + liberation_pct
+        
+        if total != 100:
+            return Response({
+                'error': f'Le total doit être 100%. Actuellement: {total}%'
+            }, status=400)
+        
+        try:
+            monthly_income = user.profile.monthly_income or 0
+        except:
+            monthly_income = 0
+        
+        # Mettre à jour chaque enveloppe
+        mapping = {
+            'essentiels': essentiels_pct,
+            'plaisirs': plaisirs_pct,
+            'projets': projets_pct,
+            'liberation': liberation_pct
+        }
+        
+        for env_type, percentage in mapping.items():
+            env, created = Envelope.objects.get_or_create(
+                user=user,
+                envelope_type=env_type,
+                is_meta_envelope=True
+            )
+            env.allocated_percentage = percentage
+            env.monthly_budget = (monthly_income * percentage) / 100
+            env.save()
+        
+        return Response({'message': 'Enveloppes mises à jour avec succès'})
 
 
