@@ -30,60 +30,6 @@ logger = logging.getLogger(__name__)
 # FONCTIONS UTILITAIRES
 # ==========================================
 
-def get_categories_for_envelope(envelope_type):
-    """Retourne les catégories appartenant à une enveloppe"""
-    mapping = {
-        'essentiels': ['logement', 'alimentation', 'transport', 'santé'],
-        'plaisirs': ['loisirs', 'vêtements', 'autre'],
-        'projets': ['éducation', 'famille', 'spiritualité']
-    }
-    return mapping.get(envelope_type, [])
-
-
-def create_default_envelopes(user):
-    """Crée les enveloppes par défaut pour un utilisateur si elles n'existent pas"""
-    defaults = [
-        ('essentiels', 50),
-        ('plaisirs', 30),
-        ('projets', 20)
-    ]
-    monthly_income = user.profile.monthly_income or 0
-
-    for envelope_type, percentage in defaults:
-        Envelope.objects.get_or_create(
-            user=user,
-            envelope_type=envelope_type,
-            defaults={
-                'allocated_percentage': percentage,
-                'monthly_budget': (Decimal(percentage) / 100) * Decimal(str(monthly_income))
-            }
-        )
-
-
-def update_envelope_spending(user, expense=None):
-    """Met à jour les dépenses de l'enveloppe correspondante à une dépense"""
-    current_month = timezone.now().replace(day=1)
-
-    for envelope_type in ['essentiels', 'plaisirs', 'projets']:
-        categories = get_categories_for_envelope(envelope_type)
-        month_expenses = Expense.objects.filter(
-            user=user,
-            category__in=categories,
-            date__gte=current_month
-        ).aggregate(total=Sum('amount'))['total'] or 0
-
-        try:
-            envelope = Envelope.objects.get(user=user, envelope_type=envelope_type)
-            envelope.current_spent = month_expenses
-            envelope.save()
-        except Envelope.DoesNotExist:
-            pass
-
-
-def update_all_envelopes(user):
-    """Recalcule les dépenses de toutes les enveloppes"""
-    update_envelope_spending(user)
-
 
 # ==========================================
 # VUE RACINE API
