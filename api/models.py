@@ -840,12 +840,14 @@ class TontineParticipant(models.Model):
     @property
     def contribution_status(self):
         """Statut des contributions (à jour, en retard, etc.)"""
-        expected = self.tontine.monthly_contribution
-        actual = self.total_contributions
+        from decimal import Decimal
+        
+        expected = self.tontine.monthly_contribution  # Decimal
+        actual = Decimal(str(self.total_contributions))  # Convertir en Decimal
         
         if actual >= expected:
             return 'à_jour'
-        elif actual >= expected * 0.5:
+        elif actual >= expected * Decimal('0.5'):  # Decimal * Decimal
             return 'partiel'
         else:
             return 'en_retard'
