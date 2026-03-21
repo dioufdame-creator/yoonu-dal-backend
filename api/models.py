@@ -610,6 +610,7 @@ class Envelope(models.Model):
     is_meta_envelope = models.BooleanField(default=False)
     parent_envelope_type = models.CharField(max_length=50, blank=True, null=True)
     name = models.CharField(max_length=100, blank=True, null=True)
+    last_reset_date = models.DateField(null=True, blank=True)  # ✅ AJOUTER
    
 
     class Meta:
