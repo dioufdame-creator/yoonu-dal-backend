@@ -1,11 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import API from '../../services/api';
-import { AreaChart, Area, ResponsiveContainer, Tooltip } from 'recharts';
 
 // ==========================================
-// TONTINES LIST PREMIUM V3
+// TONTINES LIST PREMIUM V3.1
 // Formulaire complet + Glassmorphism + 100% Responsive
-// Match Envelopes & Transactions Premium Quality
+// Mini-charts custom (sans Recharts pour éviter warnings)
 // ==========================================
 
 const TontinesListPremium = ({ onNavigate, toast }) => {
@@ -409,26 +408,21 @@ const TontinesListPremium = ({ onNavigate, toast }) => {
                         </span>
                       </div>
 
-                      {/* Mini Chart */}
-                      <div className="hidden xs:block h-12 sm:h-16 mb-3 opacity-50 group-hover:opacity-100 transition-opacity">
-                        <ResponsiveContainer width="100%" height="100%">
-                          <AreaChart data={history}>
-                            <defs>
-                              <linearGradient id={`tontine-gradient-${tontine.id}`} x1="0" y1="0" x2="0" y2="1">
-                                <stop offset="0%" stopColor="#f97316" stopOpacity={0.3} />
-                                <stop offset="100%" stopColor="#f97316" stopOpacity={0} />
-                              </linearGradient>
-                            </defs>
-                            <Area 
-                              type="monotone" 
-                              dataKey="value" 
-                              stroke="#f97316"
-                              fill={`url(#tontine-gradient-${tontine.id})`}
-                              strokeWidth={2}
-                              dot={false}
-                            />
-                          </AreaChart>
-                        </ResponsiveContainer>
+                      {/* Mini Trend Indicator - Plus simple et stable */}
+                      <div className="hidden xs:block mb-3">
+                        <div className="flex items-end gap-0.5 h-12 sm:h-16 opacity-50 group-hover:opacity-100 transition-opacity">
+                          {history.map((item, i) => {
+                            const maxValue = Math.max(...history.map(h => h.value));
+                            const heightPercent = (item.value / maxValue) * 100;
+                            return (
+                              <div 
+                                key={i} 
+                                className="flex-1 bg-gradient-to-t from-orange-500 to-red-500 rounded-t transition-all duration-300 hover:opacity-80"
+                                style={{ height: `${heightPercent}%` }}
+                              ></div>
+                            );
+                          })}
+                        </div>
                       </div>
 
                       {/* Stats Grid */}
