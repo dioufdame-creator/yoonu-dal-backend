@@ -132,7 +132,7 @@ const TontinesListPremium = ({ onNavigate, toast }) => {
       };
 
       if (editingTontine) {
-        await API.put(`/tontines/${editingTontine.id}/`, payload);
+        await API.patch(`/tontines/${editingTontine.id}/`, payload);
         toast?.showSuccess('Tontine modifiée avec succès');
       } else {
         await API.post('/tontines/', payload);
@@ -550,8 +550,8 @@ const TontinesListPremium = ({ onNavigate, toast }) => {
 
       {/* Modal Create/Edit PREMIUM */}
       {showCreateModal && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-3 sm:p-4 animate-fadeIn overflow-y-auto">
-          <div className="bg-white/95 backdrop-blur-xl rounded-2xl sm:rounded-3xl shadow-2xl max-w-2xl w-full p-5 sm:p-8 animate-scaleIn my-4 border border-white/20">
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-3 sm:p-4 animate-fadeIn overflow-y-auto py-8">
+          <div className="bg-white/95 backdrop-blur-xl rounded-2xl sm:rounded-3xl shadow-2xl max-w-2xl w-full p-5 sm:p-8 animate-scaleIn my-auto max-h-[90vh] overflow-y-auto border border-white/20">
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-xl sm:text-2xl font-bold bg-gradient-to-r from-orange-900 to-red-900 bg-clip-text text-transparent">
                 {editingTontine ? '✏️ Modifier la tontine' : '➕ Nouvelle tontine'}
