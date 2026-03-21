@@ -403,6 +403,7 @@ def manage_expenses(request):
     user = request.user
 
     if request.method == 'GET':
+        check_and_reset_envelopes(user)  # ✅ AJOUTER CETTE LIGNE
         try:
             start_date = request.GET.get('start_date')
             end_date = request.GET.get('end_date')
@@ -3032,6 +3033,27 @@ def update_envelope_spending(user):
             envelope.current_spent = total_spent
             envelope.save()
 
+def check_and_reset_envelopes(user):
+    """
+    Vérifie si on est dans un nouveau mois.
+    Si oui, reset current_spent de toutes les enveloppes.
+    """
+    from django.utils import timezone
+    
+    today = timezone.now().date()
+    current_month = today.replace(day=1)  # Premier jour du mois actuel
+    
+    # Récupérer toutes les enveloppes de l'utilisateur
+    envelopes = MetaEnvelope.objects.filter(user=user)
+    
+    for envelope in envelopes:
+        # Si last_reset_date est None ou dans un mois précédent
+        if not envelope.last_reset_date or envelope.last_reset_date < current_month:
+            envelope.current_spent = Decimal('0')
+            envelope.last_reset_date = current_month
+            envelope.save()
+            print(f"✅ Reset enveloppe {envelope.envelope_type} pour {user.email}")
+
 @api_view(['GET', 'POST'])
 @permission_classes([IsAuthenticated])
 def manage_meta_envelopes(request):
@@ -3039,6 +3061,7 @@ def manage_meta_envelopes(request):
     user = request.user
     
     if request.method == 'GET':
+        check_and_reset_envelopes(user)  # ✅ AJOUTER CETTE LIGNE
         # Créer les enveloppes si elles n'existent pas
         if not Envelope.objects.filter(user=user, is_meta_envelope=True).exists():
             create_default_meta_envelopes(user)
