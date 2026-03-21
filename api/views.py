@@ -329,6 +329,26 @@ def recent_transactions(request):
             'error': f'Erreur transactions: {str(e)}'
         }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
+def check_and_reset_envelopes(user):
+    """
+    Vérifie si on est dans un nouveau mois.
+    Si oui, reset current_spent de toutes les enveloppes.
+    """
+    from django.utils import timezone
+    
+    today = timezone.now().date()
+    current_month = today.replace(day=1)  # Premier jour du mois actuel
+    
+    # Récupérer toutes les enveloppes de l'utilisateur
+    envelopes = MetaEnvelope.objects.filter(user=user)
+    
+    for envelope in envelopes:
+        # Si last_reset_date est None ou dans un mois précédent
+        if not envelope.last_reset_date or envelope.last_reset_date < current_month:
+            envelope.current_spent = Decimal('0')
+            envelope.last_reset_date = current_month
+            envelope.save()
+            print(f"✅ Reset enveloppe {envelope.envelope_type} pour {user.email}")
 
 # ==========================================
 # REVENUS
@@ -3033,26 +3053,6 @@ def update_envelope_spending(user):
             envelope.current_spent = total_spent
             envelope.save()
 
-def check_and_reset_envelopes(user):
-    """
-    Vérifie si on est dans un nouveau mois.
-    Si oui, reset current_spent de toutes les enveloppes.
-    """
-    from django.utils import timezone
-    
-    today = timezone.now().date()
-    current_month = today.replace(day=1)  # Premier jour du mois actuel
-    
-    # Récupérer toutes les enveloppes de l'utilisateur
-    envelopes = MetaEnvelope.objects.filter(user=user)
-    
-    for envelope in envelopes:
-        # Si last_reset_date est None ou dans un mois précédent
-        if not envelope.last_reset_date or envelope.last_reset_date < current_month:
-            envelope.current_spent = Decimal('0')
-            envelope.last_reset_date = current_month
-            envelope.save()
-            print(f"✅ Reset enveloppe {envelope.envelope_type} pour {user.email}")
 
 @api_view(['GET', 'POST'])
 @permission_classes([IsAuthenticated])
