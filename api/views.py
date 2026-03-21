@@ -1160,10 +1160,19 @@ def tontine_detail(request, tontine_id):
         
         if not (is_creator or is_participant):
             print(f"❌ Accès refusé pour {request.user.username}")
-            return Response(
-                {'error': 'Vous n\'avez pas accès à cette tontine'},
-                status=status.HTTP_403_FORBIDDEN
-            )
+            return Response({
+                'error': 'Vous n\'avez pas accès à cette tontine',
+                'debug': {
+                    'tontine_id': tontine.id,
+                    'tontine_name': tontine.name,
+                    'creator': tontine.creator.username,
+                    'current_user': request.user.username,
+                    'is_creator': is_creator,
+                    'is_participant': is_participant,
+                    'total_participants': participants.count(),
+                    'participants': [p.user.username for p in participants]
+                }
+            }, status=status.HTTP_403_FORBIDDEN)
         
         print(f"✅ Accès autorisé pour {request.user.username}")
 
@@ -1172,22 +1181,45 @@ def tontine_detail(request, tontine_id):
             participants_data = []
 
             for participant in participants:
-                participants_data.append({
-                    'id': participant.id,
-                    'user': {
-                        'id': participant.user.id,
-                        'username': participant.user.username,
-                        'first_name': participant.user.first_name,
-                        'last_name': participant.user.last_name
-                    },
-                    'position': participant.position,
-                    'is_admin': participant.is_admin,
-                    'is_active': participant.is_active,
-                    'received_payout': participant.received_payout,
-                    'total_contributions': float(participant.total_contributions),
-                    'contribution_status': participant.contribution_status,
-                    'joined_at': participant.joined_at.isoformat()
-                })
+                try:
+                    print(f"📝 Traitement participant: {participant.user.username}")
+                    
+                    # Test total_contributions
+                    try:
+                        total_contrib = participant.total_contributions
+                        print(f"  ✅ total_contributions: {total_contrib}")
+                    except Exception as e:
+                        print(f"  ❌ Erreur total_contributions: {e}")
+                        total_contrib = 0
+                    
+                    # Test contribution_status  
+                    try:
+                        contrib_status = participant.contribution_status
+                        print(f"  ✅ contribution_status: {contrib_status}")
+                    except Exception as e:
+                        print(f"  ❌ Erreur contribution_status: {e}")
+                        contrib_status = 'unknown'
+                    
+                    participants_data.append({
+                        'id': participant.id,
+                        'user': {
+                            'id': participant.user.id,
+                            'username': participant.user.username,
+                            'first_name': participant.user.first_name,
+                            'last_name': participant.user.last_name
+                        },
+                        'position': participant.position,
+                        'is_admin': participant.is_admin,
+                        'is_active': participant.is_active,
+                        'received_payout': participant.received_payout,
+                        'total_contributions': float(total_contrib),
+                        'contribution_status': contrib_status,
+                        'joined_at': participant.joined_at.isoformat()
+                    })
+                except Exception as e:
+                    print(f"  ❌❌ Erreur complète participant: {e}")
+                    import traceback
+                    traceback.print_exc()
 
             return Response({
                 'id': tontine.id,
