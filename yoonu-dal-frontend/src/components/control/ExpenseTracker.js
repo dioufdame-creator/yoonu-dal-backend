@@ -196,25 +196,22 @@ const ExpenseTrackerV2 = ({ toast, onNavigate, auth, user }) => {  // ✅ AJOUTE
   
   const totalExpenses = monthlyExpenses.reduce((sum, exp) => sum + parseFloat(exp.amount || 0), 0);
   
-  const envelopeStats = envelopes.map(env => {
-    const spent = monthlyExpenses
-      .filter(exp => CATEGORY_TO_ENVELOPE[exp.category] === env.type || env.envelope_type === env.type)
-      .reduce((sum, exp) => sum + parseFloat(exp.amount || 0), 0);
-    
-    const budget = env.monthly_budget || 0;
-    const percentage = budget > 0 ? (spent / budget) * 100 : 0;
-    const remaining = budget - spent;
-    
-    return {
-      ...env,
-      spent,
-      budget,
-      percentage,
-      remaining,
-      isOverBudget: spent > budget
-    };
-  });
-
+// ✅ UTILISER DIRECTEMENT LES DONNÉES DU BACKEND
+const envelopeStats = envelopes.map(env => {
+  const spent = env.current_spent || 0;
+  const budget = env.monthly_budget || 0;
+  const percentage = budget > 0 ? (spent / budget) * 100 : 0;
+  const remaining = budget - spent;
+  
+  return {
+    ...env,
+    spent,
+    budget,
+    percentage,
+    remaining,
+    isOverBudget: spent > budget
+  };
+});
   // Filtres
   const filteredExpenses = monthlyExpenses.filter(exp => {
     const matchesCategory = filterCategory === 'all' || exp.category === filterCategory;
