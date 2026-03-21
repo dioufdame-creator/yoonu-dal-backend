@@ -1132,7 +1132,12 @@ def manage_tontines(request):
 def tontine_detail(request, tontine_id):
     """Gestion détaillée d'une tontine"""
     try:
-        tontine = get_object_or_404(Tontine, id=tontine_id, creator=request.user)
+        # Permettre au créateur OU aux participants d'accéder
+        tontine = get_object_or_404(
+            Tontine.objects.filter(
+                Q(id=tontine_id) & (Q(creator=request.user) | Q(participants__user=request.user))
+            ).distinct()
+        )
 
         if request.method == 'GET':
             participants = TontineParticipant.objects.filter(tontine=tontine).order_by('position')
@@ -1185,7 +1190,7 @@ def tontine_detail(request, tontine_id):
                 }
             })
 
-        elif request.method == 'PATCH':
+        elif request.method in ['PATCH', 'PUT']:
             data = request.data
 
             if tontine.creator != request.user:
