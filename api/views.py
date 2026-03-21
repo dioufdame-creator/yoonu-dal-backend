@@ -1055,6 +1055,7 @@ def manage_tontines(request):
                     'max_participants': tontine.max_participants,
                     'current_participants': tontine.participants.count(),
                     'available_spots': tontine.available_spots,
+                    'duration_months': tontine.duration_months,
                     'status': tontine.status,
                     'invitation_code': tontine.invitation_code,
                     'start_date': tontine.start_date.isoformat() if tontine.start_date else None,
