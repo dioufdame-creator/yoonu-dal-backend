@@ -340,7 +340,7 @@ def check_and_reset_envelopes(user):
     current_month = today.replace(day=1)  # Premier jour du mois actuel
     
     # Récupérer toutes les enveloppes de l'utilisateur
-    envelopes = MetaEnvelope.objects.filter(user=user)
+    envelopes = Envelope.objects.filter(user=user, is_meta_envelope=True)
     
     for envelope in envelopes:
         # Si last_reset_date est None ou dans un mois précédent
