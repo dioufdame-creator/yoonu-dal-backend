@@ -654,55 +654,7 @@ class Envelope(models.Model):
         self.current_spent = 0
         self.save()
 
-# ==========================================
-# SYSTÈME 4 ENVELOPPES YOONU DAL
-# ==========================================
 
-class MetaEnvelope(models.Model):
-    """
-    Système des 4 enveloppes Yoonu Dal
-    - Essentiels (besoins de base)
-    - Plaisirs (désirs)
-    - Projets (investissements dans valeurs)
-    - Libération (remboursement dettes)
-    """
-    ENVELOPE_TYPES = [
-        ('essentiels', 'Essentiels'),
-        ('plaisirs', 'Plaisirs'),
-        ('projets', 'Projets'),
-        ('liberation', 'Libération')
-    ]
-    
-    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='meta_envelopes')
-    envelope_type = models.CharField(max_length=50, choices=ENVELOPE_TYPES)
-    monthly_budget = models.DecimalField(max_digits=12, decimal_places=2, default=0)
-    current_spent = models.DecimalField(max_digits=12, decimal_places=2, default=0)
-    percentage = models.DecimalField(max_digits=5, decimal_places=2, default=0)
-    last_reset_date = models.DateField(null=True, blank=True)  # ✅ Pour reset mensuel
-    
-    class Meta:
-        unique_together = ('user', 'envelope_type')
-        ordering = ['envelope_type']
-    
-    def __str__(self):
-        return f"{self.user.username} - {self.envelope_type}: {self.percentage}%"
-    
-    @property
-    def remaining_budget(self):
-        """Budget restant"""
-        return max(0, self.monthly_budget - self.current_spent)
-    
-    @property
-    def usage_percentage(self):
-        """Pourcentage d'utilisation"""
-        if self.monthly_budget <= 0:
-            return 0
-        return min((self.current_spent / self.monthly_budget) * 100, 100)
-    
-    @property
-    def is_over_budget(self):
-        """Dépassement de budget"""
-        return self.current_spent > self.monthly_budget
 
 class FinancialLeak(models.Model):
     """Petites fuites financières identifiées"""
