@@ -2154,7 +2154,7 @@ def ai_execute_action(request):
                 is_necessary=True
             )
             expense.refresh_from_db()
-            update_envelope_spending(user, expense)
+            update_envelope_spending(user)
 
             return Response({
                 'success': True,
