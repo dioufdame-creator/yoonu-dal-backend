@@ -18,7 +18,8 @@ from django.shortcuts import get_object_or_404
 from .models import (
     UserProfile, UserValue, IncomeSource, Income, Expense, Budget,
     Goal, Saving, Tontine, TontineParticipant, TontineContribution,
-    TontinePayout, DiagnosticResult, Envelope, FinancialLeak, PredictiveAlert
+    TontinePayout, DiagnosticResult, Envelope, FinancialLeak, PredictiveAlert,
+    ScoreHistory  # ✅ AJOUTÉ
 )
 from .utils.decorators import require_premium, check_usage_limit
 from .calculate_yoonu_score import calculate_yoonu_score
