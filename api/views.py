@@ -13,7 +13,6 @@ from decimal import Decimal
 import json
 import logging
 from django.shortcuts import get_object_or_404
-from datetime import datetime
 
 # Import des modèles
 from .models import (
@@ -338,94 +337,60 @@ def recent_transactions(request):
 @api_view(['GET', 'POST'])
 @permission_classes([IsAuthenticated])
 def manage_incomes(request):
-    """Gestion complète des revenus"""
     user = request.user
-
+    
     if request.method == 'GET':
-        try:
-            start_date = request.GET.get('start_date')
-            end_date = request.GET.get('end_date')
-            source = request.GET.get('source')
-
-            incomes = Income.objects.filter(user=user)
-
-            if start_date:
-                incomes = incomes.filter(date__gte=start_date)
-            if end_date:
-                incomes = incomes.filter(date__lte=end_date)
-            if source:
-                incomes = incomes.filter(source=source)
-
-            incomes = incomes.order_by('-date')
-
-            incomes_data = []
-            for income in incomes:
-                incomes_data.append({
-                    'id': income.id,
-                    'source': income.source,
-                    'description': income.description,
-                    'amount': float(income.amount),
-                    'date': income.date.isoformat(),
-                    'created_at': income.created_at.isoformat()
-                })
-
-            return Response({
-                'incomes': incomes_data,
-                'total_count': len(incomes_data),
-                'total_amount': sum(i['amount'] for i in incomes_data)
-            })
-
-        except Exception as e:
-            return Response({
-                'error': f'Erreur revenus: {str(e)}'
-            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
-    else:  # POST
+        incomes = Income.objects.filter(user=user).order_by('-date')
+        incomes_data = [{
+            'id': income.id,
+            'source': income.source,
+            'description': income.description,
+            'amount': float(income.amount),
+            'date': income.date.isoformat() if hasattr(income.date, 'isoformat') else income.date,
+            'is_validated': income.is_validated
+        } for income in incomes]
+        
+        return Response({'incomes': incomes_data})
+    
+    elif request.method == 'POST':
         try:
             data = request.data
-
-            if not data.get('source'):
-                return Response({
-                    'error': 'La source est obligatoire'
-                }, status=status.HTTP_400_BAD_REQUEST)
-
-            if not data.get('amount'):
-                return Response({
-                    'error': 'Le montant est obligatoire'
-                }, status=status.HTTP_400_BAD_REQUEST)
-
-date_str = data.get('date')
-if date_str:
-    # Convertir string "2026-03-21" en objet date
-    income_date = datetime.strptime(date_str, '%Y-%m-%d').date()
-else:
-    income_date = timezone.now().date()
-
-income = Income.objects.create(
-    user=user,
-    source=data.get('source'),
-    description=data.get('description', ''),
-    amount=Decimal(data.get('amount')),
-    date=income_date,
-    is_validated=data.get('is_validated', True)
-)
-
-# ✅ Refresh pour être sûr
-income.refresh_from_db()
-
-return Response({
-    'id': income.id,
-    'source': income.source,
-    'description': income.description,
-    'amount': float(income.amount),
-    'date': income.date.isoformat() if hasattr(income.date, 'isoformat') else income.date,
-    'message': 'Revenu créé avec succès'
-}, status=status.HTTP_201_CREATED)
+            
+            # ✅ Parser la date correctement
+            from datetime import datetime
+            
+            date_str = data.get('date')
+            if date_str:
+                # Convertir string "2026-03-21" en objet date
+                income_date = datetime.strptime(date_str, '%Y-%m-%d').date()
+            else:
+                income_date = timezone.now().date()
+            
+            income = Income.objects.create(
+                user=user,
+                source=data.get('source'),
+                description=data.get('description', ''),
+                amount=Decimal(data.get('amount')),
+                date=income_date,
+                is_validated=data.get('is_validated', True)
+            )
+            
+            # ✅ Refresh pour être sûr
+            income.refresh_from_db()
+            
+            return Response({
+                'id': income.id,
+                'source': income.source,
+                'description': income.description,
+                'amount': float(income.amount),
+                'date': income.date.isoformat() if hasattr(income.date, 'isoformat') else income.date,
+                'message': 'Revenu créé avec succès'
+            }, status=status.HTTP_201_CREATED)
+            
         except Exception as e:
             return Response({
                 'error': f'Erreur création revenu: {str(e)}'
             }, status=status.HTTP_400_BAD_REQUEST)
-
 
 # ==========================================
 # GESTION DES DÉPENSES
