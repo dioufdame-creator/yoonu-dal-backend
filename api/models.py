@@ -792,6 +792,14 @@ class Tontine(models.Model):
         
         return None
 
+    def total_contributions_received(self):
+        """Total des contributions reçues"""
+        from django.db.models import Sum
+        total = TontineContribution.objects.filter(
+            tontine=self
+        ).aggregate(total=Sum('amount'))['total']
+        return total or 0
+
 
 class TontineParticipant(models.Model):
     """Participants à une tontine"""
