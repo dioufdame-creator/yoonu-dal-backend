@@ -591,13 +591,24 @@ class DiagnosticResult(models.Model):
 # Ajout à votre models.py existant
 
 class Envelope(models.Model):
-    """Système des 3 enveloppes budgétaires - Inspiré du livre"""
-    ENVELOPE_TYPES = [
-        ('essentiels', 'Essentiels (50%)'),
-        ('plaisirs', 'Plaisirs (30%)'),
-        ('projets', 'Projets/Épargne (20%)')
-    ]
-
+    """Système des 4 enveloppes budgétaires - Inspiré du livre"""
+ENVELOPE_TYPES = [
+    ('essentiels', 'Essentiels'),
+    ('plaisirs', 'Plaisirs'),
+    ('projets', 'Projets'),
+    ('liberation', 'Libération'),
+    # Sous-catégories
+    ('alimentation', 'Alimentation'),
+    ('transport', 'Transport'),
+    ('logement', 'Logement'),
+    ('sante', 'Santé'),
+    ('loisirs', 'Loisirs'),
+    ('vetements', 'Vêtements'),
+    ('education', 'Éducation'),
+    ('famille', 'Famille'),
+    ('spiritualite', 'Spiritualité'),
+    ('autre', 'Autre')
+]
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='envelopes')
     envelope_type = models.CharField(max_length=20, choices=ENVELOPE_TYPES)
     allocated_percentage = models.DecimalField(max_digits=5, decimal_places=2, default=0)
