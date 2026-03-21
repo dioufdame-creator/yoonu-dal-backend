@@ -795,6 +795,10 @@ class Tontine(models.Model):
     def total_contributions_received(self):
         """Total des contributions reçues"""
         from django.db.models import Sum
+        # Récupérer le modèle TontineContribution depuis apps
+        from django.apps import apps
+        TontineContribution = apps.get_model('api', 'TontineContribution')
+        
         total = TontineContribution.objects.filter(
             tontine=self
         ).aggregate(total=Sum('amount'))['total']
@@ -820,6 +824,31 @@ class TontineParticipant(models.Model):
 
     def __str__(self):
         return f"{self.user.username} dans {self.tontine.name} (pos. {self.position})"
+
+    @property
+    def total_contributions(self):
+        """Total des contributions versées par ce participant"""
+        from django.db.models import Sum
+        from django.apps import apps
+        TontineContribution = apps.get_model('api', 'TontineContribution')
+        
+        total = TontineContribution.objects.filter(
+            participant=self
+        ).aggregate(total=Sum('amount'))['total']
+        return total or 0
+
+    @property
+    def contribution_status(self):
+        """Statut des contributions (à jour, en retard, etc.)"""
+        expected = self.tontine.monthly_contribution
+        actual = self.total_contributions
+        
+        if actual >= expected:
+            return 'à_jour'
+        elif actual >= expected * 0.5:
+            return 'partiel'
+        else:
+            return 'en_retard'
 
 
 class TontineContribution(models.Model):
