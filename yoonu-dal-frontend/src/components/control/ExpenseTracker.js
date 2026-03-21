@@ -76,7 +76,7 @@ const ExpenseTrackerV2 = ({ toast, onNavigate, auth, user }) => {  // ✅ AJOUTE
     try {
       const [expensesRes, envelopesRes] = await Promise.all([
         API.get('/expenses/').catch(() => ({ data: [] })),
-        API.get('/envelopes/').catch(() => ({ data: [] }))
+        API.get('/meta-envelopes/').catch(() => ({ data: [] }))
       ]);
 
       const expList = Array.isArray(expensesRes.data) ? expensesRes.data : expensesRes.data.expenses || [];
