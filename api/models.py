@@ -761,6 +761,37 @@ class Tontine(models.Model):
             self.invitation_code = ''.join(random.choices(string.ascii_uppercase + string.digits, k=8))
         super().save(*args, **kwargs)
 
+    @property
+    def available_spots(self):
+        """Nombre de places disponibles"""
+        return self.max_participants - self.participants.count()
+
+    @property
+    def progress_percentage(self):
+        """Pourcentage de remplissage des participants"""
+        if self.max_participants == 0:
+            return 0
+        return (self.participants.count() / self.max_participants) * 100
+
+    def next_payment_date(self):
+        """Date du prochain paiement"""
+        from datetime import datetime
+        from dateutil.relativedelta import relativedelta
+        
+        if self.status != 'active':
+            return None
+        
+        # Calculer le prochain paiement en fonction de la date de début
+        if self.frequency == 'monthly':
+            # Trouver le mois suivant
+            today = datetime.now().date()
+            next_date = self.start_date
+            while next_date <= today:
+                next_date = next_date + relativedelta(months=1)
+            return next_date
+        
+        return None
+
 
 class TontineParticipant(models.Model):
     """Participants à une tontine"""
