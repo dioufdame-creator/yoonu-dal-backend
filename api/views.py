@@ -1132,12 +1132,40 @@ def manage_tontines(request):
 def tontine_detail(request, tontine_id):
     """Gestion détaillée d'une tontine"""
     try:
-        # Permettre au créateur OU aux participants d'accéder
-        tontine = get_object_or_404(
-            Tontine.objects.filter(
-                Q(id=tontine_id) & (Q(creator=request.user) | Q(participants__user=request.user))
-            ).distinct()
-        )
+        # DEBUG: Vérifier d'abord si la tontine existe
+        try:
+            tontine = Tontine.objects.get(id=tontine_id)
+            print(f"✅ Tontine trouvée: {tontine.name} (ID: {tontine.id})")
+        except Tontine.DoesNotExist:
+            print(f"❌ Tontine {tontine_id} n'existe pas")
+            return Response(
+                {'error': 'Tontine introuvable'},
+                status=status.HTTP_404_NOT_FOUND
+            )
+        
+        # Vérifier si l'utilisateur est créateur OU participant
+        is_creator = tontine.creator == request.user
+        print(f"🔍 Est créateur? {is_creator} (creator: {tontine.creator.username}, user: {request.user.username})")
+        
+        participants = TontineParticipant.objects.filter(tontine=tontine)
+        print(f"👥 Participants total: {participants.count()}")
+        for p in participants:
+            print(f"  - {p.user.username} (position {p.position})")
+        
+        is_participant = TontineParticipant.objects.filter(
+            tontine=tontine, 
+            user=request.user
+        ).exists()
+        print(f"🔍 Est participant? {is_participant}")
+        
+        if not (is_creator or is_participant):
+            print(f"❌ Accès refusé pour {request.user.username}")
+            return Response(
+                {'error': 'Vous n\'avez pas accès à cette tontine'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+        
+        print(f"✅ Accès autorisé pour {request.user.username}")
 
         if request.method == 'GET':
             participants = TontineParticipant.objects.filter(tontine=tontine).order_by('position')
