@@ -507,7 +507,7 @@ const TontinesListPremium = ({ onNavigate, toast }) => {
                     {isExpanded && (
                       <div className="mt-4 pt-4 border-t border-gray-100 flex flex-col gap-2 animate-fadeIn">
                         <button
-                          onClick={() => onNavigate?.('tontine-detail', { tontineId: tontine.id })}
+                          onClick={() => onNavigate?.('tontine-detail', { id: tontine.id })}
                           className="w-full bg-gradient-to-r from-blue-50 to-indigo-50 text-blue-700 px-4 py-2.5 rounded-xl font-medium text-sm sm:text-base hover:shadow-lg transition-all transform hover:scale-105"
                         >
                           👁️ Voir détails
