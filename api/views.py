@@ -13,6 +13,7 @@ from decimal import Decimal
 import json
 import logging
 from django.shortcuts import get_object_or_404
+from datetime import datetime
 
 # Import des modèles
 from .models import (
@@ -393,24 +394,33 @@ def manage_incomes(request):
                     'error': 'Le montant est obligatoire'
                 }, status=status.HTTP_400_BAD_REQUEST)
 
-            income = Income.objects.create(
-                user=user,
-                source=data.get('source'),
-                description=data.get('description', ''),
-                amount=Decimal(data.get('amount')),
-                date=data.get('date') if data.get('date') else timezone.now().date(),
-                is_validated=data.get('is_validated', True)
-            )
+date_str = data.get('date')
+if date_str:
+    # Convertir string "2026-03-21" en objet date
+    income_date = datetime.strptime(date_str, '%Y-%m-%d').date()
+else:
+    income_date = timezone.now().date()
 
-            return Response({
-                'id': income.id,
-                'source': income.source,
-                'description': income.description,
-                'amount': float(income.amount),
-                'date': income.date.isoformat(),
-                'message': 'Revenu créé avec succès'
-            }, status=status.HTTP_201_CREATED)
+income = Income.objects.create(
+    user=user,
+    source=data.get('source'),
+    description=data.get('description', ''),
+    amount=Decimal(data.get('amount')),
+    date=income_date,
+    is_validated=data.get('is_validated', True)
+)
 
+# ✅ Refresh pour être sûr
+income.refresh_from_db()
+
+return Response({
+    'id': income.id,
+    'source': income.source,
+    'description': income.description,
+    'amount': float(income.amount),
+    'date': income.date.isoformat() if hasattr(income.date, 'isoformat') else income.date,
+    'message': 'Revenu créé avec succès'
+}, status=status.HTTP_201_CREATED)
         except Exception as e:
             return Response({
                 'error': f'Erreur création revenu: {str(e)}'
