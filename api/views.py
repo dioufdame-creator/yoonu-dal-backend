@@ -1221,6 +1221,16 @@ def tontine_detail(request, tontine_id):
                     import traceback
                     traceback.print_exc()
 
+            # Calculer total_contributions_received avec gestion d'erreur
+            try:
+                total_contrib_received = float(tontine.total_contributions_received())
+                print(f"✅ total_contributions_received: {total_contrib_received}")
+            except Exception as e:
+                print(f"❌ Erreur total_contributions_received: {e}")
+                import traceback
+                traceback.print_exc()
+                total_contrib_received = 0
+            
             return Response({
                 'id': tontine.id,
                 'name': tontine.name,
@@ -1239,7 +1249,7 @@ def tontine_detail(request, tontine_id):
                 'rules': tontine.rules,
                 'is_private': tontine.is_private,
                 'progress_percentage': round(tontine.progress_percentage, 1),
-                'total_contributions_received': float(tontine.total_contributions_received()),
+                'total_contributions_received': total_contrib_received,
                 'created_at': tontine.created_at.isoformat(),
                 'participants': participants_data,
                 'creator': {
