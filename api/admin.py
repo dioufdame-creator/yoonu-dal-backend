@@ -171,21 +171,23 @@ class SavingAdmin(admin.ModelAdmin):
 class TontineParticipantInline(admin.TabularInline):
     model = TontineParticipant
     extra = 0
-    readonly_fields = ('joined_at', 'total_contributions', 'expected_contributions')
+    readonly_fields = ('joined_at', 'display_total_contributions', 'display_expected_contributions')
 
-    def total_contributions(self, obj):
+    def display_total_contributions(self, obj):
+        """Affichage formaté des contributions totales"""
         if obj.pk:
-            return f"{obj.total_contributions:,.0f} ₦"
+            return f"{obj.total_contributions:,.0f} FCFA"
         return "-"
 
-    total_contributions.short_description = 'Contributions totales'
+    display_total_contributions.short_description = 'Contributions totales'
 
-    def expected_contributions(self, obj):
+    def display_expected_contributions(self, obj):
+        """Affichage formaté des contributions attendues"""
         if obj.pk:
-            return f"{obj.expected_contributions:,.0f} ₦"
+            return f"{obj.expected_contributions:,.0f} FCFA"
         return "-"
 
-    expected_contributions.short_description = 'Contributions attendues'
+    display_expected_contributions.short_description = 'Contributions attendues'
 
 
 class TontineContributionInline(admin.TabularInline):
@@ -259,7 +261,7 @@ class TontineParticipantAdmin(admin.ModelAdmin):
     )
     list_filter = ('is_admin', 'is_active', 'received_payout', 'joined_at')
     search_fields = ('user__username', 'tontine__name')
-    readonly_fields = ('joined_at', 'total_contributions', 'expected_contributions')
+    readonly_fields = ('joined_at', 'display_total_contributions', 'display_expected_contributions')
     inlines = [TontineContributionInline]
 
     def contribution_status_display(self, obj):
@@ -281,6 +283,22 @@ class TontineParticipantAdmin(admin.ModelAdmin):
         )
 
     contribution_status_display.short_description = 'Statut contributions'
+
+    def display_total_contributions(self, obj):
+        """Affichage formaté des contributions totales"""
+        if obj.pk:
+            return f"{obj.total_contributions:,.0f} FCFA"
+        return "-"
+
+    display_total_contributions.short_description = 'Contributions totales'
+
+    def display_expected_contributions(self, obj):
+        """Affichage formaté des contributions attendues"""
+        if obj.pk:
+            return f"{obj.expected_contributions:,.0f} FCFA"
+        return "-"
+
+    display_expected_contributions.short_description = 'Contributions attendues'
 
     def get_queryset(self, request):
         return super().get_queryset(request).select_related('user', 'tontine')
