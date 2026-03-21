@@ -58,7 +58,7 @@ const DashboardV6 = ({ toast, auth, onNavigate, user }) => {
       ] = await Promise.all([
         API.get('/yoonu-score/').catch(() => null),
         API.get('/dashboard/metrics/').catch(() => null),
-        API.get('/envelopes/').catch(() => null),
+        API.get('/meta-envelopes/').catch(() => null),
         API.get('/expenses/').catch(() => null),
         API.get('/incomes/').catch(() => null),
         API.get('/score-history/').catch(() => null)
