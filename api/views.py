@@ -3213,7 +3213,7 @@ def manage_meta_envelopes(request):
                 'current_spent': float(env.current_spent),
                 'remaining_budget': float(env.monthly_budget - env.current_spent),
                 'usage_percentage': round((env.current_spent / env.monthly_budget * 100) if env.monthly_budget > 0 else 0, 1),
-                'status': 'over' if env.current_spent > env.monthly_budget else 'warning' if env.current_spent > env.monthly_budget * 0.8 else 'good'
+                'status': 'over' if env.current_spent > env.monthly_budget else 'warning' if env.current_spent > env.monthly_budget * Decimal('0.8') else 'good'
             })
         
         try:
