@@ -50,7 +50,6 @@ urlpatterns = [
     path('diagnostic/history/', views.get_diagnostic_history, name='diagnostic_history'),
 
     # Enveloppes
-    path('envelopes/', views.manage_envelopes, name='manage_envelopes'),
     path('envelopes/analysis/', views.envelope_analysis, name='envelope_analysis'),
 
     # Fuites financières
