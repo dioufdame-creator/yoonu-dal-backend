@@ -82,39 +82,46 @@ const IncomesPageV2 = ({ toast, onNavigate }) => {
   }, [loadIncomes]);
 
   // Actions
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    
-    if (!form.amount || !form.source || !form.description) {
-      toast?.showError('Remplis tous les champs obligatoires');
-      return;
+const handleSubmit = async (e) => {
+  e.preventDefault();
+  
+  if (!form.amount || !form.source || !form.description) {
+    toast?.showError('Remplis tous les champs obligatoires');
+    return;
+  }
+
+  try {
+    const payload = {
+      amount: parseFloat(form.amount),
+      source: form.source,
+      description: form.description,
+      date: form.date
+    };
+
+    console.log('📤 Envoi du payload:', payload);  // ✅ AJOUTER
+
+    let response;
+    if (editingIncome) {
+      response = await API.put(`/incomes/${editingIncome.id}/`, payload);
+      console.log('✅ Réponse PUT:', response);  // ✅ AJOUTER
+      toast?.showSuccess('Revenu modifié avec succès');
+    } else {
+      response = await API.post('/incomes/', payload);
+      console.log('✅ Réponse POST:', response);  // ✅ AJOUTER
+      toast?.showSuccess('Revenu ajouté avec succès');
     }
 
-    try {
-      const payload = {
-        amount: parseFloat(form.amount),
-        source: form.source,
-        description: form.description,
-        date: form.date
-      };
-
-      if (editingIncome) {
-        await API.put(`/incomes/${editingIncome.id}/`, payload);
-        toast?.showSuccess('Revenu modifié avec succès');
-      } else {
-        await API.post('/incomes/', payload);
-        toast?.showSuccess('Revenu ajouté avec succès');
-      }
-
-      setShowModal(false);
-      setEditingIncome(null);
-      setForm(emptyForm());
-      loadIncomes();
-    } catch (error) {
-      console.error('Erreur:', error);
-      toast?.showError('Erreur lors de l\'enregistrement');
-    }
-  };
+    setShowModal(false);
+    setEditingIncome(null);
+    setForm(emptyForm());
+    loadIncomes();
+  } catch (error) {
+    console.error('❌ Erreur complète:', error);
+    console.error('❌ Réponse:', error.response);
+    console.error('❌ Data:', error.response?.data);
+    toast?.showError('Erreur lors de l\'enregistrement');
+  }
+};
 
   const handleDelete = async (id) => {
     try {
