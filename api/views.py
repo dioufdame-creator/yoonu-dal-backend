@@ -546,7 +546,7 @@ def expense_detail(request, expense_id):
                 expense.is_necessary = data['is_necessary']
 
             expense.save()
-            update_all_envelopes(user)
+            update_envelope_spending(user)
             expense.refresh_from_db()
 
             return Response({
@@ -556,7 +556,7 @@ def expense_detail(request, expense_id):
 
         elif request.method == 'DELETE':
             expense.delete()
-            update_all_envelopes(user)
+            update_envelope_spending(user)
 
             return Response({'message': 'Dépense supprimée'})
 
@@ -906,7 +906,7 @@ def envelope_analysis(request):
     user = request.user
 
     try:
-        create_default_envelopes(user)
+        create_default_meta_envelopes(user)
         envelopes = Envelope.objects.filter(user=user, is_active=True)
         current_month = timezone.now().replace(day=1)
 
@@ -2806,7 +2806,7 @@ def complete_onboarding(request):
         profile.save()
         
         # Créer les enveloppes par défaut
-        create_default_envelopes(user)
+        create_default_meta_envelopes(user)
         
         # Calculer le score initial (peut retourner None si pas de valeurs définies)
         score_data = calculate_yoonu_score(user)
@@ -2918,7 +2918,7 @@ def complete_onboarding(request):
         
         # Créer les enveloppes par défaut
         try:
-            envelopes_created = create_default_envelopes(user)
+            envelopes_created = create_default_meta_envelopes(user)
             logger.info(f"📬 {envelopes_created} enveloppes créées")
         except Exception as env_error:
             logger.warning(f"⚠️ Erreur création enveloppes (non bloquant): {env_error}")
