@@ -204,7 +204,7 @@ class TontineAdmin(admin.ModelAdmin):
     )
     list_filter = ('status', 'frequency', 'is_private', 'start_date', 'created_at')
     search_fields = ('name', 'description', 'creator__username')
-    readonly_fields = ('invitation_code', 'created_at', 'updated_at', 'progress_percentage')
+    readonly_fields = ('invitation_code', 'created_at', 'updated_at', 'display_progress_percentage')  # ✅ CORRIGÉ
     date_hierarchy = 'start_date'
     inlines = [TontineParticipantInline]
 
@@ -222,7 +222,7 @@ class TontineAdmin(admin.ModelAdmin):
             'fields': ('is_private', 'invitation_code', 'rules')
         }),
         ('Statistiques', {
-            'fields': ('progress_percentage',),
+            'fields': ('display_progress_percentage',),  # ✅ CORRIGÉ
             'classes': ('collapse',)
         }),
         ('Dates système', {
@@ -248,6 +248,14 @@ class TontineAdmin(admin.ModelAdmin):
         )
 
     progress_display.short_description = 'Progression'
+
+    def display_progress_percentage(self, obj):
+        """Affichage du pourcentage de progression"""
+        if obj.pk:
+            return f"{obj.progress_percentage:.1f}%"
+        return "-"
+
+    display_progress_percentage.short_description = 'Pourcentage de progression'
 
     def get_queryset(self, request):
         return super().get_queryset(request).select_related('creator').prefetch_related('participants')
