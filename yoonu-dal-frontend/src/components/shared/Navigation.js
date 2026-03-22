@@ -31,6 +31,8 @@ const NavigationV2 = ({ currentPage, onNavigate, isAuthenticated, user, onLogout
     { icon: '💰', label: 'Transactions', page: 'transactions' },  // ← CHANGÉ
     { icon: '📁', label: 'Budgets', page: 'envelopes' },
     { icon: '🦁', label: 'Tontines', page: 'tontines' },
+    { icon: '🎯', label: 'Objectifs', page: 'goals' },
+    
     { icon: '👤', label: 'Profil', page: 'profile' }
   ];
   // ✅✅✅ FIN MODIFIÉ ✅✅✅
@@ -59,7 +61,7 @@ const NavigationV2 = ({ currentPage, onNavigate, isAuthenticated, user, onLogout
               </div>
               <div className="text-white">
                 <div className="font-bold text-xl">Yoonu Dal</div>
-                <div className="text-xs text-green-100 hidden sm:block">Finance consciente à l''africaine</div>
+                <div className="text-xs text-green-100 hidden sm:block">Finance consciente</div>
               </div>
             </button>
 
