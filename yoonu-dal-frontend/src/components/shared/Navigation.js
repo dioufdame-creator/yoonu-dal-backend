@@ -28,8 +28,8 @@ const NavigationV2 = ({ currentPage, onNavigate, isAuthenticated, user, onLogout
   // ✅✅✅ MODIFIÉ : 5 PAGES PRINCIPALES (Dépenses → Transactions) ✅✅✅
   const mainMenu = [
     { icon: '🏠', label: 'Accueil', page: 'dashboard' },
-    { icon: '💰', label: 'Transactions', page: 'transactions' },  // ← CHANGÉ
     { icon: '📁', label: 'Budgets', page: 'envelopes' },
+    { icon: '💰', label: 'Transactions', page: 'transactions' },  // ← CHANGÉ
     { icon: '🦁', label: 'Tontines', page: 'tontines' },
     { icon: '🎯', label: 'Objectifs', page: 'goals' },
     
