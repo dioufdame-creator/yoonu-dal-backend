@@ -39,6 +39,8 @@ import {
   UsageLimitIndicator 
 } from './components/subscription/SubscriptionComponents';
 
+import GoalsPage from './components/goals/GoalsPage';
+
 // Composant principal de l'application
 function App() {
   const [currentPage, setCurrentPage] = useState('home');
@@ -510,6 +512,15 @@ function App() {
             setAuth={setUser} 
           />
         );
+      case 'goals':
+        if (!isAuthenticated) {
+          handleNavigate('login');
+          return null;
+        }
+        return <GoalsPage 
+          toast={toastMethods}
+          onNavigate={handleNavigate}
+        />;
 
       case 'score':
         if (!isAuthenticated) {
