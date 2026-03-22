@@ -33,7 +33,7 @@ const NavigationV2 = ({ currentPage, onNavigate, isAuthenticated, user, onLogout
     { icon: '🦁', label: 'Tontines', page: 'tontines' },
     { icon: '🎯', label: 'Objectifs', page: 'goals' },
     
-    { icon: '👤', label: 'Profil', page: 'profile' }
+    //{ icon: '👤', label: 'Profil', page: 'profile' }
   ];
   // ✅✅✅ FIN MODIFIÉ ✅✅✅
 
