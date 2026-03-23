@@ -283,6 +283,28 @@ class Goal(models.Model):
         super().save(*args, **kwargs)
 
 
+class GoalContribution(models.Model):
+    """Historique des contributions aux objectifs"""
+    CONTRIBUTION_TYPE_CHOICES = [
+        ('add', 'Ajout'),
+        ('remove', 'Retrait'),
+        ('auto', 'Allocation automatique'),
+    ]
+
+    goal = models.ForeignKey(Goal, on_delete=models.CASCADE, related_name='contributions')
+    amount = models.DecimalField(max_digits=15, decimal_places=2)
+    contribution_type = models.CharField(max_length=10, choices=CONTRIBUTION_TYPE_CHOICES, default='add')
+    source = models.CharField(max_length=100, blank=True, null=True)  # Ex: "Enveloppe Projets", "Manuel"
+    note = models.TextField(blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"{self.goal.title} - {self.amount} FCFA ({self.contribution_type})"
+
+
 class Saving(models.Model):
     """Épargnes personnelles de l'utilisateur"""
     GOAL_CHOICES = [
