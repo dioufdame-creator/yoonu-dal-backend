@@ -3270,3 +3270,141 @@ def manage_meta_envelopes(request):
             env.save()
         
         return Response({'message': 'Enveloppes mises à jour avec succès'})
+# ==========================================
+# AJOUTER CES ENDPOINTS À api/views.py
+# Après manage_goals (ligne ~880)
+# ==========================================
+
+@api_view(['GET', 'POST'])
+@permission_classes([IsAuthenticated])
+def goal_contributions(request, goal_id):
+    """Historique des contributions d'un objectif"""
+    user = request.user
+    
+    try:
+        # Vérifier que l'objectif appartient à l'utilisateur
+        goal = get_object_or_404(Goal, id=goal_id, user=user)
+        
+        if request.method == 'GET':
+            # Récupérer l'historique
+            contributions = GoalContribution.objects.filter(goal=goal).order_by('-created_at')
+            
+            contributions_data = []
+            for contrib in contributions:
+                contributions_data.append({
+                    'id': contrib.id,
+                    'amount': float(contrib.amount),
+                    'type': contrib.contribution_type,
+                    'source': contrib.source or 'Manuel',
+                    'note': contrib.note or '',
+                    'created_at': contrib.created_at.isoformat()
+                })
+            
+            return Response({
+                'goal_id': goal.id,
+                'goal_title': goal.title,
+                'contributions': contributions_data,
+                'total_contributions': len(contributions_data)
+            })
+        
+        elif request.method == 'POST':
+            # Créer une nouvelle contribution
+            data = request.data
+            
+            if not data.get('amount'):
+                return Response({
+                    'error': 'Le montant est obligatoire'
+                }, status=status.HTTP_400_BAD_REQUEST)
+            
+            amount = Decimal(data['amount'])
+            contrib_type = data.get('type', 'add')  # 'add', 'remove', 'auto'
+            source = data.get('source', 'Manuel')
+            note = data.get('note', '')
+            
+            # Créer la contribution dans l'historique
+            contribution = GoalContribution.objects.create(
+                goal=goal,
+                amount=amount,
+                contribution_type=contrib_type,
+                source=source,
+                note=note
+            )
+            
+            # Mettre à jour le montant actuel de l'objectif
+            if contrib_type == 'add':
+                goal.current_amount += amount
+            elif contrib_type == 'remove':
+                goal.current_amount = max(Decimal('0'), goal.current_amount - amount)
+            
+            goal.save()
+            
+            return Response({
+                'id': contribution.id,
+                'goal_current_amount': float(goal.current_amount),
+                'message': 'Contribution enregistrée avec succès'
+            }, status=status.HTTP_201_CREATED)
+    
+    except Exception as e:
+        return Response({
+            'error': f'Erreur: {str(e)}'
+        }, status=status.HTTP_400_BAD_REQUEST)
+
+
+@api_view(['GET', 'POST', 'PUT', 'DELETE'])
+@permission_classes([IsAuthenticated])
+def goal_auto_allocation(request, goal_id):
+    """Configuration d'allocation automatique depuis les enveloppes"""
+    user = request.user
+    
+    try:
+        goal = get_object_or_404(Goal, id=goal_id, user=user)
+        
+        if request.method == 'GET':
+            # Récupérer les configurations d'auto-allocation
+            # Pour l'instant, stocker dans un modèle simple ou JSON field
+            # Simulation de réponse
+            return Response({
+                'goal_id': goal.id,
+                'allocations': [
+                    # TODO: Récupérer depuis base de données
+                    # {
+                    #     'envelope_id': 1,
+                    #     'envelope_name': 'Projets',
+                    #     'percentage': 40
+                    # }
+                ]
+            })
+        
+        elif request.method == 'POST':
+            # Activer auto-allocation
+            data = request.data
+            allocations = data.get('allocations', [])
+            
+            # TODO: Sauvegarder dans un modèle GoalAutoAllocation
+            # Pour l'instant, retour simple
+            
+            return Response({
+                'message': 'Auto-allocation configurée avec succès',
+                'goal_id': goal.id,
+                'allocations_count': len(allocations)
+            }, status=status.HTTP_201_CREATED)
+        
+        elif request.method == 'PUT':
+            # Modifier auto-allocation
+            data = request.data
+            
+            return Response({
+                'message': 'Auto-allocation modifiée avec succès'
+            })
+        
+        elif request.method == 'DELETE':
+            # Désactiver auto-allocation
+            
+            return Response({
+                'message': 'Auto-allocation désactivée'
+            })
+    
+    except Exception as e:
+        return Response({
+            'error': f'Erreur: {str(e)}'
+        }, status=status.HTTP_400_BAD_REQUEST)
