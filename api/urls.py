@@ -32,6 +32,10 @@ urlpatterns = [
     path('goals/', views.user_goals, name='user_goals'),
     path('goals/manage/', views.manage_goals, name='manage_goals'),
 
+    path('goals/<int:goal_id>/contributions/', views.goal_contributions, name='goal_contributions'),
+    path('goals/<int:goal_id>/auto-allocation/', views.goal_auto_allocation, name='goal_auto_allocation'),
+
+
     # Valeurs personnelles
     path('values/', views.user_values, name='user_values'),
 
