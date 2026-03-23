@@ -744,10 +744,10 @@ def user_goals(request):
         }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
-@api_view(['GET', 'POST'])
+@api_view(['GET', 'POST', 'PUT', 'DELETE'])
 @permission_classes([IsAuthenticated])
 def manage_goals(request):
-    """Gestion complète des objectifs (GET liste + POST création)"""
+    """Gestion complète des objectifs (GET liste + POST création + PUT modification + DELETE suppression)"""
     user = request.user
 
     if request.method == 'GET':
@@ -821,6 +821,59 @@ def manage_goals(request):
         except Exception as e:
             return Response({
                 'error': f'Erreur création objectif: {str(e)}'
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+    elif request.method == 'PUT':
+        try:
+            goal_id = request.query_params.get('goal_id')
+            if not goal_id:
+                return Response({
+                    'error': 'goal_id requis'
+                }, status=status.HTTP_400_BAD_REQUEST)
+
+            goal = get_object_or_404(Goal, id=goal_id, user=user)
+            data = request.data
+
+            # Update fields
+            goal.title = data.get('title', goal.title)
+            goal.description = data.get('description', goal.description)
+            goal.target_amount = Decimal(data.get('target_amount', goal.target_amount))
+            goal.current_amount = Decimal(data.get('current_amount', goal.current_amount))
+            goal.deadline = data.get('deadline', goal.deadline)
+            goal.category = data.get('category', goal.category)
+            goal.is_achieved = data.get('is_achieved', goal.is_achieved)
+            goal.save()
+
+            return Response({
+                'id': goal.id,
+                'title': goal.title,
+                'current_amount': float(goal.current_amount),
+                'message': 'Objectif modifié avec succès'
+            })
+
+        except Exception as e:
+            return Response({
+                'error': f'Erreur modification objectif: {str(e)}'
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+    elif request.method == 'DELETE':
+        try:
+            goal_id = request.query_params.get('goal_id')
+            if not goal_id:
+                return Response({
+                    'error': 'goal_id requis'
+                }, status=status.HTTP_400_BAD_REQUEST)
+
+            goal = get_object_or_404(Goal, id=goal_id, user=user)
+            goal.delete()
+
+            return Response({
+                'message': 'Objectif supprimé avec succès'
+            })
+
+        except Exception as e:
+            return Response({
+                'error': f'Erreur suppression objectif: {str(e)}'
             }, status=status.HTTP_400_BAD_REQUEST)
 
 
@@ -3217,5 +3270,3 @@ def manage_meta_envelopes(request):
             env.save()
         
         return Response({'message': 'Enveloppes mises à jour avec succès'})
-
-
