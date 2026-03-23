@@ -787,7 +787,7 @@ def manage_goals(request):
                 'error': f'Erreur objectifs: {str(e)}'
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-    else:  # POST
+    elif request.method == 'POST':
         try:
             data = request.data
 
