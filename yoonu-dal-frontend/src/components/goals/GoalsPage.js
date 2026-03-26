@@ -2,8 +2,14 @@ import React, { useState, useEffect } from 'react';
 import API from '../../services/api';
 
 // ==========================================
-// GOALS PAGE SIMPLE & PROFESSIONAL
-// Design sobre, fonctionnalités qui marchent
+// GOALS PAGE PHASE 1 - VERSION COMPLÈTE
+// ✅ Filtres par catégorie
+// ✅ Recherche
+// ✅ Tri (date, progression, montant, deadline)
+// ✅ Statistiques avancées
+// ✅ Recommandations intelligentes
+// ✅ Plans d'épargne calculés
+// Design cohérent Dashboard, 100% responsive
 // ==========================================
 
 const CATEGORIES = [
@@ -18,7 +24,7 @@ const CATEGORIES = [
   { value: 'autre', label: 'Autre', icon: '🎯' }
 ];
 
-const GoalsPageSimple = ({ toast, onNavigate }) => {
+const GoalsPagePhase1 = ({ toast, onNavigate }) => {
   const [loading, setLoading] = useState(true);
   const [goals, setGoals] = useState([]);
   const [stats, setStats] = useState({
@@ -28,9 +34,15 @@ const GoalsPageSimple = ({ toast, onNavigate }) => {
     total_current: 0
   });
 
+  // Filtres & Recherche & Tri
+  const [filterCategory, setFilterCategory] = useState('all');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [sortBy, setSortBy] = useState('recent');
+
   // Modals
   const [showModal, setShowModal] = useState(false);
   const [showContributeModal, setShowContributeModal] = useState(false);
+  const [showRecommendationsModal, setShowRecommendationsModal] = useState(false);
   const [editingGoal, setEditingGoal] = useState(null);
   const [selectedGoal, setSelectedGoal] = useState(null);
   const [expandedId, setExpandedId] = useState(null);
@@ -172,8 +184,107 @@ const GoalsPageSimple = ({ toast, onNavigate }) => {
     }
   };
 
+  // Recommandations intelligentes
+  const getRecommendations = (goal) => {
+    if (!goal) return [];
+    
+    const remaining = goal.target_amount - goal.current_amount;
+    const daysRemaining = getDaysRemaining(goal.deadline);
+    const recommendations = [];
+
+    if (remaining <= 0) {
+      return [{
+        icon: '🎉',
+        title: 'Objectif atteint !',
+        description: 'Félicitations ! Tu as atteint cet objectif.',
+        value: formatCurrency(goal.current_amount),
+        type: 'success'
+      }];
+    }
+
+    // Plan mensuel
+    if (daysRemaining && daysRemaining > 0) {
+      const monthsRemaining = Math.max(1, Math.ceil(daysRemaining / 30));
+      const monthlyAmount = remaining / monthsRemaining;
+      recommendations.push({
+        icon: '📅',
+        title: 'Plan mensuel',
+        description: `Épargne ${formatCurrencyFull(monthlyAmount)} par mois`,
+        value: `${monthsRemaining} mois restants`,
+        type: 'info'
+      });
+    } else if (daysRemaining && daysRemaining < 0) {
+      recommendations.push({
+        icon: '⚠️',
+        title: 'Deadline dépassée',
+        description: `L'objectif devait être atteint il y a ${Math.abs(daysRemaining)} jours`,
+        value: `Reste ${formatCurrency(remaining)} FCFA`,
+        type: 'warning'
+      });
+    }
+
+    // Plan hebdomadaire
+    const weeksRemaining = daysRemaining && daysRemaining > 0 ? Math.ceil(daysRemaining / 7) : 52;
+    const weeklyAmount = remaining / weeksRemaining;
+    recommendations.push({
+      icon: '📆',
+      title: 'Plan hebdomadaire',
+      description: `Mets de côté ${formatCurrencyFull(weeklyAmount)} chaque semaine`,
+      value: `${weeksRemaining} semaines`,
+      type: 'info'
+    });
+
+    // Plan quotidien
+    const dailyDays = daysRemaining && daysRemaining > 0 ? daysRemaining : 365;
+    const dailyAmount = remaining / dailyDays;
+    recommendations.push({
+      icon: '☀️',
+      title: 'Épargne quotidienne',
+      description: `Économise ${formatCurrencyFull(dailyAmount)} par jour`,
+      value: `${dailyDays} jours`,
+      type: 'info'
+    });
+
+    // Pourcentage atteint
+    const pctAchieved = (goal.current_amount / goal.target_amount) * 100;
+    if (pctAchieved >= 75) {
+      recommendations.push({
+        icon: '🚀',
+        title: 'Presque là !',
+        description: `Tu as déjà atteint ${pctAchieved.toFixed(0)}% de l\'objectif`,
+        value: `Plus que ${formatCurrency(remaining)} FCFA`,
+        type: 'success'
+      });
+    } else if (pctAchieved >= 50) {
+      recommendations.push({
+        icon: '🔥',
+        title: 'Plus qu\'à mi-chemin !',
+        description: `Tu as déjà atteint ${pctAchieved.toFixed(0)}% de l\'objectif`,
+        value: `Encore ${formatCurrency(remaining)} FCFA`,
+        type: 'success'
+      });
+    } else if (pctAchieved >= 25) {
+      recommendations.push({
+        icon: '💪',
+        title: 'Bon départ !',
+        description: `Tu as atteint ${pctAchieved.toFixed(0)}% de l\'objectif`,
+        value: `Continue comme ça !`,
+        type: 'info'
+      });
+    }
+
+    return recommendations;
+  };
+
   const formatCurrency = (value) => {
-    return new Intl.NumberFormat('fr-FR').format(value || 0) + ' FCFA';
+    const num = Math.abs(value || 0);
+    if (num >= 1000000) return `${(num / 1000000).toFixed(1)}M`;
+    if (num >= 1000) return `${Math.round(num / 1000)}k`;
+    return num.toString();
+  };
+
+  const formatCurrencyFull = (amount) => {
+    return new Intl.NumberFormat('fr-FR').format(amount || 0) + ' FCFA';
   };
 
   const getCategoryConfig = (category) => {
@@ -188,11 +299,49 @@ const GoalsPageSimple = ({ toast, onNavigate }) => {
     return diff;
   };
 
+  // Filtres & Tri
+  const filteredAndSortedGoals = goals
+    .filter(goal => {
+      const matchesCategory = filterCategory === 'all' || goal.category === filterCategory;
+      const matchesSearch = !searchQuery ||
+        goal.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        goal.description?.toLowerCase().includes(searchQuery.toLowerCase());
+      return matchesCategory && matchesSearch;
+    })
+    .sort((a, b) => {
+      switch (sortBy) {
+        case 'progress':
+          return (b.progress_percentage || 0) - (a.progress_percentage || 0);
+        case 'amount':
+          return b.target_amount - a.target_amount;
+        case 'deadline':
+          if (!a.deadline) return 1;
+          if (!b.deadline) return -1;
+          return new Date(a.deadline) - new Date(b.deadline);
+        case 'recent':
+        default:
+          return new Date(b.created_at || 0) - new Date(a.created_at || 0);
+      }
+    });
+
+  // Statistiques avancées
+  const advancedStats = {
+    avgProgress: goals.length > 0 
+      ? goals.reduce((sum, g) => sum + (g.progress_percentage || 0), 0) / goals.length 
+      : 0,
+    nearCompletion: goals.filter(g => g.progress_percentage >= 75 && !g.is_achieved).length,
+    overdue: goals.filter(g => {
+      const days = getDaysRemaining(g.deadline);
+      return days !== null && days < 0 && !g.is_achieved;
+    }).length,
+    totalRemaining: goals.reduce((sum, g) => sum + (g.target_amount - g.current_amount), 0)
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
         <div className="text-center">
-          <div className="w-16 h-16 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <div className="w-16 h-16 border-4 border-green-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
           <p className="text-gray-600">Chargement...</p>
         </div>
       </div>
@@ -203,7 +352,7 @@ const GoalsPageSimple = ({ toast, onNavigate }) => {
     <div className="min-h-screen bg-gray-50 pb-20">
       <div className="max-w-7xl mx-auto px-4 py-6">
         
-        {/* Header Simple */}
+        {/* Header */}
         <div className="mb-6 bg-white rounded-xl p-4 sm:p-6 shadow-sm border border-gray-200">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div className="flex-1">
@@ -223,42 +372,132 @@ const GoalsPageSimple = ({ toast, onNavigate }) => {
           </div>
         </div>
 
-        {/* Stats Simple */}
+        {/* Stats Enrichies */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-6">
           <div className="bg-white rounded-lg p-3 sm:p-4 shadow-sm border border-gray-200">
             <p className="text-xs sm:text-sm text-gray-600 mb-1">Total objectifs</p>
             <p className="text-xl sm:text-2xl font-bold text-gray-900">{stats.total_count}</p>
+            <p className="text-xs text-green-600 mt-1">{advancedStats.avgProgress.toFixed(0)}% moy.</p>
           </div>
           <div className="bg-white rounded-lg p-3 sm:p-4 shadow-sm border border-gray-200">
             <p className="text-xs sm:text-sm text-gray-600 mb-1">Atteints</p>
             <p className="text-xl sm:text-2xl font-bold text-green-600">{stats.achieved_count}</p>
+            {advancedStats.nearCompletion > 0 && (
+              <p className="text-xs text-gray-500 mt-1">{advancedStats.nearCompletion} proche(s)</p>
+            )}
           </div>
           <div className="bg-white rounded-lg p-3 sm:p-4 shadow-sm border border-gray-200">
             <p className="text-xs sm:text-sm text-gray-600 mb-1">Total épargné</p>
             <p className="text-base sm:text-lg font-bold text-gray-900 truncate">{formatCurrency(stats.total_current)}</p>
+            <p className="text-xs text-gray-500 mt-1">/ {formatCurrency(stats.total_target)}</p>
           </div>
           <div className="bg-white rounded-lg p-3 sm:p-4 shadow-sm border border-gray-200">
-            <p className="text-xs sm:text-sm text-gray-600 mb-1">Objectif total</p>
-            <p className="text-base sm:text-lg font-bold text-gray-900 truncate">{formatCurrency(stats.total_target)}</p>
+            <p className="text-xs sm:text-sm text-gray-600 mb-1">Reste</p>
+            <p className="text-base sm:text-lg font-bold text-orange-600 truncate">{formatCurrency(advancedStats.totalRemaining)}</p>
+            {advancedStats.overdue > 0 && (
+              <p className="text-xs text-red-600 mt-1">{advancedStats.overdue} en retard</p>
+            )}
+          </div>
+        </div>
+
+        {/* Filtres & Recherche */}
+        <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-200 mb-6">
+          <div className="flex flex-col lg:flex-row gap-4">
+            {/* Recherche */}
+            <div className="flex-1">
+              <div className="relative">
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Rechercher un objectif..."
+                  className="w-full pl-10 pr-10 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                />
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">🔍</span>
+                {searchQuery && (
+                  <button
+                    onClick={() => setSearchQuery('')}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 text-lg"
+                  >
+                    ✕
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {/* Tri */}
+            <div className="w-full lg:w-48">
+              <select
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value)}
+                className="w-full px-4 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
+              >
+                <option value="recent">➡️ Plus récents</option>
+                <option value="progress">📊 Progression</option>
+                <option value="amount">💰 Montant</option>
+                <option value="deadline">📅 Échéance</option>
+              </select>
+            </div>
+          </div>
+
+          {/* Filtres catégories */}
+          <div className="mt-4 flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
+            <button
+              onClick={() => setFilterCategory('all')}
+              className={`px-3 py-1.5 rounded-lg text-xs sm:text-sm font-medium whitespace-nowrap transition-colors ${
+                filterCategory === 'all'
+                  ? 'bg-green-600 text-white'
+                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              }`}
+            >
+              Tous ({goals.length})
+            </button>
+            {CATEGORIES.map(cat => {
+              const count = goals.filter(g => g.category === cat.value).length;
+              if (count === 0) return null;
+              return (
+                <button
+                  key={cat.value}
+                  onClick={() => setFilterCategory(cat.value)}
+                  className={`px-3 py-1.5 rounded-lg text-xs sm:text-sm font-medium whitespace-nowrap transition-colors ${
+                    filterCategory === cat.value
+                      ? 'bg-green-600 text-white'
+                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  }`}
+                >
+                  {cat.icon} {cat.label} ({count})
+                </button>
+              );
+            })}
           </div>
         </div>
 
         {/* Goals List */}
-        {goals.length === 0 ? (
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-12 text-center">
-            <div className="text-6xl mb-4">🎯</div>
-            <h2 className="text-xl font-bold text-gray-900 mb-3">Aucun objectif</h2>
-            <p className="text-gray-600 mb-6">Crée ton premier objectif financier</p>
-            <button
-              onClick={() => { setEditingGoal(null); setForm(emptyForm()); setShowModal(true); }}
-              className="bg-indigo-600 text-white px-6 py-3 rounded-lg font-medium hover:bg-indigo-700"
-            >
-              Créer mon premier objectif
-            </button>
+        {filteredAndSortedGoals.length === 0 ? (
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8 sm:p-12 text-center">
+            <div className="text-6xl mb-4">
+              {goals.length === 0 ? '🎯' : '🔍'}
+            </div>
+            <h2 className="text-xl font-bold text-gray-900 mb-3">
+              {goals.length === 0 ? 'Aucun objectif' : 'Aucun résultat'}
+            </h2>
+            <p className="text-gray-600 mb-6">
+              {goals.length === 0 
+                ? 'Crée ton premier objectif financier'
+                : 'Essaie de modifier tes filtres'}
+            </p>
+            {goals.length === 0 && (
+              <button
+                onClick={() => { setEditingGoal(null); setForm(emptyForm()); setShowModal(true); }}
+                className="bg-green-600 text-white px-6 py-3 rounded-lg font-medium hover:bg-green-700"
+              >
+                Créer mon premier objectif
+              </button>
+            )}
           </div>
         ) : (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            {goals.map(goal => {
+            {filteredAndSortedGoals.map(goal => {
               const catConfig = getCategoryConfig(goal.category);
               const isExpanded = expandedId === goal.id;
               const daysRemaining = getDaysRemaining(goal.deadline);
@@ -269,14 +508,14 @@ const GoalsPageSimple = ({ toast, onNavigate }) => {
                   {/* Header */}
                   <div className="bg-gray-50 border-b border-gray-200 p-4">
                     <div className="flex items-start justify-between">
-                      <div className="flex items-center gap-3 flex-1">
-                        <span className="text-3xl">{goal.is_achieved ? '✅' : catConfig.icon}</span>
+                      <div className="flex items-center gap-3 flex-1 min-w-0">
+                        <span className="text-3xl flex-shrink-0">{goal.is_achieved ? '✅' : catConfig.icon}</span>
                         <div className="flex-1 min-w-0">
                           <h3 className="text-lg font-bold text-gray-900 truncate">{goal.title}</h3>
                           {goal.description && <p className="text-sm text-gray-600 line-clamp-1">{goal.description}</p>}
                         </div>
                       </div>
-                      <span className="text-xs bg-gray-200 text-gray-700 px-2 py-1 rounded font-medium">
+                      <span className="text-xs bg-gray-200 text-gray-700 px-2 py-1 rounded font-medium flex-shrink-0 ml-2">
                         {catConfig.label}
                       </span>
                     </div>
@@ -285,8 +524,11 @@ const GoalsPageSimple = ({ toast, onNavigate }) => {
                       <div className="mt-2 text-xs text-gray-600">
                         📅 {new Date(goal.deadline).toLocaleDateString('fr-FR')}
                         {daysRemaining !== null && (
-                          <span className={daysRemaining < 30 ? 'text-orange-600 font-medium ml-2' : 'ml-2'}>
-                            ({daysRemaining > 0 ? `${daysRemaining} jours restants` : `${Math.abs(daysRemaining)} jours de retard`})
+                          <span className={
+                            daysRemaining < 0 ? 'text-red-600 font-medium ml-2' :
+                            daysRemaining < 30 ? 'text-orange-600 font-medium ml-2' : 'ml-2'
+                          }>
+                            ({daysRemaining > 0 ? `${daysRemaining}j restants` : `${Math.abs(daysRemaining)}j retard`})
                           </span>
                         )}
                       </div>
@@ -337,16 +579,23 @@ const GoalsPageSimple = ({ toast, onNavigate }) => {
                       </button>
                       
                       <button
-                        onClick={() => handleToggleAchieved(goal)}
-                        className={`px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-medium ${
-                          goal.is_achieved 
-                            ? 'bg-gray-200 text-gray-700 hover:bg-gray-300' 
-                            : 'bg-green-600 text-white hover:bg-green-700'
-                        }`}
+                        onClick={() => { setSelectedGoal(goal); setShowRecommendationsModal(true); }}
+                        className="bg-blue-600 text-white px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-medium hover:bg-blue-700"
                       >
-                        {goal.is_achieved ? '↩ Réactiver' : '✓ Atteint'}
+                        💡 Plan
                       </button>
                     </div>
+
+                    <button
+                      onClick={() => handleToggleAchieved(goal)}
+                      className={`w-full mb-2 px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-medium ${
+                        goal.is_achieved 
+                          ? 'bg-gray-200 text-gray-700 hover:bg-gray-300' 
+                          : 'bg-green-600 text-white hover:bg-green-700'
+                      }`}
+                    >
+                      {goal.is_achieved ? '↩ Réactiver' : '✓ Atteint'}
+                    </button>
 
                     {/* More actions */}
                     <button
@@ -382,10 +631,10 @@ const GoalsPageSimple = ({ toast, onNavigate }) => {
 
       {/* Modal Create/Edit */}
       {showModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl shadow-xl max-w-2xl w-full p-6 max-h-[90vh] overflow-y-auto">
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 overflow-y-auto">
+          <div className="bg-white rounded-xl shadow-xl max-w-2xl w-full p-4 sm:p-6 my-8 max-h-[90vh] overflow-y-auto">
             <div className="flex justify-between items-center mb-6">
-              <h2 className="text-2xl font-bold text-gray-900">
+              <h2 className="text-xl sm:text-2xl font-bold text-gray-900">
                 {editingGoal ? 'Modifier l\'objectif' : 'Nouvel objectif'}
               </h2>
               <button onClick={() => { setShowModal(false); setEditingGoal(null); }} className="text-gray-400 hover:text-gray-600 text-2xl">
@@ -418,7 +667,7 @@ const GoalsPageSimple = ({ toast, onNavigate }) => {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Catégorie</label>
+                <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">Catégorie</label>
                 <div className="grid grid-cols-3 gap-2">
                   {CATEGORIES.map(cat => (
                     <button
@@ -501,7 +750,7 @@ const GoalsPageSimple = ({ toast, onNavigate }) => {
 
             <div className="mb-4 p-3 bg-gray-50 rounded-lg border border-gray-200">
               <p className="text-sm font-medium text-gray-900">{selectedGoal.title}</p>
-              <p className="text-xs text-gray-600 mt-1">Montant actuel: {formatCurrency(selectedGoal.current_amount)}</p>
+              <p className="text-xs text-gray-600 mt-1">Montant actuel: {formatCurrencyFull(selectedGoal.current_amount)}</p>
             </div>
 
             <form onSubmit={handleContribute} className="space-y-4">
@@ -537,6 +786,70 @@ const GoalsPageSimple = ({ toast, onNavigate }) => {
         </div>
       )}
 
+      {/* Modal Recommandations */}
+      {showRecommendationsModal && selectedGoal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 overflow-y-auto">
+          <div className="bg-white rounded-xl shadow-xl max-w-2xl w-full p-6 my-8 max-h-[90vh] overflow-y-auto">
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-xl font-bold text-gray-900">💡 Plan: {selectedGoal.title}</h2>
+              <button onClick={() => setShowRecommendationsModal(false)} className="text-gray-400 hover:text-gray-600 text-2xl">✕</button>
+            </div>
+
+            <div className="mb-6 p-4 bg-green-50 rounded-lg border border-green-200">
+              <div className="grid grid-cols-2 gap-4 text-sm">
+                <div>
+                  <p className="text-gray-600">Objectif</p>
+                  <p className="font-bold text-gray-900">{formatCurrencyFull(selectedGoal.target_amount)}</p>
+                </div>
+                <div>
+                  <p className="text-gray-600">Épargné</p>
+                  <p className="font-bold text-green-600">{formatCurrencyFull(selectedGoal.current_amount)}</p>
+                </div>
+                <div>
+                  <p className="text-gray-600">Progression</p>
+                  <p className="font-bold text-gray-900">{selectedGoal.progress_percentage?.toFixed(1)}%</p>
+                </div>
+                <div>
+                  <p className="text-gray-600">Reste</p>
+                  <p className="font-bold text-orange-600">{formatCurrencyFull(selectedGoal.target_amount - selectedGoal.current_amount)}</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="space-y-3">
+              {getRecommendations(selectedGoal).map((rec, index) => (
+                <div
+                  key={index}
+                  className={`p-4 rounded-lg border-2 ${
+                    rec.type === 'success' ? 'bg-green-50 border-green-200' :
+                    rec.type === 'warning' ? 'bg-orange-50 border-orange-200' :
+                    'bg-blue-50 border-blue-200'
+                  }`}
+                >
+                  <div className="flex items-start gap-3">
+                    <span className="text-3xl flex-shrink-0">{rec.icon}</span>
+                    <div className="flex-1">
+                      <h3 className="font-bold text-gray-900 mb-1">{rec.title}</h3>
+                      <p className="text-sm text-gray-700 mb-2">{rec.description}</p>
+                      <span className="inline-block px-3 py-1 rounded-full text-xs font-bold bg-white border border-gray-200">
+                        {rec.value}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <button
+              onClick={() => setShowRecommendationsModal(false)}
+              className="w-full mt-6 bg-green-600 text-white px-6 py-3 rounded-lg font-medium hover:bg-green-700"
+            >
+              Compris !
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Modal Delete */}
       {confirmDeleteId && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
@@ -564,8 +877,24 @@ const GoalsPageSimple = ({ toast, onNavigate }) => {
           </div>
         </div>
       )}
+
+      <style jsx>{`
+        .scrollbar-hide {
+          -ms-overflow-style: none;
+          scrollbar-width: none;
+        }
+        .scrollbar-hide::-webkit-scrollbar {
+          display: none;
+        }
+        .line-clamp-1 {
+          display: -webkit-box;
+          -webkit-line-clamp: 1;
+          -webkit-box-orient: vertical;
+          overflow: hidden;
+        }
+      `}</style>
     </div>
   );
 };
 
-export default GoalsPageSimple;
+export default GoalsPagePhase1;
