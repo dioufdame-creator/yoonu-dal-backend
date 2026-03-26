@@ -204,19 +204,19 @@ const GoalsPageSimple = ({ toast, onNavigate }) => {
       <div className="max-w-7xl mx-auto px-4 py-6">
         
         {/* Header Simple */}
-        <div className="mb-6 bg-white rounded-xl p-6 shadow-sm border border-gray-200">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-3">
-                <span>🎯</span>
-                Mes Objectifs
+        <div className="mb-6 bg-white rounded-xl p-4 sm:p-6 shadow-sm border border-gray-200">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div className="flex-1">
+              <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 flex items-center gap-2 sm:gap-3">
+                <span className="text-3xl sm:text-4xl">🎯</span>
+                <span>Mes Objectifs</span>
               </h1>
-              <p className="text-sm text-gray-600 mt-1">Définis et atteins tes objectifs financiers</p>
+              <p className="text-xs sm:text-sm text-gray-600 mt-1">Définis et atteins tes objectifs financiers</p>
             </div>
             
             <button
               onClick={() => { setEditingGoal(null); setForm(emptyForm()); setShowModal(true); }}
-              className="bg-indigo-600 text-white px-6 py-3 rounded-lg font-medium hover:bg-indigo-700 transition-colors"
+              className="w-full sm:w-auto bg-green-600 text-white px-4 sm:px-6 py-2.5 sm:py-3 rounded-lg font-medium hover:bg-green-700 transition-colors text-sm sm:text-base"
             >
               + Créer un objectif
             </button>
@@ -224,22 +224,22 @@ const GoalsPageSimple = ({ toast, onNavigate }) => {
         </div>
 
         {/* Stats Simple */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-          <div className="bg-white rounded-lg p-4 shadow-sm border border-gray-200">
-            <p className="text-sm text-gray-600 mb-1">Total objectifs</p>
-            <p className="text-2xl font-bold text-gray-900">{stats.total_count}</p>
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-6">
+          <div className="bg-white rounded-lg p-3 sm:p-4 shadow-sm border border-gray-200">
+            <p className="text-xs sm:text-sm text-gray-600 mb-1">Total objectifs</p>
+            <p className="text-xl sm:text-2xl font-bold text-gray-900">{stats.total_count}</p>
           </div>
-          <div className="bg-white rounded-lg p-4 shadow-sm border border-gray-200">
-            <p className="text-sm text-gray-600 mb-1">Atteints</p>
-            <p className="text-2xl font-bold text-green-600">{stats.achieved_count}</p>
+          <div className="bg-white rounded-lg p-3 sm:p-4 shadow-sm border border-gray-200">
+            <p className="text-xs sm:text-sm text-gray-600 mb-1">Atteints</p>
+            <p className="text-xl sm:text-2xl font-bold text-green-600">{stats.achieved_count}</p>
           </div>
-          <div className="bg-white rounded-lg p-4 shadow-sm border border-gray-200">
-            <p className="text-sm text-gray-600 mb-1">Total épargné</p>
-            <p className="text-lg font-bold text-gray-900">{formatCurrency(stats.total_current)}</p>
+          <div className="bg-white rounded-lg p-3 sm:p-4 shadow-sm border border-gray-200">
+            <p className="text-xs sm:text-sm text-gray-600 mb-1">Total épargné</p>
+            <p className="text-base sm:text-lg font-bold text-gray-900 truncate">{formatCurrency(stats.total_current)}</p>
           </div>
-          <div className="bg-white rounded-lg p-4 shadow-sm border border-gray-200">
-            <p className="text-sm text-gray-600 mb-1">Objectif total</p>
-            <p className="text-lg font-bold text-gray-900">{formatCurrency(stats.total_target)}</p>
+          <div className="bg-white rounded-lg p-3 sm:p-4 shadow-sm border border-gray-200">
+            <p className="text-xs sm:text-sm text-gray-600 mb-1">Objectif total</p>
+            <p className="text-base sm:text-lg font-bold text-gray-900 truncate">{formatCurrency(stats.total_target)}</p>
           </div>
         </div>
 
@@ -298,27 +298,27 @@ const GoalsPageSimple = ({ toast, onNavigate }) => {
                     {/* Progress */}
                     <div className="mb-4">
                       <div className="flex justify-between mb-2">
-                        <span className="text-sm font-medium text-gray-700">Progression</span>
-                        <span className="text-sm font-bold text-indigo-600">
+                        <span className="text-xs sm:text-sm font-medium text-gray-700">Progression</span>
+                        <span className="text-xs sm:text-sm font-bold text-green-600">
                           {goal.progress_percentage?.toFixed(1)}%
                         </span>
                       </div>
 
-                      <div className="w-full bg-gray-200 rounded-full h-3 overflow-hidden">
+                      <div className="w-full bg-gray-200 rounded-full h-2.5 sm:h-3 overflow-hidden">
                         <div
-                          className="h-3 bg-indigo-600 rounded-full transition-all duration-500"
+                          className="h-2.5 sm:h-3 bg-green-600 rounded-full transition-all duration-500"
                           style={{ width: `${Math.min(goal.progress_percentage || 0, 100)}%` }}
                         />
                       </div>
 
-                      <div className="mt-3 grid grid-cols-2 gap-3 text-sm">
+                      <div className="mt-3 grid grid-cols-2 gap-3 text-xs sm:text-sm">
                         <div>
                           <p className="text-gray-600">Épargné</p>
-                          <p className="font-bold text-green-600">{formatCurrency(goal.current_amount)}</p>
+                          <p className="font-bold text-green-600 truncate">{formatCurrency(goal.current_amount)}</p>
                         </div>
                         <div>
                           <p className="text-gray-600">Objectif</p>
-                          <p className="font-bold text-gray-900">{formatCurrency(goal.target_amount)}</p>
+                          <p className="font-bold text-gray-900 truncate">{formatCurrency(goal.target_amount)}</p>
                         </div>
                       </div>
 
@@ -331,17 +331,17 @@ const GoalsPageSimple = ({ toast, onNavigate }) => {
                     <div className="grid grid-cols-2 gap-2 mb-2">
                       <button
                         onClick={() => { setSelectedGoal(goal); setContributeAmount(''); setShowContributeModal(true); }}
-                        className="bg-green-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-green-700"
+                        className="bg-green-600 text-white px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-medium hover:bg-green-700"
                       >
                         + Ajouter
                       </button>
                       
                       <button
                         onClick={() => handleToggleAchieved(goal)}
-                        className={`px-4 py-2 rounded-lg text-sm font-medium ${
+                        className={`px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-medium ${
                           goal.is_achieved 
                             ? 'bg-gray-200 text-gray-700 hover:bg-gray-300' 
-                            : 'bg-indigo-600 text-white hover:bg-indigo-700'
+                            : 'bg-green-600 text-white hover:bg-green-700'
                         }`}
                       >
                         {goal.is_achieved ? '↩ Réactiver' : '✓ Atteint'}
@@ -395,25 +395,25 @@ const GoalsPageSimple = ({ toast, onNavigate }) => {
 
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Titre *</label>
+                <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">Titre *</label>
                 <input
                   type="text"
                   value={form.title}
                   onChange={(e) => setForm({...form, title: e.target.value})}
                   placeholder="Ex: Acheter une voiture"
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                  className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
                   required
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">Description</label>
                 <textarea
                   value={form.description}
                   onChange={(e) => setForm({...form, description: e.target.value})}
                   placeholder="Détails..."
                   rows="2"
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 resize-none"
+                  className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 resize-none"
                 />
               </div>
 
@@ -425,65 +425,65 @@ const GoalsPageSimple = ({ toast, onNavigate }) => {
                       key={cat.value}
                       type="button"
                       onClick={() => setForm({...form, category: cat.value})}
-                      className={`p-2 rounded-lg border text-sm font-medium transition-colors ${
+                      className={`p-2 sm:p-3 rounded-lg border text-xs sm:text-sm font-medium transition-colors ${
                         form.category === cat.value
-                          ? 'bg-indigo-600 text-white border-indigo-600'
-                          : 'bg-white text-gray-700 border-gray-300 hover:border-indigo-300'
+                          ? 'bg-green-600 text-white border-green-600'
+                          : 'bg-white text-gray-700 border-gray-300 hover:border-green-300'
                       }`}
                     >
-                      <div className="text-xl mb-1">{cat.icon}</div>
+                      <div className="text-xl sm:text-2xl mb-1">{cat.icon}</div>
                       <div className="text-xs truncate">{cat.label}</div>
                     </button>
                   ))}
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Montant objectif *</label>
+                  <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">Montant objectif *</label>
                   <input
                     type="number"
                     value={form.target_amount}
                     onChange={(e) => setForm({...form, target_amount: e.target.value})}
                     placeholder="5000000"
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+                    className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
                     required
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Montant actuel</label>
+                  <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">Montant actuel</label>
                   <input
                     type="number"
                     value={form.current_amount}
                     onChange={(e) => setForm({...form, current_amount: e.target.value})}
                     placeholder="0"
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+                    className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Date limite (optionnel)</label>
+                <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">Date limite (optionnel)</label>
                 <input
                   type="date"
                   value={form.deadline}
                   onChange={(e) => setForm({...form, deadline: e.target.value})}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+                  className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
                 />
               </div>
 
-              <div className="flex gap-3 pt-4">
+              <div className="flex flex-col sm:flex-row gap-3 pt-4">
                 <button
                   type="button"
                   onClick={() => { setShowModal(false); setEditingGoal(null); }}
-                  className="flex-1 px-6 py-3 bg-gray-200 text-gray-700 rounded-lg font-medium hover:bg-gray-300"
+                  className="w-full sm:flex-1 px-4 sm:px-6 py-2.5 sm:py-3 bg-gray-200 text-gray-700 rounded-lg font-medium hover:bg-gray-300 text-sm sm:text-base"
                 >
                   Annuler
                 </button>
                 <button
                   type="submit"
-                  className="flex-1 px-6 py-3 bg-indigo-600 text-white rounded-lg font-medium hover:bg-indigo-700"
+                  className="w-full sm:flex-1 px-4 sm:px-6 py-2.5 sm:py-3 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700 text-sm sm:text-base"
                 >
                   {editingGoal ? 'Modifier' : 'Créer'}
                 </button>
