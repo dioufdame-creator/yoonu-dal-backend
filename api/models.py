@@ -952,3 +952,171 @@ def assign_position(sender, instance, created, **kwargs):
         ).aggregate(max_pos=models.Max('position'))['max_pos'] or 0
         instance.position = max_position + 1
         instance.save()
+# ==========================================
+# MODÈLES PHASE 2 - GOALS
+# À ajouter dans api/models.py
+# ==========================================
+
+from django.db import models
+from django.contrib.auth.models import User
+from django.utils import timezone
+from decimal import Decimal
+
+
+# ==========================================
+# MODÈLE 1 : HISTORIQUE CONTRIBUTIONS
+# ==========================================
+
+class GoalContribution(models.Model):
+    """Historique des contributions à un objectif"""
+    
+    TYPE_CHOICES = [
+        ('add', 'Ajout'),
+        ('remove', 'Retrait'),
+        ('auto', 'Auto-allocation'),
+    ]
+    
+    goal = models.ForeignKey('Goal', on_delete=models.CASCADE, related_name='contributions')
+    amount = models.DecimalField(max_digits=15, decimal_places=2)
+    contribution_type = models.CharField(max_length=10, choices=TYPE_CHOICES, default='add')
+    source = models.CharField(max_length=100, blank=True)  # "Manuel", "Enveloppe Projets", etc.
+    note = models.TextField(blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    
+    class Meta:
+        ordering = ['-created_at']
+    
+    def __str__(self):
+        return f"{self.goal.title} - {self.get_contribution_type_display()}: {self.amount}"
+    
+    def save(self, *args, **kwargs):
+        """Met à jour le montant actuel du goal"""
+        is_new = self.pk is None
+        super().save(*args, **kwargs)
+        
+        if is_new:
+            # Mettre à jour current_amount du goal
+            if self.contribution_type == 'add':
+                self.goal.current_amount += self.amount
+            elif self.contribution_type == 'remove':
+                self.goal.current_amount = max(0, self.goal.current_amount - self.amount)
+            elif self.contribution_type == 'auto':
+                self.goal.current_amount += self.amount
+            
+            self.goal.save()
+
+
+# ==========================================
+# MODÈLE 2 : AUTO-ALLOCATION
+# ==========================================
+
+class GoalAutoAllocation(models.Model):
+    """Configuration auto-allocation enveloppe → objectif"""
+    
+    goal = models.ForeignKey('Goal', on_delete=models.CASCADE, related_name='auto_allocations')
+    envelope = models.ForeignKey('MetaEnvelope', on_delete=models.CASCADE, related_name='goal_allocations')
+    percentage = models.DecimalField(max_digits=5, decimal_places=2)  # Ex: 25.00 pour 25%
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        unique_together = ('goal', 'envelope')
+        ordering = ['-created_at']
+    
+    def __str__(self):
+        return f"{self.goal.title} ← {self.percentage}% de {self.envelope.display_name}"
+    
+    def clean(self):
+        """Validation"""
+        from django.core.exceptions import ValidationError
+        
+        if self.percentage < 0 or self.percentage > 100:
+            raise ValidationError('Le pourcentage doit être entre 0 et 100')
+        
+        # Vérifier que le total des allocations ne dépasse pas 100%
+        if self.goal:
+            total = GoalAutoAllocation.objects.filter(
+                envelope=self.envelope,
+                is_active=True
+            ).exclude(pk=self.pk).aggregate(
+                total=models.Sum('percentage')
+            )['total'] or 0
+            
+            if total + self.percentage > 100:
+                raise ValidationError(
+                    f'Le total des allocations pour cette enveloppe dépasse 100% '
+                    f'({total}% déjà alloués)'
+                )
+
+
+# ==========================================
+# MODÈLE 3 : MILESTONES/BADGES
+# ==========================================
+
+class GoalMilestone(models.Model):
+    """Jalons atteints pour gamification"""
+    
+    MILESTONE_CHOICES = [
+        ('25', '25% atteint'),
+        ('50', '50% atteint'),
+        ('75', '75% atteint'),
+        ('100', '100% atteint'),
+        ('first_contribution', 'Première contribution'),
+        ('streak_7', '7 jours consécutifs'),
+        ('streak_30', '30 jours consécutifs'),
+    ]
+    
+    goal = models.ForeignKey('Goal', on_delete=models.CASCADE, related_name='milestones')
+    milestone_type = models.CharField(max_length=20, choices=MILESTONE_CHOICES)
+    unlocked_at = models.DateTimeField(auto_now_add=True)
+    
+    class Meta:
+        unique_together = ('goal', 'milestone_type')
+        ordering = ['-unlocked_at']
+    
+    def __str__(self):
+        return f"{self.goal.title} - {self.get_milestone_type_display()}"
+
+
+# ==========================================
+# SIGNAUX
+# ==========================================
+
+from django.db.models.signals import post_save
+from django.dispatch import receiver
+
+
+@receiver(post_save, sender='api.Goal')
+def check_milestones(sender, instance, **kwargs):
+    """Vérifie et débloque les milestones"""
+    progress = instance.progress_percentage
+    
+    # Vérifier jalons de progression
+    milestones_to_check = []
+    if progress >= 25:
+        milestones_to_check.append('25')
+    if progress >= 50:
+        milestones_to_check.append('50')
+    if progress >= 75:
+        milestones_to_check.append('75')
+    if progress >= 100:
+        milestones_to_check.append('100')
+    
+    for milestone_type in milestones_to_check:
+        GoalMilestone.objects.get_or_create(
+            goal=instance,
+            milestone_type=milestone_type
+        )
+
+
+@receiver(post_save, sender=GoalContribution)
+def check_contribution_milestones(sender, instance, created, **kwargs):
+    """Vérifie milestone première contribution"""
+    if created:
+        # Première contribution
+        if instance.goal.contributions.count() == 1:
+            GoalMilestone.objects.get_or_create(
+                goal=instance.goal,
+                milestone_type='first_contribution'
+            )
