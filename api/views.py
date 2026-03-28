@@ -3408,3 +3408,459 @@ def goal_auto_allocation(request, goal_id):
         return Response({
             'error': f'Erreur: {str(e)}'
         }, status=status.HTTP_400_BAD_REQUEST)
+# ==========================================
+# ENDPOINTS PHASE 2 - GOALS
+# À ajouter dans api/views.py
+# ==========================================
+
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.response import Response
+from rest_framework import status
+from django.shortcuts import get_object_or_404
+from django.db.models import Sum, Count, Q
+from datetime import datetime, timedelta
+from decimal import Decimal
+
+from .models import (
+    Goal, 
+    GoalContribution, 
+    GoalAutoAllocation, 
+    GoalMilestone,
+    MetaEnvelope
+)
+
+
+# ==========================================
+# ENDPOINT 1 : HISTORIQUE CONTRIBUTIONS
+# ==========================================
+
+@api_view(['GET', 'POST'])
+@permission_classes([IsAuthenticated])
+def goal_contributions(request, goal_id):
+    """
+    GET: Liste l'historique des contributions d'un objectif
+    POST: Ajoute une nouvelle contribution
+    """
+    user = request.user
+    goal = get_object_or_404(Goal, id=goal_id, user=user)
+    
+    if request.method == 'GET':
+        # Récupérer l'historique
+        contributions = GoalContribution.objects.filter(goal=goal)
+        
+        # Statistiques
+        stats = {
+            'total_contributions': contributions.count(),
+            'total_added': contributions.filter(
+                contribution_type='add'
+            ).aggregate(total=Sum('amount'))['total'] or 0,
+            'total_removed': contributions.filter(
+                contribution_type='remove'
+            ).aggregate(total=Sum('amount'))['total'] or 0,
+            'total_auto': contributions.filter(
+                contribution_type='auto'
+            ).aggregate(total=Sum('amount'))['total'] or 0,
+        }
+        
+        # Liste des contributions
+        contributions_list = []
+        for contrib in contributions:
+            contributions_list.append({
+                'id': contrib.id,
+                'amount': float(contrib.amount),
+                'type': contrib.contribution_type,
+                'type_label': contrib.get_contribution_type_display(),
+                'source': contrib.source,
+                'note': contrib.note,
+                'created_at': contrib.created_at.isoformat(),
+            })
+        
+        return Response({
+            'goal': {
+                'id': goal.id,
+                'title': goal.title,
+                'current_amount': float(goal.current_amount),
+                'target_amount': float(goal.target_amount),
+            },
+            'stats': stats,
+            'contributions': contributions_list
+        })
+    
+    elif request.method == 'POST':
+        # Ajouter une contribution
+        amount = request.data.get('amount')
+        contrib_type = request.data.get('type', 'add')
+        source = request.data.get('source', 'Manuel')
+        note = request.data.get('note', '')
+        
+        if not amount:
+            return Response(
+                {'error': 'Le montant est requis'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        try:
+            amount = Decimal(str(amount))
+            if amount <= 0:
+                raise ValueError()
+        except:
+            return Response(
+                {'error': 'Montant invalide'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        # Créer la contribution
+        contribution = GoalContribution.objects.create(
+            goal=goal,
+            amount=amount,
+            contribution_type=contrib_type,
+            source=source,
+            note=note
+        )
+        
+        # Recharger le goal pour avoir current_amount à jour
+        goal.refresh_from_db()
+        
+        return Response({
+            'message': 'Contribution ajoutée !',
+            'contribution': {
+                'id': contribution.id,
+                'amount': float(contribution.amount),
+                'type': contribution.contribution_type,
+                'source': contribution.source,
+                'created_at': contribution.created_at.isoformat(),
+            },
+            'goal': {
+                'id': goal.id,
+                'current_amount': float(goal.current_amount),
+                'progress_percentage': goal.progress_percentage,
+            }
+        }, status=status.HTTP_201_CREATED)
+
+
+# ==========================================
+# ENDPOINT 2 : AUTO-ALLOCATION
+# ==========================================
+
+@api_view(['GET', 'POST', 'DELETE'])
+@permission_classes([IsAuthenticated])
+def goal_auto_allocation(request, goal_id):
+    """
+    GET: Récupère la config auto-allocation
+    POST: Configure auto-allocation
+    DELETE: Supprime auto-allocation
+    """
+    user = request.user
+    goal = get_object_or_404(Goal, id=goal_id, user=user)
+    
+    if request.method == 'GET':
+        # Récupérer les allocations actives
+        allocations = GoalAutoAllocation.objects.filter(
+            goal=goal,
+            is_active=True
+        )
+        
+        allocations_list = []
+        for alloc in allocations:
+            allocations_list.append({
+                'id': alloc.id,
+                'envelope_id': alloc.envelope.id,
+                'envelope_name': alloc.envelope.display_name,
+                'percentage': float(alloc.percentage),
+                'created_at': alloc.created_at.isoformat(),
+            })
+        
+        return Response({
+            'goal': {
+                'id': goal.id,
+                'title': goal.title,
+            },
+            'allocations': allocations_list
+        })
+    
+    elif request.method == 'POST':
+        # Configurer auto-allocation
+        allocations_data = request.data.get('allocations', [])
+        
+        if not allocations_data:
+            return Response(
+                {'error': 'Liste des allocations requise'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        # Valider le total
+        total_percentage = sum(
+            Decimal(str(alloc.get('percentage', 0))) 
+            for alloc in allocations_data
+        )
+        
+        if total_percentage > 100:
+            return Response(
+                {'error': f'Le total des pourcentages ({total_percentage}%) dépasse 100%'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        # Désactiver les anciennes allocations
+        GoalAutoAllocation.objects.filter(goal=goal).update(is_active=False)
+        
+        # Créer les nouvelles allocations
+        created_allocations = []
+        for alloc_data in allocations_data:
+            envelope_id = alloc_data.get('envelope_id')
+            percentage = alloc_data.get('percentage')
+            
+            if not envelope_id or not percentage:
+                continue
+            
+            try:
+                envelope = MetaEnvelope.objects.get(
+                    id=envelope_id,
+                    user=user
+                )
+            except MetaEnvelope.DoesNotExist:
+                continue
+            
+            allocation = GoalAutoAllocation.objects.create(
+                goal=goal,
+                envelope=envelope,
+                percentage=Decimal(str(percentage)),
+                is_active=True
+            )
+            
+            created_allocations.append({
+                'id': allocation.id,
+                'envelope_id': envelope.id,
+                'envelope_name': envelope.display_name,
+                'percentage': float(allocation.percentage),
+            })
+        
+        return Response({
+            'message': 'Auto-allocation configurée !',
+            'allocations': created_allocations
+        }, status=status.HTTP_201_CREATED)
+    
+    elif request.method == 'DELETE':
+        # Supprimer toutes les allocations
+        GoalAutoAllocation.objects.filter(goal=goal).delete()
+        
+        return Response({
+            'message': 'Auto-allocations supprimées'
+        })
+
+
+# ==========================================
+# ENDPOINT 3 : MILESTONES/BADGES
+# ==========================================
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def goal_milestones(request, goal_id):
+    """
+    GET: Récupère les milestones débloqués pour un objectif
+    """
+    user = request.user
+    goal = get_object_or_404(Goal, id=goal_id, user=user)
+    
+    # Récupérer tous les milestones
+    milestones = GoalMilestone.objects.filter(goal=goal)
+    
+    milestones_list = []
+    for milestone in milestones:
+        milestones_list.append({
+            'id': milestone.id,
+            'type': milestone.milestone_type,
+            'label': milestone.get_milestone_type_display(),
+            'unlocked_at': milestone.unlocked_at.isoformat(),
+        })
+    
+    # Ajouter badges selon progression
+    badges = []
+    progress = goal.progress_percentage
+    
+    if progress >= 100:
+        badges.append({
+            'icon': '🎉',
+            'title': 'Objectif accompli !',
+            'description': 'Tu as atteint 100% de ton objectif'
+        })
+    elif progress >= 75:
+        badges.append({
+            'icon': '🚀',
+            'title': 'Presque là !',
+            'description': 'Tu as dépassé les 75%'
+        })
+    elif progress >= 50:
+        badges.append({
+            'icon': '🔥',
+            'title': 'À mi-chemin !',
+            'description': 'Tu as atteint 50% de ton objectif'
+        })
+    elif progress >= 25:
+        badges.append({
+            'icon': '💪',
+            'title': 'Bon départ !',
+            'description': 'Tu as franchi les 25%'
+        })
+    
+    # Badge première contribution
+    if goal.contributions.count() > 0:
+        badges.append({
+            'icon': '⭐',
+            'title': 'Première contribution !',
+            'description': 'Tu as fait ta première épargne'
+        })
+    
+    return Response({
+        'goal': {
+            'id': goal.id,
+            'title': goal.title,
+            'progress': progress,
+        },
+        'milestones': milestones_list,
+        'badges': badges,
+        'total_unlocked': len(milestones_list)
+    })
+
+
+# ==========================================
+# ENDPOINT 4 : EXÉCUTER AUTO-ALLOCATION
+# ==========================================
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def execute_auto_allocations(request):
+    """
+    POST: Exécute l'auto-allocation pour toutes les enveloppes
+    À appeler périodiquement (chaque mois par exemple)
+    """
+    user = request.user
+    
+    # Récupérer toutes les allocations actives de l'utilisateur
+    allocations = GoalAutoAllocation.objects.filter(
+        goal__user=user,
+        is_active=True
+    ).select_related('goal', 'envelope')
+    
+    executed = []
+    errors = []
+    
+    for allocation in allocations:
+        try:
+            envelope = allocation.envelope
+            
+            # Vérifier qu'il y a assez d'argent dans l'enveloppe
+            available = envelope.balance
+            percentage = allocation.percentage / 100
+            amount_to_transfer = available * percentage
+            
+            if amount_to_transfer <= 0:
+                continue
+            
+            # Créer la contribution
+            contribution = GoalContribution.objects.create(
+                goal=allocation.goal,
+                amount=amount_to_transfer,
+                contribution_type='auto',
+                source=f'Enveloppe {envelope.display_name}',
+                note=f'Auto-allocation {allocation.percentage}%'
+            )
+            
+            # Déduire de l'enveloppe
+            envelope.balance -= amount_to_transfer
+            envelope.save()
+            
+            executed.append({
+                'goal': allocation.goal.title,
+                'envelope': envelope.display_name,
+                'amount': float(amount_to_transfer),
+                'percentage': float(allocation.percentage)
+            })
+            
+        except Exception as e:
+            errors.append({
+                'goal': allocation.goal.title,
+                'error': str(e)
+            })
+    
+    return Response({
+        'message': f'{len(executed)} auto-allocations exécutées',
+        'executed': executed,
+        'errors': errors
+    })
+
+
+# ==========================================
+# ENDPOINT 5 : STATS GLOBALES GOALS
+# ==========================================
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def goals_stats(request):
+    """
+    GET: Statistiques globales sur les objectifs
+    """
+    user = request.user
+    goals = Goal.objects.filter(user=user)
+    
+    # Stats générales
+    total_goals = goals.count()
+    achieved_goals = goals.filter(is_achieved=True).count()
+    active_goals = goals.filter(is_achieved=False).count()
+    
+    # Stats montants
+    total_target = goals.aggregate(total=Sum('target_amount'))['total'] or 0
+    total_current = goals.aggregate(total=Sum('current_amount'))['total'] or 0
+    total_remaining = total_target - total_current
+    
+    # Progression moyenne
+    if total_goals > 0:
+        avg_progress = sum(g.progress_percentage for g in goals) / total_goals
+    else:
+        avg_progress = 0
+    
+    # Goals proche de la fin
+    near_completion = goals.filter(
+        progress_percentage__gte=75,
+        is_achieved=False
+    ).count()
+    
+    # Goals en retard
+    from django.utils import timezone
+    now = timezone.now().date()
+    overdue = goals.filter(
+        deadline__lt=now,
+        is_achieved=False
+    ).count()
+    
+    # Total contributions
+    total_contributions = GoalContribution.objects.filter(
+        goal__user=user
+    ).count()
+    
+    # Milestones débloqués
+    total_milestones = GoalMilestone.objects.filter(
+        goal__user=user
+    ).count()
+    
+    return Response({
+        'overview': {
+            'total_goals': total_goals,
+            'achieved_goals': achieved_goals,
+            'active_goals': active_goals,
+        },
+        'amounts': {
+            'total_target': float(total_target),
+            'total_current': float(total_current),
+            'total_remaining': float(total_remaining),
+            'avg_progress': round(avg_progress, 1),
+        },
+        'alerts': {
+            'near_completion': near_completion,
+            'overdue': overdue,
+        },
+        'activity': {
+            'total_contributions': total_contributions,
+            'total_milestones': total_milestones,
+        }
+    })
