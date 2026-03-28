@@ -86,5 +86,45 @@ urlpatterns = [
     path('onboarding/status/', views.check_onboarding_status, name='check_onboarding_status'),
     path('onboarding/complete/', views.complete_onboarding, name='complete_onboarding'),
     path('meta-envelopes/', views.manage_meta_envelopes, name='manage_meta_envelopes'),
+    path(
+        'goals/<int:goal_id>/contributions/', 
+        goal_contributions, 
+        name='goal-contributions'
+    ),
+    # GET /api/goals/1/contributions/  → Liste historique
+    # POST /api/goals/1/contributions/ → Ajoute contribution
+    
+    # Auto-allocation
+    path(
+        'goals/<int:goal_id>/auto-allocation/', 
+        goal_auto_allocation, 
+        name='goal-auto-allocation'
+    ),
+    # GET /api/goals/1/auto-allocation/    → Récupère config
+    # POST /api/goals/1/auto-allocation/   → Configure
+    # DELETE /api/goals/1/auto-allocation/ → Supprime
+    
+    # Milestones
+    path(
+        'goals/<int:goal_id>/milestones/', 
+        goal_milestones, 
+        name='goal-milestones'
+    ),
+    # GET /api/goals/1/milestones/ → Liste badges débloqués
+    
+    # Exécuter auto-allocations (à appeler périodiquement)
+    path(
+        'goals/execute-allocations/', 
+        execute_auto_allocations, 
+        name='execute-auto-allocations'
+    ),
+    # POST /api/goals/execute-allocations/ → Exécute toutes les auto-allocs
+    
+    # Stats globales
+    path(
+        'goals/stats/', 
+        goals_stats, 
+        name='goals-stats'
+    ),
 
 ]
