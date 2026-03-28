@@ -1,11 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { useAuth } from '../../context/AuthContext';
-import { useToast } from '../../context/ToastContext';
 
 const GoalsPage = () => {
-  const { user } = useAuth();
-  const toast = useToast();
-
   // États
   const [goals, setGoals] = useState([]);
   const [envelopes, setEnvelopes] = useState([]);
@@ -27,6 +22,11 @@ const GoalsPage = () => {
   const [allocations, setAllocations] = useState([]);
   const [badges, setBadges] = useState([]);
 
+  // Toast simple
+  const showToast = (message, type = 'success') => {
+    alert(message); // Remplace par ton système de toast
+  };
+
   // Catégories
   const categories = [
     { id: 'all', name: 'Tous', icon: '🎯', color: 'gray' },
@@ -41,6 +41,12 @@ const GoalsPage = () => {
     { id: 'autre', name: 'Autre', icon: '📌', color: 'gray' }
   ];
 
+  // Headers API
+  const getHeaders = () => ({
+    'Authorization': `Bearer ${localStorage.getItem('token')}`,
+    'Content-Type': 'application/json'
+  });
+
   // Charger données
   useEffect(() => {
     fetchGoals();
@@ -50,7 +56,7 @@ const GoalsPage = () => {
   const fetchGoals = async () => {
     try {
       const response = await fetch(`${process.env.REACT_APP_API_URL}/api/goals/`, {
-        headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+        headers: getHeaders()
       });
       if (response.ok) {
         const data = await response.json();
@@ -66,7 +72,7 @@ const GoalsPage = () => {
   const fetchEnvelopes = async () => {
     try {
       const response = await fetch(`${process.env.REACT_APP_API_URL}/api/meta-envelopes/`, {
-        headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+        headers: getHeaders()
       });
       if (response.ok) {
         const data = await response.json();
@@ -81,7 +87,7 @@ const GoalsPage = () => {
     try {
       const response = await fetch(
         `${process.env.REACT_APP_API_URL}/api/goals/${goalId}/contributions/`,
-        { headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` } }
+        { headers: getHeaders() }
       );
       if (response.ok) {
         const data = await response.json();
@@ -97,7 +103,7 @@ const GoalsPage = () => {
     try {
       const response = await fetch(
         `${process.env.REACT_APP_API_URL}/api/goals/${goalId}/auto-allocation/`,
-        { headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` } }
+        { headers: getHeaders() }
       );
       if (response.ok) {
         const data = await response.json();
@@ -113,7 +119,7 @@ const GoalsPage = () => {
     try {
       const response = await fetch(
         `${process.env.REACT_APP_API_URL}/api/goals/${goalId}/milestones/`,
-        { headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` } }
+        { headers: getHeaders() }
       );
       if (response.ok) {
         const data = await response.json();
@@ -152,10 +158,7 @@ const GoalsPage = () => {
         `${process.env.REACT_APP_API_URL}/api/goals/${selectedGoal.id}/contributions/`,
         {
           method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${localStorage.getItem('token')}`,
-            'Content-Type': 'application/json'
-          },
+          headers: getHeaders(),
           body: JSON.stringify({
             amount: formData.get('amount'),
             type: formData.get('type') || 'add',
@@ -166,15 +169,15 @@ const GoalsPage = () => {
       );
 
       if (response.ok) {
-        toast?.showSuccess?.('Contribution ajoutée !');
+        showToast('Contribution ajoutée !');
         setShowContributionModal(false);
         fetchGoals();
       } else {
-        toast?.showError?.('Erreur contribution');
+        showToast('Erreur contribution', 'error');
       }
     } catch (error) {
       console.error('Erreur:', error);
-      toast?.showError?.('Erreur réseau');
+      showToast('Erreur réseau', 'error');
     }
   };
 
@@ -198,24 +201,21 @@ const GoalsPage = () => {
         `${process.env.REACT_APP_API_URL}/api/goals/${selectedGoal.id}/auto-allocation/`,
         {
           method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${localStorage.getItem('token')}`,
-            'Content-Type': 'application/json'
-          },
+          headers: getHeaders(),
           body: JSON.stringify({ allocations: allocationsData })
         }
       );
 
       if (response.ok) {
-        toast?.showSuccess?.('Auto-allocation configurée !');
+        showToast('Auto-allocation configurée !');
         setShowAutoAllocModal(false);
       } else {
         const data = await response.json();
-        toast?.showError?.(data.error || 'Erreur');
+        showToast(data.error || 'Erreur', 'error');
       }
     } catch (error) {
       console.error('Erreur:', error);
-      toast?.showError?.('Erreur réseau');
+      showToast('Erreur réseau', 'error');
     }
   };
 
@@ -347,17 +347,7 @@ const GoalsPage = () => {
         )}
       </div>
 
-      {/* Bouton créer */}
-      <button
-        onClick={() => setShowCreateModal(true)}
-        className="fixed bottom-20 right-4 bg-green-600 text-white p-4 rounded-full shadow-lg hover:bg-green-700 transition-all"
-      >
-        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-        </svg>
-      </button>
-
-      {/* Modal Contribution */}
+      {/* Modals */}
       {showContributionModal && (
         <ContributionModal
           goal={selectedGoal}
@@ -366,7 +356,6 @@ const GoalsPage = () => {
         />
       )}
 
-      {/* Modal Historique */}
       {showHistoryModal && (
         <HistoryModal
           goal={selectedGoal}
@@ -375,7 +364,6 @@ const GoalsPage = () => {
         />
       )}
 
-      {/* Modal Auto-Allocation */}
       {showAutoAllocModal && (
         <AutoAllocModal
           goal={selectedGoal}
@@ -386,7 +374,6 @@ const GoalsPage = () => {
         />
       )}
 
-      {/* Modal Badges */}
       {showBadgesModal && (
         <BadgesModal
           goal={selectedGoal}
@@ -400,13 +387,11 @@ const GoalsPage = () => {
 
 // GoalCard Component
 const GoalCard = ({ goal, categories, onContribute, onHistory, onAutoAlloc, onBadges }) => {
-  const [expanded, setExpanded] = useState(false);
   const category = categories.find(c => c.id === goal.category) || categories[0];
   
   return (
     <div className="bg-white rounded-lg shadow-md overflow-hidden">
       <div className="p-4">
-        {/* Header */}
         <div className="flex items-start justify-between mb-3">
           <div className="flex-1">
             <div className="flex items-center gap-2 mb-1">
@@ -424,7 +409,6 @@ const GoalCard = ({ goal, categories, onContribute, onHistory, onAutoAlloc, onBa
           )}
         </div>
 
-        {/* Progress */}
         <div className="mb-3">
           <div className="flex justify-between text-sm mb-1">
             <span className="text-gray-600">
@@ -440,36 +424,34 @@ const GoalCard = ({ goal, categories, onContribute, onHistory, onAutoAlloc, onBa
           </div>
         </div>
 
-        {/* Actions principales */}
         <div className="grid grid-cols-2 gap-2 mb-2">
           <button
             onClick={onContribute}
-            className="flex items-center justify-center gap-1 px-3 py-2 bg-green-600 text-white rounded-lg text-sm font-medium hover:bg-green-700 transition-colors"
+            className="flex items-center justify-center gap-1 px-3 py-2 bg-green-600 text-white rounded-lg text-sm font-medium hover:bg-green-700"
           >
             <span>➕</span>
             <span>Ajouter</span>
           </button>
           <button
             onClick={onHistory}
-            className="flex items-center justify-center gap-1 px-3 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors"
+            className="flex items-center justify-center gap-1 px-3 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700"
           >
             <span>📜</span>
             <span>Historique</span>
           </button>
         </div>
 
-        {/* Actions secondaires */}
         <div className="grid grid-cols-2 gap-2">
           <button
             onClick={onAutoAlloc}
-            className="flex items-center justify-center gap-1 px-3 py-2 bg-purple-50 text-purple-700 rounded-lg text-sm font-medium hover:bg-purple-100 transition-colors border border-purple-200"
+            className="flex items-center justify-center gap-1 px-3 py-2 bg-purple-50 text-purple-700 rounded-lg text-sm font-medium hover:bg-purple-100 border border-purple-200"
           >
             <span>⚡</span>
             <span>Auto-épargne</span>
           </button>
           <button
             onClick={onBadges}
-            className="flex items-center justify-center gap-1 px-3 py-2 bg-yellow-50 text-yellow-700 rounded-lg text-sm font-medium hover:bg-yellow-100 transition-colors border border-yellow-200"
+            className="flex items-center justify-center gap-1 px-3 py-2 bg-yellow-50 text-yellow-700 rounded-lg text-sm font-medium hover:bg-yellow-100 border border-yellow-200"
           >
             <span>🏆</span>
             <span>Badges</span>
@@ -480,14 +462,14 @@ const GoalCard = ({ goal, categories, onContribute, onHistory, onAutoAlloc, onBa
   );
 };
 
-// ContributionModal Component
+// ContributionModal
 const ContributionModal = ({ goal, onClose, onSubmit }) => (
   <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
     <div className="bg-white rounded-lg max-w-md w-full max-h-[90vh] overflow-y-auto">
       <div className="p-6">
         <div className="flex justify-between items-center mb-4">
           <h3 className="text-xl font-bold">💰 Contribution</h3>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600">✕</button>
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 text-2xl">✕</button>
         </div>
         
         <form onSubmit={onSubmit} className="space-y-4">
@@ -525,7 +507,7 @@ const ContributionModal = ({ goal, onClose, onSubmit }) => (
 
           <button
             type="submit"
-            className="w-full bg-green-600 text-white py-3 rounded-lg font-medium hover:bg-green-700 transition-colors"
+            className="w-full bg-green-600 text-white py-3 rounded-lg font-medium hover:bg-green-700"
           >
             ✓ Ajouter la contribution
           </button>
@@ -535,14 +517,14 @@ const ContributionModal = ({ goal, onClose, onSubmit }) => (
   </div>
 );
 
-// HistoryModal Component
+// HistoryModal
 const HistoryModal = ({ goal, contributions, onClose }) => (
   <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
     <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
       <div className="p-6">
         <div className="flex justify-between items-center mb-4">
           <h3 className="text-xl font-bold">📜 Historique - {goal.title}</h3>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600">✕</button>
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 text-2xl">✕</button>
         </div>
 
         {contributions.length === 0 ? (
@@ -585,7 +567,7 @@ const HistoryModal = ({ goal, contributions, onClose }) => (
   </div>
 );
 
-// AutoAllocModal Component  
+// AutoAllocModal
 const AutoAllocModal = ({ goal, envelopes, allocations, onClose, onSubmit }) => {
   const [percentages, setPercentages] = useState({});
   const total = Object.values(percentages).reduce((sum, val) => sum + (parseFloat(val) || 0), 0);
@@ -604,7 +586,7 @@ const AutoAllocModal = ({ goal, envelopes, allocations, onClose, onSubmit }) => 
         <div className="p-6">
           <div className="flex justify-between items-center mb-4">
             <h3 className="text-xl font-bold">⚡ Auto-épargne - {goal.title}</h3>
-            <button onClick={onClose} className="text-gray-400 hover:text-gray-600">✕</button>
+            <button onClick={onClose} className="text-gray-400 hover:text-gray-600 text-2xl">✕</button>
           </div>
 
           <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
@@ -662,7 +644,7 @@ const AutoAllocModal = ({ goal, envelopes, allocations, onClose, onSubmit }) => 
             <button
               type="submit"
               disabled={total > 100}
-              className="w-full bg-purple-600 text-white py-3 rounded-lg font-medium hover:bg-purple-700 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed"
+              className="w-full bg-purple-600 text-white py-3 rounded-lg font-medium hover:bg-purple-700 disabled:bg-gray-300 disabled:cursor-not-allowed"
             >
               ✓ Configurer l'auto-épargne
             </button>
@@ -673,14 +655,14 @@ const AutoAllocModal = ({ goal, envelopes, allocations, onClose, onSubmit }) => 
   );
 };
 
-// BadgesModal Component
+// BadgesModal
 const BadgesModal = ({ goal, badges, onClose }) => (
   <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
     <div className="bg-white rounded-lg max-w-md w-full max-h-[90vh] overflow-y-auto">
       <div className="p-6">
         <div className="flex justify-between items-center mb-4">
           <h3 className="text-xl font-bold">🏆 Badges - {goal.title}</h3>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600">✕</button>
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 text-2xl">✕</button>
         </div>
 
         <div className="mb-4">
