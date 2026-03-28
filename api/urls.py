@@ -4,7 +4,14 @@ from django.urls import path
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 from . import views
 from . import payment_views
-from . import export_views  # ✅ AJOUTER en haut
+from . import export_views
+from .views import (
+    goal_contributions,
+    goal_auto_allocation,
+    goal_milestones,
+    execute_auto_allocations,
+    goals_stats,
+)
 
 urlpatterns = [
     # API racine
@@ -24,17 +31,20 @@ urlpatterns = [
     path('transactions/recent/', views.recent_transactions, name='recent_transactions'),
     path('incomes/', views.manage_incomes, name='manage_incomes'),
     path('expenses/', views.manage_expenses, name='manage_expenses'),
-    path('expenses/<int:expense_id>/', views.expense_detail, name='expense_detail'),  # ✅ AJOUTÉ — GET, PUT, DELETE par ID
+    path('expenses/<int:expense_id>/', views.expense_detail, name='expense_detail'),
     path('budgets/', views.manage_budgets, name='manage_budgets'),
     path('budget/overview/', views.budget_overview, name='budget_overview'),
 
     # Objectifs & épargne
     path('goals/', views.user_goals, name='user_goals'),
     path('goals/manage/', views.manage_goals, name='manage_goals'),
-
-    path('goals/<int:goal_id>/contributions/', views.goal_contributions, name='goal_contributions'),
-    path('goals/<int:goal_id>/auto-allocation/', views.goal_auto_allocation, name='goal_auto_allocation'),
-
+    
+    # Phase 2 - Goals
+    path('goals/<int:goal_id>/contributions/', goal_contributions, name='goal-contributions'),
+    path('goals/<int:goal_id>/auto-allocation/', goal_auto_allocation, name='goal-auto-allocation'),
+    path('goals/<int:goal_id>/milestones/', goal_milestones, name='goal-milestones'),
+    path('goals/execute-allocations/', execute_auto_allocations, name='execute-auto-allocations'),
+    path('goals/stats/', goals_stats, name='goals-stats'),
 
     # Valeurs personnelles
     path('values/', views.user_values, name='user_values'),
@@ -66,15 +76,17 @@ urlpatterns = [
     path('ai/scan-receipt/', views.scan_receipt, name='scan_receipt'),
     path('yoonu-score/', views.get_yoonu_score, name='get_yoonu_score'),
     path('yoonu-score/history/', views.get_score_history, name='get_score_history'),
-    # Ligne 63-65 : REMPLACER PAR
     path('user-values/', views.user_values, name='user_values'),
+    
     # Score calculation trigger
     path('calculate-score/', views.trigger_score_calculation, name='trigger_score_calculation'),
+    
     # Payment endpoints
     path('payments/mobile-money/', payment_views.mobile_money_payment, name='mobile_money'),
     path('payments/card/', payment_views.card_payment, name='card_payment'),
     path('payments/status/<str:transaction_id>/', payment_views.check_payment_status, name='payment_status'),
     path('payments/start-trial/', payment_views.start_trial, name='start_trial'),
+    
     # Onboarding
     path('onboarding/status/', views.check_onboarding_status, name='check_onboarding_status'),
     path('onboarding/complete/', views.complete_onboarding, name='complete_onboarding'),
@@ -82,49 +94,6 @@ urlpatterns = [
     path('export/excel/', export_views.export_excel),
     path('export/pdf/', export_views.export_pdf),
     path('score-history/', views.score_history),
-    # ✅ 4. AJOUTER DANS api/urls.py (si pas déjà fait)
-    path('onboarding/status/', views.check_onboarding_status, name='check_onboarding_status'),
-    path('onboarding/complete/', views.complete_onboarding, name='complete_onboarding'),
     path('meta-envelopes/', views.manage_meta_envelopes, name='manage_meta_envelopes'),
-    path(
-        'goals/<int:goal_id>/contributions/', 
-        goal_contributions, 
-        name='goal-contributions'
-    ),
-    # GET /api/goals/1/contributions/  → Liste historique
-    # POST /api/goals/1/contributions/ → Ajoute contribution
-    
-    # Auto-allocation
-    path(
-        'goals/<int:goal_id>/auto-allocation/', 
-        goal_auto_allocation, 
-        name='goal-auto-allocation'
-    ),
-    # GET /api/goals/1/auto-allocation/    → Récupère config
-    # POST /api/goals/1/auto-allocation/   → Configure
-    # DELETE /api/goals/1/auto-allocation/ → Supprime
-    
-    # Milestones
-    path(
-        'goals/<int:goal_id>/milestones/', 
-        goal_milestones, 
-        name='goal-milestones'
-    ),
-    # GET /api/goals/1/milestones/ → Liste badges débloqués
-    
-    # Exécuter auto-allocations (à appeler périodiquement)
-    path(
-        'goals/execute-allocations/', 
-        execute_auto_allocations, 
-        name='execute-auto-allocations'
-    ),
-    # POST /api/goals/execute-allocations/ → Exécute toutes les auto-allocs
-    
-    # Stats globales
-    path(
-        'goals/stats/', 
-        goals_stats, 
-        name='goals-stats'
-    ),
 
 ]
