@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import API from '../../services/api';
 
 const GoalsPage = () => {
   // États
@@ -10,44 +11,36 @@ const GoalsPage = () => {
   const [sortBy, setSortBy] = useState('recent');
   
   // Modals
-  const [showCreateModal, setShowCreateModal] = useState(false);
   const [showContributionModal, setShowContributionModal] = useState(false);
   const [showHistoryModal, setShowHistoryModal] = useState(false);
   const [showAutoAllocModal, setShowAutoAllocModal] = useState(false);
   const [showBadgesModal, setShowBadgesModal] = useState(false);
   const [selectedGoal, setSelectedGoal] = useState(null);
   
-  // Données historique & auto-alloc
+  // Données
   const [contributions, setContributions] = useState([]);
   const [allocations, setAllocations] = useState([]);
   const [badges, setBadges] = useState([]);
 
   // Toast simple
-  const showToast = (message, type = 'success') => {
-    alert(message); // Remplace par ton système de toast
+  const showToast = (message) => {
+    alert(message);
   };
 
   // Catégories
   const categories = [
-    { id: 'all', name: 'Tous', icon: '🎯', color: 'gray' },
-    { id: 'urgence', name: 'Urgence', icon: '🚨', color: 'red' },
-    { id: 'logement', name: 'Logement', icon: '🏠', color: 'blue' },
-    { id: 'transport', name: 'Transport', icon: '🚗', color: 'green' },
-    { id: 'education', name: 'Éducation', icon: '📚', color: 'purple' },
-    { id: 'sante', name: 'Santé', icon: '🏥', color: 'pink' },
-    { id: 'loisirs', name: 'Loisirs', icon: '🎭', color: 'yellow' },
-    { id: 'famille', name: 'Famille', icon: '👨‍👩‍👧‍👦', color: 'orange' },
-    { id: 'investissement', name: 'Investissement', icon: '💰', color: 'emerald' },
-    { id: 'autre', name: 'Autre', icon: '📌', color: 'gray' }
+    { id: 'all', name: 'Tous', icon: '🎯' },
+    { id: 'urgence', name: 'Urgence', icon: '🚨' },
+    { id: 'logement', name: 'Logement', icon: '🏠' },
+    { id: 'transport', name: 'Transport', icon: '🚗' },
+    { id: 'education', name: 'Éducation', icon: '📚' },
+    { id: 'sante', name: 'Santé', icon: '🏥' },
+    { id: 'loisirs', name: 'Loisirs', icon: '🎭' },
+    { id: 'famille', name: 'Famille', icon: '👨\u200d👩\u200d👧\u200d👦' },
+    { id: 'investissement', name: 'Investissement', icon: '💰' },
+    { id: 'autre', name: 'Autre', icon: '📌' }
   ];
 
-  // Headers API
-  const getHeaders = () => ({
-    'Authorization': `Bearer ${localStorage.getItem('token')}`,
-    'Content-Type': 'application/json'
-  });
-
-  // Charger données
   useEffect(() => {
     fetchGoals();
     fetchEnvelopes();
@@ -55,15 +48,10 @@ const GoalsPage = () => {
 
   const fetchGoals = async () => {
     try {
-      const response = await fetch(`${process.env.REACT_APP_API_URL}/api/goals/`, {
-        headers: getHeaders()
-      });
-      if (response.ok) {
-        const data = await response.json();
-        setGoals(data);
-      }
+      const response = await API.get('/goals/manage/');
+      setGoals(response.data.goals || []);
     } catch (error) {
-      console.error('Erreur chargement goals:', error);
+      console.error('Erreur:', error);
     } finally {
       setLoading(false);
     }
@@ -71,28 +59,17 @@ const GoalsPage = () => {
 
   const fetchEnvelopes = async () => {
     try {
-      const response = await fetch(`${process.env.REACT_APP_API_URL}/api/meta-envelopes/`, {
-        headers: getHeaders()
-      });
-      if (response.ok) {
-        const data = await response.json();
-        setEnvelopes(data);
-      }
+      const response = await API.get('/meta-envelopes/');
+      setEnvelopes(response.data || []);
     } catch (error) {
-      console.error('Erreur chargement envelopes:', error);
+      console.error('Erreur envelopes:', error);
     }
   };
 
   const fetchHistory = async (goalId) => {
     try {
-      const response = await fetch(
-        `${process.env.REACT_APP_API_URL}/api/goals/${goalId}/contributions/`,
-        { headers: getHeaders() }
-      );
-      if (response.ok) {
-        const data = await response.json();
-        setContributions(data.contributions || []);
-      }
+      const response = await API.get(`/goals/${goalId}/contributions/`);
+      setContributions(response.data.contributions || []);
     } catch (error) {
       console.error('Erreur historique:', error);
       setContributions([]);
@@ -101,14 +78,8 @@ const GoalsPage = () => {
 
   const fetchAutoAlloc = async (goalId) => {
     try {
-      const response = await fetch(
-        `${process.env.REACT_APP_API_URL}/api/goals/${goalId}/auto-allocation/`,
-        { headers: getHeaders() }
-      );
-      if (response.ok) {
-        const data = await response.json();
-        setAllocations(data.allocations || []);
-      }
+      const response = await API.get(`/goals/${goalId}/auto-allocation/`);
+      setAllocations(response.data.allocations || []);
     } catch (error) {
       console.error('Erreur auto-alloc:', error);
       setAllocations([]);
@@ -117,14 +88,8 @@ const GoalsPage = () => {
 
   const fetchBadges = async (goalId) => {
     try {
-      const response = await fetch(
-        `${process.env.REACT_APP_API_URL}/api/goals/${goalId}/milestones/`,
-        { headers: getHeaders() }
-      );
-      if (response.ok) {
-        const data = await response.json();
-        setBadges(data.badges || []);
-      }
+      const response = await API.get(`/goals/${goalId}/milestones/`);
+      setBadges(response.data.badges || []);
     } catch (error) {
       console.error('Erreur badges:', error);
       setBadges([]);
@@ -154,30 +119,19 @@ const GoalsPage = () => {
     const formData = new FormData(e.target);
     
     try {
-      const response = await fetch(
-        `${process.env.REACT_APP_API_URL}/api/goals/${selectedGoal.id}/contributions/`,
-        {
-          method: 'POST',
-          headers: getHeaders(),
-          body: JSON.stringify({
-            amount: formData.get('amount'),
-            type: formData.get('type') || 'add',
-            source: formData.get('source') || 'Manuel',
-            note: formData.get('note') || ''
-          })
-        }
-      );
+      await API.post(`/goals/${selectedGoal.id}/contributions/`, {
+        amount: formData.get('amount'),
+        type: 'add',
+        source: formData.get('source') || 'Manuel',
+        note: formData.get('note') || ''
+      });
 
-      if (response.ok) {
-        showToast('Contribution ajoutée !');
-        setShowContributionModal(false);
-        fetchGoals();
-      } else {
-        showToast('Erreur contribution', 'error');
-      }
+      showToast('Contribution ajoutée !');
+      setShowContributionModal(false);
+      fetchGoals();
     } catch (error) {
       console.error('Erreur:', error);
-      showToast('Erreur réseau', 'error');
+      showToast('Erreur contribution');
     }
   };
 
@@ -197,25 +151,15 @@ const GoalsPage = () => {
     });
 
     try {
-      const response = await fetch(
-        `${process.env.REACT_APP_API_URL}/api/goals/${selectedGoal.id}/auto-allocation/`,
-        {
-          method: 'POST',
-          headers: getHeaders(),
-          body: JSON.stringify({ allocations: allocationsData })
-        }
-      );
+      await API.post(`/goals/${selectedGoal.id}/auto-allocation/`, {
+        allocations: allocationsData
+      });
 
-      if (response.ok) {
-        showToast('Auto-allocation configurée !');
-        setShowAutoAllocModal(false);
-      } else {
-        const data = await response.json();
-        showToast(data.error || 'Erreur', 'error');
-      }
+      showToast('Auto-allocation configurée !');
+      setShowAutoAllocModal(false);
     } catch (error) {
       console.error('Erreur:', error);
-      showToast('Erreur réseau', 'error');
+      showToast(error.response?.data?.error || 'Erreur');
     }
   };
 
@@ -296,7 +240,7 @@ const GoalsPage = () => {
           className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
         />
 
-        <div className="flex gap-2 overflow-x-auto pb-2">
+        <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
           {categories.map(cat => (
             <button
               key={cat.id}
@@ -396,7 +340,7 @@ const GoalCard = ({ goal, categories, onContribute, onHistory, onAutoAlloc, onBa
           <div className="flex-1">
             <div className="flex items-center gap-2 mb-1">
               <span className="text-2xl">{category.icon}</span>
-              <h3 className="font-bold text-gray-900">{goal.title}</h3>
+              <h3 className="font-bold text-gray-900 text-base sm:text-lg">{goal.title}</h3>
             </div>
             {goal.description && (
               <p className="text-sm text-gray-600 mt-1">{goal.description}</p>
@@ -410,7 +354,7 @@ const GoalCard = ({ goal, categories, onContribute, onHistory, onAutoAlloc, onBa
         </div>
 
         <div className="mb-3">
-          <div className="flex justify-between text-sm mb-1">
+          <div className="flex justify-between text-xs sm:text-sm mb-1">
             <span className="text-gray-600">
               {(goal.current_amount / 1000).toFixed(0)}k / {(goal.target_amount / 1000).toFixed(0)}k FCFA
             </span>
@@ -427,14 +371,14 @@ const GoalCard = ({ goal, categories, onContribute, onHistory, onAutoAlloc, onBa
         <div className="grid grid-cols-2 gap-2 mb-2">
           <button
             onClick={onContribute}
-            className="flex items-center justify-center gap-1 px-3 py-2 bg-green-600 text-white rounded-lg text-sm font-medium hover:bg-green-700"
+            className="flex items-center justify-center gap-1 px-2 py-2 bg-green-600 text-white rounded-lg text-xs sm:text-sm font-medium hover:bg-green-700"
           >
             <span>➕</span>
             <span>Ajouter</span>
           </button>
           <button
             onClick={onHistory}
-            className="flex items-center justify-center gap-1 px-3 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700"
+            className="flex items-center justify-center gap-1 px-2 py-2 bg-blue-600 text-white rounded-lg text-xs sm:text-sm font-medium hover:bg-blue-700"
           >
             <span>📜</span>
             <span>Historique</span>
@@ -444,14 +388,14 @@ const GoalCard = ({ goal, categories, onContribute, onHistory, onAutoAlloc, onBa
         <div className="grid grid-cols-2 gap-2">
           <button
             onClick={onAutoAlloc}
-            className="flex items-center justify-center gap-1 px-3 py-2 bg-purple-50 text-purple-700 rounded-lg text-sm font-medium hover:bg-purple-100 border border-purple-200"
+            className="flex items-center justify-center gap-1 px-2 py-2 bg-purple-50 text-purple-700 rounded-lg text-xs sm:text-sm font-medium hover:bg-purple-100 border border-purple-200"
           >
             <span>⚡</span>
             <span>Auto-épargne</span>
           </button>
           <button
             onClick={onBadges}
-            className="flex items-center justify-center gap-1 px-3 py-2 bg-yellow-50 text-yellow-700 rounded-lg text-sm font-medium hover:bg-yellow-100 border border-yellow-200"
+            className="flex items-center justify-center gap-1 px-2 py-2 bg-yellow-50 text-yellow-700 rounded-lg text-xs sm:text-sm font-medium hover:bg-yellow-100 border border-yellow-200"
           >
             <span>🏆</span>
             <span>Badges</span>
@@ -462,14 +406,14 @@ const GoalCard = ({ goal, categories, onContribute, onHistory, onAutoAlloc, onBa
   );
 };
 
-// ContributionModal
+// Modals (identiques à avant mais avec classes responsive corrigées)
 const ContributionModal = ({ goal, onClose, onSubmit }) => (
   <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
     <div className="bg-white rounded-lg max-w-md w-full max-h-[90vh] overflow-y-auto">
-      <div className="p-6">
+      <div className="p-4 sm:p-6">
         <div className="flex justify-between items-center mb-4">
-          <h3 className="text-xl font-bold">💰 Contribution</h3>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 text-2xl">✕</button>
+          <h3 className="text-lg sm:text-xl font-bold">💰 Contribution</h3>
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 text-2xl leading-none">✕</button>
         </div>
         
         <form onSubmit={onSubmit} className="space-y-4">
@@ -480,7 +424,7 @@ const ContributionModal = ({ goal, onClose, onSubmit }) => (
               name="amount"
               required
               min="1"
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
+              className="w-full px-3 py-2 text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
               placeholder="Ex: 50000"
             />
           </div>
@@ -490,7 +434,7 @@ const ContributionModal = ({ goal, onClose, onSubmit }) => (
             <input
               type="text"
               name="source"
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
+              className="w-full px-3 py-2 text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
               placeholder="Ex: Salaire mars"
             />
           </div>
@@ -500,14 +444,14 @@ const ContributionModal = ({ goal, onClose, onSubmit }) => (
             <textarea
               name="note"
               rows="2"
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
+              className="w-full px-3 py-2 text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
               placeholder="Ex: Économie sur loisirs"
             />
           </div>
 
           <button
             type="submit"
-            className="w-full bg-green-600 text-white py-3 rounded-lg font-medium hover:bg-green-700"
+            className="w-full bg-green-600 text-white py-3 rounded-lg font-medium hover:bg-green-700 text-base"
           >
             ✓ Ajouter la contribution
           </button>
@@ -517,26 +461,25 @@ const ContributionModal = ({ goal, onClose, onSubmit }) => (
   </div>
 );
 
-// HistoryModal
 const HistoryModal = ({ goal, contributions, onClose }) => (
   <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
     <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-      <div className="p-6">
+      <div className="p-4 sm:p-6">
         <div className="flex justify-between items-center mb-4">
-          <h3 className="text-xl font-bold">📜 Historique - {goal.title}</h3>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 text-2xl">✕</button>
+          <h3 className="text-lg sm:text-xl font-bold">📜 Historique</h3>
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 text-2xl leading-none">✕</button>
         </div>
 
         {contributions.length === 0 ? (
           <div className="text-center py-8">
             <div className="text-4xl mb-2">📭</div>
-            <p className="text-gray-500">Aucune contribution encore</p>
+            <p className="text-gray-500 text-sm">Aucune contribution encore</p>
           </div>
         ) : (
           <div className="space-y-3">
             {contributions.map((contrib, idx) => (
               <div key={idx} className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg">
-                <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
+                <div className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 ${
                   contrib.type === 'add' ? 'bg-green-100' :
                   contrib.type === 'remove' ? 'bg-red-100' : 'bg-blue-100'
                 }`}>
@@ -544,18 +487,18 @@ const HistoryModal = ({ goal, contributions, onClose }) => (
                     {contrib.type === 'add' ? '➕' : contrib.type === 'remove' ? '➖' : '⚡'}
                   </span>
                 </div>
-                <div className="flex-1">
-                  <div className="flex justify-between items-start mb-1">
-                    <span className="font-semibold">
+                <div className="flex-1 min-w-0">
+                  <div className="flex justify-between items-start mb-1 gap-2">
+                    <span className="font-semibold text-sm sm:text-base">
                       {contrib.type === 'remove' ? '-' : '+'}{(contrib.amount / 1000).toFixed(0)}k FCFA
                     </span>
-                    <span className="text-xs text-gray-500">
+                    <span className="text-xs text-gray-500 flex-shrink-0">
                       {new Date(contrib.created_at).toLocaleDateString('fr-FR')}
                     </span>
                   </div>
-                  <p className="text-sm text-gray-600">{contrib.source}</p>
+                  <p className="text-xs sm:text-sm text-gray-600">{contrib.source}</p>
                   {contrib.note && (
-                    <p className="text-xs text-gray-500 mt-1 italic">{contrib.note}</p>
+                    <p className="text-xs text-gray-500 mt-1 italic break-words">{contrib.note}</p>
                   )}
                 </div>
               </div>
@@ -567,7 +510,6 @@ const HistoryModal = ({ goal, contributions, onClose }) => (
   </div>
 );
 
-// AutoAllocModal
 const AutoAllocModal = ({ goal, envelopes, allocations, onClose, onSubmit }) => {
   const [percentages, setPercentages] = useState({});
   const total = Object.values(percentages).reduce((sum, val) => sum + (parseFloat(val) || 0), 0);
@@ -583,34 +525,34 @@ const AutoAllocModal = ({ goal, envelopes, allocations, onClose, onSubmit }) => 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-        <div className="p-6">
+        <div className="p-4 sm:p-6">
           <div className="flex justify-between items-center mb-4">
-            <h3 className="text-xl font-bold">⚡ Auto-épargne - {goal.title}</h3>
-            <button onClick={onClose} className="text-gray-400 hover:text-gray-600 text-2xl">✕</button>
+            <h3 className="text-lg sm:text-xl font-bold">⚡ Auto-épargne</h3>
+            <button onClick={onClose} className="text-gray-400 hover:text-gray-600 text-2xl leading-none">✕</button>
           </div>
 
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
-            <p className="text-sm text-blue-900">
-              💡 Configure un pourcentage de chaque enveloppe à allouer automatiquement vers cet objectif.
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4">
+            <p className="text-xs sm:text-sm text-blue-900">
+              💡 Configure un pourcentage de chaque enveloppe à allouer automatiquement.
             </p>
           </div>
 
           <form onSubmit={onSubmit} className="space-y-4">
             {envelopes.length === 0 ? (
-              <div className="text-center py-8 text-gray-500">
+              <div className="text-center py-8 text-gray-500 text-sm">
                 Aucune enveloppe disponible
               </div>
             ) : (
               <div className="space-y-3">
                 {envelopes.map(env => (
-                  <div key={env.id} className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
-                    <div className="flex-1">
-                      <div className="font-medium">{env.category}</div>
-                      <div className="text-sm text-gray-600">
+                  <div key={env.id} className="flex items-center gap-2 sm:gap-3 p-3 bg-gray-50 rounded-lg">
+                    <div className="flex-1 min-w-0">
+                      <div className="font-medium text-sm sm:text-base truncate">{env.category}</div>
+                      <div className="text-xs sm:text-sm text-gray-600">
                         Dispo: {((env.allocated_amount - env.spent_amount) / 1000).toFixed(0)}k FCFA
                       </div>
                     </div>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
                       <input
                         type="number"
                         name={`envelope_${env.id}`}
@@ -619,10 +561,10 @@ const AutoAllocModal = ({ goal, envelopes, allocations, onClose, onSubmit }) => 
                         step="0.1"
                         value={percentages[env.id] || ''}
                         onChange={(e) => setPercentages({...percentages, [env.id]: e.target.value})}
-                        className="w-20 px-2 py-1 border border-gray-300 rounded text-center"
+                        className="w-16 sm:w-20 px-2 py-1 text-sm sm:text-base border border-gray-300 rounded text-center"
                         placeholder="0"
                       />
-                      <span className="text-gray-600">%</span>
+                      <span className="text-gray-600 text-sm sm:text-base">%</span>
                     </div>
                   </div>
                 ))}
@@ -631,8 +573,8 @@ const AutoAllocModal = ({ goal, envelopes, allocations, onClose, onSubmit }) => 
 
             <div className={`p-3 rounded-lg ${total > 100 ? 'bg-red-50 border border-red-200' : 'bg-gray-50'}`}>
               <div className="flex justify-between items-center">
-                <span className="font-medium">Total alloué :</span>
-                <span className={`font-bold ${total > 100 ? 'text-red-600' : 'text-gray-900'}`}>
+                <span className="font-medium text-sm sm:text-base">Total alloué :</span>
+                <span className={`font-bold text-base sm:text-lg ${total > 100 ? 'text-red-600' : 'text-gray-900'}`}>
                   {total.toFixed(1)}%
                 </span>
               </div>
@@ -644,7 +586,7 @@ const AutoAllocModal = ({ goal, envelopes, allocations, onClose, onSubmit }) => 
             <button
               type="submit"
               disabled={total > 100}
-              className="w-full bg-purple-600 text-white py-3 rounded-lg font-medium hover:bg-purple-700 disabled:bg-gray-300 disabled:cursor-not-allowed"
+              className="w-full bg-purple-600 text-white py-3 rounded-lg font-medium hover:bg-purple-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-base"
             >
               ✓ Configurer l'auto-épargne
             </button>
@@ -655,14 +597,13 @@ const AutoAllocModal = ({ goal, envelopes, allocations, onClose, onSubmit }) => 
   );
 };
 
-// BadgesModal
 const BadgesModal = ({ goal, badges, onClose }) => (
   <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
     <div className="bg-white rounded-lg max-w-md w-full max-h-[90vh] overflow-y-auto">
-      <div className="p-6">
+      <div className="p-4 sm:p-6">
         <div className="flex justify-between items-center mb-4">
-          <h3 className="text-xl font-bold">🏆 Badges - {goal.title}</h3>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 text-2xl">✕</button>
+          <h3 className="text-lg sm:text-xl font-bold">🏆 Badges</h3>
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 text-2xl leading-none">✕</button>
         </div>
 
         <div className="mb-4">
@@ -673,7 +614,7 @@ const BadgesModal = ({ goal, badges, onClose }) => (
                goal.progress_percentage >= 50 ? '🔥' :
                goal.progress_percentage >= 25 ? '💪' : '🎯'}
             </div>
-            <div className="text-2xl font-bold text-gray-900 mb-1">
+            <div className="text-xl sm:text-2xl font-bold text-gray-900 mb-1">
               {goal.progress_percentage}% accompli
             </div>
           </div>
@@ -682,17 +623,17 @@ const BadgesModal = ({ goal, badges, onClose }) => (
         {badges.length === 0 ? (
           <div className="text-center py-8">
             <div className="text-4xl mb-2">🏅</div>
-            <p className="text-gray-500">Continue ! Les badges arrivent bientôt</p>
+            <p className="text-gray-500 text-sm">Continue ! Les badges arrivent bientôt</p>
           </div>
         ) : (
           <div className="space-y-3">
             {badges.map((badge, idx) => (
-              <div key={idx} className="p-4 bg-gradient-to-r from-yellow-50 to-orange-50 border border-yellow-200 rounded-lg">
+              <div key={idx} className="p-3 sm:p-4 bg-gradient-to-r from-yellow-50 to-orange-50 border border-yellow-200 rounded-lg">
                 <div className="flex items-start gap-3">
-                  <span className="text-3xl">{badge.icon}</span>
-                  <div className="flex-1">
-                    <div className="font-bold text-gray-900">{badge.title}</div>
-                    <p className="text-sm text-gray-600 mt-1">{badge.description}</p>
+                  <span className="text-2xl sm:text-3xl flex-shrink-0">{badge.icon}</span>
+                  <div className="flex-1 min-w-0">
+                    <div className="font-bold text-gray-900 text-sm sm:text-base">{badge.title}</div>
+                    <p className="text-xs sm:text-sm text-gray-600 mt-1 break-words">{badge.description}</p>
                   </div>
                 </div>
               </div>
