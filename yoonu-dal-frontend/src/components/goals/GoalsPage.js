@@ -123,20 +123,36 @@ const GoalsPage = () => {
   const handleContribution = async (e) => {
     e.preventDefault();
     const formData = new FormData(e.target);
+    const amount = parseFloat(formData.get('amount'));
     
     try {
-      await API.post(`/goals/${selectedGoal.id}/contributions/`, {
-        amount: formData.get('amount'),
-        type: 'add',
-        source: formData.get('source') || 'Manuel',
-        note: formData.get('note') || ''
-      });
+      // Essayer Phase 2 d'abord
+      try {
+        await API.post(`/goals/${selectedGoal.id}/contributions/`, {
+          amount: amount,
+          type: 'add',
+          source: formData.get('source') || 'Manuel',
+          note: formData.get('note') || ''
+        });
+        console.log('✅ Phase 2 contribution OK');
+      } catch (err) {
+        // Si endpoint Phase 2 pas dispo (404), fallback sur Phase 1
+        if (err.response?.status === 404) {
+          console.log('⚠️ Phase 2 endpoint not found, using Phase 1 fallback');
+          await API.put(`/goals/manage/?goal_id=${selectedGoal.id}`, {
+            current_amount: selectedGoal.current_amount + amount
+          });
+        } else {
+          throw err;
+        }
+      }
 
       showToast('Contribution ajoutée !');
       setShowContributionModal(false);
       fetchGoals();
     } catch (error) {
-      console.error('Erreur:', error);
+      console.error('❌ Erreur:', error);
+      console.error('❌ Error details:', error.response?.data);
       showToast('Erreur contribution');
     }
   };
