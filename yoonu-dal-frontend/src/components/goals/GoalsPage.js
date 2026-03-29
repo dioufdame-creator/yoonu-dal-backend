@@ -41,6 +41,13 @@ const GoalsPage = () => {
     { id: 'autre', name: 'Autre', icon: '📌' }
   ];
 
+  // Formatage intelligent montants
+  const formatAmount = (amount) => {
+    if (amount >= 1000000) return `${(amount / 1000000).toFixed(1)}M`;
+    if (amount >= 1000) return `${(amount / 1000).toFixed(0)}k`;
+    return amount.toString();
+  };
+
   useEffect(() => {
     fetchGoals();
     fetchEnvelopes();
@@ -48,11 +55,6 @@ const GoalsPage = () => {
 
   const fetchGoals = async () => {
     try {
-  const formatAmount = (amount) => {
-    if (amount >= 1000000) return `${(amount / 1000000).toFixed(1)}M`;
-    if (amount >= 1000) return `${(amount / 1000).toFixed(0)}k`;
-    return amount.toString();
-  };
       const response = await API.get('/goals/manage/');
       setGoals(response.data.goals || []);
     } catch (error) {
