@@ -48,6 +48,11 @@ const GoalsPage = () => {
 
   const fetchGoals = async () => {
     try {
+  const formatAmount = (amount) => {
+    if (amount >= 1000000) return `${(amount / 1000000).toFixed(1)}M`;
+    if (amount >= 1000) return `${(amount / 1000).toFixed(0)}k`;
+    return amount.toString();
+  };
       const response = await API.get('/goals/manage/');
       setGoals(response.data.goals || []);
     } catch (error) {
@@ -69,6 +74,7 @@ const GoalsPage = () => {
   const fetchHistory = async (goalId) => {
     try {
       const response = await API.get(`/goals/${goalId}/contributions/`);
+    console.log("🔍 HISTORIQUE:", response.data);
       setContributions(response.data.contributions || []);
     } catch (error) {
       console.error('Erreur historique:', error);
@@ -224,7 +230,7 @@ const GoalsPage = () => {
           <div className="bg-white rounded-lg shadow p-3 sm:p-4">
             <div className="text-gray-500 text-xs sm:text-sm mb-1">Épargné</div>
             <div className="text-lg sm:text-xl font-bold text-purple-600">
-              {(stats.totalSaved / 1000).toFixed(0)}k
+              {formatAmount(stats.totalSaved)}
             </div>
           </div>
         </div>
@@ -356,7 +362,7 @@ const GoalCard = ({ goal, categories, onContribute, onHistory, onAutoAlloc, onBa
         <div className="mb-3">
           <div className="flex justify-between text-xs sm:text-sm mb-1">
             <span className="text-gray-600">
-              {(goal.current_amount / 1000).toFixed(0)}k / {(goal.target_amount / 1000).toFixed(0)}k FCFA
+              {formatAmount(goal.current_amount)} / {formatAmount(goal.target_amount)} FCFA
             </span>
             <span className="font-semibold text-green-600">{goal.progress_percentage}%</span>
           </div>
