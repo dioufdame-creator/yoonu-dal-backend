@@ -58,7 +58,7 @@ const DashboardV6 = ({ toast, auth, onNavigate, user }) => {
       ] = await Promise.all([
         API.get('/yoonu-score/').catch(() => null),
         API.get('/dashboard/metrics/').catch(() => null),
-        API.get('/meta-envelopes/').catch(() => null),
+        API.get('/meta-envelopes/').catch(() => null),  // ✅ CORRIGÉ
         API.get('/expenses/').catch(() => null),
         API.get('/incomes/').catch(() => null),
         API.get('/score-history/').catch(() => null)
@@ -366,7 +366,7 @@ const DashboardV6 = ({ toast, auth, onNavigate, user }) => {
       
       doc.setFontSize(10);
       doc.text(`Généré le ${new Date().toLocaleDateString('fr-FR')}`, 14, 35);
-      doc.text(`Utilisateur: ${auth?.user?.first_name || 'Dame'}`, 14, 40);
+      doc.text(`Utilisateur: ${user?.first_name || user?.username || 'Utilisateur'}`, 14, 40);
 
       // Ligne séparation
       doc.setDrawColor(200, 200, 200);
@@ -671,7 +671,7 @@ const DashboardV6 = ({ toast, auth, onNavigate, user }) => {
         {/* Greeting */}
         <div className="mb-6">
           <h1 className="text-2xl lg:text-3xl font-bold text-gray-900">
-            👋 Salut {auth?.user?.first_name || 'Dame'}
+            👋 Salut {user?.first_name || user?.username || 'utilisateur'}
           </h1>
           <p className="text-sm text-gray-500">
             {new Date().toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' })}
@@ -937,7 +937,13 @@ const DashboardV6 = ({ toast, auth, onNavigate, user }) => {
                     <h3 className="text-sm lg:text-base font-semibold text-gray-900 mb-5">Pression budgétaire</h3>
                     
                     <div className="space-y-4">
-                      {envelopes.slice(0, 3).map(envelope => {
+                      {envelopes
+                        .sort((a, b) => {
+                          const order = ['essentiel', 'plaisir', 'projet', 'libération'];
+                          return order.indexOf(a.envelope_type?.toLowerCase()) - order.indexOf(b.envelope_type?.toLowerCase());
+                        })
+                        .slice(0, 4)
+                        .map(envelope => {
                         const pct = envelope.monthly_budget > 0 ? (envelope.current_spent / envelope.monthly_budget) * 100 : 0;
                         const isOver = pct > 100;
                         
@@ -969,7 +975,7 @@ const DashboardV6 = ({ toast, auth, onNavigate, user }) => {
                       })}
                     </div>
                     
-                    {envelopes.length > 3 && (
+                    {envelopes.length > 4 && (
                       <button
                         onClick={() => onNavigate('envelopes')}
                         className="text-xs text-green-600 hover:text-green-700 font-semibold mt-4"
