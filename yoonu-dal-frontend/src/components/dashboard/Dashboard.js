@@ -940,7 +940,9 @@ const DashboardV6 = ({ toast, auth, onNavigate, user }) => {
                       {envelopes
                         .sort((a, b) => {
                           const order = ['essentiel', 'plaisir', 'projet', 'libération'];
-                          return order.indexOf(a.envelope_type?.toLowerCase()) - order.indexOf(b.envelope_type?.toLowerCase());
+                          const typeA = (a.envelope_type || a.category || '').toLowerCase();
+                          const typeB = (b.envelope_type || b.category || '').toLowerCase();
+                          return order.indexOf(typeA) - order.indexOf(typeB);
                         })
                         .slice(0, 4)
                         .map(envelope => {
@@ -950,7 +952,7 @@ const DashboardV6 = ({ toast, auth, onNavigate, user }) => {
                         return (
                           <div key={envelope.id}>
                             <div className="flex items-center justify-between mb-1.5">
-                              <span className="text-sm font-medium text-gray-700 capitalize">{envelope.envelope_type}</span>
+                              <span className="text-sm font-medium text-gray-700 capitalize">{envelope.envelope_type || envelope.category}</span>
                               <span className={`text-sm font-semibold ${isOver ? 'text-red-600' : 'text-gray-900'}`}>
                                 {Math.round(pct)}%
                               </span>
