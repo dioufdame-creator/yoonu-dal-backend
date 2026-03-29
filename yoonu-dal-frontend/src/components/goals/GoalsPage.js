@@ -117,42 +117,57 @@ const GoalsPage = ({ toast, onNavigate }) => {
   };
 
   const handleContribute = async () => {
+    console.log('🎯 handleContribute appelé');
+    console.log('🎯 contributeAmount:', contributeAmount);
+    console.log('🎯 selectedGoal:', selectedGoal);
+
     if (!contributeAmount || parseFloat(contributeAmount) <= 0) {
-      toast?.showError?.('Montant invalide');
+      alert('Montant invalide');
       return;
     }
 
     const amount = parseFloat(contributeAmount);
+    console.log('🎯 Amount parsed:', amount);
 
     try {
       // Essayer Phase 2
+      console.log('🔄 Tentative Phase 2...');
       try {
-        await API.post(`/goals/${selectedGoal.id}/contributions/`, {
+        const response = await API.post(`/goals/${selectedGoal.id}/contributions/`, {
           amount: amount,
           type: 'add',
           source: 'Manuel',
           note: ''
         });
-        console.log('✅ Phase 2 contribution OK');
+        console.log('✅ Phase 2 contribution OK:', response.data);
       } catch (err) {
+        console.log('❌ Phase 2 erreur:', err.response?.status, err.response?.data);
+        
         // Fallback Phase 1
         if (err.response?.status === 404) {
-          console.log('⚠️ Fallback Phase 1');
-          await API.put(`/goals/manage/?goal_id=${selectedGoal.id}`, {
+          console.log('⚠️ Fallback Phase 1 - Endpoint:', `/goals/manage/?goal_id=${selectedGoal.id}`);
+          console.log('⚠️ Payload:', { current_amount: selectedGoal.current_amount + amount });
+          
+          const response = await API.put(`/goals/manage/?goal_id=${selectedGoal.id}`, {
             current_amount: selectedGoal.current_amount + amount
           });
+          console.log('✅ Phase 1 OK:', response.data);
         } else {
           throw err;
         }
       }
 
-      toast?.showSuccess?.('Contribution ajoutée !');
+      console.log('✅ Contribution réussie !');
+      alert('Contribution ajoutée !');
       setShowContributeModal(false);
       setContributeAmount('');
-      loadGoals();
+      await loadGoals();
+      console.log('✅ Goals rechargées');
     } catch (error) {
-      console.error('Erreur:', error);
-      toast?.showError?.('Erreur contribution');
+      console.error('❌ ERREUR FINALE:', error);
+      console.error('❌ Error response:', error.response?.data);
+      console.error('❌ Error status:', error.response?.status);
+      alert('Erreur: ' + (error.response?.data?.error || error.message));
     }
   };
 
