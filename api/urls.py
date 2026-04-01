@@ -1,4 +1,4 @@
-# api/urls.py - VERSION MINIMALE QUI MARCHE
+# api/urls.py - VERSION COMPLÈTE FINALE
 
 from django.urls import path
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
@@ -51,6 +51,7 @@ urlpatterns = [
 
     # Enveloppes
     path('envelopes/analysis/', views.envelope_analysis, name='envelope_analysis'),
+    path('meta-envelopes/', views.manage_meta_envelopes, name='manage_meta_envelopes'),
 
     # Fuites financières
     path('financial-leaks/', views.manage_financial_leaks, name='manage_financial_leaks'),
@@ -77,6 +78,10 @@ urlpatterns = [
     path('payments/status/<str:transaction_id>/', payment_views.check_payment_status, name='payment_status'),
     path('payments/start-trial/', payment_views.start_trial, name='start_trial'),
     path('payments/subscription-status/', payment_views.subscription_status, name='subscription_status'),
+    
+    # Onboarding
+    path('onboarding/status/', views.check_onboarding_status, name='check_onboarding_status'),
+    path('onboarding/complete/', views.complete_onboarding, name='complete_onboarding'),
     
     # Export
     path('export/excel/', export_views.export_excel),
