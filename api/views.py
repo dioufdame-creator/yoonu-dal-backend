@@ -1,3 +1,4 @@
+# Copier tout le contenu jusqu'à la ligne 1970
 # api/views.py - Version complète
 
 from datetime import datetime, timedelta
@@ -11,25 +12,74 @@ from rest_framework.response import Response
 from rest_framework import status
 from decimal import Decimal
 import json
-import logging
 from django.shortcuts import get_object_or_404
 
 # Import des modèles
 from .models import (
     UserProfile, UserValue, IncomeSource, Income, Expense, Budget,
     Goal, Saving, Tontine, TontineParticipant, TontineContribution,
-    TontinePayout, DiagnosticResult, Envelope, FinancialLeak, PredictiveAlert,
-    ScoreHistory  # ✅ AJOUTÉ
+    TontinePayout, DiagnosticResult, Envelope, FinancialLeak, PredictiveAlert
 )
 from .utils.decorators import require_premium, check_usage_limit
-from .calculate_yoonu_score import calculate_yoonu_score
-
-logger = logging.getLogger(__name__)
 
 
 # ==========================================
 # FONCTIONS UTILITAIRES
 # ==========================================
+
+def get_categories_for_envelope(envelope_type):
+    """Retourne les catégories appartenant à une enveloppe"""
+    mapping = {
+        'essentiels': ['logement', 'alimentation', 'transport', 'santé'],
+        'plaisirs': ['loisirs', 'vêtements', 'autre'],
+        'projets': ['éducation', 'famille', 'spiritualité']
+    }
+    return mapping.get(envelope_type, [])
+
+
+def create_default_envelopes(user):
+    """Crée les enveloppes par défaut pour un utilisateur si elles n'existent pas"""
+    defaults = [
+        ('essentiels', 50),
+        ('plaisirs', 30),
+        ('projets', 20)
+    ]
+    monthly_income = user.profile.monthly_income or 0
+
+    for envelope_type, percentage in defaults:
+        Envelope.objects.get_or_create(
+            user=user,
+            envelope_type=envelope_type,
+            defaults={
+                'allocated_percentage': percentage,
+                'monthly_budget': (Decimal(percentage) / 100) * Decimal(str(monthly_income))
+            }
+        )
+
+
+def update_envelope_spending(user, expense=None):
+    """Met à jour les dépenses de l'enveloppe correspondante à une dépense"""
+    current_month = timezone.now().replace(day=1)
+
+    for envelope_type in ['essentiels', 'plaisirs', 'projets']:
+        categories = get_categories_for_envelope(envelope_type)
+        month_expenses = Expense.objects.filter(
+            user=user,
+            category__in=categories,
+            date__gte=current_month
+        ).aggregate(total=Sum('amount'))['total'] or 0
+
+        try:
+            envelope = Envelope.objects.get(user=user, envelope_type=envelope_type)
+            envelope.current_spent = month_expenses
+            envelope.save()
+        except Envelope.DoesNotExist:
+            pass
+
+
+def update_all_envelopes(user):
+    """Recalcule les dépenses de toutes les enveloppes"""
+    update_envelope_spending(user)
 
 
 # ==========================================
@@ -142,9 +192,8 @@ def user_profile(request):
                     'trial_expires_at': profile.trial_expires_at,
                     'trial_used': profile.trial_used,
                     'is_premium': profile.is_premium_active(),
-                    'ai_messages_count': profile.ai_messages_count,
+                    'ai_messages_count': profile.ai_messages_count
                     # ✅✅✅ FIN AJOUT ✅✅✅
-                    'onboarding_completed': profile.onboarding_completed,  # ✅ DOIT ÊTRE LÀ
                 }
             })
         except Exception as e:
@@ -330,26 +379,6 @@ def recent_transactions(request):
             'error': f'Erreur transactions: {str(e)}'
         }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-def check_and_reset_envelopes(user):
-    """
-    Vérifie si on est dans un nouveau mois.
-    Si oui, reset current_spent de toutes les enveloppes.
-    """
-    from django.utils import timezone
-    
-    today = timezone.now().date()
-    current_month = today.replace(day=1)  # Premier jour du mois actuel
-    
-    # Récupérer toutes les enveloppes de l'utilisateur
-    envelopes = Envelope.objects.filter(user=user, is_meta_envelope=True)
-    
-    for envelope in envelopes:
-        # Si last_reset_date est None ou dans un mois précédent
-        if not envelope.last_reset_date or envelope.last_reset_date < current_month:
-            envelope.current_spent = Decimal('0')
-            envelope.last_reset_date = current_month
-            envelope.save()
-            print(f"✅ Reset enveloppe {envelope.envelope_type} pour {user.email}")
 
 # ==========================================
 # REVENUS
@@ -358,60 +387,86 @@ def check_and_reset_envelopes(user):
 @api_view(['GET', 'POST'])
 @permission_classes([IsAuthenticated])
 def manage_incomes(request):
+    """Gestion complète des revenus"""
     user = request.user
-    
+
     if request.method == 'GET':
-        incomes = Income.objects.filter(user=user).order_by('-date')
-        incomes_data = [{
-            'id': income.id,
-            'source': income.source,
-            'description': income.description,
-            'amount': float(income.amount),
-            'date': income.date.isoformat() if hasattr(income.date, 'isoformat') else income.date,
-            'is_validated': income.is_validated
-        } for income in incomes]
-        
-        return Response({'incomes': incomes_data})
-    
-    elif request.method == 'POST':
+        try:
+            start_date = request.GET.get('start_date')
+            end_date = request.GET.get('end_date')
+            source = request.GET.get('source')
+
+            incomes = Income.objects.filter(user=user)
+
+            if start_date:
+                incomes = incomes.filter(date__gte=start_date)
+            if end_date:
+                incomes = incomes.filter(date__lte=end_date)
+            if source:
+                incomes = incomes.filter(source=source)
+
+            incomes = incomes.order_by('-date')
+
+            incomes_data = []
+            for income in incomes:
+                incomes_data.append({
+                    'id': income.id,
+                    'source': income.source,
+                    'description': income.description,
+                    'amount': float(income.amount),
+                    'date': income.date.isoformat(),
+                    'is_validated': income.is_validated,
+                    'created_at': income.created_at.isoformat()
+                })
+
+            return Response({
+                'incomes': incomes_data,
+                'total_count': len(incomes_data),
+                'total_amount': sum(i['amount'] for i in incomes_data)
+            })
+
+        except Exception as e:
+            return Response({
+                'error': f'Erreur revenus: {str(e)}'
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+    else:  # POST
         try:
             data = request.data
-            
-            # ✅ Parser la date correctement
-            from datetime import datetime
-            
-            date_str = data.get('date')
-            if date_str:
-                # Convertir string "2026-03-21" en objet date
-                income_date = datetime.strptime(date_str, '%Y-%m-%d').date()
-            else:
-                income_date = timezone.now().date()
-            
+
+            if not data.get('source'):
+                return Response({
+                    'error': 'La source est obligatoire'
+                }, status=status.HTTP_400_BAD_REQUEST)
+
+            if not data.get('amount'):
+                return Response({
+                    'error': 'Le montant est obligatoire'
+                }, status=status.HTTP_400_BAD_REQUEST)
+
             income = Income.objects.create(
                 user=user,
                 source=data.get('source'),
                 description=data.get('description', ''),
                 amount=Decimal(data.get('amount')),
-                date=income_date,
+                date=data.get('date') if data.get('date') else timezone.now().date(),
                 is_validated=data.get('is_validated', True)
             )
-            
-            # ✅ Refresh pour être sûr
-            income.refresh_from_db()
-            
+
             return Response({
                 'id': income.id,
                 'source': income.source,
                 'description': income.description,
                 'amount': float(income.amount),
-                'date': income.date.isoformat() if hasattr(income.date, 'isoformat') else income.date,
+                'date': income.date.isoformat(),
                 'message': 'Revenu créé avec succès'
             }, status=status.HTTP_201_CREATED)
-            
+
         except Exception as e:
             return Response({
                 'error': f'Erreur création revenu: {str(e)}'
             }, status=status.HTTP_400_BAD_REQUEST)
+
 
 # ==========================================
 # GESTION DES DÉPENSES
@@ -424,7 +479,6 @@ def manage_expenses(request):
     user = request.user
 
     if request.method == 'GET':
-        check_and_reset_envelopes(user)  # ✅ AJOUTER CETTE LIGNE
         try:
             start_date = request.GET.get('start_date')
             end_date = request.GET.get('end_date')
@@ -487,7 +541,7 @@ def manage_expenses(request):
                 is_necessary=data.get('is_necessary', True)
             )
 
-            update_envelope_spending(user)
+            update_envelope_spending(user, expense)
 
             # Recharger depuis la base pour avoir les types corrects
             # (date arrive comme string depuis le front, refresh_from_db la convertit en objet date)
@@ -543,7 +597,7 @@ def expense_detail(request, expense_id):
                 expense.is_necessary = data['is_necessary']
 
             expense.save()
-            update_envelope_spending(user)
+            update_all_envelopes(user)
             expense.refresh_from_db()
 
             return Response({
@@ -553,7 +607,7 @@ def expense_detail(request, expense_id):
 
         elif request.method == 'DELETE':
             expense.delete()
-            update_envelope_spending(user)
+            update_all_envelopes(user)
 
             return Response({'message': 'Dépense supprimée'})
 
@@ -744,10 +798,10 @@ def user_goals(request):
         }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
-@api_view(['GET', 'POST', 'PUT', 'DELETE'])
+@api_view(['GET', 'POST'])
 @permission_classes([IsAuthenticated])
 def manage_goals(request):
-    """Gestion complète des objectifs (GET liste + POST création + PUT modification + DELETE suppression)"""
+    """Gestion complète des objectifs (GET liste + POST création)"""
     user = request.user
 
     if request.method == 'GET':
@@ -787,7 +841,7 @@ def manage_goals(request):
                 'error': f'Erreur objectifs: {str(e)}'
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-    elif request.method == 'POST':
+    else:  # POST
         try:
             data = request.data
 
@@ -821,59 +875,6 @@ def manage_goals(request):
         except Exception as e:
             return Response({
                 'error': f'Erreur création objectif: {str(e)}'
-            }, status=status.HTTP_400_BAD_REQUEST)
-
-    elif request.method == 'PUT':
-        try:
-            goal_id = request.query_params.get('goal_id')
-            if not goal_id:
-                return Response({
-                    'error': 'goal_id requis'
-                }, status=status.HTTP_400_BAD_REQUEST)
-
-            goal = get_object_or_404(Goal, id=goal_id, user=user)
-            data = request.data
-
-            # Update fields
-            goal.title = data.get('title', goal.title)
-            goal.description = data.get('description', goal.description)
-            goal.target_amount = Decimal(data.get('target_amount', goal.target_amount))
-            goal.current_amount = Decimal(data.get('current_amount', goal.current_amount))
-            goal.deadline = data.get('deadline', goal.deadline)
-            goal.category = data.get('category', goal.category)
-            goal.is_achieved = data.get('is_achieved', goal.is_achieved)
-            goal.save()
-
-            return Response({
-                'id': goal.id,
-                'title': goal.title,
-                'current_amount': float(goal.current_amount),
-                'message': 'Objectif modifié avec succès'
-            })
-
-        except Exception as e:
-            return Response({
-                'error': f'Erreur modification objectif: {str(e)}'
-            }, status=status.HTTP_400_BAD_REQUEST)
-
-    elif request.method == 'DELETE':
-        try:
-            goal_id = request.query_params.get('goal_id')
-            if not goal_id:
-                return Response({
-                    'error': 'goal_id requis'
-                }, status=status.HTTP_400_BAD_REQUEST)
-
-            goal = get_object_or_404(Goal, id=goal_id, user=user)
-            goal.delete()
-
-            return Response({
-                'message': 'Objectif supprimé avec succès'
-            })
-
-        except Exception as e:
-            return Response({
-                'error': f'Erreur suppression objectif: {str(e)}'
             }, status=status.HTTP_400_BAD_REQUEST)
 
 
@@ -948,6 +949,130 @@ def user_values(request):
                 'error': f'Erreur: {str(e)}'
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
+# ==========================================
+# SYSTÈME DES 3 ENVELOPPES
+# ==========================================
+
+@api_view(['GET', 'POST', 'PUT'])
+@permission_classes([IsAuthenticated])
+def manage_envelopes(request):
+    """Gestion des 3 enveloppes budgétaires"""
+    user = request.user
+
+    if request.method == 'GET':
+        try:
+            create_default_envelopes(user)
+
+            envelopes = Envelope.objects.filter(user=user, is_active=True).order_by('envelope_type')
+            current_month = timezone.now().replace(day=1)
+
+            envelopes_data = []
+            for envelope in envelopes:
+                categories = get_categories_for_envelope(envelope.envelope_type)
+                month_expenses = Expense.objects.filter(
+                    user=user,
+                    category__in=categories,
+                    date__gte=current_month
+                ).aggregate(total=Sum('amount'))['total'] or 0
+
+                envelope.current_spent = month_expenses
+                envelope.save()
+
+                envelopes_data.append({
+                    'id': envelope.id,
+                    'envelope_type': envelope.envelope_type,
+                    'allocated_percentage': float(envelope.allocated_percentage),
+                    'monthly_budget': float(envelope.monthly_budget),
+                    'current_spent': float(envelope.current_spent),
+                    'remaining_budget': float(envelope.remaining_budget),
+                    'usage_percentage': round(envelope.usage_percentage, 1),
+                    'status': envelope.status
+                })
+
+            return Response(envelopes_data)
+
+        except Exception as e:
+            return Response({
+                'error': f'Erreur récupération enveloppes: {str(e)}'
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+    elif request.method == 'POST':
+        try:
+            data = request.data
+            monthly_income = Decimal(data.get('monthly_income', 0))
+
+            if monthly_income <= 0:
+                return Response({
+                    'error': 'Revenu mensuel requis pour configurer les enveloppes'
+                }, status=status.HTTP_400_BAD_REQUEST)
+
+            envelope_configs = [
+                ('essentiels', 50),
+                ('plaisirs', 30),
+                ('projets', 20)
+            ]
+
+            for envelope_type, default_percentage in envelope_configs:
+                custom_percentage = data.get(f'{envelope_type}_percentage', default_percentage)
+                monthly_budget = (Decimal(str(custom_percentage)) / 100) * monthly_income
+
+                Envelope.objects.update_or_create(
+                    user=user,
+                    envelope_type=envelope_type,
+                    defaults={
+                        'allocated_percentage': custom_percentage,
+                        'monthly_budget': monthly_budget
+                    }
+                )
+
+            user.profile.monthly_income = monthly_income
+            user.profile.save()
+
+            return Response({
+                'message': 'Enveloppes configurées avec succès',
+                'monthly_income': float(monthly_income)
+            }, status=status.HTTP_201_CREATED)
+
+        except Exception as e:
+            return Response({
+                'error': f'Erreur configuration: {str(e)}'
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+    elif request.method == 'PUT':
+        try:
+            data = request.data
+
+            total_percentage = 0
+            for envelope_type in ['essentiels', 'plaisirs', 'projets']:
+                percentage = data.get(f'{envelope_type}_percentage', 0)
+                total_percentage += float(percentage)
+
+            if abs(total_percentage - 100) > 0.1:
+                return Response({
+                    'error': f'Les pourcentages doivent totaliser 100% (actuellement: {total_percentage}%)'
+                }, status=status.HTTP_400_BAD_REQUEST)
+
+            monthly_income = user.profile.monthly_income
+
+            for envelope_type in ['essentiels', 'plaisirs', 'projets']:
+                percentage = data.get(f'{envelope_type}_percentage')
+                if percentage is not None:
+                    envelope = Envelope.objects.get(user=user, envelope_type=envelope_type)
+                    envelope.allocated_percentage = Decimal(str(percentage))
+                    envelope.monthly_budget = (Decimal(str(percentage)) / 100) * monthly_income
+                    envelope.save()
+
+            return Response({'message': 'Enveloppes mises à jour'})
+
+        except Envelope.DoesNotExist:
+            return Response({
+                'error': 'Enveloppe introuvable'
+            }, status=status.HTTP_404_NOT_FOUND)
+        except Exception as e:
+            return Response({
+                'error': f'Erreur mise à jour: {str(e)}'
+            }, status=status.HTTP_400_BAD_REQUEST)
+
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
@@ -956,7 +1081,7 @@ def envelope_analysis(request):
     user = request.user
 
     try:
-        create_default_meta_envelopes(user)
+        create_default_envelopes(user)
         envelopes = Envelope.objects.filter(user=user, is_active=True)
         current_month = timezone.now().replace(day=1)
 
@@ -1108,7 +1233,6 @@ def manage_tontines(request):
                     'max_participants': tontine.max_participants,
                     'current_participants': tontine.participants.count(),
                     'available_spots': tontine.available_spots,
-                    'duration_months': tontine.duration_months,
                     'status': tontine.status,
                     'invitation_code': tontine.invitation_code,
                     'start_date': tontine.start_date.isoformat() if tontine.start_date else None,
@@ -1185,105 +1309,30 @@ def manage_tontines(request):
 def tontine_detail(request, tontine_id):
     """Gestion détaillée d'une tontine"""
     try:
-        # DEBUG: Vérifier d'abord si la tontine existe
-        try:
-            tontine = Tontine.objects.get(id=tontine_id)
-            print(f"✅ Tontine trouvée: {tontine.name} (ID: {tontine.id})")
-        except Tontine.DoesNotExist:
-            print(f"❌ Tontine {tontine_id} n'existe pas")
-            return Response(
-                {'error': 'Tontine introuvable'},
-                status=status.HTTP_404_NOT_FOUND
-            )
-        
-        # Vérifier si l'utilisateur est créateur OU participant
-        is_creator = tontine.creator == request.user
-        print(f"🔍 Est créateur? {is_creator} (creator: {tontine.creator.username}, user: {request.user.username})")
-        
-        participants = TontineParticipant.objects.filter(tontine=tontine)
-        print(f"👥 Participants total: {participants.count()}")
-        for p in participants:
-            print(f"  - {p.user.username} (position {p.position})")
-        
-        is_participant = TontineParticipant.objects.filter(
-            tontine=tontine, 
-            user=request.user
-        ).exists()
-        print(f"🔍 Est participant? {is_participant}")
-        
-        if not (is_creator or is_participant):
-            print(f"❌ Accès refusé pour {request.user.username}")
-            return Response({
-                'error': 'Vous n\'avez pas accès à cette tontine',
-                'debug': {
-                    'tontine_id': tontine.id,
-                    'tontine_name': tontine.name,
-                    'creator': tontine.creator.username,
-                    'current_user': request.user.username,
-                    'is_creator': is_creator,
-                    'is_participant': is_participant,
-                    'total_participants': participants.count(),
-                    'participants': [p.user.username for p in participants]
-                }
-            }, status=status.HTTP_403_FORBIDDEN)
-        
-        print(f"✅ Accès autorisé pour {request.user.username}")
+        tontine = get_object_or_404(Tontine, id=tontine_id, creator=request.user)
 
         if request.method == 'GET':
             participants = TontineParticipant.objects.filter(tontine=tontine).order_by('position')
             participants_data = []
 
             for participant in participants:
-                try:
-                    print(f"📝 Traitement participant: {participant.user.username}")
-                    
-                    # Test total_contributions
-                    try:
-                        total_contrib = participant.total_contributions
-                        print(f"  ✅ total_contributions: {total_contrib}")
-                    except Exception as e:
-                        print(f"  ❌ Erreur total_contributions: {e}")
-                        total_contrib = 0
-                    
-                    # Test contribution_status  
-                    try:
-                        contrib_status = participant.contribution_status
-                        print(f"  ✅ contribution_status: {contrib_status}")
-                    except Exception as e:
-                        print(f"  ❌ Erreur contribution_status: {e}")
-                        contrib_status = 'unknown'
-                    
-                    participants_data.append({
-                        'id': participant.id,
-                        'user': {
-                            'id': participant.user.id,
-                            'username': participant.user.username,
-                            'first_name': participant.user.first_name,
-                            'last_name': participant.user.last_name
-                        },
-                        'position': participant.position,
-                        'is_admin': participant.is_admin,
-                        'is_active': participant.is_active,
-                        'received_payout': participant.received_payout,
-                        'total_contributions': float(total_contrib),
-                        'contribution_status': contrib_status,
-                        'joined_at': participant.joined_at.isoformat()
-                    })
-                except Exception as e:
-                    print(f"  ❌❌ Erreur complète participant: {e}")
-                    import traceback
-                    traceback.print_exc()
+                participants_data.append({
+                    'id': participant.id,
+                    'user': {
+                        'id': participant.user.id,
+                        'username': participant.user.username,
+                        'first_name': participant.user.first_name,
+                        'last_name': participant.user.last_name
+                    },
+                    'position': participant.position,
+                    'is_admin': participant.is_admin,
+                    'is_active': participant.is_active,
+                    'received_payout': participant.received_payout,
+                    'total_contributions': float(participant.total_contributions),
+                    'contribution_status': participant.contribution_status,
+                    'joined_at': participant.joined_at.isoformat()
+                })
 
-            # Calculer total_contributions_received avec gestion d'erreur
-            try:
-                total_contrib_received = float(tontine.total_contributions_received())
-                print(f"✅ total_contributions_received: {total_contrib_received}")
-            except Exception as e:
-                print(f"❌ Erreur total_contributions_received: {e}")
-                import traceback
-                traceback.print_exc()
-                total_contrib_received = 0
-            
             return Response({
                 'id': tontine.id,
                 'name': tontine.name,
@@ -1302,7 +1351,7 @@ def tontine_detail(request, tontine_id):
                 'rules': tontine.rules,
                 'is_private': tontine.is_private,
                 'progress_percentage': round(tontine.progress_percentage, 1),
-                'total_contributions_received': total_contrib_received,
+                'total_contributions_received': float(tontine.total_contributions_received()),
                 'created_at': tontine.created_at.isoformat(),
                 'participants': participants_data,
                 'creator': {
@@ -1313,7 +1362,7 @@ def tontine_detail(request, tontine_id):
                 }
             })
 
-        elif request.method in ['PATCH', 'PUT']:
+        elif request.method == 'PATCH':
             data = request.data
 
             if tontine.creator != request.user:
@@ -1934,31 +1983,33 @@ from django.db.models import Sum
 
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
-@check_usage_limit('ai_messages_count', 50, "Messages IA")
+@check_usage_limit('ai_messages_count', 50, "Messages IA")  # ✅ AJOUTER
+import anthropic
+import json
+from datetime import datetime, timedelta
+from django.db.models import Sum, Q
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.response import Response
+from rest_framework import status
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+# @check_usage_limit('ai_messages_count', 50, "Messages IA")  # Décommenter si tu as ce decorator
 def ai_chat(request):
-    """Chat IA avec actions intelligentes (dépenses, revenus, TONTINES)"""
+    """Chat IA avec contexte riche : temporel, objectifs, score, enveloppes, tontines"""
     user = request.user
 
     try:
-        # ✅ FIX: Vérifier que la clé API existe
-        from django.conf import settings
-        
-        api_key = getattr(settings, 'ANTHROPIC_API_KEY', None)
-        if not api_key:
-            logger.error("ANTHROPIC_API_KEY non configurée")
-            return Response({
-                'error': 'Service IA temporairement indisponible',
-                'message': 'Désolé, j\'ai un problème technique. Réessayez plus tard.',
-                'actions': []
-            }, status=500)
-
         message = request.data.get('message', '')
         history = request.data.get('conversation_history', [])
 
         if not message:
             return Response({'error': 'Message requis'}, status=status.HTTP_400_BAD_REQUEST)
 
-        # Contexte financier
+        # ============================================
+        # CONTEXTE FINANCIER DE BASE
+        # ============================================
         now = datetime.now()
         start_of_month = now.replace(day=1)
 
@@ -1970,14 +2021,58 @@ def ai_chat(request):
             user=user, date__gte=start_of_month
         ).aggregate(total=Sum('amount'))['total'] or 0
 
+        # ============================================
+        # ✅ NOUVEAU : CONTEXTE TEMPOREL
+        # ============================================
+        day_of_month = now.day
+        last_day_of_month = (now.replace(day=1) + timedelta(days=32)).replace(day=1) - timedelta(days=1)
+        days_remaining = (last_day_of_month - now).days
+        month_progress = (day_of_month / last_day_of_month.day) * 100
+        
+        budget_remaining = monthly_income - monthly_expenses
+        daily_budget = budget_remaining / days_remaining if days_remaining > 0 else 0
+
+        # ============================================
+        # ENVELOPPES
+        # ============================================
         envelopes = Envelope.objects.filter(user=user)
         envelopes_data = [{
             'type': env.envelope_type,
             'budget': float(env.monthly_budget),
             'spent': float(env.current_spent),
-            'remaining': float(env.monthly_budget - env.current_spent)
+            'remaining': float(env.monthly_budget - env.current_spent),
+            'percentage_used': int((env.current_spent / env.monthly_budget * 100) if env.monthly_budget > 0 else 0)
         } for env in envelopes]
 
+        # ============================================
+        # ✅ NOUVEAU : OBJECTIFS
+        # ============================================
+        goals = Goal.objects.filter(user=user, is_achieved=False).order_by('-created_at')[:5]
+        goals_data = [{
+            'id': goal.id,
+            'title': goal.title,
+            'target_amount': float(goal.target_amount),
+            'current_amount': float(goal.current_amount),
+            'progress_percentage': goal.progress_percentage,
+            'category': goal.category,
+            'deadline': goal.deadline.isoformat() if goal.deadline else None
+        } for goal in goals]
+
+        # ============================================
+        # ✅ NOUVEAU : SCORE YOONU DAL
+        # ============================================
+        try:
+            from .calculate_yoonu_score import calculate_yoonu_score
+            score_result = calculate_yoonu_score(user)
+            yoonu_score = score_result.get('score', 0)
+            score_level = score_result.get('level', 'Débutant')
+        except:
+            yoonu_score = 0
+            score_level = 'Non calculé'
+
+        # ============================================
+        # DÉPENSES RÉCENTES
+        # ============================================
         recent_expenses = Expense.objects.filter(user=user).order_by('-date')[:5]
         recent_expenses_data = [{
             'category': exp.category,
@@ -1986,7 +2081,9 @@ def ai_chat(request):
             'date': exp.date.isoformat()
         } for exp in recent_expenses]
 
-        # Contexte tontines
+        # ============================================
+        # TONTINES
+        # ============================================
         my_tontines = Tontine.objects.filter(
             Q(creator=user) | Q(participants__user=user)
         ).distinct()
@@ -2008,89 +2105,177 @@ def ai_chat(request):
                 'my_position': my_participation.position if my_participation else None
             })
 
+        # ============================================
+        # ✅ CONTEXTE ENRICHI
+        # ============================================
         user_context = {
+            # Identité
             'name': user.username,
+            
+            # ✅ TEMPOREL (NOUVEAU)
+            'current_date': now.strftime('%Y-%m-%d'),
+            'day_of_month': day_of_month,
+            'days_remaining_in_month': days_remaining,
+            'month_progress_percentage': round(month_progress),
+            
+            # Budget
             'monthly_income': float(monthly_income),
             'monthly_expenses': float(monthly_expenses),
-            'balance': float(monthly_income - monthly_expenses),
+            'budget_remaining': float(budget_remaining),
+            'daily_budget': float(daily_budget),  # ✅ NOUVEAU
+            
+            # ✅ SCORE (NOUVEAU)
+            'yoonu_score': yoonu_score,
+            'score_level': score_level,
+            
+            # Enveloppes
             'envelopes': envelopes_data,
+            
+            # ✅ OBJECTIFS (NOUVEAU)
+            'goals': goals_data,
+            
+            # Historique
             'recent_expenses': recent_expenses_data,
+            
+            # Tontines
             'tontines': tontines_data
         }
 
-        # System prompt avec tontines
-        system_prompt = f"""Tu es Yoonu, l'assistant financier personnel de {user.username}.
+        # ============================================
+        # ✅ SYSTEM PROMPT INTELLIGENT
+        # ============================================
+        
+        # Analyse temporelle
+        temporal_context = ""
+        if day_of_month <= 5:
+            temporal_context = f"🟢 DÉBUT DE MOIS (J{day_of_month}). Moment idéal pour planifier et établir de bonnes habitudes."
+        elif days_remaining <= 5:
+            temporal_context = f"🔴 FIN DE MOIS (J{day_of_month}, {days_remaining}j restants). Mode survie activé ! Économies strictes."
+        elif month_progress >= 50:
+            temporal_context = f"🟡 MI-MOIS (J{day_of_month}, {round(month_progress)}% écoulé). Moment pour faire le point."
+        
+        # Analyse budget
+        budget_alert = ""
+        if budget_remaining < 0:
+            budget_alert = f"⚠️ ALERTE DÉPASSEMENT : {abs(budget_remaining):,.0f} FCFA"
+        elif days_remaining > 0:
+            budget_alert = f"Budget restant : {budget_remaining:,.0f} FCFA pour {days_remaining} jours = {daily_budget:,.0f} FCFA/jour"
+        else:
+            budget_alert = f"Dernier jour du mois ! Budget : {budget_remaining:,.0f} FCFA"
 
-CONTEXTE : Sénégal, FCFA, Tontines, solidarité familiale
+        system_prompt = f"""Tu es Yoonu, le coach financier intelligent de {user.username}.
 
-DONNÉES :
+📍 CONTEXTE : Sénégal, FCFA, méthode Yoonu Dal (4 enveloppes : Essentiel, Plaisir, Projet, Libération)
+
+📅 SITUATION TEMPORELLE :
+{temporal_context}
+Date : {now.strftime('%d/%m/%Y')}
+Jour {day_of_month} du mois, {days_remaining} jours restants
+
+💰 BUDGET :
+Revenus mensuels : {monthly_income:,.0f} FCFA
+Dépenses actuelles : {monthly_expenses:,.0f} FCFA
+{budget_alert}
+
+🏆 SCORE YOONU DAL : {yoonu_score}/100 ({score_level})
+
+📊 DONNÉES COMPLÈTES :
 {json.dumps(user_context, indent=2, ensure_ascii=False)}
 
 ACTIONS DISPONIBLES :
 1. create_expense - Créer dépense
-2. create_income - Créer revenu  
+2. create_income - Créer revenu
 3. create_tontine - Créer tontine (name, contribution_amount, frequency, total_participants)
 4. list_tontines - Afficher tontines (pas de bouton)
 
 FORMAT JSON STRICT :
 {{
-  "message": "Ta réponse conversationnelle",
+  "message": "Ta réponse conversationnelle (MAX 3 phrases)",
   "actions": [
     {{
-      "type": "create_tontine",
-      "label": "✅ Créer la tontine",
-      "data": {{
-        "name": "Projet Commerce",
-        "contribution_amount": 50000,
-        "frequency": "monthly",
-        "total_participants": 10
-      }}
+      "type": "create_expense",
+      "label": "✅ Enregistrer cette dépense",
+      "data": {{"amount": 5000, "category": "transport", "description": "..."}}
     }}
   ]
 }}
 
 Si pas d'action : "actions": []
 
-RÈGLES : Bref (2-3 phrases), JSON valide obligatoire, conversationnel
+🎯 DIRECTIVES CRITIQUES :
+
+1. TOUJOURS utiliser le contexte temporel dans tes conseils :
+   - Début mois (J1-5) : Planification, budget mensuel, établir habitudes
+   - Mi-mois (J15) : Point d'étape, ajustements si nécessaire
+   - Fin mois (J25+) : Mode survie, économies strictes, tenir jusqu'au 30
+
+2. Adapter selon budget/jour restant :
+   - Si <5k/jour → URGENCE : Essentiel uniquement, ZÉRO loisirs
+   - Si 5-10k/jour → Prudence : Limiter Plaisir
+   - Si >10k/jour → Confortable : Peut planifier
+
+3. Citer TOUJOURS les chiffres précis :
+   ❌ "Tu as beaucoup dépensé"
+   ✅ "Tu as dépensé 80k FCFA sur 300k de budget"
+
+4. Référencer les 4 enveloppes Yoonu Dal quand pertinent :
+   - Essentiel (transport, nourriture, loyer)
+   - Plaisir (loisirs, sorties, resto)
+   - Projet (objectifs moyen terme)
+   - Libération (épargne long terme, urgence)
+
+5. Si enveloppe déborde (>100%) → conseils précis de réduction
+   ✅ "Ton enveloppe Loisirs est à 120%. Les 5 prochains jours : ZÉRO resto, ZÉRO sorties."
+
+6. Si objectif proche (>80%) → encourager à finir
+   ✅ "Ton objectif Mariage est à 85% (1,8M/1,75M... c'est dépassé ! 🎉). Marque-le 'Atteint' !"
+
+7. Wolof-français bienvenu pour connexion culturelle (ex: "Yalla, tiens bon !")
+
+8. CONCIS : Maximum 3 phrases courtes
+
+EXEMPLES DE BONS CONSEILS :
+
+✅ "Avec 15k pour 2 jours (7,5k/jour), pas de resto ce soir. Garde pour transport demain. Le plaisir attend le 1er ! Tiens bon 48h 💪"
+
+✅ "Ton enveloppe Plaisir est à 120% (60k dépensés sur 50k budget). Les 10 prochains jours : ZÉRO loisirs. Concentre-toi sur Essentiel uniquement."
+
+✅ "Excellent ! 150k restants pour 15 jours = 10k/jour. À ce rythme, tu finis tranquille. Continue comme ça !"
+
+EXEMPLES DE MAUVAIS CONSEILS :
+
+❌ "Il faut économiser" (trop vague, pas de chiffres, pas d'action)
+❌ "Tu devrais mieux gérer ton budget" (pas actionnable)
+❌ "Fais attention à tes dépenses" (pas de contexte temporel)
+
+Sois direct, précis, actionnable. JSON valide OBLIGATOIRE.
 """
 
-        # ✅ FIX: Appel API avec gestion d'erreur détaillée
-        try:
-            import anthropic
-            client = anthropic.Anthropic(api_key=api_key)
+        # ============================================
+        # APPEL À CLAUDE
+        # ============================================
+        from django.conf import settings
+        
+        client = anthropic.Anthropic(api_key=settings.ANTHROPIC_API_KEY)
 
-            messages = []
-            for msg in history[-10:]:
-                messages.append({'role': msg['role'], 'content': msg['content']})
+        messages = []
+        for msg in history[-10:]:
+            messages.append({'role': msg['role'], 'content': msg['content']})
 
-            messages.append({'role': 'user', 'content': message})
+        messages.append({'role': 'user', 'content': message})
 
-            response = client.messages.create(
-                model='claude-sonnet-4-20250514',
-                max_tokens=800,
-                system=system_prompt,
-                messages=messages
-            )
+        response = client.messages.create(
+            model='claude-sonnet-4-20250514',
+            max_tokens=800,
+            system=system_prompt,
+            messages=messages
+        )
 
-            assistant_message = response.content[0].text
+        assistant_message = response.content[0].text
 
-        except ImportError:
-            logger.error("Module anthropic non installé")
-            return Response({
-                'error': 'Module IA manquant',
-                'message': 'Désolé, j\'ai un problème technique.',
-                'actions': []
-            }, status=500)
-            
-        except Exception as api_error:
-            logger.error(f"❌ Erreur API Anthropic: {api_error}", exc_info=True)
-            return Response({
-                'error': f'Erreur API: {str(api_error)}',
-                'message': 'Désolé, j\'ai un problème technique. Réessayez plus tard.',
-                'actions': []
-            }, status=500)
-
-        # Parser JSON (version améliorée)
+        # ============================================
+        # PARSER JSON
+        # ============================================
         try:
             cleaned = assistant_message.strip()
             if cleaned.startswith('```json'):
@@ -2115,8 +2300,7 @@ RÈGLES : Bref (2-3 phrases), JSON valide obligatoire, conversationnel
                 'context_used': user_context
             })
 
-        except json.JSONDecodeError as json_err:
-            logger.warning(f"JSON invalide de Claude: {json_err}")
+        except json.JSONDecodeError:
             return Response({
                 'message': assistant_message,
                 'actions': [],
@@ -2124,13 +2308,7 @@ RÈGLES : Bref (2-3 phrases), JSON valide obligatoire, conversationnel
             })
 
     except Exception as e:
-        logger.error(f"❌ Erreur ai_chat globale: {e}", exc_info=True)
-        return Response({
-            'error': f'Erreur IA: {str(e)}',
-            'message': 'Désolé, j\'ai un problème technique.',
-            'actions': []
-        }, status=500)
-
+        return Response({'error': f'Erreur IA: {str(e)}'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
@@ -2156,7 +2334,7 @@ def ai_execute_action(request):
                 is_necessary=True
             )
             expense.refresh_from_db()
-            update_envelope_spending(user)
+            update_envelope_spending(user, expense)
 
             return Response({
                 'success': True,
@@ -2709,6 +2887,248 @@ from django.utils import timezone
 from django.db.models import Sum, Count, Avg
 from decimal import Decimal
 
+
+def calculate_yoonu_score(user):
+    """
+    Calcule le Score Yoonu Dal pour un utilisateur
+
+    Retourne un dict avec tous les détails du score
+    """
+    from .models import YoonuScore, ScoreHistory, Expense, Income, Envelope, UserValue, DiagnosticResult
+
+    # Récupérer ou créer le score
+    score_obj, created = YoonuScore.objects.get_or_create(user=user)
+
+    # Période d'analyse : mois en cours
+    now = timezone.now()
+    start_of_month = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+
+    # Récupérer les valeurs prioritaires de l'utilisateur (top 3)
+    user_values = UserValue.objects.filter(user=user).order_by('priority')[:3]
+
+    if not user_values.exists():
+        # Pas encore de diagnostic fait
+        return {
+            'total_score': 0,
+            'alignment_score': 0,
+            'discipline_score': 0,
+            'stability_score': 0,
+            'improvement_score': 0,
+            'message': 'Complète ton diagnostic pour activer le Score Yoonu Dal'
+        }
+
+    # ========== 1. ALIGNEMENT VALEURS (35 points) ==========
+
+    # Mapping catégories → valeurs
+    CATEGORY_TO_VALUE = {
+        'famille': 'Famille',
+        'spiritualité': 'Spiritualité',
+        'éducation': 'Éducation',
+        'santé': 'Santé',
+        'alimentation': 'Famille',  # Nourrir la famille
+        'logement': 'Famille',  # Toit familial
+    }
+
+    # Calculer les dépenses par valeur
+    expenses = Expense.objects.filter(user=user, date__gte=start_of_month)
+    total_expenses = expenses.aggregate(total=Sum('amount'))['total'] or 0
+
+    if total_expenses == 0:
+        alignment_score = 0
+    else:
+        alignment_details = {}
+        alignment_total = 0
+
+        for user_value in user_values:
+            value_name = user_value.value.name
+
+            # Trouver les catégories liées à cette valeur
+            related_categories = [cat for cat, val in CATEGORY_TO_VALUE.items() if val == value_name]
+
+            # Calculer % dépenses pour cette valeur
+            value_expenses = expenses.filter(category__in=related_categories).aggregate(
+                total=Sum('amount')
+            )['total'] or 0
+
+            value_percentage = (value_expenses / total_expenses * 100) if total_expenses > 0 else 0
+            alignment_details[value_name.lower()] = round(value_percentage, 1)
+
+            # Score : plus la priorité est haute, plus on attend un % élevé
+            # Priorité 1 : devrait être ~30-40% des dépenses
+            # Priorité 2 : devrait être ~20-30%
+            # Priorité 3 : devrait être ~10-20%
+
+            if user_value.priority == 1:
+                expected_min = 25
+                if value_percentage >= expected_min:
+                    alignment_total += 15  # Max pour priorité 1
+                else:
+                    alignment_total += (value_percentage / expected_min) * 15
+
+            elif user_value.priority == 2:
+                expected_min = 15
+                if value_percentage >= expected_min:
+                    alignment_total += 12  # Max pour priorité 2
+                else:
+                    alignment_total += (value_percentage / expected_min) * 12
+
+            elif user_value.priority == 3:
+                expected_min = 10
+                if value_percentage >= expected_min:
+                    alignment_total += 8  # Max pour priorité 3
+                else:
+                    alignment_total += (value_percentage / expected_min) * 8
+
+        alignment_score = min(alignment_total, 35)  # Cap à 35
+
+    # ========== 2. DISCIPLINE BUDGÉTAIRE (35 points) ==========
+
+    envelopes = Envelope.objects.filter(user=user)
+
+    if not envelopes.exists():
+        discipline_score = 0
+    else:
+        discipline_total = 0
+        overruns = 0
+        total_envelopes = envelopes.count()
+
+        for envelope in envelopes:
+            budget = float(envelope.monthly_budget)
+            spent = float(envelope.current_spent)
+
+            if budget == 0:
+                continue
+
+            usage_pct = (spent / budget) * 100
+
+            if usage_pct <= 80:
+                # Excellent : moins de 80% utilisé
+                discipline_total += 12
+            elif usage_pct <= 100:
+                # Bon : entre 80-100%
+                discipline_total += 10
+            elif usage_pct <= 120:
+                # Acceptable : léger dépassement
+                discipline_total += 5
+                overruns += 1
+            else:
+                # Mauvais : gros dépassement
+                overruns += 1
+
+        # Pénalité pour dépassements multiples
+        if overruns > 0:
+            discipline_total -= (overruns * 3)
+
+        discipline_score = max(0, min(discipline_total, 35))
+
+    # ========== 3. STABILITÉ FINANCIÈRE (20 points) ==========
+
+    monthly_income = Income.objects.filter(
+        user=user, date__gte=start_of_month
+    ).aggregate(total=Sum('amount'))['total'] or 0
+
+    monthly_expenses_total = expenses.aggregate(total=Sum('amount'))['total'] or 0
+
+    stability_total = 0
+
+    # Revenus > Dépenses
+    if monthly_income > monthly_expenses_total:
+        stability_total += 10
+    elif monthly_income > monthly_expenses_total * 0.9:
+        stability_total += 7
+    elif monthly_income > monthly_expenses_total * 0.8:
+        stability_total += 5
+
+    # Épargne ce mois
+    savings = monthly_income - monthly_expenses_total
+    if savings > 0:
+        savings_rate = (savings / monthly_income) * 100 if monthly_income > 0 else 0
+
+        if savings_rate >= 20:
+            stability_total += 10
+        elif savings_rate >= 10:
+            stability_total += 7
+        elif savings_rate >= 5:
+            stability_total += 5
+        else:
+            stability_total += 3
+
+    stability_score = min(stability_total, 20)
+
+    # ========== 4. AMÉLIORATION CONTINUE (10 points) ==========
+
+    # Comparer avec le mois dernier
+    last_month = start_of_month - timedelta(days=1)
+    last_month_start = last_month.replace(day=1)
+
+    try:
+        last_score = ScoreHistory.objects.get(
+            user=user,
+            month=last_month_start
+        ).total_score
+    except ScoreHistory.DoesNotExist:
+        last_score = 0
+
+    current_total = alignment_score + discipline_score + stability_score
+
+    if last_score == 0:
+        improvement_score = 5  # Score de base pour premier mois
+    else:
+        improvement = current_total - last_score
+
+        if improvement >= 10:
+            improvement_score = 10
+        elif improvement >= 5:
+            improvement_score = 8
+        elif improvement > 0:
+            improvement_score = 6
+        elif improvement == 0:
+            improvement_score = 5
+        else:
+            improvement_score = 3  # En baisse
+
+    # ========== TOTAL ==========
+
+    total_score = int(alignment_score + discipline_score + stability_score + improvement_score)
+
+    # Mettre à jour le modèle
+    score_obj.previous_score = score_obj.total_score
+    score_obj.total_score = total_score
+    score_obj.alignment_score = Decimal(str(alignment_score))
+    score_obj.discipline_score = Decimal(str(discipline_score))
+    score_obj.stability_score = Decimal(str(stability_score))
+    score_obj.improvement_score = Decimal(str(improvement_score))
+    score_obj.alignment_details = alignment_details
+    score_obj.score_change = total_score - score_obj.previous_score
+    score_obj.save()
+
+    # Sauvegarder dans l'historique (une fois par mois)
+    ScoreHistory.objects.update_or_create(
+        user=user,
+        month=start_of_month,
+        defaults={
+            'total_score': total_score,
+            'alignment_score': Decimal(str(alignment_score)),
+            'discipline_score': Decimal(str(discipline_score)),
+            'stability_score': Decimal(str(stability_score)),
+            'improvement_score': Decimal(str(improvement_score))
+        }
+    )
+
+    return {
+        'total_score': total_score,
+        'alignment_score': round(alignment_score, 1),
+        'discipline_score': round(discipline_score, 1),
+        'stability_score': round(stability_score, 1),
+        'improvement_score': round(improvement_score, 1),
+        'alignment_details': alignment_details,
+        'score_change': score_obj.score_change,
+        'level': score_obj.score_level,
+        'emoji': score_obj.score_emoji,
+        'previous_score': score_obj.previous_score
+    }
+
+
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def get_yoonu_score(request):
@@ -2716,44 +3136,28 @@ def get_yoonu_score(request):
     user = request.user
 
     try:
-        # calculate_yoonu_score retourne maintenant un DICT
-        score_data = calculate_yoonu_score(user)
+        score_obj = calculate_user_score(user)
 
-        # Gérer le cas où le score est None (pas de valeurs définies)
-        if score_data is None:
-            logger.warning(f"Score non calculé pour {user.username} - aucune valeur définie")
+        if not score_obj:
             return Response({
                 'total_score': 0,
-                'alignment_score': 0,
-                'discipline_score': 0,
-                'stability_score': 0,
-                'improvement_score': 0,
-                'score_change': 0,
-                'level': 'Débutant',
-                'emoji': '🌱',
-                'alignment_details': {},
-                'message': 'Définis tes valeurs personnelles pour calculer ton score'
-            }, status=200)
+                'message': 'Complète ton diagnostic'
+            })
 
-        # ✅ score_data est maintenant un DICT, on peut le retourner directement
-        return Response(score_data, status=200)
-        
-    except Exception as e:
-        logger.error(f"❌ Erreur get_yoonu_score pour {user.username}: {e}", exc_info=True)
         return Response({
-            'error': 'Erreur lors du calcul du score',
-            'total_score': 0,
-            'alignment_score': 0,
-            'discipline_score': 0,
-            'stability_score': 0,
-            'improvement_score': 0,
-            'score_change': 0,
-            'level': 'Débutant',
-            'emoji': '🌱',
-            'alignment_details': {},
-            'message': str(e)
+            'total_score': score_obj.total_score,
+            'alignment_score': float(score_obj.alignment_score),
+            'discipline_score': float(score_obj.discipline_score),
+            'stability_score': float(score_obj.stability_score),
+            'improvement_score': float(score_obj.improvement_score),
+            'score_change': score_obj.score_change,
+            'level': score_obj.score_level,
+            'emoji': score_obj.score_emoji
+        })
+    except Exception as e:
+        return Response({
+            'error': f'Erreur calcul score: {str(e)}'
         }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
 
 
 @api_view(['GET'])
@@ -2862,6 +3266,9 @@ def delete_user_values(request):
         }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
+from .calculate_yoonu_score import calculate_user_score
+
+
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
 def trigger_score_calculation(request):
@@ -2869,15 +3276,15 @@ def trigger_score_calculation(request):
     user = request.user
 
     try:
-        score_data = calculate_yoonu_score(user)
+        score = calculate_user_score(user)
 
-        if score_data:
+        if score:
             return Response({
                 'message': 'Score calculé avec succès',
                 'score': {
-                    'total_score': score_data.get('total_score', 0),
-                    'level': score_data.get('level', 'Débutant'),
-                    'emoji': score_data.get('emoji', '🌱')
+                    'total_score': score.total_score,
+                    'level': score.score_level,
+                    'emoji': score.score_emoji
                 }
             })
         else:
@@ -2886,7 +3293,6 @@ def trigger_score_calculation(request):
             }, status=status.HTTP_400_BAD_REQUEST)
 
     except Exception as e:
-        logger.error(f'Erreur calcul score: {str(e)}', exc_info=True)
         return Response({
             'error': f'Erreur calcul score: {str(e)}'
         }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
@@ -2905,684 +3311,3 @@ def score_history(request):
             {'error': str(e)},
             status=status.HTTP_500_INTERNAL_SERVER_ERROR
         )
-# ==========================================
-# AJOUTER CES FONCTIONS DANS api/views.py
-# ==========================================
-
-@api_view(['POST'])
-@permission_classes([IsAuthenticated])
-def complete_onboarding(request):
-    """Marquer l'onboarding comme terminé et calculer le score initial"""
-    user = request.user
-    
-    try:
-        data = request.data
-        
-        # Mettre à jour le profil avec les données de l'onboarding
-        profile = user.profile
-        
-        if 'monthly_income' in data:
-            profile.monthly_income = Decimal(str(data['monthly_income']))
-        
-        if 'financial_goals' in data:
-            profile.financial_goals = data['financial_goals']
-        
-        # Marquer l'onboarding comme terminé
-        profile.onboarding_completed = True
-        profile.save()
-        
-        # Créer les enveloppes par défaut
-        create_default_meta_envelopes(user)
-        
-        # Calculer le score initial (peut retourner None si pas de valeurs définies)
-        score_data = calculate_yoonu_score(user)
-        
-        return Response({
-            'message': 'Onboarding terminé avec succès',
-            'onboarding_completed': True,
-            'score_calculated': score_data is not None,
-            'score': score_data if score_data else None
-        }, status=status.HTTP_200_OK)
-        
-    except Exception as e:
-        logger.error(f"❌ Erreur complete_onboarding: {e}", exc_info=True)
-        return Response({
-            'error': f'Erreur: {str(e)}'
-        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
-
-@api_view(['GET'])
-@permission_classes([IsAuthenticated])
-def check_onboarding_status(request):
-    """Vérifier si l'utilisateur a terminé l'onboarding"""
-    user = request.user
-    
-    try:
-        profile = user.profile
-        
-        return Response({
-            'onboarding_completed': profile.onboarding_completed,
-            'has_values': UserValue.objects.filter(user=user).exists(),
-            'has_income': profile.monthly_income > 0
-        })
-        
-    except Exception as e:
-        logger.error(f"❌ Erreur check_onboarding_status: {e}", exc_info=True)
-        return Response({
-            'error': f'Erreur: {str(e)}'
-        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-# ==========================================
-# CODE À AJOUTER DANS api/views.py
-# ==========================================
-
-# ✅ 1. AJOUTER CES IMPORTS EN HAUT DU FICHIER (si pas déjà présents)
-from decimal import Decimal
-from .models import Envelope, UserValue
-from .calculate_yoonu_score import calculate_yoonu_score
-
-# ✅ 2. AJOUTER CETTE FONCTION HELPER (avant les endpoints)
-def create_default_envelopes(user):
-    """
-    Créer les enveloppes par défaut pour un nouvel utilisateur
-    """
-    default_envelopes = [
-        {'name': 'Alimentation', 'icon': '🍽️', 'color': '#10B981'},
-        {'name': 'Transport', 'icon': '🚗', 'color': '#3B82F6'},
-        {'name': 'Logement', 'icon': '🏠', 'color': '#8B5CF6'},
-        {'name': 'Santé', 'icon': '💊', 'color': '#EF4444'},
-        {'name': 'Loisirs', 'icon': '🎮', 'color': '#F59E0B'},
-        {'name': 'Épargne', 'icon': '💰', 'color': '#059669'},
-    ]
-    
-    created_count = 0
-    for env_data in default_envelopes:
-        # Créer uniquement si n'existe pas déjà
-        envelope, created = Envelope.objects.get_or_create(
-            user=user,
-            name=env_data['name'],
-            defaults={
-                'icon': env_data['icon'],
-                'color': env_data['color'],
-                'budget_amount': Decimal('0.00'),
-                'current_amount': Decimal('0.00'),
-                'is_default': True
-            }
-        )
-        if created:
-            created_count += 1
-    
-    logger.info(f"✅ {created_count} enveloppes créées pour {user.username}")
-    return created_count
-
-
-# ✅ 3. AJOUTER CES DEUX ENDPOINTS
-
-@api_view(['POST'])
-@permission_classes([IsAuthenticated])
-def complete_onboarding(request):
-    """Marquer l'onboarding comme terminé et calculer le score initial"""
-    user = request.user
-    
-    try:
-        data = request.data
-        logger.info(f"🎯 Complete onboarding pour {user.username}: {data}")
-        
-        # Mettre à jour le profil avec les données de l'onboarding
-        profile = user.profile
-        
-        if 'monthly_income' in data:
-            profile.monthly_income = Decimal(str(data['monthly_income']))
-            logger.info(f"💰 Revenu mensuel défini: {profile.monthly_income}")
-        
-        if 'financial_goals' in data:
-            profile.financial_goals = data['financial_goals']
-        
-        # Marquer l'onboarding comme terminé
-        profile.onboarding_completed = True
-        profile.save()
-        logger.info(f"✅ Onboarding marqué comme terminé pour {user.username}")
-        
-        # Créer les enveloppes par défaut
-        try:
-            envelopes_created = create_default_meta_envelopes(user)
-            logger.info(f"📬 {envelopes_created} enveloppes créées")
-        except Exception as env_error:
-            logger.warning(f"⚠️ Erreur création enveloppes (non bloquant): {env_error}")
-        
-        # Calculer le score initial
-        try:
-            score_data = calculate_yoonu_score(user)
-            logger.info(f"📊 Score calculé: {score_data}")
-        except Exception as score_error:
-            logger.warning(f"⚠️ Erreur calcul score (non bloquant): {score_error}")
-            score_data = None
-        
-        return Response({
-            'message': 'Onboarding terminé avec succès',
-            'onboarding_completed': True,
-            'score_calculated': score_data is not None,
-            'score': score_data if score_data else {'total_score': 0, 'message': 'Score sera calculé après ajout de dépenses'}
-        }, status=status.HTTP_200_OK)
-        
-    except Exception as e:
-        logger.error(f"❌ Erreur complete_onboarding: {e}", exc_info=True)
-        return Response({
-            'error': f'Erreur: {str(e)}',
-            'detail': str(e)
-        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
-
-@api_view(['GET'])
-@permission_classes([IsAuthenticated])
-def check_onboarding_status(request):
-    """Vérifier si l'utilisateur a terminé l'onboarding"""
-    user = request.user
-    
-    try:
-        profile = user.profile
-        
-        return Response({
-            'onboarding_completed': profile.onboarding_completed,
-            'has_values': UserValue.objects.filter(user=user).exists(),
-            'has_income': profile.monthly_income > 0
-        })
-        
-    except Exception as e:
-        logger.error(f"❌ Erreur check_onboarding_status: {e}", exc_info=True)
-        return Response({
-            'error': f'Erreur: {str(e)}'
-        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
-# ==========================================
-# SYSTÈME 4 ENVELOPPES HYBRIDES
-# ==========================================
-
-META_ENVELOPES_CONFIG = [
-    {
-        'type': 'essentiels',
-        'name': 'Essentiels',
-        'icon': '🏠',
-        'description': 'Alimentation, Transport, Logement, Santé',
-        'default_percentage': 50,
-        'categories': ['alimentation', 'transport', 'logement', 'sante']
-    },
-    {
-        'type': 'plaisirs',
-        'name': 'Plaisirs',
-        'icon': '🎉',
-        'description': 'Loisirs, Sorties, Vêtements',
-        'default_percentage': 30,
-        'categories': ['loisirs', 'vetements', 'autre']
-    },
-    {
-        'type': 'projets',
-        'name': 'Projets',
-        'icon': '💎',
-        'description': 'Épargne, Investissement, Formation, Famille',
-        'default_percentage': 20,
-        'categories': ['education', 'famille', 'spiritualite']
-    },
-    {
-        'type': 'liberation',
-        'name': 'Libération',
-        'icon': '🔓',
-        'description': 'Dettes, Crédits, Solidarité familiale',
-        'default_percentage': 0,
-        'categories': []
-    }
-]
-
-def get_categories_for_envelope(envelope_type):
-    """Retourne les catégories de dépenses pour un type d'enveloppe."""
-    for config in META_ENVELOPES_CONFIG:
-        if config['type'] == envelope_type:
-            return config['categories']
-    return []
-
-def create_default_meta_envelopes(user):
-    """Crée les 4 méta-enveloppes par défaut pour un utilisateur."""
-    try:
-        profile = user.profile
-        monthly_income = profile.monthly_income or 0
-    except:
-        monthly_income = 0
-    
-    for config in META_ENVELOPES_CONFIG:
-        envelope, created = Envelope.objects.get_or_create(
-            user=user,
-            envelope_type=config['type'],
-            is_meta_envelope=True,
-            defaults={
-                'name': config['name'],
-                'allocated_percentage': config['default_percentage'],
-                'monthly_budget': (monthly_income * config['default_percentage']) / 100,
-                'current_spent': 0
-            }
-        )
-        
-        if not created and envelope.name != config['name']:
-            envelope.name = config['name']
-            envelope.save()
-
-def update_envelope_spending(user):
-    """Met à jour les dépenses pour chaque enveloppe."""
-    from django.utils import timezone
-    from datetime import datetime
-    
-    current_month = timezone.now().replace(day=1, hour=0, minute=0, second=0, microsecond=0)
-    
-    for envelope in Envelope.objects.filter(user=user, is_meta_envelope=True):
-        categories = get_categories_for_envelope(envelope.envelope_type)
-        if categories:
-            total_spent = Expense.objects.filter(
-                user=user,
-                category__in=categories,
-                date__gte=current_month
-            ).aggregate(total=Sum('amount'))['total'] or 0
-            
-            envelope.current_spent = total_spent
-            envelope.save()
-
-
-@api_view(['GET', 'POST'])
-@permission_classes([IsAuthenticated])
-def manage_meta_envelopes(request):
-    """Gérer les 4 méta-enveloppes."""
-    user = request.user
-    
-    if request.method == 'GET':
-        check_and_reset_envelopes(user)  # ✅ AJOUTER CETTE LIGNE
-        # Créer les enveloppes si elles n'existent pas
-        if not Envelope.objects.filter(user=user, is_meta_envelope=True).exists():
-            create_default_meta_envelopes(user)
-        
-        # Mettre à jour les dépenses
-        update_envelope_spending(user)
-        
-        # Récupérer toutes les enveloppes
-        envelopes = Envelope.objects.filter(user=user, is_meta_envelope=True).order_by('envelope_type')
-        
-        envelopes_data = []
-        for env in envelopes:
-            config = next((c for c in META_ENVELOPES_CONFIG if c['type'] == env.envelope_type), None)
-            
-            envelopes_data.append({
-                'id': env.id,
-                'envelope_type': env.envelope_type,
-                'name': env.name or (config['name'] if config else ''),
-                'icon': config['icon'] if config else '📁',
-                'description': config['description'] if config else '',
-                'allocated_percentage': float(env.allocated_percentage),
-                'monthly_budget': float(env.monthly_budget),
-                'current_spent': float(env.current_spent),
-                'remaining_budget': float(env.monthly_budget - env.current_spent),
-                'usage_percentage': round((env.current_spent / env.monthly_budget * 100) if env.monthly_budget > 0 else 0, 1),
-                'status': 'over' if env.current_spent > env.monthly_budget else 'warning' if env.current_spent > env.monthly_budget * Decimal('0.8') else 'good'
-            })
-        
-        try:
-            monthly_income = user.profile.monthly_income
-        except:
-            monthly_income = 0
-        
-        return Response({
-            'envelopes': envelopes_data,
-            'monthly_income': float(monthly_income)
-        })
-    
-    elif request.method == 'POST':
-        # Modifier les pourcentages
-        data = request.data
-        
-        essentiels_pct = Decimal(str(data.get('essentiels_percentage', 50)))
-        plaisirs_pct = Decimal(str(data.get('plaisirs_percentage', 30)))
-        projets_pct = Decimal(str(data.get('projets_percentage', 20)))
-        liberation_pct = Decimal(str(data.get('liberation_percentage', 0)))
-        
-        total = essentiels_pct + plaisirs_pct + projets_pct + liberation_pct
-        
-        if total != 100:
-            return Response({
-                'error': f'Le total doit être 100%. Actuellement: {total}%'
-            }, status=400)
-        
-        try:
-            monthly_income = user.profile.monthly_income or 0
-        except:
-            monthly_income = 0
-        
-        # Mettre à jour chaque enveloppe
-        mapping = {
-            'essentiels': essentiels_pct,
-            'plaisirs': plaisirs_pct,
-            'projets': projets_pct,
-            'liberation': liberation_pct
-        }
-        
-        for env_type, percentage in mapping.items():
-            env, created = Envelope.objects.get_or_create(
-                user=user,
-                envelope_type=env_type,
-                is_meta_envelope=True
-            )
-            env.allocated_percentage = percentage
-            env.monthly_budget = (monthly_income * percentage) / 100
-            env.save()
-        
-        return Response({'message': 'Enveloppes mises à jour avec succès'})
-
-
-
-
-# ==========================================
-# PHASE 2 - GOALS ENDPOINTS
-# ==========================================
-
-@api_view(['GET', 'POST'])
-@permission_classes([IsAuthenticated])
-def goal_contributions(request, goal_id):
-    """GET: Liste historique | POST: Ajoute contribution"""
-    user = request.user
-    goal = get_object_or_404(Goal, id=goal_id, user=user)
-    
-    if request.method == 'GET':
-        contributions = GoalContribution.objects.filter(goal=goal)
-        
-        stats = {
-            'total_contributions': contributions.count(),
-            'total_added': contributions.filter(contribution_type='add').aggregate(total=Sum('amount'))['total'] or 0,
-            'total_removed': contributions.filter(contribution_type='remove').aggregate(total=Sum('amount'))['total'] or 0,
-            'total_auto': contributions.filter(contribution_type='auto').aggregate(total=Sum('amount'))['total'] or 0,
-        }
-        
-        contributions_list = []
-        for contrib in contributions:
-            contributions_list.append({
-                'id': contrib.id,
-                'amount': float(contrib.amount),
-                'type': contrib.contribution_type,
-                'type_label': contrib.get_contribution_type_display(),
-                'source': contrib.source,
-                'note': contrib.note,
-                'created_at': contrib.created_at.isoformat(),
-            })
-        
-        return Response({
-            'goal': {
-                'id': goal.id,
-                'title': goal.title,
-                'current_amount': float(goal.current_amount),
-                'target_amount': float(goal.target_amount),
-            },
-            'stats': stats,
-            'contributions': contributions_list
-        })
-    
-    elif request.method == 'POST':
-        amount = request.data.get('amount')
-        contrib_type = request.data.get('type', 'add')
-        source = request.data.get('source', 'Manuel')
-        note = request.data.get('note', '')
-        
-        if not amount:
-            return Response({'error': 'Le montant est requis'}, status=status.HTTP_400_BAD_REQUEST)
-        
-        try:
-            amount = Decimal(str(amount))
-            if amount <= 0:
-                raise ValueError()
-        except:
-            return Response({'error': 'Montant invalide'}, status=status.HTTP_400_BAD_REQUEST)
-        
-        contribution = GoalContribution.objects.create(
-            goal=goal,
-            amount=amount,
-            contribution_type=contrib_type,
-            source=source,
-            note=note
-        )
-        
-        if contrib_type in ['add', 'auto']:
-            goal.current_amount += amount
-        elif contrib_type == 'remove':
-            goal.current_amount = max(0, goal.current_amount - amount)
-        goal.save()
-        
-        return Response({
-            'message': 'Contribution ajoutée !',
-            'contribution': {
-                'id': contribution.id,
-                'amount': float(contribution.amount),
-                'type': contribution.contribution_type,
-                'source': contribution.source,
-                'created_at': contribution.created_at.isoformat(),
-            },
-            'goal': {
-                'id': goal.id,
-                'current_amount': float(goal.current_amount),
-                'progress_percentage': goal.progress_percentage,
-            }
-        }, status=status.HTTP_201_CREATED)
-
-
-@api_view(['GET', 'POST', 'DELETE'])
-@permission_classes([IsAuthenticated])
-def goal_auto_allocation(request, goal_id):
-    """GET/POST/DELETE: Config auto-allocation"""
-    user = request.user
-    goal = get_object_or_404(Goal, id=goal_id, user=user)
-    
-    if request.method == 'GET':
-        allocations = GoalAutoAllocation.objects.filter(goal=goal, is_active=True)
-        
-        allocations_list = []
-        for alloc in allocations:
-            allocations_list.append({
-                'id': alloc.id,
-                'envelope_id': alloc.envelope.id,
-                'envelope_name': alloc.envelope.category,
-                'percentage': float(alloc.percentage),
-                'created_at': alloc.created_at.isoformat(),
-            })
-        
-        return Response({
-            'goal': {'id': goal.id, 'title': goal.title},
-            'allocations': allocations_list
-        })
-    
-    elif request.method == 'POST':
-        allocations_data = request.data.get('allocations', [])
-        
-        if not allocations_data:
-            return Response({'error': 'Liste des allocations requise'}, status=status.HTTP_400_BAD_REQUEST)
-        
-        total_percentage = sum(Decimal(str(alloc.get('percentage', 0))) for alloc in allocations_data)
-        
-        if total_percentage > 100:
-            return Response({'error': f'Le total des pourcentages ({total_percentage}%) dépasse 100%'}, status=status.HTTP_400_BAD_REQUEST)
-        
-        GoalAutoAllocation.objects.filter(goal=goal).update(is_active=False)
-        
-        created_allocations = []
-        for alloc_data in allocations_data:
-            envelope_id = alloc_data.get('envelope_id')
-            percentage = alloc_data.get('percentage')
-            
-            if not envelope_id or not percentage:
-                continue
-            
-            try:
-                envelope = Envelope.objects.get(id=envelope_id, user=user)
-            except Envelope.DoesNotExist:
-                continue
-            
-            allocation = GoalAutoAllocation.objects.create(
-                goal=goal,
-                envelope=envelope,
-                percentage=Decimal(str(percentage)),
-                is_active=True
-            )
-            
-            created_allocations.append({
-                'id': allocation.id,
-                'envelope_id': envelope.id,
-                'envelope_name': envelope.category,
-                'percentage': float(allocation.percentage),
-            })
-        
-        return Response({
-            'message': 'Auto-allocation configurée !',
-            'allocations': created_allocations
-        }, status=status.HTTP_201_CREATED)
-    
-    elif request.method == 'DELETE':
-        GoalAutoAllocation.objects.filter(goal=goal).delete()
-        return Response({'message': 'Auto-allocations supprimées'})
-
-
-@api_view(['GET'])
-@permission_classes([IsAuthenticated])
-def goal_milestones(request, goal_id):
-    """GET: Liste milestones/badges"""
-    user = request.user
-    goal = get_object_or_404(Goal, id=goal_id, user=user)
-    
-    milestones = GoalMilestone.objects.filter(goal=goal)
-    
-    milestones_list = []
-    for milestone in milestones:
-        milestones_list.append({
-            'id': milestone.id,
-            'type': milestone.milestone_type,
-            'label': milestone.get_milestone_type_display(),
-            'unlocked_at': milestone.unlocked_at.isoformat(),
-        })
-    
-    badges = []
-    progress = goal.progress_percentage
-    
-    if progress >= 100:
-        badges.append({'icon': '🎉', 'title': 'Objectif accompli !', 'description': 'Tu as atteint 100% de ton objectif'})
-    elif progress >= 75:
-        badges.append({'icon': '🚀', 'title': 'Presque là !', 'description': 'Tu as dépassé les 75%'})
-    elif progress >= 50:
-        badges.append({'icon': '🔥', 'title': 'À mi-chemin !', 'description': 'Tu as atteint 50% de ton objectif'})
-    elif progress >= 25:
-        badges.append({'icon': '💪', 'title': 'Bon départ !', 'description': 'Tu as franchi les 25%'})
-    
-    if goal.contributions.count() > 0:
-        badges.append({'icon': '⭐', 'title': 'Première contribution !', 'description': 'Tu as fait ta première épargne'})
-    
-    return Response({
-        'goal': {'id': goal.id, 'title': goal.title, 'progress': progress},
-        'milestones': milestones_list,
-        'badges': badges,
-        'total_unlocked': len(milestones_list)
-    })
-
-
-@api_view(['POST'])
-@permission_classes([IsAuthenticated])
-def execute_auto_allocations(request):
-    """POST: Exécute auto-allocations"""
-    user = request.user
-    
-    allocations = GoalAutoAllocation.objects.filter(
-        goal__user=user,
-        is_active=True
-    ).select_related('goal', 'envelope')
-    
-    executed = []
-    errors = []
-    
-    for allocation in allocations:
-        try:
-            envelope = allocation.envelope
-            
-            available = envelope.allocated_amount - envelope.spent_amount
-            percentage = allocation.percentage / 100
-            amount_to_transfer = available * percentage
-            
-            if amount_to_transfer <= 0:
-                continue
-            
-            contribution = GoalContribution.objects.create(
-                goal=allocation.goal,
-                amount=amount_to_transfer,
-                contribution_type='auto',
-                source=f'Enveloppe {envelope.category}',
-                note=f'Auto-allocation {allocation.percentage}%'
-            )
-            
-            allocation.goal.current_amount += amount_to_transfer
-            allocation.goal.save()
-            
-            envelope.spent_amount += amount_to_transfer
-            envelope.save()
-            
-            executed.append({
-                'goal': allocation.goal.title,
-                'envelope': envelope.category,
-                'amount': float(amount_to_transfer),
-                'percentage': float(allocation.percentage)
-            })
-            
-        except Exception as e:
-            errors.append({'goal': allocation.goal.title, 'error': str(e)})
-    
-    return Response({
-        'message': f'{len(executed)} auto-allocations exécutées',
-        'executed': executed,
-        'errors': errors
-    })
-
-
-@api_view(['GET'])
-@permission_classes([IsAuthenticated])
-def goals_stats(request):
-    """GET: Stats globales"""
-    user = request.user
-    goals = Goal.objects.filter(user=user)
-    
-    total_goals = goals.count()
-    achieved_goals = goals.filter(is_achieved=True).count()
-    active_goals = goals.filter(is_achieved=False).count()
-    
-    total_target = goals.aggregate(total=Sum('target_amount'))['total'] or 0
-    total_current = goals.aggregate(total=Sum('current_amount'))['total'] or 0
-    total_remaining = total_target - total_current
-    
-    if total_goals > 0:
-        avg_progress = sum(g.progress_percentage for g in goals) / total_goals
-    else:
-        avg_progress = 0
-    
-    from django.utils import timezone
-    now = timezone.now().date()
-    near_completion = goals.filter(progress_percentage__gte=75, is_achieved=False).count()
-    overdue = goals.filter(deadline__lt=now, is_achieved=False).count()
-    
-    total_contributions = GoalContribution.objects.filter(goal__user=user).count()
-    total_milestones = GoalMilestone.objects.filter(goal__user=user).count()
-    
-    return Response({
-        'overview': {
-            'total_goals': total_goals,
-            'achieved_goals': achieved_goals,
-            'active_goals': active_goals,
-        },
-        'amounts': {
-            'total_target': float(total_target),
-            'total_current': float(total_current),
-            'total_remaining': float(total_remaining),
-            'avg_progress': round(avg_progress, 1),
-        },
-        'alerts': {
-            'near_completion': near_completion,
-            'overdue': overdue,
-        },
-        'activity': {
-            'total_contributions': total_contributions,
-            'total_milestones': total_milestones,
-        }
-    })
