@@ -2,6 +2,7 @@
 # Fonction de calcul du Score Yoonu Dal - VERSION CORRIGÉE
 # ✅ Retourne un DICT au lieu d'un objet
 # ✅ Score de base de 47 points même sans dépenses
+# ✅ FIX: Retourne dict au lieu de None quand pas de valeurs
 
 from datetime import timedelta
 from django.utils import timezone
@@ -27,10 +28,22 @@ def calculate_yoonu_score(user):
     user_values = UserValue.objects.filter(user=user).order_by('priority')[:3]
 
     if not user_values.exists():
-        # Pas encore de diagnostic fait
+        # ✅ FIX: Retourner un DICT au lieu de None
         score_obj.total_score = 0
         score_obj.save()
-        return None
+        
+        return {
+            'total_score': 0,
+            'alignment_score': 0,
+            'discipline_score': 0,
+            'stability_score': 0,
+            'improvement_score': 0,
+            'score_change': 0,
+            'level': 'Débutant',
+            'emoji': '🌱',
+            'alignment_details': {},
+            'message': 'Complète ton diagnostic pour activer le score'
+        }
 
     # Calculer les dépenses par valeur
     expenses = Expense.objects.filter(user=user, date__gte=start_of_month)
