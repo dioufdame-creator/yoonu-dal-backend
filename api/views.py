@@ -2038,8 +2038,8 @@ def ai_chat(request):
         # SCORE YOONU DAL
         # ============================================
         try:
-            from .calculate_yoonu_score import calculate_yoonu_score
-            score_result = calculate_yoonu_score(user)
+            from .calculate_yoonu_score import calculate_user_score
+            score_result = calculate_user_score(user)
             yoonu_score = score_result.get('score', 0)
             score_level = score_result.get('level', 'Débutant')
         except:
