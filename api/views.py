@@ -3112,42 +3112,6 @@ def manage_meta_envelopes(request):
 # FONCTIONS MANQUANTES - À AJOUTER À LA FIN DE api/views.py
 # ==========================================
 
-@api_view(['GET'])
-@permission_classes([IsAuthenticated])
-def check_onboarding_status(request):
-    """Vérifie si l'utilisateur a complété l'onboarding"""
-    user = request.user
-    
-    try:
-        # Vérifier si diagnostic complété
-        has_diagnostic = DiagnosticResult.objects.filter(user=user).exists()
-        
-        # Vérifier si valeurs définies
-        has_values = UserValue.objects.filter(user=user).exists()
-        
-        # Vérifier si revenus configurés
-        has_income = user.profile.monthly_income and user.profile.monthly_income > 0
-        
-        onboarding_complete = has_diagnostic and has_values and has_income
-        
-        return Response({
-            'onboarding_complete': onboarding_complete,
-            'steps': {
-                'diagnostic': has_diagnostic,
-                'values': has_values,
-                'income': has_income
-            }
-        })
-        
-    except Exception as e:
-        return Response({
-            'onboarding_complete': False,
-            'steps': {
-                'diagnostic': False,
-                'values': False,
-                'income': False
-            }
-        })
 
 
 @api_view(['POST'])
@@ -3168,7 +3132,55 @@ def complete_onboarding(request):
         return Response({
             'error': f'Erreur: {str(e)}'
         }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def check_onboarding_status(request):
+    """Vérifie si l'utilisateur a complété l'onboarding - VERSION ROBUSTE"""
+    user = request.user
+    
+    try:
+        # 1. Valeurs définies
+        has_values = UserValue.objects.filter(user=user).exists()
+        
+        # 2. Revenus configurés
+        has_income = (user.profile.monthly_income and user.profile.monthly_income > 0) or \
+                     Income.objects.filter(user=user).exists()
+        
+        # 3. ✅ SCORE CALCULÉ (NOUVEAU CRITÈRE)
+        try:
+            from .models import YoonuScore
+            score_obj = YoonuScore.objects.get(user=user)
+            has_score = score_obj.total_score > 0
+        except:
+            has_score = False
+        
+        # 4. Diagnostic (optionnel)
+        has_diagnostic = DiagnosticResult.objects.filter(user=user).exists()
+        
+        # ✅ Critère : valeurs + revenus + SCORE
+        onboarding_complete = has_values and has_income and has_score
+        
+        return Response({
+            'onboarding_complete': onboarding_complete,
+            'steps': {
+                'values': has_values,
+                'income': has_income,
+                'score': has_score,  # ✅ NOUVEAU
+                'diagnostic': has_diagnostic
+            }
+        })
+        
+    except Exception as e:
+        return Response({
+            'onboarding_complete': False,
+            'steps': {
+                'values': False,
+                'income': False,
+                'score': False,
+                'diagnostic': False
+            },
+            'error': str(e)
+        })
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
