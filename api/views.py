@@ -3004,33 +3004,52 @@ def calculate_yoonu_score(user):
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def get_yoonu_score(request):
-    """Récupérer le Score Yoonu Dal"""
+    """Récupérer le Score Yoonu Dal - VERSION CORRIGÉE"""
     user = request.user
-
+ 
     try:
-        score_obj = calculate_yoonu_score(user)
-
-        if not score_obj:
+        # calculate_yoonu_score retourne un DICT
+        score_result = calculate_yoonu_score(user)
+        
+        # Si pas de score (dict vide ou None)
+        if not score_result or score_result.get('total_score', 0) == 0:
             return Response({
                 'total_score': 0,
-                'message': 'Complète ton diagnostic'
+                'alignment_score': 0,
+                'discipline_score': 0,
+                'stability_score': 0,
+                'improvement_score': 0,
+                'score_change': 0,
+                'level': 'Débutant',
+                'emoji': '🌱',
+                'message': 'Complète ton diagnostic pour activer le score'
             })
-
+        
+        # ✅ Accéder au dict, pas à un objet
         return Response({
-            'total_score': score_obj.total_score,
-            'alignment_score': float(score_obj.alignment_score),
-            'discipline_score': float(score_obj.discipline_score),
-            'stability_score': float(score_obj.stability_score),
-            'improvement_score': float(score_obj.improvement_score),
-            'score_change': score_obj.score_change,
-            'level': score_obj.score_level,
-            'emoji': score_obj.score_emoji
+            'total_score': score_result.get('total_score', 0),
+            'alignment_score': score_result.get('alignment_score', 0),
+            'discipline_score': score_result.get('discipline_score', 0),
+            'stability_score': score_result.get('stability_score', 0),
+            'improvement_score': score_result.get('improvement_score', 0),
+            'score_change': score_result.get('score_change', 0),
+            'level': score_result.get('level', 'Débutant'),
+            'emoji': score_result.get('emoji', '🌱')
         })
+        
     except Exception as e:
         return Response({
-            'error': f'Erreur calcul score: {str(e)}'
+            'error': f'Erreur calcul score: {str(e)}',
+            'total_score': 0,
+            'alignment_score': 0,
+            'discipline_score': 0,
+            'stability_score': 0,
+            'improvement_score': 0,
+            'score_change': 0,
+            'level': 'Débutant',
+            'emoji': '🌱'
         }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
+ 
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
@@ -3227,21 +3246,61 @@ def check_onboarding_status(request):
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
 def complete_onboarding(request):
-    """Marque l'onboarding comme complété"""
+    """Marque l'onboarding comme complété + sauvegarde revenus + calcule score"""
     user = request.user
     
     try:
-        # On pourrait ajouter un champ dans UserProfile si besoin
-        # Pour l'instant, on retourne juste success
+        data = request.data
+        
+        # 1. Mettre à jour le revenu mensuel
+        monthly_income = data.get('monthly_income')
+        if monthly_income:
+            user.profile.monthly_income = Decimal(str(monthly_income))
+            user.profile.save()
+        
+        # 2. Mettre à jour les objectifs si fournis
+        financial_goals = data.get('financial_goals', '')
+        if financial_goals:
+            user.profile.financial_goals = financial_goals
+            user.profile.save()
+        
+        # 3. Créer un diagnostic de base
+        DiagnosticResult.objects.get_or_create(
+            user=user,
+            defaults={
+                'financial_health_score': 50,
+                'savings_capacity_score': 50,
+                'planning_score': 50,
+                'risk_management_score': 50,
+                'overall_score': 50,
+                'recommendations': {
+                    'message': 'Diagnostic initial - Commence à suivre tes dépenses'
+                }
+            }
+        )
+        
+        # 4. Calculer le score (retourne un dict)
+        try:
+            score_data = calculate_yoonu_score(user)
+            total_score = score_data.get('total_score', 47) if score_data else 47
+        except Exception as e:
+            print(f"Erreur calcul score: {e}")
+            total_score = 47  # Score par défaut
+        
         return Response({
             'success': True,
-            'message': 'Onboarding complété avec succès'
+            'message': 'Onboarding complété avec succès',
+            'score': {
+                'total_score': total_score
+            }
         })
         
     except Exception as e:
         return Response({
             'error': f'Erreur: {str(e)}'
         }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+ 
+
 
 
 @api_view(['GET'])
