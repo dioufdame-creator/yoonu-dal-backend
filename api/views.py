@@ -2967,30 +2967,43 @@ def score_history(request):
 # FONCTIONS MANQUANTES - À AJOUTER À LA FIN DE api/views.py
 # ==========================================
 
+# REMPLACE check_onboarding_status dans api/views.py
+
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def check_onboarding_status(request):
-    """Vérifie si l'utilisateur a complété l'onboarding"""
+    """Vérifie si l'utilisateur a complété l'onboarding - VERSION ROBUSTE"""
     user = request.user
     
     try:
-        # Vérifier si diagnostic complété
-        has_diagnostic = DiagnosticResult.objects.filter(user=user).exists()
-        
-        # Vérifier si valeurs définies
+        # 1. Vérifier si valeurs définies (CRITIQUE)
         has_values = UserValue.objects.filter(user=user).exists()
         
-        # Vérifier si revenus configurés
-        has_income = user.profile.monthly_income and user.profile.monthly_income > 0
+        # 2. Vérifier si revenus configurés (profile OU historique)
+        has_income = (user.profile.monthly_income and user.profile.monthly_income > 0) or \
+                     Income.objects.filter(user=user).exists()
         
-        onboarding_complete = has_diagnostic and has_values and has_income
+        # 3. Vérifier si score calculé (MEILLEUR INDICATEUR)
+        try:
+            from .models import YoonuScore
+            score_obj = YoonuScore.objects.get(user=user)
+            has_score = score_obj.total_score > 0
+        except:
+            has_score = False
+        
+        # 4. Diagnostic (optionnel, ne bloque pas)
+        has_diagnostic = DiagnosticResult.objects.filter(user=user).exists()
+        
+        # ✅ Onboarding complet si : valeurs + revenus + score
+        onboarding_complete = has_values and has_income and has_score
         
         return Response({
             'onboarding_complete': onboarding_complete,
             'steps': {
-                'diagnostic': has_diagnostic,
                 'values': has_values,
-                'income': has_income
+                'income': has_income,
+                'score': has_score,
+                'diagnostic': has_diagnostic
             }
         })
         
@@ -2998,10 +3011,12 @@ def check_onboarding_status(request):
         return Response({
             'onboarding_complete': False,
             'steps': {
-                'diagnostic': False,
                 'values': False,
-                'income': False
-            }
+                'income': False,
+                'score': False,
+                'diagnostic': False
+            },
+            'error': str(e)
         })
 
 
