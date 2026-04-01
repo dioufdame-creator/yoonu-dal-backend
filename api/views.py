@@ -1966,9 +1966,6 @@ def manage_financial_leaks(request):
 # IA CHAT - YOONU ASSISTANT
 # ==========================================
 
-# api/views.py - REMPLACER la fonction ai_chat existante par celle-ci
-
-
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
 # @check_usage_limit('ai_messages_count', 50, "Messages IA")  # Décommenter si tu as ce decorator
@@ -1983,9 +1980,7 @@ def ai_chat(request):
         if not message:
             return Response({'error': 'Message requis'}, status=status.HTTP_400_BAD_REQUEST)
 
-        # ============================================
         # CONTEXTE FINANCIER DE BASE
-        # ============================================
         now = datetime.now()
         start_of_month = now.replace(day=1)
 
@@ -1997,9 +1992,7 @@ def ai_chat(request):
             user=user, date__gte=start_of_month
         ).aggregate(total=Sum('amount'))['total'] or 0
 
-        # ============================================
-        # CONTEXTE TEMPOREL
-        # ============================================
+        # CONTEXTE TEMPOREL ✅ NOUVEAU
         day_of_month = now.day
         last_day_of_month = (now.replace(day=1) + timedelta(days=32)).replace(day=1) - timedelta(days=1)
         days_remaining = (last_day_of_month - now).days
@@ -2008,9 +2001,7 @@ def ai_chat(request):
         budget_remaining = monthly_income - monthly_expenses
         daily_budget = budget_remaining / days_remaining if days_remaining > 0 else 0
 
-        # ============================================
         # ENVELOPPES
-        # ============================================
         envelopes = Envelope.objects.filter(user=user)
         envelopes_data = [{
             'type': env.envelope_type,
@@ -2020,9 +2011,7 @@ def ai_chat(request):
             'percentage_used': int((env.current_spent / env.monthly_budget * 100) if env.monthly_budget > 0 else 0)
         } for env in envelopes]
 
-        # ============================================
-        # OBJECTIFS
-        # ============================================
+        # OBJECTIFS ✅ NOUVEAU
         goals = Goal.objects.filter(user=user, is_achieved=False).order_by('-created_at')[:5]
         goals_data = [{
             'id': goal.id,
@@ -2034,9 +2023,7 @@ def ai_chat(request):
             'deadline': goal.deadline.isoformat() if goal.deadline else None
         } for goal in goals]
 
-        # ============================================
-        # SCORE YOONU DAL
-        # ============================================
+        # SCORE YOONU DAL ✅ NOUVEAU
         try:
             score_result = calculate_yoonu_score(user)
             yoonu_score = score_result.get('score', 0)
@@ -2045,9 +2032,7 @@ def ai_chat(request):
             yoonu_score = 0
             score_level = 'Non calculé'
 
-        # ============================================
         # DÉPENSES RÉCENTES
-        # ============================================
         recent_expenses = Expense.objects.filter(user=user).order_by('-date')[:5]
         recent_expenses_data = [{
             'category': exp.category,
@@ -2056,9 +2041,7 @@ def ai_chat(request):
             'date': exp.date.isoformat()
         } for exp in recent_expenses]
 
-        # ============================================
         # TONTINES
-        # ============================================
         my_tontines = Tontine.objects.filter(
             Q(creator=user) | Q(participants__user=user)
         ).distinct()
@@ -2080,145 +2063,79 @@ def ai_chat(request):
                 'my_position': my_participation.position if my_participation else None
             })
 
-        # ============================================
-        # CONTEXTE ENRICHI
-        # ============================================
+        # CONTEXTE ENRICHI ✅
         user_context = {
-            # Identité
             'name': user.username,
-            
-            # TEMPOREL
             'current_date': now.strftime('%Y-%m-%d'),
             'day_of_month': day_of_month,
             'days_remaining_in_month': days_remaining,
             'month_progress_percentage': round(month_progress),
-            
-            # Budget
             'monthly_income': float(monthly_income),
             'monthly_expenses': float(monthly_expenses),
             'budget_remaining': float(budget_remaining),
             'daily_budget': float(daily_budget),
-            
-            # SCORE
             'yoonu_score': yoonu_score,
             'score_level': score_level,
-            
-            # Enveloppes
             'envelopes': envelopes_data,
-            
-            # OBJECTIFS
             'goals': goals_data,
-            
-            # Historique
             'recent_expenses': recent_expenses_data,
-            
-            # Tontines
             'tontines': tontines_data
         }
 
-        # ============================================
-        # SYSTEM PROMPT INTELLIGENT
-        # ============================================
-        
-        # Analyse temporelle
+        # SYSTEM PROMPT INTELLIGENT ✅
         temporal_context = ""
         if day_of_month <= 5:
-            temporal_context = f"🟢 DÉBUT DE MOIS (J{day_of_month}). Moment idéal pour planifier et établir de bonnes habitudes."
+            temporal_context = f"🟢 DÉBUT DE MOIS (J{day_of_month}). Moment idéal pour planifier."
         elif days_remaining <= 5:
-            temporal_context = f"🔴 FIN DE MOIS (J{day_of_month}, {days_remaining}j restants). Mode survie activé ! Économies strictes."
+            temporal_context = f"🔴 FIN DE MOIS (J{day_of_month}, {days_remaining}j restants). Mode survie !"
         elif month_progress >= 50:
-            temporal_context = f"🟡 MI-MOIS (J{day_of_month}, {round(month_progress)}% écoulé). Moment pour faire le point."
+            temporal_context = f"🟡 MI-MOIS (J{day_of_month}). Point d'étape."
         
-        # Analyse budget
         budget_alert = ""
         if budget_remaining < 0:
-            budget_alert = f"⚠️ ALERTE DÉPASSEMENT : {abs(budget_remaining):,.0f} FCFA"
+            budget_alert = f"⚠️ DÉPASSEMENT : {abs(budget_remaining):,.0f} FCFA"
         elif days_remaining > 0:
-            budget_alert = f"Budget restant : {budget_remaining:,.0f} FCFA pour {days_remaining} jours = {daily_budget:,.0f} FCFA/jour"
-        else:
-            budget_alert = f"Dernier jour du mois ! Budget : {budget_remaining:,.0f} FCFA"
+            budget_alert = f"Budget : {budget_remaining:,.0f} FCFA pour {days_remaining}j = {daily_budget:,.0f} FCFA/jour"
 
         system_prompt = f"""Tu es Yoonu, le coach financier intelligent de {user.username}.
 
-📍 CONTEXTE : Sénégal, FCFA, méthode Yoonu Dal (4 enveloppes : Essentiel, Plaisir, Projet, Libération)
+📍 CONTEXTE : Sénégal, FCFA, méthode Yoonu Dal (4 enveloppes)
 
-📅 SITUATION TEMPORELLE :
+📅 SITUATION :
 {temporal_context}
-Date : {now.strftime('%d/%m/%Y')}
 Jour {day_of_month} du mois, {days_remaining} jours restants
 
 💰 BUDGET :
-Revenus mensuels : {monthly_income:,.0f} FCFA
-Dépenses actuelles : {monthly_expenses:,.0f} FCFA
+Revenus : {monthly_income:,.0f} FCFA
+Dépenses : {monthly_expenses:,.0f} FCFA
 {budget_alert}
 
-🏆 SCORE YOONU DAL : {yoonu_score}/100 ({score_level})
+🏆 SCORE : {yoonu_score}/100 ({score_level})
 
-📊 DONNÉES COMPLÈTES :
-{json.dumps(user_context, indent=2, ensure_ascii=False)}
+📊 DONNÉES : {json.dumps(user_context, indent=2, ensure_ascii=False)}
 
-ACTIONS DISPONIBLES :
-1. create_expense - Créer dépense
-2. create_income - Créer revenu
-3. create_tontine - Créer tontine (name, contribution_amount, frequency, total_participants)
-4. list_tontines - Afficher tontines (pas de bouton)
+ACTIONS : create_expense, create_income, create_tontine, list_tontines
 
-FORMAT JSON STRICT :
-{{
-  "message": "Ta réponse conversationnelle (MAX 3 phrases)",
-  "actions": [...]
-}}
+FORMAT JSON : {{"message": "...", "actions": [...]}}
 
-Si pas d'action : "actions": []
+DIRECTIVES :
+1. TOUJOURS utiliser contexte temporel (début/mi/fin mois)
+2. Budget/jour : <5k urgence, >10k confortable
+3. Chiffres précis obligatoires
+4. 4 enveloppes : Essentiel, Plaisir, Projet, Libération
+5. MAX 3 phrases
 
-🎯 DIRECTIVES CRITIQUES :
+EXEMPLE BON : "Avec 15k pour 2j (7,5k/jour), pas de ciné. Tiens bon 48h !"
+EXEMPLE MAUVAIS : "Il faut économiser" (vague)
 
-1. TOUJOURS utiliser le contexte temporel dans tes conseils :
-   - Début mois (J1-5) : Planification, budget mensuel, établir habitudes
-   - Mi-mois (J15) : Point d'étape, ajustements si nécessaire
-   - Fin mois (J25+) : Mode survie, économies strictes, tenir jusqu'au 30
+JSON valide OBLIGATOIRE."""
 
-2. Adapter selon budget/jour restant :
-   - Si <5k/jour → URGENCE : Essentiel uniquement, ZÉRO loisirs
-   - Si 5-10k/jour → Prudence : Limiter Plaisir
-   - Si >10k/jour → Confortable : Peut planifier
-
-3. Citer TOUJOURS les chiffres précis :
-   ❌ "Tu as beaucoup dépensé"
-   ✅ "Tu as dépensé 80k FCFA sur 300k de budget"
-
-4. Référencer les 4 enveloppes Yoonu Dal quand pertinent :
-   - Essentiel (transport, nourriture, loyer)
-   - Plaisir (loisirs, sorties, resto)
-   - Projet (objectifs moyen terme)
-   - Libération (épargne long terme, urgence)
-
-5. Si enveloppe déborde (>100%) → conseils précis de réduction
-
-6. Si objectif proche (>80%) → encourager à finir
-
-7. Wolof-français bienvenu pour connexion culturelle (ex: "Yalla, tiens bon !")
-
-8. CONCIS : Maximum 3 phrases courtes
-
-EXEMPLES DE BONS CONSEILS :
-✅ "Avec 15k pour 2 jours (7,5k/jour), pas de resto ce soir. Garde pour transport demain. Le plaisir attend le 1er ! Tiens bon 48h 💪"
-
-EXEMPLES DE MAUVAIS CONSEILS :
-❌ "Il faut économiser" (trop vague, pas de chiffres, pas d'action)
-
-Sois direct, précis, actionnable. JSON valide OBLIGATOIRE.
-"""
-
-        # ============================================
-        # APPEL À CLAUDE
-        # ============================================
+        # APPEL CLAUDE
         client = anthropic.Anthropic(api_key=settings.ANTHROPIC_API_KEY)
 
         messages = []
         for msg in history[-10:]:
             messages.append({'role': msg['role'], 'content': msg['content']})
-
         messages.append({'role': 'user', 'content': message})
 
         response = client.messages.create(
@@ -2230,9 +2147,7 @@ Sois direct, précis, actionnable. JSON valide OBLIGATOIRE.
 
         assistant_message = response.content[0].text
 
-        # ============================================
         # PARSER JSON
-        # ============================================
         try:
             cleaned = assistant_message.strip()
             if cleaned.startswith('```json'):
@@ -2243,7 +2158,6 @@ Sois direct, précis, actionnable. JSON valide OBLIGATOIRE.
                 cleaned = cleaned[:-3]
             cleaned = cleaned.strip()
 
-            # Chercher le premier { et prendre jusqu'au dernier }
             start = cleaned.find('{')
             end = cleaned.rfind('}')
             if start != -1 and end != -1:
@@ -2266,7 +2180,6 @@ Sois direct, précis, actionnable. JSON valide OBLIGATOIRE.
 
     except Exception as e:
         return Response({'error': f'Erreur IA: {str(e)}'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
 
 
 @api_view(['POST'])
