@@ -1,10 +1,20 @@
-# api/urls.py - VERSION COMPLÈTE FINALE
+# api/urls.py - VERSION CHIRURGICALE
+# Ton ancien fichier EXACT avec juste les imports Goals Phase 2 commentés
 
 from django.urls import path
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 from . import views
 from . import payment_views
 from . import export_views
+
+# ❌ COMMENTÉ - Ces fonctions n'existent pas dans views.py
+# from .views import (
+#     goal_contributions,
+#     goal_auto_allocation,
+#     goal_milestones,
+#     execute_auto_allocations,
+#     goals_stats,
+# )
 
 urlpatterns = [
     # API racine
@@ -31,6 +41,13 @@ urlpatterns = [
     # Objectifs & épargne
     path('goals/', views.user_goals, name='user_goals'),
     path('goals/manage/', views.manage_goals, name='manage_goals'),
+    
+    # ❌ COMMENTÉ - Phase 2 - Goals (fonctions manquantes)
+    # path('goals/<int:goal_id>/contributions/', goal_contributions, name='goal-contributions'),
+    # path('goals/<int:goal_id>/auto-allocation/', goal_auto_allocation, name='goal-auto-allocation'),
+    # path('goals/<int:goal_id>/milestones/', goal_milestones, name='goal-milestones'),
+    # path('goals/execute-allocations/', execute_auto_allocations, name='execute-auto-allocations'),
+    # path('goals/stats/', goals_stats, name='goals-stats'),
 
     # Valeurs personnelles
     path('values/', views.user_values, name='user_values'),
@@ -51,7 +68,6 @@ urlpatterns = [
 
     # Enveloppes
     path('envelopes/analysis/', views.envelope_analysis, name='envelope_analysis'),
-    path('meta-envelopes/', views.manage_meta_envelopes, name='manage_meta_envelopes'),
 
     # Fuites financières
     path('financial-leaks/', views.manage_financial_leaks, name='manage_financial_leaks'),
@@ -69,8 +85,8 @@ urlpatterns = [
     # Score Yoonu
     path('yoonu-score/', views.get_yoonu_score, name='get_yoonu_score'),
     path('yoonu-score/history/', views.get_score_history, name='get_score_history'),
+    path('user-values/', views.user_values, name='user_values'),
     path('calculate-score/', views.trigger_score_calculation, name='trigger_score_calculation'),
-    path('score-history/', views.score_history),
     
     # Paiements
     path('payments/mobile-money/', payment_views.mobile_money_payment, name='mobile_money'),
@@ -86,4 +102,10 @@ urlpatterns = [
     # Export
     path('export/excel/', export_views.export_excel),
     path('export/pdf/', export_views.export_pdf),
+    
+    # Score history
+    path('score-history/', views.score_history),
+    
+    # Meta-enveloppes
+    path('meta-envelopes/', views.manage_meta_envelopes, name='manage_meta_envelopes'),
 ]
