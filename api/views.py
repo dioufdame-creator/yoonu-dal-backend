@@ -21,6 +21,7 @@ from .models import (
     TontinePayout, DiagnosticResult, Envelope, FinancialLeak, PredictiveAlert
 )
 from .utils.decorators import require_premium, check_usage_limit
+from .calculate_yoonu_score import calculate_user_score
 
 
 # ==========================================
@@ -2038,7 +2039,6 @@ def ai_chat(request):
         # SCORE YOONU DAL
         # ============================================
         try:
-            from .calculate_yoonu_score import calculate_user_score
             score_result = calculate_user_score(user)
             yoonu_score = score_result.get('score', 0)
             score_level = score_result.get('level', 'Débutant')
@@ -3226,7 +3226,6 @@ def delete_user_values(request):
         }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
-from .calculate_yoonu_score import calculate_user_score
 
 
 @api_view(['POST'])
