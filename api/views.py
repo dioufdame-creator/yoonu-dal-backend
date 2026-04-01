@@ -21,7 +21,6 @@ from .models import (
     TontinePayout, DiagnosticResult, Envelope, FinancialLeak, PredictiveAlert
 )
 from .utils.decorators import require_premium, check_usage_limit
-from .calculate_yoonu_score import calculate_user_score
 
 
 # ==========================================
@@ -2039,7 +2038,7 @@ def ai_chat(request):
         # SCORE YOONU DAL
         # ============================================
         try:
-            score_result = calculate_user_score(user)
+            score_result = calculate_yoonu_score(user)
             yoonu_score = score_result.get('score', 0)
             score_level = score_result.get('level', 'Débutant')
         except:
@@ -3096,7 +3095,7 @@ def get_yoonu_score(request):
     user = request.user
 
     try:
-        score_obj = calculate_user_score(user)
+        score_obj = calculate_yoonu_score(user)
 
         if not score_obj:
             return Response({
@@ -3235,7 +3234,7 @@ def trigger_score_calculation(request):
     user = request.user
 
     try:
-        score = calculate_user_score(user)
+        score = calculate_yoonu_score(user)
 
         if score:
             return Response({
