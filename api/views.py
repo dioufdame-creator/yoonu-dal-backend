@@ -1967,31 +1967,7 @@ def manage_financial_leaks(request):
 # ==========================================
 
 # api/views.py - REMPLACER la fonction ai_chat existante par celle-ci
-# api/views.py - REMPLACER la fonction ai_chat existante par celle-ci
 
-from rest_framework.decorators import api_view, permission_classes
-from rest_framework.permissions import IsAuthenticated
-from rest_framework.response import Response
-from rest_framework import status
-from django.conf import settings
-import anthropic
-import json
-from datetime import datetime
-from django.db.models import Sum
-
-
-
-@api_view(['POST'])
-@permission_classes([IsAuthenticated])
-@check_usage_limit('ai_messages_count', 50, "Messages IA")  # ✅ AJOUTER
-import anthropic
-import json
-from datetime import datetime, timedelta
-from django.db.models import Sum, Q
-from rest_framework.decorators import api_view, permission_classes
-from rest_framework.permissions import IsAuthenticated
-from rest_framework.response import Response
-from rest_framework import status
 
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
@@ -2022,7 +1998,7 @@ def ai_chat(request):
         ).aggregate(total=Sum('amount'))['total'] or 0
 
         # ============================================
-        # ✅ NOUVEAU : CONTEXTE TEMPOREL
+        # CONTEXTE TEMPOREL
         # ============================================
         day_of_month = now.day
         last_day_of_month = (now.replace(day=1) + timedelta(days=32)).replace(day=1) - timedelta(days=1)
@@ -2045,7 +2021,7 @@ def ai_chat(request):
         } for env in envelopes]
 
         # ============================================
-        # ✅ NOUVEAU : OBJECTIFS
+        # OBJECTIFS
         # ============================================
         goals = Goal.objects.filter(user=user, is_achieved=False).order_by('-created_at')[:5]
         goals_data = [{
@@ -2059,7 +2035,7 @@ def ai_chat(request):
         } for goal in goals]
 
         # ============================================
-        # ✅ NOUVEAU : SCORE YOONU DAL
+        # SCORE YOONU DAL
         # ============================================
         try:
             from .calculate_yoonu_score import calculate_yoonu_score
@@ -2106,13 +2082,13 @@ def ai_chat(request):
             })
 
         # ============================================
-        # ✅ CONTEXTE ENRICHI
+        # CONTEXTE ENRICHI
         # ============================================
         user_context = {
             # Identité
             'name': user.username,
             
-            # ✅ TEMPOREL (NOUVEAU)
+            # TEMPOREL
             'current_date': now.strftime('%Y-%m-%d'),
             'day_of_month': day_of_month,
             'days_remaining_in_month': days_remaining,
@@ -2122,16 +2098,16 @@ def ai_chat(request):
             'monthly_income': float(monthly_income),
             'monthly_expenses': float(monthly_expenses),
             'budget_remaining': float(budget_remaining),
-            'daily_budget': float(daily_budget),  # ✅ NOUVEAU
+            'daily_budget': float(daily_budget),
             
-            # ✅ SCORE (NOUVEAU)
+            # SCORE
             'yoonu_score': yoonu_score,
             'score_level': score_level,
             
             # Enveloppes
             'envelopes': envelopes_data,
             
-            # ✅ OBJECTIFS (NOUVEAU)
+            # OBJECTIFS
             'goals': goals_data,
             
             # Historique
@@ -2142,7 +2118,7 @@ def ai_chat(request):
         }
 
         # ============================================
-        # ✅ SYSTEM PROMPT INTELLIGENT
+        # SYSTEM PROMPT INTELLIGENT
         # ============================================
         
         # Analyse temporelle
@@ -2191,13 +2167,7 @@ ACTIONS DISPONIBLES :
 FORMAT JSON STRICT :
 {{
   "message": "Ta réponse conversationnelle (MAX 3 phrases)",
-  "actions": [
-    {{
-      "type": "create_expense",
-      "label": "✅ Enregistrer cette dépense",
-      "data": {{"amount": 5000, "category": "transport", "description": "..."}}
-    }}
-  ]
+  "actions": [...]
 }}
 
 Si pas d'action : "actions": []
@@ -2225,28 +2195,18 @@ Si pas d'action : "actions": []
    - Libération (épargne long terme, urgence)
 
 5. Si enveloppe déborde (>100%) → conseils précis de réduction
-   ✅ "Ton enveloppe Loisirs est à 120%. Les 5 prochains jours : ZÉRO resto, ZÉRO sorties."
 
 6. Si objectif proche (>80%) → encourager à finir
-   ✅ "Ton objectif Mariage est à 85% (1,8M/1,75M... c'est dépassé ! 🎉). Marque-le 'Atteint' !"
 
 7. Wolof-français bienvenu pour connexion culturelle (ex: "Yalla, tiens bon !")
 
 8. CONCIS : Maximum 3 phrases courtes
 
 EXEMPLES DE BONS CONSEILS :
-
 ✅ "Avec 15k pour 2 jours (7,5k/jour), pas de resto ce soir. Garde pour transport demain. Le plaisir attend le 1er ! Tiens bon 48h 💪"
 
-✅ "Ton enveloppe Plaisir est à 120% (60k dépensés sur 50k budget). Les 10 prochains jours : ZÉRO loisirs. Concentre-toi sur Essentiel uniquement."
-
-✅ "Excellent ! 150k restants pour 15 jours = 10k/jour. À ce rythme, tu finis tranquille. Continue comme ça !"
-
 EXEMPLES DE MAUVAIS CONSEILS :
-
 ❌ "Il faut économiser" (trop vague, pas de chiffres, pas d'action)
-❌ "Tu devrais mieux gérer ton budget" (pas actionnable)
-❌ "Fais attention à tes dépenses" (pas de contexte temporel)
 
 Sois direct, précis, actionnable. JSON valide OBLIGATOIRE.
 """
@@ -2254,8 +2214,6 @@ Sois direct, précis, actionnable. JSON valide OBLIGATOIRE.
         # ============================================
         # APPEL À CLAUDE
         # ============================================
-        from django.conf import settings
-        
         client = anthropic.Anthropic(api_key=settings.ANTHROPIC_API_KEY)
 
         messages = []
@@ -2309,6 +2267,8 @@ Sois direct, précis, actionnable. JSON valide OBLIGATOIRE.
 
     except Exception as e:
         return Response({'error': f'Erreur IA: {str(e)}'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
 
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
