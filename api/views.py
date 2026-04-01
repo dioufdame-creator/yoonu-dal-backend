@@ -3182,3 +3182,144 @@ def score_history(request):
             {'error': str(e)},
             status=status.HTTP_500_INTERNAL_SERVER_ERROR
         )
+# ==========================================
+# FONCTIONS MANQUANTES - À AJOUTER À LA FIN DE api/views.py
+# ==========================================
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def check_onboarding_status(request):
+    """Vérifie si l'utilisateur a complété l'onboarding"""
+    user = request.user
+    
+    try:
+        # Vérifier si diagnostic complété
+        has_diagnostic = DiagnosticResult.objects.filter(user=user).exists()
+        
+        # Vérifier si valeurs définies
+        has_values = UserValue.objects.filter(user=user).exists()
+        
+        # Vérifier si revenus configurés
+        has_income = user.profile.monthly_income and user.profile.monthly_income > 0
+        
+        onboarding_complete = has_diagnostic and has_values and has_income
+        
+        return Response({
+            'onboarding_complete': onboarding_complete,
+            'steps': {
+                'diagnostic': has_diagnostic,
+                'values': has_values,
+                'income': has_income
+            }
+        })
+        
+    except Exception as e:
+        return Response({
+            'onboarding_complete': False,
+            'steps': {
+                'diagnostic': False,
+                'values': False,
+                'income': False
+            }
+        })
+
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def complete_onboarding(request):
+    """Marque l'onboarding comme complété"""
+    user = request.user
+    
+    try:
+        # On pourrait ajouter un champ dans UserProfile si besoin
+        # Pour l'instant, on retourne juste success
+        return Response({
+            'success': True,
+            'message': 'Onboarding complété avec succès'
+        })
+        
+    except Exception as e:
+        return Response({
+            'error': f'Erreur: {str(e)}'
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def manage_meta_envelopes(request):
+    """Retourne les 4 meta-enveloppes (Essentiel, Plaisir, Projet, Libération)"""
+    user = request.user
+    
+    try:
+        current_month = timezone.now().replace(day=1)
+        
+        # Les 4 meta-enveloppes
+        meta_envelopes = {
+            'essentiel': {
+                'categories': ['logement', 'alimentation', 'transport', 'santé'],
+                'color': '#FF6B6B'
+            },
+            'plaisir': {
+                'categories': ['loisirs', 'vêtements', 'autre'],
+                'color': '#4ECDC4'
+            },
+            'projet': {
+                'categories': ['éducation', 'famille', 'spiritualité'],
+                'color': '#95E1D3'
+            },
+            'libération': {
+                'categories': [],  # Épargne/investissement
+                'color': '#FFD93D'
+            }
+        }
+        
+        result = []
+        
+        for envelope_type, config in meta_envelopes.items():
+            # Récupérer l'enveloppe de la DB
+            try:
+                envelope = Envelope.objects.get(user=user, envelope_type=envelope_type)
+                budget = float(envelope.monthly_budget)
+            except Envelope.DoesNotExist:
+                budget = 0
+            
+            # Calculer dépenses du mois
+            if envelope_type == 'libération':
+                # Pour libération, c'est l'épargne (revenus - dépenses)
+                monthly_income = Income.objects.filter(
+                    user=user, date__gte=current_month
+                ).aggregate(total=Sum('amount'))['total'] or 0
+                
+                total_expenses = Expense.objects.filter(
+                    user=user, date__gte=current_month
+                ).aggregate(total=Sum('amount'))['total'] or 0
+                
+                spent = max(0, float(monthly_income - total_expenses))
+            else:
+                spent = Expense.objects.filter(
+                    user=user,
+                    category__in=config['categories'],
+                    date__gte=current_month
+                ).aggregate(total=Sum('amount'))['total'] or 0
+                spent = float(spent)
+            
+            remaining = max(0, budget - spent)
+            percentage = (spent / budget * 100) if budget > 0 else 0
+            
+            result.append({
+                'type': envelope_type,
+                'label': envelope_type.capitalize(),
+                'budget': budget,
+                'spent': spent,
+                'remaining': remaining,
+                'percentage': round(percentage, 1),
+                'categories': config['categories'],
+                'color': config['color']
+            })
+        
+        return Response(result)
+        
+    except Exception as e:
+        return Response({
+            'error': f'Erreur meta-envelopes: {str(e)}'
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
