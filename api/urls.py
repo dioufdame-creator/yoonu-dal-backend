@@ -1,4 +1,4 @@
-# api/urls.py - VERSION CORRIGÉE FINALE
+# api/urls.py - VERSION MINIMALE QUI MARCHE
 
 from django.urls import path
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
@@ -68,7 +68,6 @@ urlpatterns = [
     # Score Yoonu
     path('yoonu-score/', views.get_yoonu_score, name='get_yoonu_score'),
     path('yoonu-score/history/', views.get_score_history, name='get_score_history'),
-    path('user-values/', views.user_values, name='user_values'),
     path('calculate-score/', views.trigger_score_calculation, name='trigger_score_calculation'),
     path('score-history/', views.score_history),
     
@@ -79,14 +78,7 @@ urlpatterns = [
     path('payments/start-trial/', payment_views.start_trial, name='start_trial'),
     path('payments/subscription-status/', payment_views.subscription_status, name='subscription_status'),
     
-    # Onboarding
-    path('onboarding/status/', views.check_onboarding_status, name='check_onboarding_status'),
-    path('onboarding/complete/', views.complete_onboarding, name='complete_onboarding'),
-    
     # Export
     path('export/excel/', export_views.export_excel),
     path('export/pdf/', export_views.export_pdf),
-    
-    # Meta-enveloppes
-    path('meta-envelopes/', views.manage_meta_envelopes, name='manage_meta_envelopes'),
 ]
