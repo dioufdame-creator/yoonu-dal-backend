@@ -3159,6 +3159,7 @@ def manage_meta_envelopes(request):
         result = []
         
         for envelope_type, config in meta_envelopes.items():
+            print(f"🔍 Get {envelope_type}...")
             try:
                 envelope = Envelope.objects.get(user=user, envelope_type=envelope_type)
                 budget = float(envelope.monthly_budget)
@@ -3166,6 +3167,7 @@ def manage_meta_envelopes(request):
             except Envelope.DoesNotExist:
                 budget = 0
                 allocated_percentage = 0  # ✅ AJOUTER
+                print(f"   ✅ {allocated_percentage}% = {budget}F")
             
             if envelope_type == 'liberation':
                 monthly_income_total = Income.objects.filter(
