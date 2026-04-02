@@ -2989,8 +2989,24 @@ def complete_onboarding(request):
         if financial_goals:
             user.profile.financial_goals = financial_goals
             user.profile.save()
+        # ✅ 3. CRÉER LES 4 ENVELOPPES PAR DÉFAUT
+        defaults = [
+            ('essentiels', 50),
+            ('plaisirs', 30),
+            ('projets', 15),
+            ('liberation', 5)
+        ]
         
-        # 3. Créer un diagnostic de base
+        for envelope_type, percentage in defaults:
+            Envelope.objects.get_or_create(
+                user=user,
+                envelope_type=envelope_type,
+                defaults={
+                    'allocated_percentage': percentage,
+                    'monthly_budget': (Decimal(percentage) / 100) * Decimal(str(monthly_income or 0))
+                }
+            )    
+        # 4. Créer un diagnostic de base
         DiagnosticResult.objects.get_or_create(
             user=user,
             defaults={
@@ -3005,7 +3021,7 @@ def complete_onboarding(request):
             }
         )
         
-        # 4. Calculer le score (retourne un dict)
+        # 5. Calculer le score (retourne un dict)
         try:
             score_data = calculate_yoonu_score(user)
             total_score = score_data.get('total_score', 47) if score_data else 47
@@ -3027,7 +3043,7 @@ def complete_onboarding(request):
         }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
  
 
-@api_view(['GET', 'POST'])  # ✅ Ajouter POST
+@api_view(['GET', 'POST'])
 @permission_classes([IsAuthenticated])
 def manage_meta_envelopes(request):
     """Retourne les 4 meta-enveloppes (Essentiel, Plaisir, Projet, Libération)"""
@@ -3041,11 +3057,15 @@ def manage_meta_envelopes(request):
             percentages = data.get('percentages', {})
             
             if monthly_income <= 0:
-                return Response({'error': 'Revenu mensuel requis'}, status=status.HTTP_400_BAD_REQUEST)
+                return Response({
+                    'error': 'Revenu mensuel requis'
+                }, status=status.HTTP_400_BAD_REQUEST)
             
             total = sum(percentages.values())
             if abs(total - 100) > 0.1:
-                return Response({'error': f'Total = {total}%. Doit être 100%'}, status=status.HTTP_400_BAD_REQUEST)
+                return Response({
+                    'error': f'Total = {total}%. Doit être 100%'
+                }, status=status.HTTP_400_BAD_REQUEST)
             
             # Mapping frontend → DB
             name_mapping = {
@@ -3072,16 +3092,20 @@ def manage_meta_envelopes(request):
             user.profile.monthly_income = monthly_income
             user.profile.save()
             
-            return Response({'message': 'Enveloppes mises à jour avec succès'})
+            return Response({
+                'message': 'Enveloppes mises à jour avec succès'
+            })
             
         except Exception as e:
-            return Response({'error': f'Erreur: {str(e)}'}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({
+                'error': f'Erreur: {str(e)}'
+            }, status=status.HTTP_400_BAD_REQUEST)
     
     # GET : Récupérer les enveloppes
     try:
         current_month = timezone.now().replace(day=1)
         
-        # Créer les enveloppes par défaut
+        # Créer les enveloppes par défaut si elles n'existent pas
         defaults = [
             ('essentiels', 50),
             ('plaisirs', 30),
@@ -3168,8 +3192,9 @@ def manage_meta_envelopes(request):
         return Response(result)
         
     except Exception as e:
-        return Response({'error': f'Erreur: {str(e)}'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
+        return Response({
+            'error': f'Erreur meta-envelopes: {str(e)}'
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 # ==========================================
 # FONCTIONS MANQUANTES - À AJOUTER À LA FIN DE api/views.py
 # ==========================================
