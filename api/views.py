@@ -3027,32 +3027,98 @@ def complete_onboarding(request):
         }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
  
 
-
-
-@api_view(['GET'])
+@api_view(['GET', 'POST'])  # ✅ Ajouter POST
 @permission_classes([IsAuthenticated])
 def manage_meta_envelopes(request):
     """Retourne les 4 meta-enveloppes (Essentiel, Plaisir, Projet, Libération)"""
     user = request.user
     
+    # POST : Mettre à jour les pourcentages
+    if request.method == 'POST':
+        try:
+            data = request.data
+            monthly_income = Decimal(data.get('monthly_income', 0))
+            percentages = data.get('percentages', {})
+            
+            if monthly_income <= 0:
+                return Response({'error': 'Revenu mensuel requis'}, status=status.HTTP_400_BAD_REQUEST)
+            
+            total = sum(percentages.values())
+            if abs(total - 100) > 0.1:
+                return Response({'error': f'Total = {total}%. Doit être 100%'}, status=status.HTTP_400_BAD_REQUEST)
+            
+            # Mapping frontend → DB
+            name_mapping = {
+                'essentiel': 'essentiels',
+                'plaisir': 'plaisirs',
+                'projet': 'projets',
+                'libération': 'liberation'
+            }
+            
+            for frontend_name, db_name in name_mapping.items():
+                if frontend_name in percentages:
+                    percentage = Decimal(str(percentages[frontend_name]))
+                    monthly_budget = (percentage / 100) * monthly_income
+                    
+                    Envelope.objects.update_or_create(
+                        user=user,
+                        envelope_type=db_name,
+                        defaults={
+                            'allocated_percentage': percentage,
+                            'monthly_budget': monthly_budget
+                        }
+                    )
+            
+            user.profile.monthly_income = monthly_income
+            user.profile.save()
+            
+            return Response({'message': 'Enveloppes mises à jour avec succès'})
+            
+        except Exception as e:
+            return Response({'error': f'Erreur: {str(e)}'}, status=status.HTTP_400_BAD_REQUEST)
+    
+    # GET : Récupérer les enveloppes
     try:
         current_month = timezone.now().replace(day=1)
         
-        # Les 4 meta-enveloppes
+        # Créer les enveloppes par défaut
+        defaults = [
+            ('essentiels', 50),
+            ('plaisirs', 30),
+            ('projets', 15),
+            ('liberation', 5)
+        ]
+        monthly_income = user.profile.monthly_income or 0
+        
+        for envelope_type, percentage in defaults:
+            Envelope.objects.get_or_create(
+                user=user,
+                envelope_type=envelope_type,
+                defaults={
+                    'allocated_percentage': percentage,
+                    'monthly_budget': (Decimal(percentage) / 100) * Decimal(str(monthly_income))
+                }
+            )
+        
+        # Mapping DB → Frontend
         meta_envelopes = {
-            'essentiels': {  # ✅ Correspond à la DB
+            'essentiels': {
+                'frontend_name': 'essentiel',
                 'categories': ['logement', 'alimentation', 'transport', 'santé'],
                 'color': '#FF6B6B'
             },
-            'plaisirs': {  # ✅
+            'plaisirs': {
+                'frontend_name': 'plaisir',
                 'categories': ['loisirs', 'vêtements', 'autre'],
                 'color': '#4ECDC4'
             },
-            'projets': {  # ✅
+            'projets': {
+                'frontend_name': 'projet',
                 'categories': ['éducation', 'famille', 'spiritualité'],
                 'color': '#95E1D3'
             },
-            'liberation': {  # ✅ (pas d'accent en DB)
+            'liberation': {
+                'frontend_name': 'libération',
                 'categories': [],
                 'color': '#FFD93D'
             }
@@ -3061,17 +3127,14 @@ def manage_meta_envelopes(request):
         result = []
         
         for envelope_type, config in meta_envelopes.items():
-            # Récupérer l'enveloppe de la DB
             try:
                 envelope = Envelope.objects.get(user=user, envelope_type=envelope_type)
                 budget = float(envelope.monthly_budget)
             except Envelope.DoesNotExist:
                 budget = 0
             
-            # Calculer dépenses du mois
-            if envelope_type == 'libération':
-                # Pour libération, c'est l'épargne (revenus - dépenses)
-                monthly_income = Income.objects.filter(
+            if envelope_type == 'liberation':
+                monthly_income_total = Income.objects.filter(
                     user=user, date__gte=current_month
                 ).aggregate(total=Sum('amount'))['total'] or 0
                 
@@ -3079,7 +3142,7 @@ def manage_meta_envelopes(request):
                     user=user, date__gte=current_month
                 ).aggregate(total=Sum('amount'))['total'] or 0
                 
-                spent = max(0, float(monthly_income - total_expenses))
+                spent = max(0, float(monthly_income_total - total_expenses))
             else:
                 spent = Expense.objects.filter(
                     user=user,
@@ -3092,8 +3155,8 @@ def manage_meta_envelopes(request):
             percentage = (spent / budget * 100) if budget > 0 else 0
             
             result.append({
-                'type': envelope_type,
-                'label': envelope_type.capitalize(),
+                'type': config['frontend_name'],
+                'label': config['frontend_name'].capitalize(),
                 'budget': budget,
                 'spent': spent,
                 'remaining': remaining,
@@ -3105,9 +3168,8 @@ def manage_meta_envelopes(request):
         return Response(result)
         
     except Exception as e:
-        return Response({
-            'error': f'Erreur meta-envelopes: {str(e)}'
-        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        return Response({'error': f'Erreur: {str(e)}'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
 # ==========================================
 # FONCTIONS MANQUANTES - À AJOUTER À LA FIN DE api/views.py
 # ==========================================
