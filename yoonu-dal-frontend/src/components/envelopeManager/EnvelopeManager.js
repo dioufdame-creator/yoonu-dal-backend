@@ -23,6 +23,7 @@ const EnvelopeManagerPremium = ({ toast, onNavigate, auth }) => {
 
   // ✅ Configuration 4 enveloppes PREMIUM
   const ENVELOPE_CONFIG = {
+    // PLURIEL (pour compatibilité)
     essentiels: {
       name: 'Essentiels',
       icon: '🏠',
@@ -71,55 +72,56 @@ const EnvelopeManagerPremium = ({ toast, onNavigate, auth }) => {
       recommendedMin: 0,
       recommendedMax: 20
     },
-     essentiel: {
-    name: 'Essentiels',
-    icon: '🏠',
-    description: 'Loyer, transport, alimentation, santé',
-    color: 'from-red-500 to-pink-500',
-    bgColor: 'bg-red-50',
-    borderColor: 'border-red-200',
-    textColor: 'text-red-700',
-    glowColor: 'shadow-red-500/20',
-    recommendedMin: 40,
-    recommendedMax: 60
-  },
-  plaisir: {
-    name: 'Plaisirs',
-    icon: '🎉',
-    description: 'Loisirs, sorties, divertissements',
-    color: 'from-blue-500 to-indigo-500',
-    bgColor: 'bg-blue-50',
-    borderColor: 'border-blue-200',
-    textColor: 'text-blue-700',
-    glowColor: 'shadow-blue-500/20',
-    recommendedMin: 20,
-    recommendedMax: 30
-  },
-  projet: {
-    name: 'Projets',
-    icon: '💎',
-    description: 'Épargne, investissements, famille',
-    color: 'from-green-500 to-emerald-500',
-    bgColor: 'bg-green-50',
-    borderColor: 'border-green-200',
-    textColor: 'text-green-700',
-    glowColor: 'shadow-green-500/20',
-    recommendedMin: 20,
-    recommendedMax: 30
-  },
-  libération: {
-    name: 'Libération',
-    icon: '🔓',
-    description: 'Dettes, crédits, solidarité familiale',
-    color: 'from-orange-500 to-amber-500',
-    bgColor: 'bg-orange-50',
-    borderColor: 'border-orange-200',
-    textColor: 'text-orange-700',
-    glowColor: 'shadow-orange-500/20',
-    recommendedMin: 0,
-    recommendedMax: 20
-  }
-};
+    
+    // ✅ SINGULIER (utilisé par le backend)
+    essentiel: {
+      name: 'Essentiels',
+      icon: '🏠',
+      description: 'Loyer, transport, alimentation, santé',
+      color: 'from-red-500 to-pink-500',
+      bgColor: 'bg-red-50',
+      borderColor: 'border-red-200',
+      textColor: 'text-red-700',
+      glowColor: 'shadow-red-500/20',
+      recommendedMin: 40,
+      recommendedMax: 60
+    },
+    plaisir: {
+      name: 'Plaisirs',
+      icon: '🎉',
+      description: 'Loisirs, sorties, divertissements',
+      color: 'from-blue-500 to-indigo-500',
+      bgColor: 'bg-blue-50',
+      borderColor: 'border-blue-200',
+      textColor: 'text-blue-700',
+      glowColor: 'shadow-blue-500/20',
+      recommendedMin: 20,
+      recommendedMax: 30
+    },
+    projet: {
+      name: 'Projets',
+      icon: '💎',
+      description: 'Épargne, investissements, famille',
+      color: 'from-green-500 to-emerald-500',
+      bgColor: 'bg-green-50',
+      borderColor: 'border-green-200',
+      textColor: 'text-green-700',
+      glowColor: 'shadow-green-500/20',
+      recommendedMin: 20,
+      recommendedMax: 30
+    },
+    libération: {
+      name: 'Libération',
+      icon: '🔓',
+      description: 'Dettes, crédits, solidarité familiale',
+      color: 'from-orange-500 to-amber-500',
+      bgColor: 'bg-orange-50',
+      borderColor: 'border-orange-200',
+      textColor: 'text-orange-700',
+      glowColor: 'shadow-orange-500/20',
+      recommendedMin: 0,
+      recommendedMax: 20
+    }
   };
 
   useEffect(() => {
@@ -299,7 +301,18 @@ const EnvelopeManagerPremium = ({ toast, onNavigate, auth }) => {
         {/* Envelopes Grid 100% RESPONSIVE */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-6 sm:mb-8">
           {envelopes.map(envelope => {
-            const config = ENVELOPE_CONFIG[envelope.envelope_type] || {};
+            const config = ENVELOPE_CONFIG[envelope.envelope_type] || {
+              name: 'Enveloppe',
+              icon: '📦',
+              description: '',
+              color: 'from-gray-500 to-gray-600',
+              bgColor: 'bg-gray-50',
+              borderColor: 'border-gray-200',
+              textColor: 'text-gray-700',
+              glowColor: 'shadow-gray-500/20',
+              recommendedMin: 0,
+              recommendedMax: 100
+            };
             const status = getEnvelopeStatus(envelope);
             const currentSpent = envelope.current_spent || 0;
             const budget = envelope.monthly_budget || 0;
@@ -363,8 +376,8 @@ const EnvelopeManagerPremium = ({ toast, onNavigate, auth }) => {
                           />
                           <defs>
                             <linearGradient id={`gradient-${envelope.envelope_type}`} x1="0" y1="0" x2="1" y2="0">
-                              <stop offset="0%" stopColor={config.color.includes('red') ? '#ef4444' : config.color.includes('blue') ? '#3b82f6' : config.color.includes('green') ? '#10b981' : '#f97316'} />
-                              <stop offset="100%" stopColor={config.color.includes('red') ? '#ec4899' : config.color.includes('blue') ? '#6366f1' : config.color.includes('green') ? '#059669' : '#f59e0b'} />
+                              <stop offset="0%" stopColor={config.color?.includes('red') ? '#ef4444' : config.color?.includes('blue') ? '#3b82f6' : config.color?.includes('green') ? '#10b981' : '#f97316'} />
+                              <stop offset="100%" stopColor={config.color?.includes('red') ? '#ec4899' : config.color?.includes('blue') ? '#6366f1' : config.color?.includes('green') ? '#059669' : '#f59e0b'} />
                             </linearGradient>
                           </defs>
                           <Tooltip 
@@ -525,8 +538,8 @@ const EnvelopeManagerPremium = ({ toast, onNavigate, auth }) => {
                       className="w-full h-2 sm:h-3 rounded-full appearance-none cursor-pointer"
                       style={{
                         background: `linear-gradient(to right, 
-                          ${config.color.includes('red') ? '#ef4444' : config.color.includes('blue') ? '#3b82f6' : config.color.includes('green') ? '#10b981' : '#f97316'} 0%, 
-                          ${config.color.includes('red') ? '#ec4899' : config.color.includes('blue') ? '#6366f1' : config.color.includes('green') ? '#059669' : '#f59e0b'} ${value}%, 
+                          ${config.color?.includes('red') ? '#ef4444' : config.color?.includes('blue') ? '#3b82f6' : config.color?.includes('green') ? '#10b981' : '#f97316'} 0%, 
+                          ${config.color?.includes('red') ? '#ec4899' : config.color?.includes('blue') ? '#6366f1' : config.color?.includes('green') ? '#059669' : '#f59e0b'} ${value}%, 
                           #e5e7eb ${value}%, 
                           #e5e7eb 100%)`
                       }}
