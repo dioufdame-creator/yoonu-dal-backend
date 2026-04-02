@@ -1,579 +1,454 @@
 import React, { useState, useEffect } from 'react';
 import API from '../../services/api';
 
-const Onboarding = ({ toast, onNavigate, setAuth }) => {
-  const [currentStep, setCurrentStep] = useState(0);
-  const [isLoading, setIsLoading] = useState(false);
-  
-  const [onboardingData, setOnboardingData] = useState({
-    selectedValues: [],
-    priorities: [],
-    monthlyIncome: ''
+const Onboarding = ({ toast, onNavigate }) => {
+  const [step, setStep] = useState(0);
+  const [loading, setLoading] = useState(false);
+  const [data, setData] = useState({
+    values: [],
+    income: ''
   });
+  const [score, setScore] = useState(0);
+  const [showScore, setShowScore] = useState(false);
 
-  const [calculatedScore, setCalculatedScore] = useState(0);
-  const [displayScore, setDisplayScore] = useState(0);
-  const [showConfetti, setShowConfetti] = useState(false);
-
-  const [currentUserId, setCurrentUserId] = useState(null);
-
-  const availableValues = [
-    { id: 'famille', label: 'Famille', icon: '💚', description: 'Proches et relations' },
-    { id: 'spiritualite', label: 'Spiritualité', icon: '✨', description: 'Foi et valeurs' },
-    { id: 'education', label: 'Éducation', icon: '🎓', description: 'Apprentissage continu' },
-    { id: 'sante', label: 'Santé', icon: '💪', description: 'Bien-être physique' },
-    { id: 'travail', label: 'Travail', icon: '💼', description: 'Carrière professionnelle' },
-    { id: 'loisirs', label: 'Loisirs', icon: '🎨', description: 'Passions et hobbies' },
-    { id: 'communaute', label: 'Communauté', icon: '🤝', description: 'Engagement social' },
-    { id: 'securite', label: 'Sécurité', icon: '🛡️', description: 'Stabilité financière' }
+  // Valeurs pré-sélectionnées (8 essentielles)
+  const VALUES = [
+    { id: 'famille', emoji: '👨‍👩‍👧‍👦', label: 'Famille', gradient: 'from-pink-500 to-rose-500' },
+    { id: 'spiritualite', emoji: '🕌', label: 'Spiritualité', gradient: 'from-purple-500 to-indigo-500' },
+    { id: 'sante', emoji: '💪', label: 'Santé', gradient: 'from-green-500 to-emerald-500' },
+    { id: 'education', emoji: '📚', label: 'Éducation', gradient: 'from-blue-500 to-cyan-500' },
+    { id: 'securite', emoji: '🛡️', label: 'Sécurité', gradient: 'from-amber-500 to-orange-500' },
+    { id: 'independance', emoji: '🦅', label: 'Indépendance', gradient: 'from-sky-500 to-blue-500' },
+    { id: 'generosite', emoji: '🤲', label: 'Générosité', gradient: 'from-teal-500 to-green-500' },
+    { id: 'liberte', emoji: '✨', label: 'Liberté', gradient: 'from-violet-500 to-purple-500' }
   ];
 
-  useEffect(() => {
-    const getUserId = async () => {
-      try {
-        const response = await API.get('/profile/');
-        const userId = response.data.user.id;
-        setCurrentUserId(userId);
-        
-        const savedKey = `onboarding_progress_${userId}`;
-        const saved = localStorage.getItem(savedKey);
-        
-        if (saved) {
-          const { step, data } = JSON.parse(saved);
-          console.log('📦 Progression chargée pour user', userId);
-          setCurrentStep(step);
-          setOnboardingData(data);
-        }
-      } catch (error) {
-        console.error('Erreur récupération user ID:', error);
+  const QUICK_AMOUNTS = [50000, 100000, 200000, 500000, 1000000, 2000000];
+
+  // Toggle value selection
+  const toggleValue = (id) => {
+    setData(prev => {
+      const isSelected = prev.values.includes(id);
+      
+      if (isSelected) {
+        return { ...prev, values: prev.values.filter(v => v !== id) };
       }
-    };
+      
+      if (prev.values.length >= 3) {
+        toast?.error?.('Maximum 3 valeurs');
+        return prev;
+      }
+      
+      return { ...prev, values: [...prev.values, id] };
+    });
+  };
 
-    getUserId();
-  }, []);
+  // Format currency
+  const formatAmount = (value) => {
+    return value.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+  };
 
-  useEffect(() => {
-    if (currentStep > 0 && currentUserId) {
-      const savedKey = `onboarding_progress_${currentUserId}`;
-      localStorage.setItem(savedKey, JSON.stringify({
-        step: currentStep,
-        data: onboardingData
-      }));
-      console.log('💾 Progression sauvegardée pour user', currentUserId);
+  // Handle income input
+  const handleIncomeChange = (e) => {
+    const raw = e.target.value.replace(/\s/g, '');
+    if (/^\d*$/.test(raw)) {
+      setData(prev => ({ ...prev, income: raw }));
     }
-  }, [currentStep, onboardingData, currentUserId]);
+  };
 
-  const totalSteps = 5;
-
-  const handleValueToggle = (valueId) => {
-    const { selectedValues } = onboardingData;
+  // Next step
+  const next = () => {
+    if (step === 0 && data.values.length < 1) {
+      toast?.error?.('Choisis au moins 1 valeur');
+      return;
+    }
     
-    if (selectedValues.includes(valueId)) {
-      setOnboardingData({
-        ...onboardingData,
-        selectedValues: selectedValues.filter(v => v !== valueId)
-      });
+    if (step === 1 && !data.income) {
+      toast?.error?.('Entre ton revenu mensuel');
+      return;
+    }
+
+    if (step === 1) {
+      completeOnboarding();
     } else {
-      if (selectedValues.length < 3) {
-        setOnboardingData({
-          ...onboardingData,
-          selectedValues: [...selectedValues, valueId]
-        });
-      } else {
-        toast?.showError('Tu peux choisir maximum 3 valeurs');
-      }
+      setStep(prev => prev + 1);
     }
   };
 
-  const handlePriorityMove = (index, direction) => {
-    const newPriorities = [...onboardingData.priorities];
-    const newIndex = index + direction;
-    
-    if (newIndex >= 0 && newIndex < newPriorities.length) {
-      [newPriorities[index], newPriorities[newIndex]] = [newPriorities[newIndex], newPriorities[index]];
-      setOnboardingData({
-        ...onboardingData,
-        priorities: newPriorities
-      });
-    }
-  };
+  // Complete onboarding
+  const completeOnboarding = async () => {
+    setLoading(true);
 
-  const handleNext = () => {
-    if (currentStep === 1 && onboardingData.selectedValues.length !== 3) {
-      toast?.showError('Sélectionne exactement 3 valeurs');
-      return;
-    }
-
-    if (currentStep === 2) {
-      if (onboardingData.priorities.length === 0) {
-        setOnboardingData({
-          ...onboardingData,
-          priorities: onboardingData.selectedValues
-        });
-      }
-    }
-
-    if (currentStep === 3) {
-      const income = parseFloat(onboardingData.monthlyIncome.replace(/\s/g, ''));
-      if (!income || income <= 0) {
-        toast?.showError('Entre un montant valide');
-        return;
-      }
-      calculateAndRevealScore();
-      return;
-    }
-
-    setCurrentStep(prev => Math.min(prev + 1, totalSteps - 1));
-  };
-
-  const handleBack = () => {
-    setCurrentStep(prev => Math.max(prev - 1, 0));
-  };
-
-  const calculateAndRevealScore = async () => {
-    setIsLoading(true);
-    
     try {
-      for (let i = 0; i < onboardingData.priorities.length; i++) {
-        const valueId = onboardingData.priorities[i];
-        await API.post('/values/', { 
-          value: valueId,
+      // Save values
+      for (let i = 0; i < data.values.length; i++) {
+        await API.post('/values/', {
+          value: data.values[i],
           priority: i + 1
         });
       }
 
-      const income = parseFloat(onboardingData.monthlyIncome.replace(/\s/g, ''));
+      // Complete & get score
       const response = await API.post('/onboarding/complete/', {
-        monthly_income: income,
-        financial_goals: 'Objectifs définis via onboarding'
+        monthly_income: parseInt(data.income)
       });
 
-      const score = response.data.score?.total_score || 47;
-      setCalculatedScore(score);
+      const finalScore = response.data?.score?.total_score || 47;
+      
+      // Activate trial
+      try {
+        await API.post('/premium/activate-trial/');
+      } catch (err) {
+        console.warn('Trial activation failed:', err);
+      }
 
-      setCurrentStep(4);
-      
-      setTimeout(() => animateScore(score), 300);
-      
-      toast?.showSuccess('Configuration terminée ! 🎉');
-      
+      // Animate score reveal
+      setShowScore(true);
+      animateScore(finalScore);
+
     } catch (error) {
-      console.error('Erreur calcul score:', error);
-      toast?.showError('Erreur lors de la configuration. Réessaie.');
-      setIsLoading(false);
+      console.error('Error:', error);
+      toast?.error?.('Une erreur est survenue');
+      setLoading(false);
     }
   };
 
+  // Animate score
   const animateScore = (target) => {
-    const duration = 1500;
-    const steps = 60;
-    const increment = target / steps;
     let current = 0;
+    const duration = 2000;
+    const steps = 50;
+    const increment = target / steps;
 
     const timer = setInterval(() => {
       current += increment;
       if (current >= target) {
-        setDisplayScore(target);
+        setScore(target);
         clearInterval(timer);
-        setShowConfetti(true);
-        setIsLoading(false);
+        setLoading(false);
         
-        setTimeout(() => setShowConfetti(false), 3000);
+        // Auto-redirect after 3s
+        setTimeout(() => {
+          onNavigate('dashboard');
+        }, 3000);
       } else {
-        setDisplayScore(Math.floor(current));
+        setScore(Math.floor(current));
       }
     }, duration / steps);
   };
 
-  const completeOnboarding = () => {
-    if (currentUserId) {
-      const savedKey = `onboarding_progress_${currentUserId}`;
-      localStorage.removeItem(savedKey);
-      console.log('🗑️ Progression supprimée pour user', currentUserId);
-    }
-    
-    onNavigate('dashboard');
-    
-    toast?.showSuccess('🎉 Bienvenue dans Yoonu Dal !');
-  };
-
-  const formatCurrency = (value) => {
-    return value.replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
-  };
-
-  const handleIncomeChange = (e) => {
-    const value = e.target.value.replace(/\s/g, '');
-    if (/^\d*$/.test(value)) {
-      setOnboardingData({
-        ...onboardingData,
-        monthlyIncome: formatCurrency(value)
-      });
-    }
-  };
-
-  const getScoreLevel = (score) => {
-    if (score >= 80) return { label: 'Expert', icon: '🏆', color: 'amber' };
-    if (score >= 60) return { label: 'Avancé', icon: '⭐', color: 'blue' };
-    if (score >= 40) return { label: 'En chemin', icon: '🌿', color: 'amber' };
-    return { label: 'Débutant', icon: '🌱', color: 'green' };
-  };
+  // Progress percentage
+  const progress = step === 0 ? 50 : 100;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-green-50 via-emerald-50 to-teal-50">
-      <div className="container mx-auto px-4 py-6 max-w-4xl">
-        {currentStep < 4 && (
-          <div className="mb-8">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-50 flex items-center justify-center p-4">
+      <div className="w-full max-w-2xl">
+        
+        {/* Header - Hide on score reveal */}
+        {!showScore && (
+          <div className="mb-8 animate-fadeIn">
             <div className="flex items-center justify-between mb-4">
-              <h1 className="text-2xl font-bold text-gray-900">Yoonu Dal</h1>
-              <div className="text-sm font-medium text-gray-600">
-                {currentStep > 0 && `Étape ${currentStep}/${totalSteps - 1}`}
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-gradient-to-br from-emerald-500 to-teal-500 rounded-xl flex items-center justify-center shadow-lg">
+                  <span className="text-xl">🌿</span>
+                </div>
+                <h1 className="text-2xl font-bold text-slate-900">Yoonu Dal</h1>
+              </div>
+              
+              <div className="text-sm font-medium text-slate-600">
+                Étape {step + 1}/2
               </div>
             </div>
-            
-            {currentStep > 0 && (
-              <div className="w-full bg-gray-200 rounded-full h-2">
-                <div 
-                  className="bg-gradient-to-r from-green-500 to-emerald-500 h-2 rounded-full transition-all duration-500"
-                  style={{ width: `${(currentStep / (totalSteps - 1)) * 100}%` }}
-                />
-              </div>
-            )}
+
+            {/* Progress bar */}
+            <div className="h-1.5 bg-slate-200 rounded-full overflow-hidden">
+              <div 
+                className="h-full bg-gradient-to-r from-emerald-500 to-teal-500 transition-all duration-700 ease-out"
+                style={{ width: `${progress}%` }}
+              />
+            </div>
           </div>
         )}
 
-        <div className="relative">
-          {currentStep === 0 && (
-            <div className="bg-white rounded-2xl shadow-xl p-6 lg:p-12 text-center animate-fadeIn">
-              <div className="mb-8">
-                <div className="text-6xl mb-6 animate-bounce-slow">🌿</div>
-                <h1 className="text-4xl lg:text-5xl font-bold text-gray-900 mb-4">
-                  Bienvenue dans <span className="text-green-600">Yoonu Dal</span>
-                </h1>
-                <p className="text-xl text-gray-600 max-w-2xl mx-auto">
-                  La première app de finance personnelle qui aligne ton argent avec tes valeurs
-                </p>
-              </div>
-
-              <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl p-6 mb-8 max-w-xl mx-auto">
-                <h3 className="font-semibold text-gray-900 mb-4">
-                  Dans les 3 prochaines minutes, tu vas :
-                </h3>
-                <div className="space-y-3 text-left">
-                  <div className="flex items-start gap-3">
-                    <span className="text-2xl">💚</span>
-                    <p className="text-gray-700">Définir tes 3 valeurs principales</p>
-                  </div>
-                  <div className="flex items-start gap-3">
-                    <span className="text-2xl">📊</span>
-                    <p className="text-gray-700">Calculer ton Score Yoonu Dal</p>
-                  </div>
-                  <div className="flex items-start gap-3">
-                    <span className="text-2xl">✨</span>
-                    <p className="text-gray-700">Activer ton essai Premium gratuit (7 jours)</p>
-                  </div>
-                </div>
-              </div>
-
-              <button
-                onClick={() => setCurrentStep(1)}
-                className="bg-gradient-to-r from-green-600 to-emerald-600 text-white px-12 py-4 rounded-xl font-semibold text-lg hover:shadow-xl transition-all transform hover:scale-105"
-              >
-                C'est parti ! 🚀
-              </button>
+        {/* STEP 0: VALUES */}
+        {step === 0 && !showScore && (
+          <div className="bg-white rounded-3xl shadow-xl p-8 animate-slideUp">
+            <div className="mb-8">
+              <h2 className="text-3xl font-bold text-slate-900 mb-3">
+                Qu'est-ce qui compte pour toi ?
+              </h2>
+              <p className="text-slate-600 text-lg">
+                Choisis jusqu'à 3 valeurs qui guident tes choix financiers
+              </p>
             </div>
-          )}
 
-          {currentStep === 1 && (
-            <div className="bg-white rounded-2xl shadow-xl p-6 lg:p-10 animate-fadeIn">
-              <div className="mb-6">
-                <p className="text-sm text-green-600 font-semibold mb-2">ÉTAPE 1/3</p>
-                <h2 className="text-3xl font-bold text-gray-900 mb-2">
-                  Sélectionne tes 3 valeurs
-                </h2>
-                <p className="text-gray-600">
-                  Choisis ce qui compte vraiment pour toi
-                </p>
-              </div>
-
-              <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
-                {availableValues.map(value => (
+            {/* Values grid */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-8">
+              {VALUES.map(value => {
+                const isSelected = data.values.includes(value.id);
+                
+                return (
                   <button
                     key={value.id}
-                    onClick={() => handleValueToggle(value.id)}
-                    className={`p-4 rounded-xl border-2 transition-all transform hover:scale-105 ${
-                      onboardingData.selectedValues.includes(value.id)
-                        ? 'border-green-500 bg-green-50 shadow-lg scale-105'
-                        : 'border-gray-200 hover:border-green-300'
+                    onClick={() => toggleValue(value.id)}
+                    className={`relative p-6 rounded-2xl border-2 transition-all duration-300 ${
+                      isSelected
+                        ? 'border-transparent shadow-xl scale-105'
+                        : 'border-slate-200 hover:border-slate-300 hover:scale-102'
                     }`}
                   >
-                    <div className="text-3xl mb-2">{value.icon}</div>
-                    <div className="font-semibold text-sm text-gray-900">{value.label}</div>
-                    <div className="text-xs text-gray-500 mt-1">{value.description}</div>
+                    {/* Background gradient (only when selected) */}
+                    {isSelected && (
+                      <div className={`absolute inset-0 bg-gradient-to-br ${value.gradient} opacity-10 rounded-2xl`} />
+                    )}
+                    
+                    {/* Content */}
+                    <div className="relative">
+                      <div className="text-4xl mb-3">{value.emoji}</div>
+                      <div className="font-semibold text-slate-900 text-sm">
+                        {value.label}
+                      </div>
+                    </div>
+
+                    {/* Check indicator */}
+                    {isSelected && (
+                      <div className="absolute top-2 right-2 w-6 h-6 bg-emerald-500 rounded-full flex items-center justify-center shadow-lg">
+                        <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                        </svg>
+                      </div>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Selection counter */}
+            <div className="mb-8">
+              <div className="flex items-center justify-between text-sm mb-2">
+                <span className="text-slate-600">Valeurs sélectionnées</span>
+                <span className="font-bold text-emerald-600">{data.values.length}/3</span>
+              </div>
+              <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
+                <div 
+                  className="h-full bg-gradient-to-r from-emerald-500 to-teal-500 transition-all duration-500"
+                  style={{ width: `${(data.values.length / 3) * 100}%` }}
+                />
+              </div>
+            </div>
+
+            {/* CTA */}
+            <button
+              onClick={next}
+              disabled={data.values.length === 0}
+              className="w-full bg-gradient-to-r from-emerald-500 to-teal-500 text-white py-4 rounded-2xl font-semibold text-lg shadow-lg hover:shadow-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:shadow-lg"
+            >
+              Continuer →
+            </button>
+          </div>
+        )}
+
+        {/* STEP 1: INCOME */}
+        {step === 1 && !showScore && (
+          <div className="bg-white rounded-3xl shadow-xl p-8 animate-slideUp">
+            <div className="mb-8">
+              <h2 className="text-3xl font-bold text-slate-900 mb-3">
+                Tes revenus mensuels ?
+              </h2>
+              <p className="text-slate-600 text-lg">
+                Pour calculer ton Score Yoonu et personnaliser ton expérience
+              </p>
+            </div>
+
+            {/* Income input */}
+            <div className="mb-6">
+              <label className="block text-sm font-medium text-slate-700 mb-3">
+                Revenu mensuel moyen
+              </label>
+              
+              <div className="relative">
+                <input
+                  type="text"
+                  value={data.income ? formatAmount(data.income) : ''}
+                  onChange={handleIncomeChange}
+                  placeholder="500 000"
+                  className="w-full px-6 py-5 text-3xl font-bold text-slate-900 bg-slate-50 border-2 border-slate-200 rounded-2xl focus:border-emerald-500 focus:outline-none focus:ring-4 focus:ring-emerald-500/10 transition-all"
+                />
+                <div className="absolute right-6 top-1/2 -translate-y-1/2 text-slate-400 font-semibold text-xl">
+                  FCFA
+                </div>
+              </div>
+            </div>
+
+            {/* Quick amounts */}
+            <div className="mb-8">
+              <p className="text-sm text-slate-600 mb-3">Montants rapides</p>
+              <div className="grid grid-cols-3 gap-2">
+                {QUICK_AMOUNTS.map(amount => (
+                  <button
+                    key={amount}
+                    onClick={() => setData(prev => ({ ...prev, income: amount.toString() }))}
+                    className="py-3 px-4 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-xl text-sm font-semibold text-slate-700 transition-all hover:scale-105"
+                  >
+                    {formatAmount(amount)}
                   </button>
                 ))}
               </div>
+            </div>
 
-              <div className="mb-6">
-                <div className="flex items-center gap-2 mb-2">
-                  <span className="text-sm font-medium text-gray-700">Valeurs sélectionnées:</span>
-                  <span className="text-sm font-bold text-green-600">
-                    {onboardingData.selectedValues.length}/3
-                  </span>
-                </div>
-                <div className="w-full bg-gray-200 rounded-full h-2">
-                  <div 
-                    className="bg-green-500 h-2 rounded-full transition-all"
-                    style={{ width: `${(onboardingData.selectedValues.length / 3) * 100}%` }}
-                  />
-                </div>
-              </div>
-
+            {/* Info box */}
+            <div className="bg-blue-50 border border-blue-200 rounded-2xl p-4 mb-8">
               <div className="flex gap-3">
-                <button
-                  onClick={handleBack}
-                  className="px-6 py-3 border-2 border-gray-300 text-gray-700 rounded-xl font-semibold hover:bg-gray-50 transition-all"
-                >
-                  ← Retour
-                </button>
-                <button
-                  onClick={handleNext}
-                  disabled={onboardingData.selectedValues.length !== 3}
-                  className="flex-1 bg-gradient-to-r from-green-600 to-emerald-600 text-white px-6 py-3 rounded-xl font-semibold hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  Continuer →
-                </button>
-              </div>
-            </div>
-          )}
-
-          {currentStep === 2 && (
-            <div className="bg-white rounded-2xl shadow-xl p-6 lg:p-10 animate-fadeIn">
-              <div className="mb-6">
-                <p className="text-sm text-green-600 font-semibold mb-2">ÉTAPE 2/3</p>
-                <h2 className="text-3xl font-bold text-gray-900 mb-2">
-                  Priorise tes valeurs
-                </h2>
-                <p className="text-gray-600">
-                  Classe-les par ordre d'importance pour toi
-                </p>
-              </div>
-
-              <div className="space-y-3 mb-6">
-                {(onboardingData.priorities.length > 0 
-                  ? onboardingData.priorities 
-                  : onboardingData.selectedValues
-                ).map((valueId, index) => {
-                  const value = availableValues.find(v => v.id === valueId);
-                  return (
-                    <div
-                      key={valueId}
-                      className="flex items-center gap-4 bg-gradient-to-r from-gray-50 to-white p-4 rounded-xl border-2 border-gray-200 hover:border-green-300 transition-all"
-                    >
-                      <div className="flex items-center justify-center w-12 h-12 bg-green-100 rounded-full font-bold text-green-700 text-lg">
-                        #{index + 1}
-                      </div>
-                      <div className="text-3xl">{value?.icon}</div>
-                      <div className="flex-1">
-                        <div className="font-semibold text-gray-900">{value?.label}</div>
-                        <div className="text-sm text-gray-500">{value?.description}</div>
-                      </div>
-                      <div className="flex flex-col gap-1">
-                        <button
-                          onClick={() => handlePriorityMove(index, -1)}
-                          disabled={index === 0}
-                          className="p-2 hover:bg-gray-100 rounded-lg disabled:opacity-30 disabled:cursor-not-allowed transition-all"
-                        >
-                          ⬆️
-                        </button>
-                        <button
-                          onClick={() => handlePriorityMove(index, 1)}
-                          disabled={index === (onboardingData.priorities.length || onboardingData.selectedValues.length) - 1}
-                          className="p-2 hover:bg-gray-100 rounded-lg disabled:opacity-30 disabled:cursor-not-allowed transition-all"
-                        >
-                          ⬇️
-                        </button>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-              
-              <p className="text-xs text-gray-500 mt-4 text-center">
-                💡 La valeur en haut est ta priorité #1
-              </p>
-
-              <div className="flex gap-3 mt-6">
-                <button
-                  onClick={handleBack}
-                  className="px-6 py-3 border-2 border-gray-300 text-gray-700 rounded-xl font-semibold hover:bg-gray-50 transition-all"
-                >
-                  ← Retour
-                </button>
-                <button
-                  onClick={handleNext}
-                  className="flex-1 bg-gradient-to-r from-green-600 to-emerald-600 text-white px-6 py-3 rounded-xl font-semibold hover:shadow-lg transition-all"
-                >
-                  Continuer →
-                </button>
-              </div>
-            </div>
-          )}
-
-          {currentStep === 3 && (
-            <div className="bg-white rounded-2xl shadow-xl p-6 lg:p-10 animate-fadeIn">
-              <div className="mb-6">
-                <p className="text-sm text-green-600 font-semibold mb-2">ÉTAPE 3/3</p>
-                <h2 className="text-3xl font-bold text-gray-900 mb-2">
-                  Tes revenus mensuels
-                </h2>
-                <p className="text-gray-600">
-                  Pour calculer ton Score, on a besoin de connaître tes revenus
-                </p>
-              </div>
-
-              <div className="mb-6">
-                <label className="block text-sm font-medium text-gray-700 mb-3">
-                  Revenus mensuels (FCFA)
-                </label>
-                <div className="relative">
-                  <input
-                    type="text"
-                    value={onboardingData.monthlyIncome}
-                    onChange={handleIncomeChange}
-                    placeholder="1 000 000"
-                    className="w-full px-6 py-4 text-2xl font-semibold text-gray-900 border-2 border-gray-300 rounded-xl focus:border-green-500 focus:outline-none transition-colors"
-                  />
-                  <span className="absolute right-6 top-1/2 -translate-y-1/2 text-gray-400 font-medium">
-                    FCFA
-                  </span>
-                </div>
-                
-                <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                  <p className="text-sm text-blue-800 flex items-start gap-2">
-                    <span className="text-lg">💡</span>
-                    <span>
-                      Tu pourras ajuster ce montant plus tard dans les paramètres
-                    </span>
+                <span className="text-2xl">💡</span>
+                <div className="flex-1">
+                  <p className="text-sm text-blue-900">
+                    <strong>Pourquoi on demande ça ?</strong><br />
+                    Pour calculer ton Score Yoonu Dal et te donner des conseils personnalisés
                   </p>
                 </div>
               </div>
-
-              <div className="flex gap-3">
-                <button
-                  onClick={handleBack}
-                  className="px-6 py-3 border-2 border-gray-300 text-gray-700 rounded-xl font-semibold hover:bg-gray-50 transition-all"
-                >
-                  ← Retour
-                </button>
-                <button
-                  onClick={handleNext}
-                  disabled={isLoading || !onboardingData.monthlyIncome}
-                  className="flex-1 bg-gradient-to-r from-green-600 to-emerald-600 text-white px-6 py-3 rounded-xl font-semibold hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-                >
-                  {isLoading ? (
-                    <>
-                      <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                      <span>Calcul en cours...</span>
-                    </>
-                  ) : (
-                    <>
-                      <span>Calculer mon Score</span>
-                      <span>✨</span>
-                    </>
-                  )}
-                </button>
-              </div>
             </div>
-          )}
 
-          {currentStep === 4 && (
-            <div className="text-center animate-fadeIn relative">
-              {showConfetti && (
-                <div className="fixed inset-0 pointer-events-none z-50">
-                  {[...Array(50)].map((_, i) => (
-                    <div
-                      key={i}
-                      className="absolute animate-confetti text-2xl"
-                      style={{
-                        left: `${Math.random() * 100}%`,
-                        animationDelay: `${Math.random() * 3}s`,
-                        animationDuration: `${2 + Math.random() * 2}s`
-                      }}
-                    >
-                      {['🌿', '✨', '💚', '🎉'][Math.floor(Math.random() * 4)]}
-                    </div>
-                  ))}
+            {/* Navigation */}
+            <div className="flex gap-3">
+              <button
+                onClick={() => setStep(0)}
+                className="px-6 py-4 border-2 border-slate-300 text-slate-700 rounded-2xl font-semibold hover:bg-slate-50 transition-all"
+              >
+                ← Retour
+              </button>
+              
+              <button
+                onClick={next}
+                disabled={loading || !data.income}
+                className="flex-1 bg-gradient-to-r from-emerald-500 to-teal-500 text-white py-4 rounded-2xl font-semibold text-lg shadow-lg hover:shadow-xl transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+              >
+                {loading ? (
+                  <>
+                    <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                    <span>Calcul en cours...</span>
+                  </>
+                ) : (
+                  <>
+                    <span>Calculer mon Score</span>
+                    <span>✨</span>
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* SCORE REVEAL */}
+        {showScore && (
+          <div className="text-center animate-scaleIn">
+            <div className="bg-white rounded-3xl shadow-2xl p-12 relative overflow-hidden">
+              {/* Gradient background */}
+              <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/5 via-teal-500/5 to-blue-500/5" />
+              
+              {/* Content */}
+              <div className="relative">
+                <div className="mb-6">
+                  <div className="inline-flex items-center gap-2 px-4 py-2 bg-emerald-100 text-emerald-700 rounded-full text-sm font-semibold mb-4">
+                    <span>✓</span>
+                    <span>Configuration terminée</span>
+                  </div>
+                  
+                  <h2 className="text-2xl font-semibold text-slate-600 mb-2">
+                    Ton Score Yoonu Dal
+                  </h2>
                 </div>
-              )}
 
-              <div className="bg-white rounded-2xl shadow-2xl p-8 lg:p-16">
-                <h2 className="text-2xl font-semibold text-gray-600 mb-8">
-                  Ton Score Yoonu Dal
-                </h2>
-
+                {/* Score circle */}
                 <div className="relative inline-block mb-8">
-                  <svg className="w-48 h-48 lg:w-64 lg:h-64 transform -rotate-90">
-                    <circle 
-                      cx="50%" 
-                      cy="50%" 
-                      r="45%" 
-                      className="stroke-gray-100" 
-                      strokeWidth="12" 
-                      fill="none" 
-                    />
+                  <svg className="w-56 h-56 transform -rotate-90">
+                    {/* Background circle */}
                     <circle
-                      cx="50%"
-                      cy="50%"
-                      r="45%"
-                      className="stroke-green-500"
-                      strokeWidth="12"
+                      cx="112"
+                      cy="112"
+                      r="100"
+                      className="stroke-slate-100"
+                      strokeWidth="16"
                       fill="none"
-                      strokeDasharray={`${displayScore * 4.4} 440`}
+                    />
+                    {/* Progress circle */}
+                    <circle
+                      cx="112"
+                      cy="112"
+                      r="100"
+                      className="stroke-emerald-500"
+                      strokeWidth="16"
+                      fill="none"
+                      strokeDasharray={`${score * 6.28} 628`}
                       strokeLinecap="round"
-                      style={{ 
-                        transition: 'stroke-dasharray 0.1s linear',
-                        filter: 'drop-shadow(0 0 20px rgba(16, 185, 129, 0.5))'
+                      style={{
+                        transition: 'stroke-dasharray 0.3s ease-out',
+                        filter: 'drop-shadow(0 0 12px rgba(16, 185, 129, 0.4))'
                       }}
                     />
                   </svg>
-                  
+
+                  {/* Score number */}
                   <div className="absolute inset-0 flex flex-col items-center justify-center">
-                    <div className="text-6xl lg:text-7xl font-bold text-gray-900 mb-2">
-                      {displayScore}
+                    <div className="text-6xl font-bold text-slate-900 mb-1">
+                      {score}
                     </div>
-                    <div className="text-2xl text-gray-500">/100</div>
+                    <div className="text-xl text-slate-500">/100</div>
                   </div>
                 </div>
 
-                <div className="mb-8">
-                  <div className="inline-flex items-center gap-2 px-6 py-3 bg-amber-50 border-2 border-amber-200 rounded-full mb-4">
+                {/* Level badge */}
+                <div className="mb-6">
+                  <div className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-amber-100 to-orange-100 border-2 border-amber-200 rounded-full">
                     <span className="text-2xl">🌿</span>
-                    <span className="font-semibold text-amber-700">En chemin</span>
+                    <span className="font-bold text-amber-900">En construction</span>
                   </div>
-                  
-                  <h3 className="text-xl font-semibold text-gray-900 mb-3">
-                    Ton Score Yoonu Dal est actif !
+                </div>
+
+                {/* Message */}
+                <div className="mb-8">
+                  <h3 className="text-xl font-bold text-slate-900 mb-2">
+                    Ton parcours commence maintenant !
                   </h3>
-                  
-                  <p className="text-gray-600 max-w-md mx-auto">
-                    Commence à suivre tes dépenses pour améliorer ton score et voir l'alignement entre tes valeurs et ton argent
+                  <p className="text-slate-600 max-w-md mx-auto">
+                    Ton score évoluera au fil de tes actions. Commence par suivre tes dépenses pour voir l'impact.
                   </p>
                 </div>
 
+                {/* Premium trial badge */}
+                <div className="bg-gradient-to-r from-purple-50 to-indigo-50 border border-purple-200 rounded-2xl p-4 mb-8">
+                  <div className="flex items-center justify-center gap-2 text-purple-900">
+                    <span className="text-xl">✨</span>
+                    <span className="font-semibold">7 jours Premium gratuits activés</span>
+                  </div>
+                </div>
+
+                {/* CTA */}
                 <button
-                  onClick={completeOnboarding}
-                  className="bg-gradient-to-r from-green-600 to-emerald-600 text-white px-12 py-4 rounded-xl font-semibold text-lg hover:shadow-xl transition-all transform hover:scale-105"
+                  onClick={() => onNavigate('dashboard')}
+                  className="bg-gradient-to-r from-emerald-500 to-teal-500 text-white px-12 py-4 rounded-2xl font-semibold text-lg shadow-xl hover:shadow-2xl transition-all transform hover:scale-105"
                 >
-                  Voir mon dashboard →
+                  Découvrir mon dashboard →
                 </button>
+
+                {/* Auto-redirect indicator */}
+                <p className="text-xs text-slate-400 mt-4">
+                  Redirection automatique dans quelques secondes...
+                </p>
               </div>
             </div>
-          )}
-        </div>
+          </div>
+        )}
       </div>
 
+      {/* Animations */}
       <style jsx>{`
         @keyframes fadeIn {
+          from { opacity: 0; }
+          to { opacity: 1; }
+        }
+        
+        @keyframes slideUp {
           from {
             opacity: 0;
             transform: translateY(20px);
@@ -584,36 +459,31 @@ const Onboarding = ({ toast, onNavigate, setAuth }) => {
           }
         }
         
-        @keyframes bounce-slow {
-          0%, 100% {
-            transform: translateY(0);
-          }
-          50% {
-            transform: translateY(-10px);
-          }
-        }
-        
-        @keyframes confetti {
-          0% {
-            transform: translateY(-100vh) rotate(0deg);
-            opacity: 1;
-          }
-          100% {
-            transform: translateY(100vh) rotate(720deg);
+        @keyframes scaleIn {
+          from {
             opacity: 0;
+            transform: scale(0.95);
+          }
+          to {
+            opacity: 1;
+            transform: scale(1);
           }
         }
         
         .animate-fadeIn {
-          animation: fadeIn 0.5s ease-out;
+          animation: fadeIn 0.4s ease-out;
         }
         
-        .animate-bounce-slow {
-          animation: bounce-slow 3s ease-in-out infinite;
+        .animate-slideUp {
+          animation: slideUp 0.5s ease-out;
         }
         
-        .animate-confetti {
-          animation: confetti 3s ease-out forwards;
+        .animate-scaleIn {
+          animation: scaleIn 0.6s ease-out;
+        }
+        
+        .hover\:scale-102:hover {
+          transform: scale(1.02);
         }
       `}</style>
     </div>
