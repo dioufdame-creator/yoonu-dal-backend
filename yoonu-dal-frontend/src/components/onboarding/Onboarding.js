@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import API from '../../services/api';
 
 const Onboarding = ({ toast, onNavigate }) => {
@@ -6,26 +6,23 @@ const Onboarding = ({ toast, onNavigate }) => {
   const [loading, setLoading] = useState(false);
   const [data, setData] = useState({
     values: [],
+    priorities: [],
     income: ''
   });
   const [score, setScore] = useState(0);
   const [showScore, setShowScore] = useState(false);
 
-  // Valeurs pré-sélectionnées (8 essentielles)
   const VALUES = [
-    { id: 'famille', emoji: '👨‍👩‍👧‍👦', label: 'Famille', gradient: 'from-pink-500 to-rose-500' },
-    { id: 'spiritualite', emoji: '🕌', label: 'Spiritualité', gradient: 'from-purple-500 to-indigo-500' },
-    { id: 'sante', emoji: '💪', label: 'Santé', gradient: 'from-green-500 to-emerald-500' },
-    { id: 'education', emoji: '📚', label: 'Éducation', gradient: 'from-blue-500 to-cyan-500' },
-    { id: 'securite', emoji: '🛡️', label: 'Sécurité', gradient: 'from-amber-500 to-orange-500' },
-    { id: 'independance', emoji: '🦅', label: 'Indépendance', gradient: 'from-sky-500 to-blue-500' },
-    { id: 'generosite', emoji: '🤲', label: 'Générosité', gradient: 'from-teal-500 to-green-500' },
-    { id: 'liberte', emoji: '✨', label: 'Liberté', gradient: 'from-violet-500 to-purple-500' }
+    { id: 'famille', emoji: '💚', label: 'Famille', desc: 'Proches et relations' },
+    { id: 'spiritualite', emoji: '✨', label: 'Spiritualité', desc: 'Foi et valeurs' },
+    { id: 'education', emoji: '🎓', label: 'Éducation', desc: 'Apprentissage continu' },
+    { id: 'sante', emoji: '💪', label: 'Santé', desc: 'Bien-être physique' },
+    { id: 'travail', emoji: '💼', label: 'Travail', desc: 'Carrière professionnelle' },
+    { id: 'loisirs', emoji: '🎨', label: 'Loisirs', desc: 'Passions et hobbies' },
+    { id: 'communaute', emoji: '🤝', label: 'Communauté', desc: 'Engagement social' },
+    { id: 'securite', emoji: '🛡️', label: 'Sécurité', desc: 'Stabilité financière' }
   ];
 
-  const QUICK_AMOUNTS = [50000, 100000, 200000, 500000, 1000000, 2000000];
-
-  // Toggle value selection
   const toggleValue = (id) => {
     setData(prev => {
       const isSelected = prev.values.includes(id);
@@ -43,12 +40,23 @@ const Onboarding = ({ toast, onNavigate }) => {
     });
   };
 
-  // Format currency
+  const movePriority = (index, direction) => {
+    setData(prev => {
+      const newPriorities = [...prev.priorities];
+      const newIndex = index + direction;
+      
+      if (newIndex >= 0 && newIndex < newPriorities.length) {
+        [newPriorities[index], newPriorities[newIndex]] = [newPriorities[newIndex], newPriorities[index]];
+      }
+      
+      return { ...prev, priorities: newPriorities };
+    });
+  };
+
   const formatAmount = (value) => {
     return value.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
   };
 
-  // Handle income input
   const handleIncomeChange = (e) => {
     const raw = e.target.value.replace(/\s/g, '');
     if (/^\d*$/.test(raw)) {
@@ -56,34 +64,39 @@ const Onboarding = ({ toast, onNavigate }) => {
     }
   };
 
-  // Next step
   const next = () => {
-    if (step === 0 && data.values.length < 1) {
-      toast?.error?.('Choisis au moins 1 valeur');
+    if (step === 1 && data.values.length < 3) {
+      toast?.error?.('Sélectionne exactement 3 valeurs');
       return;
     }
-    
-    if (step === 1 && !data.income) {
+
+    if (step === 2) {
+      // Auto-set priorities from values
+      if (data.priorities.length === 0) {
+        setData(prev => ({ ...prev, priorities: prev.values }));
+      }
+    }
+
+    if (step === 3 && !data.income) {
       toast?.error?.('Entre ton revenu mensuel');
       return;
     }
 
-    if (step === 1) {
+    if (step === 3) {
       completeOnboarding();
     } else {
       setStep(prev => prev + 1);
     }
   };
 
-  // Complete onboarding
   const completeOnboarding = async () => {
     setLoading(true);
 
     try {
-      // Save values
-      for (let i = 0; i < data.values.length; i++) {
+      // Save values with priorities
+      for (let i = 0; i < data.priorities.length; i++) {
         await API.post('/values/', {
-          value: data.values[i],
+          value: data.priorities[i],
           priority: i + 1
         });
       }
@@ -94,15 +107,15 @@ const Onboarding = ({ toast, onNavigate }) => {
       });
 
       const finalScore = response.data?.score?.total_score || 47;
-      
+
       // Activate trial
       try {
         await API.post('/premium/activate-trial/');
       } catch (err) {
-        console.warn('Trial activation failed:', err);
+        console.warn('Trial failed:', err);
       }
 
-      // Animate score reveal
+      // Show score
       setShowScore(true);
       animateScore(finalScore);
 
@@ -113,7 +126,6 @@ const Onboarding = ({ toast, onNavigate }) => {
     }
   };
 
-  // Animate score
   const animateScore = (target) => {
     let current = 0;
     const duration = 2000;
@@ -127,7 +139,6 @@ const Onboarding = ({ toast, onNavigate }) => {
         clearInterval(timer);
         setLoading(false);
         
-        // Auto-redirect after 3s
         setTimeout(() => {
           onNavigate('dashboard');
         }, 3000);
@@ -137,53 +148,127 @@ const Onboarding = ({ toast, onNavigate }) => {
     }, duration / steps);
   };
 
-  // Progress percentage
-  const progress = step === 0 ? 50 : 100;
+  const progress = step === 0 ? 0 : ((step) / 3) * 100;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-50 flex items-center justify-center p-4">
-      <div className="w-full max-w-2xl">
+    <div className="min-h-screen bg-gradient-to-br from-green-50 via-white to-green-50">
+      {/* Header */}
+      {!showScore && (
+        <div className="bg-green-600 text-white py-4 px-6 flex items-center justify-between shadow-md">
+          <div className="flex items-center gap-3">
+            <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center">
+              <span className="text-2xl">🌿</span>
+            </div>
+            <h1 className="text-2xl font-bold">Yoonu Dal</h1>
+          </div>
+          
+          {step > 0 && (
+            <button className="text-white/90 hover:text-white">
+              <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+              </svg>
+            </button>
+          )}
+        </div>
+      )}
+
+      {/* Progress bar */}
+      {!showScore && step > 0 && (
+        <div className="h-1 bg-gray-200">
+          <div 
+            className="h-full bg-green-600 transition-all duration-500"
+            style={{ width: `${progress}%` }}
+          />
+        </div>
+      )}
+
+      <div className="container mx-auto px-4 py-8 max-w-2xl">
         
-        {/* Header - Hide on score reveal */}
-        {!showScore && (
-          <div className="mb-8 animate-fadeIn">
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-gradient-to-br from-emerald-500 to-teal-500 rounded-xl flex items-center justify-center shadow-lg">
-                  <span className="text-xl">🌿</span>
-                </div>
-                <h1 className="text-2xl font-bold text-slate-900">Yoonu Dal</h1>
+        {/* STEP 0: WELCOME */}
+        {step === 0 && (
+          <div className="text-center animate-fadeIn py-12">
+            <div className="mb-8">
+              <div className="w-32 h-32 bg-green-600 rounded-3xl mx-auto mb-6 flex items-center justify-center shadow-xl">
+                <span className="text-6xl">🌿</span>
               </div>
               
-              <div className="text-sm font-medium text-slate-600">
-                Étape {step + 1}/2
-              </div>
-            </div>
-
-            {/* Progress bar */}
-            <div className="h-1.5 bg-slate-200 rounded-full overflow-hidden">
-              <div 
-                className="h-full bg-gradient-to-r from-emerald-500 to-teal-500 transition-all duration-700 ease-out"
-                style={{ width: `${progress}%` }}
-              />
-            </div>
-          </div>
-        )}
-
-        {/* STEP 0: VALUES */}
-        {step === 0 && !showScore && (
-          <div className="bg-white rounded-3xl shadow-xl p-8 animate-slideUp">
-            <div className="mb-8">
-              <h2 className="text-3xl font-bold text-slate-900 mb-3">
-                Qu'est-ce qui compte pour toi ?
-              </h2>
-              <p className="text-slate-600 text-lg">
-                Choisis jusqu'à 3 valeurs qui guident tes choix financiers
+              <h1 className="text-4xl font-bold text-gray-900 mb-3">
+                Yoonu Dal
+              </h1>
+              <p className="text-xl text-gray-600 mb-2">
+                Ton coach financier personnel
+              </p>
+              <p className="text-sm text-gray-500">
+                En wolof : "Le Chemin de l'Argent"
               </p>
             </div>
 
-            {/* Values grid */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-8">
+            <div className="bg-white rounded-3xl shadow-lg p-8 mb-8">
+              <div className="mb-6">
+                <span className="text-4xl mb-3 block">✨</span>
+                <h3 className="text-xl font-bold text-gray-900 mb-2">
+                  Score personnalisé
+                </h3>
+                <p className="text-gray-600 text-sm">
+                  Mesure l'alignement entre tes valeurs et tes dépenses
+                </p>
+              </div>
+
+              <div className="mb-6">
+                <span className="text-4xl mb-3 block">🔮</span>
+                <h3 className="text-xl font-bold text-gray-900 mb-2">
+                  Simulation intelligente
+                </h3>
+                <p className="text-gray-600 text-sm">
+                  Teste tes décisions avant de les prendre
+                </p>
+              </div>
+
+              <div>
+                <span className="text-4xl mb-3 block">📊</span>
+                <h3 className="text-xl font-bold text-gray-900 mb-2">
+                  Analyse automatique
+                </h3>
+                <p className="text-gray-600 text-sm">
+                  Insights et recommandations personnalisées
+                </p>
+              </div>
+            </div>
+
+            <button
+              onClick={() => setStep(1)}
+              className="bg-green-600 text-white w-full py-4 rounded-2xl font-semibold text-lg shadow-lg hover:bg-green-700 transition-all mb-4"
+            >
+              Commencer mon parcours →
+            </button>
+
+            <p className="text-sm text-gray-500 flex items-center justify-center gap-2">
+              <span>⏱️</span>
+              <span>2 minutes pour activer ton score</span>
+            </p>
+          </div>
+        )}
+
+        {/* STEP 1: VALUES */}
+        {step === 1 && (
+          <div className="animate-slideUp">
+            <div className="text-center mb-8">
+              <p className="text-green-600 font-semibold mb-2">ÉTAPE 1/3</p>
+              <h2 className="text-3xl font-bold text-gray-900 mb-3">
+                Tes priorités
+              </h2>
+              <p className="text-gray-600 text-lg">
+                Qu'est-ce qui compte le plus pour toi dans la vie ?
+              </p>
+            </div>
+
+            <div className="bg-gray-50 rounded-2xl p-4 mb-6">
+              <p className="text-sm text-gray-700">
+                Choisis 3 valeurs <span className="font-bold">({data.values.length}/3)</span>
+              </p>
+            </div>
+
+            <div className="space-y-3 mb-8">
               {VALUES.map(value => {
                 const isSelected = data.values.includes(value.id);
                 
@@ -191,79 +276,131 @@ const Onboarding = ({ toast, onNavigate }) => {
                   <button
                     key={value.id}
                     onClick={() => toggleValue(value.id)}
-                    className={`relative p-6 rounded-2xl border-2 transition-all duration-300 ${
+                    className={`w-full p-5 rounded-2xl border-3 transition-all ${
                       isSelected
-                        ? 'border-transparent shadow-xl scale-105'
-                        : 'border-slate-200 hover:border-slate-300 hover:scale-102'
+                        ? 'border-green-600 bg-green-50 shadow-lg'
+                        : 'border-gray-200 bg-white hover:border-gray-300'
                     }`}
                   >
-                    {/* Background gradient (only when selected) */}
-                    {isSelected && (
-                      <div className={`absolute inset-0 bg-gradient-to-br ${value.gradient} opacity-10 rounded-2xl`} />
-                    )}
-                    
-                    {/* Content */}
-                    <div className="relative">
-                      <div className="text-4xl mb-3">{value.emoji}</div>
-                      <div className="font-semibold text-slate-900 text-sm">
-                        {value.label}
+                    <div className="flex items-center gap-4">
+                      <span className="text-4xl">{value.emoji}</span>
+                      <div className="flex-1 text-left">
+                        <div className="font-bold text-gray-900 text-lg flex items-center gap-2">
+                          {value.label}
+                          {isSelected && <span className="text-green-600">✓</span>}
+                        </div>
+                        <div className="text-sm text-gray-600">{value.desc}</div>
                       </div>
                     </div>
-
-                    {/* Check indicator */}
-                    {isSelected && (
-                      <div className="absolute top-2 right-2 w-6 h-6 bg-emerald-500 rounded-full flex items-center justify-center shadow-lg">
-                        <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-                        </svg>
-                      </div>
-                    )}
                   </button>
                 );
               })}
             </div>
 
-            {/* Selection counter */}
-            <div className="mb-8">
-              <div className="flex items-center justify-between text-sm mb-2">
-                <span className="text-slate-600">Valeurs sélectionnées</span>
-                <span className="font-bold text-emerald-600">{data.values.length}/3</span>
-              </div>
-              <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
-                <div 
-                  className="h-full bg-gradient-to-r from-emerald-500 to-teal-500 transition-all duration-500"
-                  style={{ width: `${(data.values.length / 3) * 100}%` }}
-                />
-              </div>
-            </div>
-
-            {/* CTA */}
             <button
               onClick={next}
-              disabled={data.values.length === 0}
-              className="w-full bg-gradient-to-r from-emerald-500 to-teal-500 text-white py-4 rounded-2xl font-semibold text-lg shadow-lg hover:shadow-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:shadow-lg"
+              disabled={data.values.length !== 3}
+              className="bg-green-600 text-white w-full py-4 rounded-2xl font-semibold text-lg shadow-lg hover:bg-green-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
             >
               Continuer →
             </button>
           </div>
         )}
 
-        {/* STEP 1: INCOME */}
-        {step === 1 && !showScore && (
-          <div className="bg-white rounded-3xl shadow-xl p-8 animate-slideUp">
-            <div className="mb-8">
-              <h2 className="text-3xl font-bold text-slate-900 mb-3">
-                Tes revenus mensuels ?
+        {/* STEP 2: PRIORITIES */}
+        {step === 2 && (
+          <div className="animate-slideUp">
+            <div className="text-center mb-8">
+              <p className="text-green-600 font-semibold mb-2">ÉTAPE 2/3</p>
+              <h2 className="text-3xl font-bold text-gray-900 mb-3">
+                Ordre d'importance
               </h2>
-              <p className="text-slate-600 text-lg">
-                Pour calculer ton Score Yoonu et personnaliser ton expérience
+              <p className="text-gray-600 text-lg">
+                Classe tes valeurs par ordre de priorité
               </p>
             </div>
 
-            {/* Income input */}
+            <div className="space-y-3 mb-6">
+              {(data.priorities.length > 0 ? data.priorities : data.values).map((valueId, index) => {
+                const value = VALUES.find(v => v.id === valueId);
+                
+                return (
+                  <div
+                    key={valueId}
+                    className="bg-green-50 border-2 border-green-600 rounded-2xl p-5"
+                  >
+                    <div className="flex items-center gap-4">
+                      <div className="flex flex-col gap-1">
+                        <button
+                          onClick={() => movePriority(index, -1)}
+                          disabled={index === 0}
+                          className="w-8 h-8 flex items-center justify-center bg-white border border-gray-300 rounded-lg disabled:opacity-30 hover:bg-gray-50"
+                        >
+                          ↑
+                        </button>
+                        <button
+                          onClick={() => movePriority(index, 1)}
+                          disabled={index === (data.priorities.length || data.values.length) - 1}
+                          className="w-8 h-8 flex items-center justify-center bg-white border border-gray-300 rounded-lg disabled:opacity-30 hover:bg-gray-50"
+                        >
+                          ↓
+                        </button>
+                      </div>
+                      
+                      <div className="w-12 h-12 bg-green-600 text-white rounded-2xl flex items-center justify-center font-bold text-xl">
+                        {index + 1}
+                      </div>
+                      
+                      <span className="text-4xl">{value?.emoji}</span>
+                      
+                      <div className="flex-1">
+                        <div className="font-bold text-gray-900">{value?.label}</div>
+                        <div className="text-sm text-gray-600">{value?.desc}</div>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            <p className="text-center text-sm text-gray-600 mb-6">
+              💡 La valeur en haut est ta priorité #1
+            </p>
+
+            <div className="flex gap-3">
+              <button
+                onClick={() => setStep(1)}
+                className="px-6 py-4 border-2 border-gray-300 text-gray-700 rounded-2xl font-semibold hover:bg-gray-50"
+              >
+                ← Retour
+              </button>
+              
+              <button
+                onClick={next}
+                className="flex-1 bg-green-600 text-white py-4 rounded-2xl font-semibold text-lg shadow-lg hover:bg-green-700"
+              >
+                Continuer →
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* STEP 3: INCOME */}
+        {step === 3 && (
+          <div className="animate-slideUp">
+            <div className="text-center mb-8">
+              <p className="text-green-600 font-semibold mb-2">ÉTAPE 3/3</p>
+              <h2 className="text-3xl font-bold text-gray-900 mb-3">
+                Tes revenus mensuels
+              </h2>
+              <p className="text-gray-600 text-lg">
+                Pour calculer ton Score, on a besoin de connaître tes revenus
+              </p>
+            </div>
+
             <div className="mb-6">
-              <label className="block text-sm font-medium text-slate-700 mb-3">
-                Revenu mensuel moyen
+              <label className="block text-sm font-medium text-gray-700 mb-3">
+                Revenus mensuels (FCFA)
               </label>
               
               <div className="relative">
@@ -271,49 +408,28 @@ const Onboarding = ({ toast, onNavigate }) => {
                   type="text"
                   value={data.income ? formatAmount(data.income) : ''}
                   onChange={handleIncomeChange}
-                  placeholder="500 000"
-                  className="w-full px-6 py-5 text-3xl font-bold text-slate-900 bg-slate-50 border-2 border-slate-200 rounded-2xl focus:border-emerald-500 focus:outline-none focus:ring-4 focus:ring-emerald-500/10 transition-all"
+                  placeholder="400 000"
+                  className="w-full px-6 py-5 text-3xl font-bold text-gray-900 bg-white border-3 border-green-600 rounded-2xl focus:outline-none focus:ring-4 focus:ring-green-600/20"
                 />
-                <div className="absolute right-6 top-1/2 -translate-y-1/2 text-slate-400 font-semibold text-xl">
+                <div className="absolute right-6 top-1/2 -translate-y-1/2 text-gray-400 font-semibold text-xl">
                   FCFA
                 </div>
               </div>
             </div>
 
-            {/* Quick amounts */}
-            <div className="mb-8">
-              <p className="text-sm text-slate-600 mb-3">Montants rapides</p>
-              <div className="grid grid-cols-3 gap-2">
-                {QUICK_AMOUNTS.map(amount => (
-                  <button
-                    key={amount}
-                    onClick={() => setData(prev => ({ ...prev, income: amount.toString() }))}
-                    className="py-3 px-4 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-xl text-sm font-semibold text-slate-700 transition-all hover:scale-105"
-                  >
-                    {formatAmount(amount)}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Info box */}
             <div className="bg-blue-50 border border-blue-200 rounded-2xl p-4 mb-8">
               <div className="flex gap-3">
                 <span className="text-2xl">💡</span>
-                <div className="flex-1">
-                  <p className="text-sm text-blue-900">
-                    <strong>Pourquoi on demande ça ?</strong><br />
-                    Pour calculer ton Score Yoonu Dal et te donner des conseils personnalisés
-                  </p>
-                </div>
+                <p className="text-sm text-blue-900">
+                  Tu pourras ajuster ce montant plus tard dans les paramètres
+                </p>
               </div>
             </div>
 
-            {/* Navigation */}
             <div className="flex gap-3">
               <button
-                onClick={() => setStep(0)}
-                className="px-6 py-4 border-2 border-slate-300 text-slate-700 rounded-2xl font-semibold hover:bg-slate-50 transition-all"
+                onClick={() => setStep(2)}
+                className="px-6 py-4 border-2 border-gray-300 text-gray-700 rounded-2xl font-semibold hover:bg-gray-50"
               >
                 ← Retour
               </button>
@@ -321,7 +437,7 @@ const Onboarding = ({ toast, onNavigate }) => {
               <button
                 onClick={next}
                 disabled={loading || !data.income}
-                className="flex-1 bg-gradient-to-r from-emerald-500 to-teal-500 text-white py-4 rounded-2xl font-semibold text-lg shadow-lg hover:shadow-xl transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+                className="flex-1 bg-green-600 text-white py-4 rounded-2xl font-semibold text-lg shadow-lg hover:bg-green-700 disabled:opacity-50 flex items-center justify-center gap-2"
               >
                 {loading ? (
                   <>
@@ -341,107 +457,70 @@ const Onboarding = ({ toast, onNavigate }) => {
 
         {/* SCORE REVEAL */}
         {showScore && (
-          <div className="text-center animate-scaleIn">
-            <div className="bg-white rounded-3xl shadow-2xl p-12 relative overflow-hidden">
-              {/* Gradient background */}
-              <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/5 via-teal-500/5 to-blue-500/5" />
-              
-              {/* Content */}
-              <div className="relative">
-                <div className="mb-6">
-                  <div className="inline-flex items-center gap-2 px-4 py-2 bg-emerald-100 text-emerald-700 rounded-full text-sm font-semibold mb-4">
-                    <span>✓</span>
-                    <span>Configuration terminée</span>
-                  </div>
-                  
-                  <h2 className="text-2xl font-semibold text-slate-600 mb-2">
-                    Ton Score Yoonu Dal
-                  </h2>
+          <div className="text-center animate-scaleIn py-12">
+            <h2 className="text-2xl font-semibold text-gray-600 mb-8">
+              Ton Score Yoonu Dal
+            </h2>
+
+            <div className="relative inline-block mb-8">
+              <svg className="w-64 h-64 transform -rotate-90">
+                <circle
+                  cx="128"
+                  cy="128"
+                  r="110"
+                  className="stroke-gray-200"
+                  strokeWidth="20"
+                  fill="none"
+                />
+                <circle
+                  cx="128"
+                  cy="128"
+                  r="110"
+                  className="stroke-green-600"
+                  strokeWidth="20"
+                  fill="none"
+                  strokeDasharray={`${score * 6.9} 691`}
+                  strokeLinecap="round"
+                  style={{
+                    transition: 'stroke-dasharray 0.3s ease-out',
+                    filter: 'drop-shadow(0 0 10px rgba(22, 163, 74, 0.3))'
+                  }}
+                />
+              </svg>
+
+              <div className="absolute inset-0 flex flex-col items-center justify-center">
+                <div className="text-7xl font-bold text-gray-900">
+                  {score}
                 </div>
-
-                {/* Score circle */}
-                <div className="relative inline-block mb-8">
-                  <svg className="w-56 h-56 transform -rotate-90">
-                    {/* Background circle */}
-                    <circle
-                      cx="112"
-                      cy="112"
-                      r="100"
-                      className="stroke-slate-100"
-                      strokeWidth="16"
-                      fill="none"
-                    />
-                    {/* Progress circle */}
-                    <circle
-                      cx="112"
-                      cy="112"
-                      r="100"
-                      className="stroke-emerald-500"
-                      strokeWidth="16"
-                      fill="none"
-                      strokeDasharray={`${score * 6.28} 628`}
-                      strokeLinecap="round"
-                      style={{
-                        transition: 'stroke-dasharray 0.3s ease-out',
-                        filter: 'drop-shadow(0 0 12px rgba(16, 185, 129, 0.4))'
-                      }}
-                    />
-                  </svg>
-
-                  {/* Score number */}
-                  <div className="absolute inset-0 flex flex-col items-center justify-center">
-                    <div className="text-6xl font-bold text-slate-900 mb-1">
-                      {score}
-                    </div>
-                    <div className="text-xl text-slate-500">/100</div>
-                  </div>
-                </div>
-
-                {/* Level badge */}
-                <div className="mb-6">
-                  <div className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-amber-100 to-orange-100 border-2 border-amber-200 rounded-full">
-                    <span className="text-2xl">🌿</span>
-                    <span className="font-bold text-amber-900">En construction</span>
-                  </div>
-                </div>
-
-                {/* Message */}
-                <div className="mb-8">
-                  <h3 className="text-xl font-bold text-slate-900 mb-2">
-                    Ton parcours commence maintenant !
-                  </h3>
-                  <p className="text-slate-600 max-w-md mx-auto">
-                    Ton score évoluera au fil de tes actions. Commence par suivre tes dépenses pour voir l'impact.
-                  </p>
-                </div>
-
-                {/* Premium trial badge */}
-                <div className="bg-gradient-to-r from-purple-50 to-indigo-50 border border-purple-200 rounded-2xl p-4 mb-8">
-                  <div className="flex items-center justify-center gap-2 text-purple-900">
-                    <span className="text-xl">✨</span>
-                    <span className="font-semibold">7 jours Premium gratuits activés</span>
-                  </div>
-                </div>
-
-                {/* CTA */}
-                <button
-                  onClick={() => onNavigate('dashboard')}
-                  className="bg-gradient-to-r from-emerald-500 to-teal-500 text-white px-12 py-4 rounded-2xl font-semibold text-lg shadow-xl hover:shadow-2xl transition-all transform hover:scale-105"
-                >
-                  Découvrir mon dashboard →
-                </button>
-
-                {/* Auto-redirect indicator */}
-                <p className="text-xs text-slate-400 mt-4">
-                  Redirection automatique dans quelques secondes...
-                </p>
+                <div className="text-2xl text-gray-500">/100</div>
               </div>
             </div>
+
+            <div className="mb-8">
+              <div className="inline-flex items-center gap-2 px-6 py-3 bg-amber-100 border-2 border-amber-300 rounded-full mb-4">
+                <span className="text-2xl">🌿</span>
+                <span className="font-bold text-amber-900">En chemin</span>
+              </div>
+              
+              <h3 className="text-2xl font-bold text-gray-900 mb-3">
+                Ton Score Yoonu Dal est actif !
+              </h3>
+              
+              <p className="text-gray-600 max-w-md mx-auto mb-8">
+                Commence à suivre tes dépenses pour améliorer ton score et voir l'alignement entre tes valeurs et ton argent
+              </p>
+            </div>
+
+            <button
+              onClick={() => onNavigate('dashboard')}
+              className="bg-green-600 text-white px-12 py-4 rounded-2xl font-semibold text-lg shadow-xl hover:bg-green-700 transition-all"
+            >
+              Voir mon dashboard →
+            </button>
           </div>
         )}
       </div>
 
-      {/* Animations */}
       <style jsx>{`
         @keyframes fadeIn {
           from { opacity: 0; }
@@ -462,7 +541,7 @@ const Onboarding = ({ toast, onNavigate }) => {
         @keyframes scaleIn {
           from {
             opacity: 0;
-            transform: scale(0.95);
+            transform: scale(0.9);
           }
           to {
             opacity: 1;
@@ -471,7 +550,7 @@ const Onboarding = ({ toast, onNavigate }) => {
         }
         
         .animate-fadeIn {
-          animation: fadeIn 0.4s ease-out;
+          animation: fadeIn 0.5s ease-out;
         }
         
         .animate-slideUp {
@@ -482,8 +561,8 @@ const Onboarding = ({ toast, onNavigate }) => {
           animation: scaleIn 0.6s ease-out;
         }
         
-        .hover\:scale-102:hover {
-          transform: scale(1.02);
+        .border-3 {
+          border-width: 3px;
         }
       `}</style>
     </div>
