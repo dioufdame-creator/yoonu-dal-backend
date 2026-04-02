@@ -3195,8 +3195,10 @@ def manage_meta_envelopes(request):
                 'type': config['frontend_name'],
                 'label': config['frontend_name'].capitalize(),
                 'budget': budget,
+                'monthly_budget': budget,  # ✅ AJOUTER
                 'allocated_percentage': allocated_percentage,  # ✅ AJOUTER
                 'spent': spent,
+                'current_spent': spent,  # ✅ AJOUTER aussi
                 'remaining': remaining,
                 'percentage': round(percentage, 1),
                 'categories': config['categories'],
