@@ -24,6 +24,16 @@ from .utils.decorators import require_premium, check_usage_limit
 # APRÈS les autres imports de .models et .utils
 from .calculate_yoonu_score import calculate_yoonu_score
 
+import base64
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.response import Response
+from rest_framework import status
+from django.conf import settings
+import anthropic
+import json
+import re
+
 # ==========================================
 # FONCTIONS UTILITAIRES
 # ==========================================
