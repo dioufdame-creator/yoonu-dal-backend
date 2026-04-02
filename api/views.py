@@ -3040,20 +3040,20 @@ def manage_meta_envelopes(request):
         
         # Les 4 meta-enveloppes
         meta_envelopes = {
-            'essentiel': {
+            'essentiels': {  # ✅ Correspond à la DB
                 'categories': ['logement', 'alimentation', 'transport', 'santé'],
                 'color': '#FF6B6B'
             },
-            'plaisir': {
+            'plaisirs': {  # ✅
                 'categories': ['loisirs', 'vêtements', 'autre'],
                 'color': '#4ECDC4'
             },
-            'projet': {
+            'projets': {  # ✅
                 'categories': ['éducation', 'famille', 'spiritualité'],
                 'color': '#95E1D3'
             },
-            'libération': {
-                'categories': [],  # Épargne/investissement
+            'liberation': {  # ✅ (pas d'accent en DB)
+                'categories': [],
                 'color': '#FFD93D'
             }
         }
