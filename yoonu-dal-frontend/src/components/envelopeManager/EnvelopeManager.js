@@ -21,59 +21,8 @@ const EnvelopeManagerPremium = ({ toast, onNavigate, auth }) => {
   });
   const [hoveredEnvelope, setHoveredEnvelope] = useState(null);
 
-  // ✅ Configuration 4 enveloppes PREMIUM
+// ✅ Configuration 4 enveloppes PREMIUM (SANS DOUBLONS)
   const ENVELOPE_CONFIG = {
-    // PLURIEL (pour compatibilité)
-    essentiels: {
-      name: 'Essentiels',
-      icon: '🏠',
-      description: 'Loyer, transport, alimentation, santé',
-      color: 'from-red-500 to-pink-500',
-      bgColor: 'bg-red-50',
-      borderColor: 'border-red-200',
-      textColor: 'text-red-700',
-      glowColor: 'shadow-red-500/20',
-      recommendedMin: 40,
-      recommendedMax: 60
-    },
-    plaisirs: {
-      name: 'Plaisirs',
-      icon: '🎉',
-      description: 'Loisirs, sorties, divertissements',
-      color: 'from-blue-500 to-indigo-500',
-      bgColor: 'bg-blue-50',
-      borderColor: 'border-blue-200',
-      textColor: 'text-blue-700',
-      glowColor: 'shadow-blue-500/20',
-      recommendedMin: 20,
-      recommendedMax: 30
-    },
-    projets: {
-      name: 'Projets',
-      icon: '💎',
-      description: 'Épargne, investissements, famille',
-      color: 'from-green-500 to-emerald-500',
-      bgColor: 'bg-green-50',
-      borderColor: 'border-green-200',
-      textColor: 'text-green-700',
-      glowColor: 'shadow-green-500/20',
-      recommendedMin: 20,
-      recommendedMax: 30
-    },
-    liberation: {
-      name: 'Libération',
-      icon: '🔓',
-      description: 'Dettes, crédits, solidarité familiale',
-      color: 'from-orange-500 to-amber-500',
-      bgColor: 'bg-orange-50',
-      borderColor: 'border-orange-200',
-      textColor: 'text-orange-700',
-      glowColor: 'shadow-orange-500/20',
-      recommendedMin: 0,
-      recommendedMax: 20
-    },
-    
-    // ✅ SINGULIER (utilisé par le backend)
     essentiel: {
       name: 'Essentiels',
       icon: '🏠',
@@ -123,7 +72,6 @@ const EnvelopeManagerPremium = ({ toast, onNavigate, auth }) => {
       recommendedMax: 20
     }
   };
-
   useEffect(() => {
     loadData();
   }, []);
