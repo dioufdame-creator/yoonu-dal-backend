@@ -3122,7 +3122,7 @@ def manage_meta_envelopes(request):
         
         for envelope_type, percentage in defaults:
             print(f"📦 {envelope_type}: {percentage}% × {monthly_income} = {(Decimal(percentage)/100) * Decimal(str(monthly_income))}")
-            Envelope.objects.update_or_create(
+            env, created = Envelope.objects.update_or_creat(
                 user=user,
                 envelope_type=envelope_type,
                 defaults={
