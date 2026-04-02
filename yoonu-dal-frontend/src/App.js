@@ -141,7 +141,7 @@ function App() {
         try {
           const response = await API.get('/onboarding/status/');
           
-          if (response.data.onboarding_completed) {
+          if (response.data.onboarding_complete) {
             // ✅ A déjà fait l'onboarding → Dashboard
             showSuccess(`Bienvenue ${result.user.username} !`);
             handleNavigate('dashboard');
