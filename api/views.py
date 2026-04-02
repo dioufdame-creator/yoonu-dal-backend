@@ -3197,11 +3197,11 @@ def manage_meta_envelopes(request):
                 'color': config['color']
             })
 
-            # ✅ WRAPPER DANS UN OBJET
-            return Response({
-                'envelopes': result,
-                'monthly_income': float(monthly_income)
-            })        
+        # ✅ WRAPPER DANS UN OBJET
+        return Response({
+            'envelopes': result,
+            'monthly_income': float(monthly_income)
+        })        
     except Exception as e:
         return Response({
             'error': f'Erreur meta-envelopes: {str(e)}'
