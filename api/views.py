@@ -3154,8 +3154,10 @@ def manage_meta_envelopes(request):
             try:
                 envelope = Envelope.objects.get(user=user, envelope_type=envelope_type)
                 budget = float(envelope.monthly_budget)
+                allocated_percentage = float(envelope.allocated_percentage)  # ✅ AJOUTER
             except Envelope.DoesNotExist:
                 budget = 0
+                allocated_percentage = 0  # ✅ AJOUTER
             
             if envelope_type == 'liberation':
                 monthly_income_total = Income.objects.filter(
@@ -3179,18 +3181,23 @@ def manage_meta_envelopes(request):
             percentage = (spent / budget * 100) if budget > 0 else 0
             
             result.append({
+                'envelope_type': config['frontend_name'],  # ✅ AJOUTER
                 'type': config['frontend_name'],
                 'label': config['frontend_name'].capitalize(),
                 'budget': budget,
+                'allocated_percentage': allocated_percentage,  # ✅ AJOUTER
                 'spent': spent,
                 'remaining': remaining,
                 'percentage': round(percentage, 1),
                 'categories': config['categories'],
                 'color': config['color']
             })
-        
-        return Response(result)
-        
+
+            # ✅ WRAPPER DANS UN OBJET
+            return Response({
+                'envelopes': result,
+                'monthly_income': float(monthly_income)
+            })        
     except Exception as e:
         return Response({
             'error': f'Erreur meta-envelopes: {str(e)}'
