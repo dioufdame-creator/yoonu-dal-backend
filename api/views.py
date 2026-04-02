@@ -2998,14 +2998,17 @@ def complete_onboarding(request):
         ]
         
         for envelope_type, percentage in defaults:
-            Envelope.objects.get_or_create(
+            Envelope.objects.update_or_create(
                 user=user,
                 envelope_type=envelope_type,
                 defaults={
                     'allocated_percentage': percentage,
                     'monthly_budget': (Decimal(percentage) / 100) * Decimal(str(monthly_income or 0))
                 }
-            )    
+            )
+        # ✅ MARQUER L'ONBOARDING COMME COMPLET
+        user.profile.onboarding_complete = True
+        user.profile.save()
         # 4. Créer un diagnostic de base
         DiagnosticResult.objects.get_or_create(
             user=user,
@@ -3032,6 +3035,7 @@ def complete_onboarding(request):
         return Response({
             'success': True,
             'message': 'Onboarding complété avec succès',
+            'onboarding_complete': True,  # ✅ AJOUTER
             'score': {
                 'total_score': total_score
             }
@@ -3208,24 +3212,6 @@ def manage_meta_envelopes(request):
 
 
 
-@api_view(['POST'])
-@permission_classes([IsAuthenticated])
-def complete_onboarding(request):
-    """Marque l'onboarding comme complété"""
-    user = request.user
-    
-    try:
-        # On pourrait ajouter un champ dans UserProfile si besoin
-        # Pour l'instant, on retourne juste success
-        return Response({
-            'success': True,
-            'message': 'Onboarding complété avec succès'
-        })
-        
-    except Exception as e:
-        return Response({
-            'error': f'Erreur: {str(e)}'
-        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def check_onboarding_status(request):
