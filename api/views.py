@@ -3115,7 +3115,7 @@ def manage_meta_envelopes(request):
         monthly_income = user.profile.monthly_income or 0
         
         for envelope_type, percentage in defaults:
-            Envelope.objects.get_or_create(
+            Envelope.objects.update_or_create(
                 user=user,
                 envelope_type=envelope_type,
                 defaults={
