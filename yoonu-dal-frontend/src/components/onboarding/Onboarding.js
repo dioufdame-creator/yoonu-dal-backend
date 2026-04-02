@@ -23,6 +23,8 @@ const Onboarding = ({ toast, onNavigate }) => {
     { id: 'securite', emoji: '🛡️', label: 'Sécurité', desc: 'Stabilité financière' }
   ];
 
+  const QUICK_AMOUNTS = [50000, 100000, 200000, 500000, 1000000, 2000000];
+
   const toggleValue = (id) => {
     setData(prev => {
       const isSelected = prev.values.includes(id);
@@ -41,16 +43,13 @@ const Onboarding = ({ toast, onNavigate }) => {
   };
 
   const movePriority = (index, direction) => {
-    setData(prev => {
-      const newPriorities = [...prev.priorities];
-      const newIndex = index + direction;
-      
-      if (newIndex >= 0 && newIndex < newPriorities.length) {
-        [newPriorities[index], newPriorities[newIndex]] = [newPriorities[newIndex], newPriorities[index]];
-      }
-      
-      return { ...prev, priorities: newPriorities };
-    });
+    const newPriorities = data.priorities.length > 0 ? [...data.priorities] : [...data.values];
+    const newIndex = index + direction;
+    
+    if (newIndex >= 0 && newIndex < newPriorities.length) {
+      [newPriorities[index], newPriorities[newIndex]] = [newPriorities[newIndex], newPriorities[index]];
+      setData(prev => ({ ...prev, priorities: newPriorities }));
+    }
   };
 
   const formatAmount = (value) => {
@@ -71,7 +70,6 @@ const Onboarding = ({ toast, onNavigate }) => {
     }
 
     if (step === 2) {
-      // Auto-set priorities from values
       if (data.priorities.length === 0) {
         setData(prev => ({ ...prev, priorities: prev.values }));
       }
@@ -93,7 +91,6 @@ const Onboarding = ({ toast, onNavigate }) => {
     setLoading(true);
 
     try {
-      // Save values with priorities
       for (let i = 0; i < data.priorities.length; i++) {
         await API.post('/values/', {
           value: data.priorities[i],
@@ -101,21 +98,18 @@ const Onboarding = ({ toast, onNavigate }) => {
         });
       }
 
-      // Complete & get score
       const response = await API.post('/onboarding/complete/', {
         monthly_income: parseInt(data.income)
       });
 
       const finalScore = response.data?.score?.total_score || 47;
 
-      // Activate trial
       try {
         await API.post('/premium/activate-trial/');
       } catch (err) {
         console.warn('Trial failed:', err);
       }
 
-      // Show score
       setShowScore(true);
       animateScore(finalScore);
 
@@ -152,33 +146,31 @@ const Onboarding = ({ toast, onNavigate }) => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-50 via-white to-green-50">
-      {/* Header */}
-      {!showScore && (
-        <div className="bg-green-600 text-white py-4 px-6 flex items-center justify-between shadow-md">
-          <div className="flex items-center gap-3">
-            <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center">
-              <span className="text-2xl">🌿</span>
-            </div>
-            <h1 className="text-2xl font-bold">Yoonu Dal</h1>
-          </div>
-          
-          {step > 0 && (
-            <button className="text-white/90 hover:text-white">
-              <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-              </svg>
-            </button>
-          )}
-        </div>
-      )}
-
-      {/* Progress bar */}
+      {/* Simple Header - PAS de double bande verte */}
       {!showScore && step > 0 && (
-        <div className="h-1 bg-gray-200">
-          <div 
-            className="h-full bg-green-600 transition-all duration-500"
-            style={{ width: `${progress}%` }}
-          />
+        <div className="bg-white border-b border-gray-200 sticky top-0 z-10">
+          <div className="container mx-auto px-4 py-4 max-w-2xl">
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-green-600 rounded-xl flex items-center justify-center shadow-md">
+                  <span className="text-xl">🌿</span>
+                </div>
+                <h1 className="text-xl font-bold text-gray-900">Yoonu Dal</h1>
+              </div>
+              
+              <div className="text-sm font-medium text-gray-600">
+                Étape {step}/3
+              </div>
+            </div>
+
+            {/* Progress bar */}
+            <div className="h-1.5 bg-gray-200 rounded-full overflow-hidden">
+              <div 
+                className="h-full bg-gradient-to-r from-green-600 to-emerald-600 transition-all duration-500"
+                style={{ width: `${progress}%` }}
+              />
+            </div>
+          </div>
         </div>
       )}
 
@@ -323,6 +315,7 @@ const Onboarding = ({ toast, onNavigate }) => {
             <div className="space-y-3 mb-6">
               {(data.priorities.length > 0 ? data.priorities : data.values).map((valueId, index) => {
                 const value = VALUES.find(v => v.id === valueId);
+                const arrayLength = data.priorities.length > 0 ? data.priorities.length : data.values.length;
                 
                 return (
                   <div
@@ -334,14 +327,14 @@ const Onboarding = ({ toast, onNavigate }) => {
                         <button
                           onClick={() => movePriority(index, -1)}
                           disabled={index === 0}
-                          className="w-8 h-8 flex items-center justify-center bg-white border border-gray-300 rounded-lg disabled:opacity-30 hover:bg-gray-50"
+                          className="w-8 h-8 flex items-center justify-center bg-white border border-gray-300 rounded-lg disabled:opacity-30 hover:bg-gray-50 transition-all"
                         >
                           ↑
                         </button>
                         <button
                           onClick={() => movePriority(index, 1)}
-                          disabled={index === (data.priorities.length || data.values.length) - 1}
-                          className="w-8 h-8 flex items-center justify-center bg-white border border-gray-300 rounded-lg disabled:opacity-30 hover:bg-gray-50"
+                          disabled={index === arrayLength - 1}
+                          className="w-8 h-8 flex items-center justify-center bg-white border border-gray-300 rounded-lg disabled:opacity-30 hover:bg-gray-50 transition-all"
                         >
                           ↓
                         </button>
@@ -370,14 +363,14 @@ const Onboarding = ({ toast, onNavigate }) => {
             <div className="flex gap-3">
               <button
                 onClick={() => setStep(1)}
-                className="px-6 py-4 border-2 border-gray-300 text-gray-700 rounded-2xl font-semibold hover:bg-gray-50"
+                className="px-6 py-4 border-2 border-gray-300 text-gray-700 rounded-2xl font-semibold hover:bg-gray-50 transition-all"
               >
                 ← Retour
               </button>
               
               <button
                 onClick={next}
-                className="flex-1 bg-green-600 text-white py-4 rounded-2xl font-semibold text-lg shadow-lg hover:bg-green-700"
+                className="flex-1 bg-green-600 text-white py-4 rounded-2xl font-semibold text-lg shadow-lg hover:bg-green-700 transition-all"
               >
                 Continuer →
               </button>
@@ -394,13 +387,13 @@ const Onboarding = ({ toast, onNavigate }) => {
                 Tes revenus mensuels
               </h2>
               <p className="text-gray-600 text-lg">
-                Pour calculer ton Score, on a besoin de connaître tes revenus
+                Pour calculer ton Score Yoonu et personnaliser ton expérience
               </p>
             </div>
 
             <div className="mb-6">
               <label className="block text-sm font-medium text-gray-700 mb-3">
-                Revenus mensuels (FCFA)
+                Revenu mensuel moyen
               </label>
               
               <div className="relative">
@@ -409,7 +402,7 @@ const Onboarding = ({ toast, onNavigate }) => {
                   value={data.income ? formatAmount(data.income) : ''}
                   onChange={handleIncomeChange}
                   placeholder="400 000"
-                  className="w-full px-6 py-5 text-3xl font-bold text-gray-900 bg-white border-3 border-green-600 rounded-2xl focus:outline-none focus:ring-4 focus:ring-green-600/20"
+                  className="w-full px-6 py-5 text-3xl font-bold text-gray-900 bg-white border-3 border-green-600 rounded-2xl focus:outline-none focus:ring-4 focus:ring-green-600/20 transition-all"
                 />
                 <div className="absolute right-6 top-1/2 -translate-y-1/2 text-gray-400 font-semibold text-xl">
                   FCFA
@@ -417,19 +410,39 @@ const Onboarding = ({ toast, onNavigate }) => {
               </div>
             </div>
 
+            {/* Montants rapides */}
+            <div className="mb-6">
+              <p className="text-sm font-medium text-gray-700 mb-3">Montants rapides</p>
+              <div className="grid grid-cols-3 gap-2">
+                {QUICK_AMOUNTS.map(amount => (
+                  <button
+                    key={amount}
+                    onClick={() => setData(prev => ({ ...prev, income: amount.toString() }))}
+                    className="py-3 px-4 bg-white border-2 border-gray-200 hover:border-green-600 hover:bg-green-50 rounded-xl text-sm font-semibold text-gray-700 transition-all"
+                  >
+                    {formatAmount(amount)}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Info box */}
             <div className="bg-blue-50 border border-blue-200 rounded-2xl p-4 mb-8">
               <div className="flex gap-3">
                 <span className="text-2xl">💡</span>
-                <p className="text-sm text-blue-900">
-                  Tu pourras ajuster ce montant plus tard dans les paramètres
-                </p>
+                <div className="flex-1">
+                  <p className="text-sm text-blue-900">
+                    <strong>Pourquoi on demande ça ?</strong><br />
+                    Pour calculer ton Score Yoonu Dal et te donner des conseils personnalisés. Tu pourras ajuster ce montant plus tard dans les paramètres.
+                  </p>
+                </div>
               </div>
             </div>
 
             <div className="flex gap-3">
               <button
                 onClick={() => setStep(2)}
-                className="px-6 py-4 border-2 border-gray-300 text-gray-700 rounded-2xl font-semibold hover:bg-gray-50"
+                className="px-6 py-4 border-2 border-gray-300 text-gray-700 rounded-2xl font-semibold hover:bg-gray-50 transition-all"
               >
                 ← Retour
               </button>
@@ -437,7 +450,7 @@ const Onboarding = ({ toast, onNavigate }) => {
               <button
                 onClick={next}
                 disabled={loading || !data.income}
-                className="flex-1 bg-green-600 text-white py-4 rounded-2xl font-semibold text-lg shadow-lg hover:bg-green-700 disabled:opacity-50 flex items-center justify-center gap-2"
+                className="flex-1 bg-green-600 text-white py-4 rounded-2xl font-semibold text-lg shadow-lg hover:bg-green-700 disabled:opacity-50 flex items-center justify-center gap-2 transition-all"
               >
                 {loading ? (
                   <>
@@ -513,7 +526,7 @@ const Onboarding = ({ toast, onNavigate }) => {
 
             <button
               onClick={() => onNavigate('dashboard')}
-              className="bg-green-600 text-white px-12 py-4 rounded-2xl font-semibold text-lg shadow-xl hover:bg-green-700 transition-all"
+              className="bg-green-600 text-white px-12 py-4 rounded-2xl font-semibold text-lg shadow-xl hover:bg-green-700 transition-all transform hover:scale-105"
             >
               Voir mon dashboard →
             </button>
