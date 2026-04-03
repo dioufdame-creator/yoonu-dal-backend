@@ -215,6 +215,21 @@ const GoalsPage = ({ toast, onNavigate }) => {
     }
   };
 
+  const handleDeleteGoal = async (goal) => {
+    if (!window.confirm(`Êtes-vous sûr de vouloir supprimer l'objectif "${goal.title}" ?`)) {
+      return;
+    }
+    
+    try {
+      await API.delete(`/goals/manage/?goal_id=${goal.id}`);
+      toast?.showSuccess?.('Objectif supprimé !');
+      await loadGoals();
+    } catch (error) {
+      console.error('Erreur suppression:', error);
+      toast?.showError?.('Erreur : ' + (error.response?.data?.error || error.message));
+    }
+  };
+
   // Filtrage et tri
   const filteredGoals = goals
     .filter(g => filterCategory === 'all' || g.category === filterCategory)
@@ -348,7 +363,7 @@ const GoalsPage = ({ toast, onNavigate }) => {
               <div className="flex items-start justify-between mb-3">
                 <div className="flex-1">
                   <div className="flex items-center gap-2 mb-1">
-                    <span className="text-2xl">{category.icon}</span>
+                    <span className="text-2xl">{category.emoji}</span>
                     <h3 className="font-bold text-gray-900">{goal.title}</h3>
                   </div>
                   {goal.description && (
@@ -403,7 +418,7 @@ const GoalsPage = ({ toast, onNavigate }) => {
                 </button>
               </div>
 
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid grid-cols-2 gap-2 mb-2">
                 <button
                   onClick={() => {
                     setSelectedGoal(goal);
@@ -425,6 +440,34 @@ const GoalsPage = ({ toast, onNavigate }) => {
                 >
                   <span>🏆</span>
                   <span>Badges</span>
+                </button>
+              </div>
+
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  onClick={() => {
+                    setEditingGoal(goal);
+                    setForm({
+                      title: goal.title,
+                      description: goal.description || '',
+                      target_amount: goal.target_amount.toString(),
+                      current_amount: goal.current_amount.toString(),
+                      deadline: goal.deadline || '',
+                      category: goal.category
+                    });
+                    setShowCreateModal(true);
+                  }}
+                  className="flex items-center justify-center gap-1 px-3 py-2 bg-blue-50 text-blue-700 rounded-lg text-sm font-medium border border-blue-200"
+                >
+                  <span>✏️</span>
+                  <span>Modifier</span>
+                </button>
+                <button
+                  onClick={() => handleDeleteGoal(goal)}
+                  className="flex items-center justify-center gap-1 px-3 py-2 bg-red-50 text-red-700 rounded-lg text-sm font-medium border border-red-200"
+                >
+                  <span>🗑️</span>
+                  <span>Supprimer</span>
                 </button>
               </div>
             </div>
