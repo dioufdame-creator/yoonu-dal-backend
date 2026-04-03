@@ -3,8 +3,9 @@ import ExpensesPage from '../control/ExpenseTracker';
 import IncomesPage from '../incomes/IncomesPage';
 
 // ==========================================
-// TRANSACTIONS PAGE V4 - FIX FINAL
-// Cache le header glassmorphism des sous-pages
+// TRANSACTIONS PAGE V5 - DESIGN UNIFIÉ
+// Une seule bande verte avec tabs intégrés
+// Plus de séparation visuelle
 // ==========================================
 
 const TransactionsPage = ({ onNavigate, toast }) => {
@@ -12,81 +13,86 @@ const TransactionsPage = ({ onNavigate, toast }) => {
 
   return (
     <div className="min-h-screen bg-gray-50 pb-20">
-      {/* Header Premium avec Gradient VERT */}
+      {/* Header Unifié - Une seule bande verte */}
       <div className="bg-gradient-to-r from-green-600 to-emerald-600 text-white sticky top-0 z-10 shadow-lg">
-        <div className="px-4 sm:px-6 py-5 sm:py-6">
+        {/* Titre et description */}
+        <div className="px-4 sm:px-6 pt-5 sm:pt-6 pb-3">
           <h1 className="text-2xl sm:text-3xl font-bold flex items-center gap-2 sm:gap-3">
             <span className="text-3xl sm:text-4xl">💰</span>
             <span>Transactions</span>
           </h1>
-          <p className="text-green-100 text-sm mt-1 sm:mt-2">
+          <p className="text-green-100 text-sm mt-1">
             Gérez vos dépenses et revenus en toute simplicité
           </p>
         </div>
 
-        {/* Tabs Modernes avec transitions */}
-        <div className="flex border-t border-green-500/30">
+        {/* Tabs intégrés dans la même bande */}
+        <div className="flex px-2 sm:px-4">
           <button
             onClick={() => setActiveTab('expenses')}
-            className={`flex-1 py-3 sm:py-4 font-semibold text-sm sm:text-base transition-all duration-300 relative ${
+            className={`flex-1 py-3 font-semibold text-sm sm:text-base transition-all duration-300 rounded-t-xl relative ${
               activeTab === 'expenses'
-                ? 'text-white bg-white/10'
-                : 'text-green-100 hover:bg-white/5'
+                ? 'bg-gray-50 text-green-700'
+                : 'text-green-50 hover:bg-green-500/20'
             }`}
           >
             <span className="flex items-center justify-center gap-2">
               <span className="text-lg sm:text-xl">💸</span>
               <span>Dépenses</span>
             </span>
-            {activeTab === 'expenses' && (
-              <div className="absolute bottom-0 left-0 right-0 h-1 bg-white rounded-t-full"></div>
-            )}
           </button>
           <button
             onClick={() => setActiveTab('incomes')}
-            className={`flex-1 py-3 sm:py-4 font-semibold text-sm sm:text-base transition-all duration-300 relative ${
+            className={`flex-1 py-3 font-semibold text-sm sm:text-base transition-all duration-300 rounded-t-xl relative ${
               activeTab === 'incomes'
-                ? 'text-white bg-white/10'
-                : 'text-green-100 hover:bg-white/5'
+                ? 'bg-gray-50 text-green-700'
+                : 'text-green-50 hover:bg-green-500/20'
             }`}
           >
             <span className="flex items-center justify-center gap-2">
               <span className="text-lg sm:text-xl">💰</span>
               <span>Revenus</span>
             </span>
-            {activeTab === 'incomes' && (
-              <div className="absolute bottom-0 left-0 right-0 h-1 bg-white rounded-t-full"></div>
-            )}
           </button>
         </div>
       </div>
 
-      {/* Content */}
-      <div className="transactions-wrapper px-4 pt-4">
-        {activeTab === 'expenses' ? (
-          <ExpensesPage onNavigate={onNavigate} toast={toast} />
-        ) : (
-          <IncomesPage onNavigate={onNavigate} toast={toast} />
-        )}
+      {/* Content sans padding pour transition fluide */}
+      <div className="transactions-wrapper bg-gray-50">
+        <div className="px-4 pt-4">
+          {activeTab === 'expenses' ? (
+            <ExpensesPage onNavigate={onNavigate} toast={toast} />
+          ) : (
+            <IncomesPage onNavigate={onNavigate} toast={toast} />
+          )}
+        </div>
       </div>
 
       {/* CSS pour cacher les headers des sous-pages */}
       <style jsx>{`
         /* Cache la card glassmorphism header (ExpensesPage) */
-        .transactions-wrapper :global(.backdrop-blur-xl.bg-white\\/60:first-child) {
+        .transactions-wrapper :global(.backdrop-blur-xl.bg-white\\/60) {
           display: none !important;
         }
         
-        /* Cache aussi les headers verts (IncomesPage) */
-        .transactions-wrapper :global(.bg-gradient-to-r.from-green-600:first-child),
-        .transactions-wrapper :global(.bg-gradient-to-r.from-green-500:first-child) {
+        /* Cache le header simple (IncomesPage) */
+        .transactions-wrapper :global(h1:has(💰)) {
           display: none !important;
         }
         
-        /* Supprime le margin du premier élément */
-        .transactions-wrapper :global(> div > *:first-child) {
+        /* Cache tout header contenant "Mes Revenus" ou "Mes Dépenses" */
+        .transactions-wrapper :global(> div > div > div.mb-6:first-child) {
+          display: none !important;
+        }
+        
+        /* Ajuste le contenu pour qu'il commence directement */
+        .transactions-wrapper :global(> div > div > *:first-child) {
           margin-top: 0 !important;
-          margin-bottom: 1rem !important;
+        }
+        
+        /* Supprime les marges excessives */
+        .transactions-wrapper :global(.max-w-7xl) {
+          padding-top: 0 !important;
         }
       `}</style>
     </div>
