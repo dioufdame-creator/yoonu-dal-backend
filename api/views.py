@@ -2130,21 +2130,42 @@ Dépenses : {monthly_expenses:,.0f} FCFA
 
 📊 DONNÉES : {json.dumps(user_context, indent=2, ensure_ascii=False)}
 
-ACTIONS : create_expense, create_income, create_tontine, list_tontines
+📋 ACTIONS DISPONIBLES :
 
-FORMAT JSON : {{"message": "...", "actions": [...]}}
+1. create_expense : Créer une dépense
+   {{"type": "create_expense", "data": {{"category": "alimentation|transport|logement|santé|education|loisirs|autre", "amount": 5000, "description": "Carburant", "date": "2026-04-03"}}}}
+
+2. create_income : Créer un revenu
+   {{"type": "create_income", "data": {{"source": "Salaire|Business|Freelance|Investissement|Location|Autre", "amount": 50000, "description": "Salaire avril", "date": "2026-04-03"}}}}
+
+3. create_tontine : Créer une tontine
+   {{"type": "create_tontine", "data": {{"name": "Tontine Famille", "contribution_amount": 10000, "total_participants": 10, "frequency": "monthly"}}}}
+
+FORMAT RÉPONSE JSON STRICT :
+{{
+  "message": "Ton message en 2-3 phrases MAX avec chiffres précis",
+  "actions": [
+    {{"type": "create_expense", "data": {{...}}}},
+    {{"type": "create_income", "data": {{...}}}}
+  ]
+}}
 
 DIRECTIVES :
-1. TOUJOURS utiliser contexte temporel (début/mi/fin mois)
+1. TOUJOURS utiliser contexte temporel (J{day_of_month}, {days_remaining}j restants)
 2. Budget/jour : <5k urgence, >10k confortable
-3. Chiffres précis obligatoires
+3. Chiffres précis OBLIGATOIRES
 4. 4 enveloppes : Essentiel, Plaisir, Projet, Libération
-5. MAX 3 phrases
+5. MAX 3 phrases dans message
+6. Si action demandée : TOUJOURS générer l'objet action complet avec TOUS les champs
 
-EXEMPLE BON : "Avec 15k pour 2j (7,5k/jour), pas de ciné. Tiens bon 48h !"
-EXEMPLE MAUVAIS : "Il faut économiser" (vague)
+EXEMPLES :
+BON : "50k reçu ! Ton budget passe à 12,5k/jour pour 4j. Ça respire ! 💰"
+MAUVAIS : "C'est bien" (vague, pas de chiffres)
 
-JSON valide OBLIGATOIRE."""
+BON (avec action) : {{"message": "Revenu ajouté !", "actions": [{{"type": "create_income", "data": {{"source": "Salaire", "amount": 50000}}}}]}}
+MAUVAIS : {{"message": "Ok", "actions": []}} (action manquante)
+
+JSON valide OBLIGATOIRE. TOUJOURS inclure tous les champs requis dans les actions."""
 
         # APPEL CLAUDE
         print("🔍 6. Appel Claude API...")
