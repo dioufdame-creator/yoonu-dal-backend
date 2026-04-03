@@ -1985,8 +1985,10 @@ def ai_chat(request):
     user = request.user
 
     try:
+        print("🔍 1. Début ai_chat")
         message = request.data.get('message', '')
         history = request.data.get('conversation_history', [])
+        print(f"🔍 2. Message: {message[:30]}...")
 
         if not message:
             return Response({'error': 'Message requis'}, status=status.HTTP_400_BAD_REQUEST)
@@ -2013,6 +2015,7 @@ def ai_chat(request):
         daily_budget = budget_remaining / days_remaining if days_remaining > 0 else 0
 
         # ENVELOPPES
+        print("🔍 3. Chargement enveloppes...")
         envelopes = Envelope.objects.filter(user=user)
         envelopes_data = [{
             'type': env.envelope_type,
@@ -2023,6 +2026,7 @@ def ai_chat(request):
         } for env in envelopes]
 
         # OBJECTIFS ✅ NOUVEAU
+        print("🔍 4. Chargement objectifs...")
         goals = Goal.objects.filter(user=user, is_achieved=False).order_by('-created_at')[:5]
         goals_data = [{
             'id': goal.id,
@@ -2035,6 +2039,7 @@ def ai_chat(request):
         } for goal in goals]
 
         # SCORE YOONU DAL ✅ NOUVEAU
+        print("🔍 5. Calcul score...")
         try:
             score_result = calculate_yoonu_score(user)
             yoonu_score = score_result.get('total_score', 0)
@@ -2142,6 +2147,7 @@ EXEMPLE MAUVAIS : "Il faut économiser" (vague)
 JSON valide OBLIGATOIRE."""
 
         # APPEL CLAUDE
+        print("🔍 6. Appel Claude API...")
         client = anthropic.Anthropic(api_key=settings.ANTHROPIC_API_KEY)
 
         messages = []
@@ -2157,6 +2163,7 @@ JSON valide OBLIGATOIRE."""
         )
 
         assistant_message = response.content[0].text
+        print("🔍 7. Réponse Claude reçue")
 
         # PARSER JSON
         try:
@@ -2190,6 +2197,9 @@ JSON valide OBLIGATOIRE."""
             })
 
     except Exception as e:
+        print(f"🔍 ❌ ERREUR: {type(e).__name__}: {str(e)}")
+        import traceback
+        traceback.print_exc()
         return Response({'error': f'Erreur IA: {str(e)}'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
