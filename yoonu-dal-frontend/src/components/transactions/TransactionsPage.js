@@ -3,9 +3,9 @@ import ExpensesPage from '../control/ExpenseTracker';
 import IncomesPage from '../incomes/IncomesPage';
 
 // ==========================================
-// TRANSACTIONS PAGE V5 - DESIGN UNIFIÉ
-// Une seule bande verte avec tabs intégrés
-// Plus de séparation visuelle
+// TRANSACTIONS PAGE V6 - COMPACT & PRO
+// Design aligné sur la barre Yoonu Dal
+// Compact, moderne, cohérent
 // ==========================================
 
 const TransactionsPage = ({ onNavigate, toast }) => {
@@ -13,52 +13,60 @@ const TransactionsPage = ({ onNavigate, toast }) => {
 
   return (
     <div className="min-h-screen bg-gray-50 pb-20">
-      {/* Header Unifié - Une seule bande verte */}
-      <div className="bg-gradient-to-r from-green-600 to-emerald-600 text-white sticky top-0 z-10 shadow-lg">
-        {/* Titre et description */}
-        <div className="px-4 sm:px-6 pt-5 sm:pt-6 pb-3">
-          <h1 className="text-2xl sm:text-3xl font-bold flex items-center gap-2 sm:gap-3">
-            <span className="text-3xl sm:text-4xl">💰</span>
-            <span>Transactions</span>
-          </h1>
-          <p className="text-green-100 text-sm mt-1">
-            Gérez vos dépenses et revenus en toute simplicité
-          </p>
+      {/* Header Compact et Pro - Style Yoonu Dal */}
+      <div className="bg-gradient-to-r from-green-600 to-emerald-600 text-white sticky top-0 z-10 shadow-md">
+        {/* Titre compact */}
+        <div className="px-4 sm:px-6 py-3 sm:py-4 border-b border-green-500/20">
+          <div className="flex items-center justify-between">
+            <h1 className="text-lg sm:text-xl font-semibold flex items-center gap-2">
+              <span className="text-xl sm:text-2xl">💰</span>
+              <span>Transactions</span>
+            </h1>
+            <p className="text-green-50 text-xs sm:text-sm hidden sm:block">
+              Dépenses & Revenus
+            </p>
+          </div>
         </div>
 
-        {/* Tabs intégrés dans la même bande */}
-        <div className="flex px-2 sm:px-4">
+        {/* Tabs compacts */}
+        <div className="flex">
           <button
             onClick={() => setActiveTab('expenses')}
-            className={`flex-1 py-3 font-semibold text-sm sm:text-base transition-all duration-300 rounded-t-xl relative ${
+            className={`flex-1 py-2.5 sm:py-3 font-medium text-sm sm:text-base transition-all relative ${
               activeTab === 'expenses'
-                ? 'bg-gray-50 text-green-700'
-                : 'text-green-50 hover:bg-green-500/20'
+                ? 'text-white bg-green-700/30'
+                : 'text-green-100 hover:bg-green-700/20'
             }`}
           >
-            <span className="flex items-center justify-center gap-2">
-              <span className="text-lg sm:text-xl">💸</span>
+            <span className="flex items-center justify-center gap-1.5">
+              <span>💸</span>
               <span>Dépenses</span>
             </span>
+            {activeTab === 'expenses' && (
+              <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-white"></div>
+            )}
           </button>
           <button
             onClick={() => setActiveTab('incomes')}
-            className={`flex-1 py-3 font-semibold text-sm sm:text-base transition-all duration-300 rounded-t-xl relative ${
+            className={`flex-1 py-2.5 sm:py-3 font-medium text-sm sm:text-base transition-all relative ${
               activeTab === 'incomes'
-                ? 'bg-gray-50 text-green-700'
-                : 'text-green-50 hover:bg-green-500/20'
+                ? 'text-white bg-green-700/30'
+                : 'text-green-100 hover:bg-green-700/20'
             }`}
           >
-            <span className="flex items-center justify-center gap-2">
-              <span className="text-lg sm:text-xl">💰</span>
+            <span className="flex items-center justify-center gap-1.5">
+              <span>💰</span>
               <span>Revenus</span>
             </span>
+            {activeTab === 'incomes' && (
+              <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-white"></div>
+            )}
           </button>
         </div>
       </div>
 
-      {/* Content sans padding pour transition fluide */}
-      <div className="transactions-wrapper bg-gray-50">
+      {/* Content */}
+      <div className="transactions-wrapper">
         <div className="px-4 pt-4">
           {activeTab === 'expenses' ? (
             <ExpensesPage onNavigate={onNavigate} toast={toast} />
@@ -75,24 +83,18 @@ const TransactionsPage = ({ onNavigate, toast }) => {
           display: none !important;
         }
         
-        /* Cache le header simple (IncomesPage) */
-        .transactions-wrapper :global(h1:has(💰)) {
+        /* Cache le header IncomesPage */
+        .transactions-wrapper :global(.mb-6:has(h1)) {
           display: none !important;
         }
         
-        /* Cache tout header contenant "Mes Revenus" ou "Mes Dépenses" */
-        .transactions-wrapper :global(> div > div > div.mb-6:first-child) {
-          display: none !important;
-        }
-        
-        /* Ajuste le contenu pour qu'il commence directement */
-        .transactions-wrapper :global(> div > div > *:first-child) {
-          margin-top: 0 !important;
-        }
-        
-        /* Supprime les marges excessives */
+        /* Ajuste le contenu */
         .transactions-wrapper :global(.max-w-7xl) {
           padding-top: 0 !important;
+        }
+        
+        .transactions-wrapper :global(> div > div > *:first-child) {
+          margin-top: 0 !important;
         }
       `}</style>
     </div>
