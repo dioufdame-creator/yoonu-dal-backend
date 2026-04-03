@@ -1061,17 +1061,42 @@ def user_values(request):
             }, status=status.HTTP_400_BAD_REQUEST)
 
     elif request.method == 'DELETE':
-        try:
-            # ✅ Supprimer TOUTES les valeurs de l'user
-            deleted_count, _ = UserValue.objects.filter(user=user).delete()
-            return Response({
-                'message': f'{deleted_count} valeur(s) supprimée(s)'
-            })
-        except Exception as e:
-            return Response({
-                'error': f'Erreur: {str(e)}'
-            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
+    goal_id = request.GET.get('goal_id')
+    
+    if not goal_id:
+        return Response({
+            'error': 'goal_id requis dans les paramètres'
+        }, status=status.HTTP_400_BAD_REQUEST)
+    
+    try:
+        goal = Goal.objects.get(id=goal_id, user=user)
+        goal_title = goal.title
+        goal_id_value = goal.id
+        
+        # Supprimer avec SQL brut pour éviter l'erreur
+        from django.db import connection
+        with connection.cursor() as cursor:
+            # Supprimer les contributions (si existent)
+            try:
+                cursor.execute("DELETE FROM api_goalcontribution WHERE goal_id = %s", [goal_id_value])
+            except:
+                pass
+            
+            # Supprimer l'objectif
+            cursor.execute("DELETE FROM api_goal WHERE id = %s AND user_id = %s", [goal_id_value, user.id])
+        
+        return Response({
+            'message': f'Objectif "{goal_title}" supprimé avec succès'
+        })
+        
+    except Goal.DoesNotExist:
+        return Response({
+            'error': 'Objectif non trouvé'
+        }, status=status.HTTP_404_NOT_FOUND)
+    except Exception as e:
+        return Response({
+            'error': f'Erreur suppression: {str(e)}'
+        }, status=status.HTTP_400_BAD_REQUEST)
 # ==========================================
 # SYSTÈME DES 3 ENVELOPPES
 # ==========================================
