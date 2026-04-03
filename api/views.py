@@ -455,15 +455,22 @@ def manage_incomes(request):
                     'error': 'Le montant est obligatoire'
                 }, status=status.HTTP_400_BAD_REQUEST)
 
+            # Parser la date si c'est une string
+            date_input = data.get('date')
+            if isinstance(date_input, str):
+                from datetime import datetime
+                parsed_date = datetime.fromisoformat(date_input.split('T')[0]).date()
+            else:
+                parsed_date = date_input if date_input else timezone.now().date()
+
             income = Income.objects.create(
                 user=user,
                 source=data.get('source'),
                 description=data.get('description', ''),
                 amount=Decimal(data.get('amount')),
-                date=data.get('date') if data.get('date') else timezone.now().date(),
+                date=parsed_date,
                 is_validated=data.get('is_validated', True)
             )
-
             return Response({
                 'id': income.id,
                 'source': income.source,
