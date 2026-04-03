@@ -3,16 +3,16 @@ import ExpensesPage from '../control/ExpenseTracker';
 import IncomesPage from '../incomes/IncomesPage';
 
 // ==========================================
-// TRANSACTIONS PAGE V2 - MODERN DESIGN
-// Gradient Header + Premium Tabs
-// Cohérent avec Dashboard et app palette
+// TRANSACTIONS PAGE V3 - MODERN DESIGN
+// Header vert + Content sans double fond
+// Fix: Cache les headers des sous-pages
 // ==========================================
 
 const TransactionsPage = ({ onNavigate, toast }) => {
   const [activeTab, setActiveTab] = useState('expenses');
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-20">
+    <div className="min-h-screen bg-gray-50">
       {/* Header Premium avec Gradient VERT */}
       <div className="bg-gradient-to-r from-green-600 to-emerald-600 text-white sticky top-0 z-10 shadow-lg">
         <div className="px-4 sm:px-6 py-5 sm:py-6">
@@ -40,7 +40,7 @@ const TransactionsPage = ({ onNavigate, toast }) => {
               <span>Dépenses</span>
             </span>
             {activeTab === 'expenses' && (
-              <div className="absolute bottom-0 left-0 right-0 h-1 bg-white rounded-t-full animate-slideIn"></div>
+              <div className="absolute bottom-0 left-0 right-0 h-1 bg-white rounded-t-full"></div>
             )}
           </button>
           <button
@@ -56,46 +56,30 @@ const TransactionsPage = ({ onNavigate, toast }) => {
               <span>Revenus</span>
             </span>
             {activeTab === 'incomes' && (
-              <div className="absolute bottom-0 left-0 right-0 h-1 bg-white rounded-t-full animate-slideIn"></div>
+              <div className="absolute bottom-0 left-0 right-0 h-1 bg-white rounded-t-full"></div>
             )}
           </button>
         </div>
       </div>
 
-      {/* Content avec transition */}
-      <div className="px-4 py-4">
-        <div className="animate-fadeIn">
-          {activeTab === 'expenses' ? (
-            <ExpensesPage onNavigate={onNavigate} toast={toast} />
-          ) : (
-            <IncomesPage onNavigate={onNavigate} toast={toast} />
-          )}
-        </div>
+      {/* Content - Wrapper pour cacher les headers des sous-pages */}
+      <div className="transactions-content">
+        {activeTab === 'expenses' ? (
+          <ExpensesPage onNavigate={onNavigate} toast={toast} />
+        ) : (
+          <IncomesPage onNavigate={onNavigate} toast={toast} />
+        )}
       </div>
 
-      {/* Animations CSS inline (si pas dans tailwind.config) */}
+      {/* Styles pour cacher les headers en double */}
       <style jsx>{`
-        @keyframes slideIn {
-          from {
-            transform: scaleX(0);
-          }
-          to {
-            transform: scaleX(1);
-          }
+        .transactions-content :global(.bg-gradient-to-r.from-green-600),
+        .transactions-content :global(.bg-white.border-b) {
+          display: none !important;
         }
-        @keyframes fadeIn {
-          from {
-            opacity: 0;
-          }
-          to {
-            opacity: 1;
-          }
-        }
-        .animate-slideIn {
-          animation: slideIn 0.3s ease-out;
-        }
-        .animate-fadeIn {
-          animation: fadeIn 0.3s ease-out;
+        
+        .transactions-content :global(> div) {
+          padding-bottom: 5rem;
         }
       `}</style>
     </div>
