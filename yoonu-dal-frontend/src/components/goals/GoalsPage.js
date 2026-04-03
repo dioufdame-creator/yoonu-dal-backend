@@ -198,7 +198,22 @@ const GoalsPage = ({ toast, onNavigate }) => {
 
   return (
     <div className="min-h-screen bg-gray-50 pb-20">
-      {/* Header */}
+      {/* Header avec texte explicatif - Style Tontines */}
+      <div className="bg-white border-b border-gray-200 px-4 sm:px-6 py-4 sm:py-5">
+        <div className="flex items-start gap-3">
+          <span className="text-3xl sm:text-4xl">🎯</span>
+          <div className="flex-1">
+            <h1 className="text-xl sm:text-2xl font-bold text-gray-900">
+              Mes Objectifs
+            </h1>
+            <p className="text-sm sm:text-base text-gray-600 mt-1">
+              Planifie et atteins tes objectifs financiers
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* Stats */}
       <div className="px-4 pt-4 mb-6">
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           <div className="bg-white rounded-lg shadow p-4">
