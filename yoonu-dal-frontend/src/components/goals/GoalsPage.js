@@ -244,17 +244,30 @@ const GoalsPage = ({ toast, onNavigate }) => {
     <div className="min-h-screen bg-gray-50 pb-20">
       {/* Header avec texte explicatif - Style Tontines */}
       <div className="bg-white border-b border-gray-200 px-4 sm:px-6 py-4 sm:py-5">
-        <div className="flex items-start gap-3">
+        <div className="flex items-start gap-3 mb-4">
           <span className="text-3xl sm:text-4xl">🎯</span>
           <div className="flex-1">
             <h1 className="text-xl sm:text-2xl font-bold text-gray-900">
               Mes Objectifs
             </h1>
             <p className="text-sm sm:text-base text-gray-600 mt-1">
-              Planifie et atteins tes objectifs financiers
+              Définis et atteins tes objectifs financiers
             </p>
           </div>
         </div>
+
+        {/* Bouton Créer */}
+        <button
+          onClick={() => {
+            setEditingGoal(null);
+            setForm(emptyForm());
+            setShowCreateModal(true);
+          }}
+          className="w-full bg-gradient-to-r from-green-600 to-emerald-600 text-white py-3 sm:py-4 rounded-xl font-semibold text-base sm:text-lg flex items-center justify-center gap-2 hover:shadow-lg transition-all"
+        >
+          <span className="text-xl">➕</span>
+          <span>Créer</span>
+        </button>
       </div>
 
       {/* Stats */}
@@ -595,19 +608,6 @@ const GoalsPage = ({ toast, onNavigate }) => {
           </div>
         </div>
       )}
-
-      {/* Floating Action Button - Créer un objectif */}
-      <button
-        onClick={() => {
-          setEditingGoal(null);
-          setForm(emptyForm());
-          setShowCreateModal(true);
-        }}
-        className="fixed bottom-24 right-6 bg-gradient-to-r from-green-600 to-emerald-600 text-white w-14 h-14 rounded-full shadow-lg flex items-center justify-center text-2xl hover:shadow-xl transition-all z-20 hover:scale-110"
-        title="Créer un nouvel objectif"
-      >
-        +
-      </button>
 
       {/* MODAL CRÉATION/ÉDITION */}
       {showCreateModal && (
