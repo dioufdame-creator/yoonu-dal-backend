@@ -3,16 +3,15 @@ import ExpensesPage from '../control/ExpenseTracker';
 import IncomesPage from '../incomes/IncomesPage';
 
 // ==========================================
-// TRANSACTIONS PAGE V3 - MODERN DESIGN
-// Header vert + Content sans double fond
-// Fix: Cache les headers des sous-pages
+// TRANSACTIONS PAGE V4 - FIX FINAL
+// Cache le header glassmorphism des sous-pages
 // ==========================================
 
 const TransactionsPage = ({ onNavigate, toast }) => {
   const [activeTab, setActiveTab] = useState('expenses');
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 pb-20">
       {/* Header Premium avec Gradient VERT */}
       <div className="bg-gradient-to-r from-green-600 to-emerald-600 text-white sticky top-0 z-10 shadow-lg">
         <div className="px-4 sm:px-6 py-5 sm:py-6">
@@ -62,8 +61,8 @@ const TransactionsPage = ({ onNavigate, toast }) => {
         </div>
       </div>
 
-      {/* Content - Wrapper pour cacher les headers des sous-pages */}
-      <div className="transactions-content">
+      {/* Content */}
+      <div className="transactions-wrapper px-4 pt-4">
         {activeTab === 'expenses' ? (
           <ExpensesPage onNavigate={onNavigate} toast={toast} />
         ) : (
@@ -71,15 +70,23 @@ const TransactionsPage = ({ onNavigate, toast }) => {
         )}
       </div>
 
-      {/* Styles pour cacher les headers en double */}
+      {/* CSS pour cacher les headers des sous-pages */}
       <style jsx>{`
-        .transactions-content :global(.bg-gradient-to-r.from-green-600),
-        .transactions-content :global(.bg-white.border-b) {
+        /* Cache la card glassmorphism header (ExpensesPage) */
+        .transactions-wrapper :global(.backdrop-blur-xl.bg-white\\/60:first-child) {
           display: none !important;
         }
         
-        .transactions-content :global(> div) {
-          padding-bottom: 5rem;
+        /* Cache aussi les headers verts (IncomesPage) */
+        .transactions-wrapper :global(.bg-gradient-to-r.from-green-600:first-child),
+        .transactions-wrapper :global(.bg-gradient-to-r.from-green-500:first-child) {
+          display: none !important;
+        }
+        
+        /* Supprime le margin du premier élément */
+        .transactions-wrapper :global(> div > *:first-child) {
+          margin-top: 0 !important;
+          margin-bottom: 1rem !important;
         }
       `}</style>
     </div>
