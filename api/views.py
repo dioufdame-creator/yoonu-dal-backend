@@ -816,13 +816,43 @@ def user_goals(request):
         }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
-@api_view(['GET', 'POST'])
+@api_view(['GET', 'POST', 'PUT', 'DELETE'])
 @permission_classes([IsAuthenticated])
 def manage_goals(request):
-    """Gestion complète des objectifs (GET liste + POST création)"""
+    """Gestion complète des objectifs (GET liste + POST création + PUT modification + DELETE suppression)"""
     user = request.user
 
     if request.method == 'GET':
+        # Récupération d'un objectif spécifique ou liste complète
+        goal_id = request.GET.get('goal_id')
+        
+        if goal_id:
+            # Récupérer un objectif spécifique
+            try:
+                goal = Goal.objects.get(id=goal_id, user=user)
+                progress = 0
+                if goal.target_amount > 0:
+                    progress = min(round((goal.current_amount / goal.target_amount) * 100, 1), 100)
+                
+                return Response({
+                    'id': goal.id,
+                    'title': goal.title,
+                    'description': goal.description,
+                    'target_amount': float(goal.target_amount),
+                    'current_amount': float(goal.current_amount),
+                    'progress_percentage': progress,
+                    'deadline': goal.deadline.isoformat() if goal.deadline else None,
+                    'category': goal.category,
+                    'is_achieved': goal.is_achieved,
+                    'created_at': goal.created_at.isoformat(),
+                    'updated_at': goal.updated_at.isoformat()
+                })
+            except Goal.DoesNotExist:
+                return Response({
+                    'error': 'Objectif non trouvé'
+                }, status=status.HTTP_404_NOT_FOUND)
+        
+        # Liste complète
         try:
             goals = Goal.objects.filter(user=user).order_by('-created_at')
             goals_data = []
@@ -859,7 +889,7 @@ def manage_goals(request):
                 'error': f'Erreur objectifs: {str(e)}'
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-    else:  # POST
+    elif request.method == 'POST':
         try:
             data = request.data
 
@@ -894,6 +924,81 @@ def manage_goals(request):
             return Response({
                 'error': f'Erreur création objectif: {str(e)}'
             }, status=status.HTTP_400_BAD_REQUEST)
+
+    elif request.method == 'PUT':
+        # Modification d'un objectif
+        goal_id = request.GET.get('goal_id')
+        
+        if not goal_id:
+            return Response({
+                'error': 'goal_id requis dans les paramètres'
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
+        try:
+            goal = Goal.objects.get(id=goal_id, user=user)
+            data = request.data
+            
+            # Mise à jour des champs
+            if 'title' in data:
+                goal.title = data['title']
+            if 'description' in data:
+                goal.description = data.get('description', '')
+            if 'target_amount' in data:
+                goal.target_amount = Decimal(data['target_amount'])
+            if 'current_amount' in data:
+                goal.current_amount = Decimal(data['current_amount'])
+            if 'deadline' in data:
+                goal.deadline = data.get('deadline')
+            if 'category' in data:
+                goal.category = data['category']
+            if 'is_achieved' in data:
+                goal.is_achieved = data['is_achieved']
+            
+            goal.save()
+            
+            return Response({
+                'id': goal.id,
+                'title': goal.title,
+                'message': 'Objectif modifié avec succès'
+            })
+            
+        except Goal.DoesNotExist:
+            return Response({
+                'error': 'Objectif non trouvé'
+            }, status=status.HTTP_404_NOT_FOUND)
+        except Exception as e:
+            return Response({
+                'error': f'Erreur modification: {str(e)}'
+            }, status=status.HTTP_400_BAD_REQUEST)
+    
+    elif request.method == 'DELETE':
+        # Suppression d'un objectif
+        goal_id = request.GET.get('goal_id')
+        
+        if not goal_id:
+            return Response({
+                'error': 'goal_id requis dans les paramètres'
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
+        try:
+            goal = Goal.objects.get(id=goal_id, user=user)
+            goal_title = goal.title
+            goal.delete()
+            
+            return Response({
+                'message': f'Objectif "{goal_title}" supprimé avec succès'
+            })
+            
+        except Goal.DoesNotExist:
+            return Response({
+                'error': 'Objectif non trouvé'
+            }, status=status.HTTP_404_NOT_FOUND)
+        except Exception as e:
+            return Response({
+                'error': f'Erreur suppression: {str(e)}'
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+
 
 
 # ==========================================
