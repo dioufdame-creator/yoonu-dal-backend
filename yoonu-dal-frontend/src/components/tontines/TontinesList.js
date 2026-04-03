@@ -230,7 +230,7 @@ const TontinesListPremium = ({ onNavigate, toast }) => {
         <div className="mb-6 sm:mb-8 backdrop-blur-xl bg-white/60 rounded-2xl sm:rounded-3xl p-4 sm:p-6 border border-white/20 shadow-2xl">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div className="flex-1">
-              <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold bg-gradient-to-r from-orange-900 via-red-900 to-amber-900 bg-clip-text text-transparent flex items-center gap-2 sm:gap-3">
+              <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold bg-gradient-to-r from-green-900 via-emerald-900 to-green-800 bg-clip-text text-transparent flex items-center gap-2 sm:gap-3">
                 <span className="text-3xl sm:text-4xl lg:text-5xl">🦁</span>
                 <span>Mes Tontines</span>
               </h1>
@@ -243,7 +243,7 @@ const TontinesListPremium = ({ onNavigate, toast }) => {
             <div className="flex gap-2 sm:gap-3">
               <button
                 onClick={() => { setEditingTontine(null); setForm(emptyForm()); setShowCreateModal(true); }}
-                className="flex-1 sm:flex-none group relative bg-gradient-to-r from-orange-600 to-red-600 text-white px-4 sm:px-6 py-3 sm:py-4 rounded-xl sm:rounded-2xl font-semibold text-sm sm:text-base hover:shadow-2xl hover:shadow-orange-500/50 transition-all transform hover:scale-105 flex items-center justify-center gap-2"
+                className="flex-1 sm:flex-none group relative bg-gradient-to-r from-green-600 to-emerald-600 text-white px-4 sm:px-6 py-3 sm:py-4 rounded-xl sm:rounded-2xl font-semibold text-sm sm:text-base hover:shadow-2xl hover:shadow-green-500/50 transition-all transform hover:scale-105 flex items-center justify-center gap-2"
               >
                 <span className="text-xl sm:text-2xl group-hover:rotate-180 transition-transform duration-500">➕</span>
                 <span className="hidden xs:inline">Nouvelle tontine</span>
@@ -267,7 +267,7 @@ const TontinesListPremium = ({ onNavigate, toast }) => {
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-4 mb-6 sm:mb-8">
           <div className="backdrop-blur-xl bg-white/80 rounded-xl sm:rounded-2xl p-3 sm:p-4 shadow-lg border border-white/20">
             <div className="text-xs sm:text-sm text-gray-600 mb-1">Total</div>
-            <div className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-orange-900 to-red-900 bg-clip-text text-transparent">{stats.total}</div>
+            <div className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-green-900 to-emerald-900 bg-clip-text text-transparent">{stats.total}</div>
             <div className="text-xs text-gray-500 mt-0.5">Tontines</div>
           </div>
 
@@ -295,14 +295,14 @@ const TontinesListPremium = ({ onNavigate, toast }) => {
             <div className="text-xs text-gray-600 mt-0.5">Complétées</div>
           </div>
 
-          <div className="col-span-2 backdrop-blur-xl bg-gradient-to-br from-orange-500 via-red-600 to-amber-700 rounded-xl sm:rounded-2xl p-3 sm:p-4 shadow-2xl shadow-orange-500/30 text-white relative overflow-hidden">
+          <div className="col-span-2 backdrop-blur-xl bg-gradient-to-br from-green-500 via-emerald-600 to-green-700 rounded-xl sm:rounded-2xl p-3 sm:p-4 shadow-2xl shadow-green-500/30 text-white relative overflow-hidden">
             <div className="hidden sm:block absolute top-0 right-0 w-24 h-24 bg-white/10 rounded-full blur-2xl animate-pulse"></div>
             <div className="relative z-10">
-              <div className="text-xs sm:text-sm text-orange-100 mb-1 flex items-center gap-1">
+              <div className="text-xs sm:text-sm text-green-100 mb-1 flex items-center gap-1">
                 <span>💰</span> Total engagé
               </div>
               <div className="text-2xl sm:text-3xl lg:text-4xl font-bold mb-1">{formatCurrency(stats.totalAmount)}</div>
-              <div className="text-xs text-orange-100">{formatCurrencyFull(stats.totalAmount)}</div>
+              <div className="text-xs text-green-100">{formatCurrencyFull(stats.totalAmount)}</div>
             </div>
           </div>
         </div>
@@ -337,7 +337,7 @@ const TontinesListPremium = ({ onNavigate, toast }) => {
                   onClick={() => setFilter(f.value)}
                   className={`px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl sm:rounded-2xl text-xs sm:text-sm font-medium whitespace-nowrap transition-all transform hover:scale-105 ${
                     filter === f.value
-                      ? 'bg-gradient-to-r from-orange-600 to-red-600 text-white shadow-lg'
+                      ? 'bg-gradient-to-r from-green-600 to-emerald-600 text-white shadow-lg'
                       : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                   }`}
                 >
@@ -352,7 +352,7 @@ const TontinesListPremium = ({ onNavigate, toast }) => {
         {filteredTontines.length === 0 ? (
           <div className="backdrop-blur-xl bg-white/80 rounded-2xl sm:rounded-3xl shadow-2xl border-2 border-gray-200 p-8 sm:p-12 text-center">
             <div className="text-6xl sm:text-8xl mb-4 animate-bounce">🦁</div>
-            <h2 className="text-xl sm:text-2xl lg:text-3xl font-bold bg-gradient-to-r from-orange-900 to-red-900 bg-clip-text text-transparent mb-3">
+            <h2 className="text-xl sm:text-2xl lg:text-3xl font-bold bg-gradient-to-r from-green-900 to-emerald-900 bg-clip-text text-transparent mb-3">
               {tontines.length === 0 ? 'Aucune tontine' : 'Aucun résultat'}
             </h2>
             <p className="text-sm sm:text-base text-gray-600 mb-6">
@@ -364,7 +364,7 @@ const TontinesListPremium = ({ onNavigate, toast }) => {
               <div className="flex flex-col sm:flex-row gap-3 justify-center">
                 <button
                   onClick={() => { setEditingTontine(null); setForm(emptyForm()); setShowCreateModal(true); }}
-                  className="bg-gradient-to-r from-orange-600 to-red-600 text-white px-6 sm:px-8 py-3 sm:py-4 rounded-xl sm:rounded-2xl font-semibold text-sm sm:text-base hover:shadow-2xl hover:shadow-orange-500/50 transform hover:scale-105 transition-all"
+                  className="bg-gradient-to-r from-green-600 to-emerald-600 text-white px-6 sm:px-8 py-3 sm:py-4 rounded-xl sm:rounded-2xl font-semibold text-sm sm:text-base hover:shadow-2xl hover:shadow-green-500/50 transform hover:scale-105 transition-all"
                 >
                   Créer une tontine
                 </button>
@@ -429,7 +429,7 @@ const TontinesListPremium = ({ onNavigate, toast }) => {
                       <div className="grid grid-cols-2 gap-3">
                         <div className="backdrop-blur-sm bg-white/90 rounded-xl p-3 shadow-sm">
                           <p className="text-xs text-gray-600 mb-1">Montant total</p>
-                          <p className="text-xl sm:text-2xl font-bold bg-gradient-to-r from-orange-900 to-red-900 bg-clip-text text-transparent">
+                          <p className="text-xl sm:text-2xl font-bold bg-gradient-to-r from-green-900 to-emerald-900 bg-clip-text text-transparent">
                             {formatCurrency(tontine.total_amount)}
                           </p>
                           <p className="text-xs text-gray-500">{formatCurrencyFull(tontine.total_amount)}</p>
@@ -547,7 +547,7 @@ const TontinesListPremium = ({ onNavigate, toast }) => {
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-3 sm:p-4 animate-fadeIn overflow-y-auto py-8">
           <div className="bg-white/95 backdrop-blur-xl rounded-2xl sm:rounded-3xl shadow-2xl max-w-2xl w-full p-5 sm:p-8 animate-scaleIn my-auto max-h-[90vh] overflow-y-auto border border-white/20">
             <div className="flex items-center justify-between mb-6">
-              <h2 className="text-xl sm:text-2xl font-bold bg-gradient-to-r from-orange-900 to-red-900 bg-clip-text text-transparent">
+              <h2 className="text-xl sm:text-2xl font-bold bg-gradient-to-r from-green-900 to-emerald-900 bg-clip-text text-transparent">
                 {editingTontine ? '✏️ Modifier la tontine' : '➕ Nouvelle tontine'}
               </h2>
               <button
@@ -666,7 +666,7 @@ const TontinesListPremium = ({ onNavigate, toast }) => {
                 </button>
                 <button
                   type="submit"
-                  className="w-full sm:flex-1 px-4 sm:px-6 py-2.5 sm:py-3 bg-gradient-to-r from-orange-600 to-red-600 text-white rounded-xl sm:rounded-2xl font-semibold text-sm sm:text-base hover:shadow-2xl hover:shadow-orange-500/50 transition-all transform hover:scale-105"
+                  className="w-full sm:flex-1 px-4 sm:px-6 py-2.5 sm:py-3 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-xl sm:rounded-2xl font-semibold text-sm sm:text-base hover:shadow-2xl hover:shadow-green-500/50 transition-all transform hover:scale-105"
                 >
                   {editingTontine ? 'Modifier' : 'Créer'}
                 </button>
