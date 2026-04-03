@@ -19,11 +19,24 @@ const GoalsPage = ({ toast, onNavigate }) => {
   const [sortBy, setSortBy] = useState('recent');
 
   // Modals
+  const [showCreateModal, setShowCreateModal] = useState(false);
   const [showContributeModal, setShowContributeModal] = useState(false);
   const [showHistoryModal, setShowHistoryModal] = useState(false);
   const [showAutoAllocModal, setShowAutoAllocModal] = useState(false);
   const [showBadgesModal, setShowBadgesModal] = useState(false);
   const [selectedGoal, setSelectedGoal] = useState(null);
+  const [editingGoal, setEditingGoal] = useState(null);
+
+  // Formulaire création/édition
+  const emptyForm = () => ({
+    title: '',
+    description: '',
+    target_amount: '',
+    current_amount: '0',
+    deadline: new Date(Date.now() + 30*24*60*60*1000).toISOString().split('T')[0],
+    category: 'urgence'
+  });
+  const [form, setForm] = useState(emptyForm());
 
   // Données modals
   const [contributions, setContributions] = useState([]);
@@ -32,16 +45,23 @@ const GoalsPage = ({ toast, onNavigate }) => {
   const [contributeAmount, setContributeAmount] = useState('');
 
   const CATEGORIES = [
-    { value: 'all', label: 'Tous', icon: '🎯' },
-    { value: 'urgence', label: 'Urgence', icon: '🚨' },
-    { value: 'logement', label: 'Logement', icon: '🏠' },
-    { value: 'transport', label: 'Transport', icon: '🚗' },
-    { value: 'education', label: 'Éducation', icon: '📚' },
-    { value: 'sante', label: 'Santé', icon: '🏥' },
-    { value: 'loisirs', label: 'Loisirs', icon: '🎭' },
-    { value: 'famille', label: 'Famille', icon: '👨‍👩‍👧‍👦' },
-    { value: 'investissement', label: 'Investissement', icon: '💰' },
-    { value: 'autre', label: 'Autre', icon: '📌' }
+    { value: 'all', label: 'Tous', emoji: '🎯' },
+    { value: 'urgence', label: 'Fonds d\'urgence', emoji: '🚨' },
+    { value: 'transport', label: 'Transport', emoji: '🚗' },
+    { value: 'logement', label: 'Logement', emoji: '🏠' },
+    { value: 'loisirs', label: 'Loisirs', emoji: '🎭' },
+    { value: 'éducation', label: 'Éducation', emoji: '📚' },
+    { value: 'santé', label: 'Santé', emoji: '🏥' },
+    { value: 'investissement', label: 'Investissement', emoji: '💰' },
+    { value: 'retraite', label: 'Retraite', emoji: '👴' },
+    { value: 'autre', label: 'Autre', emoji: '📌' }
+  ];
+
+  const SORT_OPTIONS = [
+    { value: 'recent', label: 'Plus récents', emoji: '🕒' },
+    { value: 'progress', label: 'Progression', emoji: '📊' },
+    { value: 'amount', label: 'Montant', emoji: '💰' },
+    { value: 'deadline', label: 'Échéance', emoji: '📅' }
   ];
 
   // Fonction formatage montants
@@ -171,6 +191,30 @@ const GoalsPage = ({ toast, onNavigate }) => {
     }
   };
 
+  const handleCreateGoal = async (e) => {
+    e.preventDefault();
+    
+    try {
+      if (editingGoal) {
+        // Modification
+        await API.put(`/goals/manage/?goal_id=${editingGoal.id}`, form);
+        toast?.showSuccess?.('Objectif modifié !');
+      } else {
+        // Création
+        await API.post('/goals/manage/', form);
+        toast?.showSuccess?.('Objectif créé !');
+      }
+      
+      setShowCreateModal(false);
+      setEditingGoal(null);
+      setForm(emptyForm());
+      await loadGoals();
+    } catch (error) {
+      console.error('Erreur:', error);
+      toast?.showError?.('Erreur : ' + (error.response?.data?.error || error.message));
+    }
+  };
+
   // Filtrage et tri
   const filteredGoals = goals
     .filter(g => filterCategory === 'all' || g.category === filterCategory)
@@ -262,7 +306,7 @@ const GoalsPage = ({ toast, onNavigate }) => {
                   : 'bg-white text-gray-700 border border-gray-200'
               }`}
             >
-              <span>{cat.icon}</span>
+              <span>{cat.emoji}</span>
               <span>{cat.label}</span>
             </button>
           ))}
@@ -548,6 +592,145 @@ const GoalsPage = ({ toast, onNavigate }) => {
                 ))}
               </div>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* Floating Action Button - Créer un objectif */}
+      <button
+        onClick={() => {
+          setEditingGoal(null);
+          setForm(emptyForm());
+          setShowCreateModal(true);
+        }}
+        className="fixed bottom-24 right-6 bg-gradient-to-r from-green-600 to-emerald-600 text-white w-14 h-14 rounded-full shadow-lg flex items-center justify-center text-2xl hover:shadow-xl transition-all z-20 hover:scale-110"
+        title="Créer un nouvel objectif"
+      >
+        +
+      </button>
+
+      {/* MODAL CRÉATION/ÉDITION */}
+      {showCreateModal && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 overflow-y-auto py-8">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full p-6 sm:p-8 my-auto max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-xl sm:text-2xl font-bold text-gray-900">
+                {editingGoal ? '✏️ Modifier l\'objectif' : '🎯 Nouvel objectif'}
+              </h2>
+              <button
+                onClick={() => {
+                  setShowCreateModal(false);
+                  setEditingGoal(null);
+                  setForm(emptyForm());
+                }}
+                className="text-gray-400 hover:text-gray-600 text-2xl"
+              >
+                ✕
+              </button>
+            </div>
+
+            <form onSubmit={handleCreateGoal} className="space-y-4">
+              {/* Titre */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Titre *
+                </label>
+                <input
+                  type="text"
+                  value={form.title}
+                  onChange={(e) => setForm({...form, title: e.target.value})}
+                  placeholder="Ex: Acheter un terrain"
+                  className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                  required
+                />
+              </div>
+
+              {/* Description */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Description
+                </label>
+                <textarea
+                  value={form.description}
+                  onChange={(e) => setForm({...form, description: e.target.value})}
+                  placeholder="Détails de l'objectif..."
+                  rows="3"
+                  className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                />
+              </div>
+
+              {/* Montant et Échéance */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Montant cible (FCFA) *
+                  </label>
+                  <input
+                    type="number"
+                    value={form.target_amount}
+                    onChange={(e) => setForm({...form, target_amount: e.target.value})}
+                    placeholder="Ex: 3000000"
+                    min="0"
+                    step="1000"
+                    className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Échéance *
+                  </label>
+                  <input
+                    type="date"
+                    value={form.deadline}
+                    onChange={(e) => setForm({...form, deadline: e.target.value})}
+                    className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                    required
+                  />
+                </div>
+              </div>
+
+              {/* Catégorie */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Catégorie *
+                </label>
+                <select
+                  value={form.category}
+                  onChange={(e) => setForm({...form, category: e.target.value})}
+                  className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                  required
+                >
+                  {CATEGORIES.filter(c => c.value !== 'all').map(cat => (
+                    <option key={cat.value} value={cat.value}>
+                      {cat.emoji} {cat.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Boutons */}
+              <div className="flex gap-3 pt-4">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowCreateModal(false);
+                    setEditingGoal(null);
+                    setForm(emptyForm());
+                  }}
+                  className="flex-1 px-6 py-3 bg-gray-100 text-gray-700 rounded-xl font-semibold hover:bg-gray-200 transition-all"
+                >
+                  Annuler
+                </button>
+                <button
+                  type="submit"
+                  className="flex-1 px-6 py-3 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-xl font-semibold hover:shadow-lg transition-all"
+                >
+                  {editingGoal ? 'Modifier' : 'Créer'}
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}
