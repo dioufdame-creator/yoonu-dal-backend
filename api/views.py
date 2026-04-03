@@ -2037,7 +2037,7 @@ def ai_chat(request):
         # SCORE YOONU DAL ✅ NOUVEAU
         try:
             score_result = calculate_yoonu_score(user)
-            yoonu_score = score_result.get('score', 0)
+            yoonu_score = score_result.get('total_score', 0)
             score_level = score_result.get('level', 'Débutant')
         except:
             yoonu_score = 0
