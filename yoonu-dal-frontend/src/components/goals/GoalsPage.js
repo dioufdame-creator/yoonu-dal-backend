@@ -199,12 +199,6 @@ const GoalsPage = ({ toast, onNavigate }) => {
   return (
     <div className="min-h-screen bg-gray-50 pb-20">
       {/* Header */}
-      <div className="bg-gradient-to-r from-green-600 to-emerald-600 text-white p-4 sm:p-6 pb-6 sm:pb-8">
-        <h1 className="text-2xl sm:text-3xl font-bold mb-2">Mes Objectifs 🎯</h1>
-        <p className="text-green-50 text-sm">Planifie et atteins tes objectifs financiers</p>
-      </div>
-
-      {/* Stats */}
       <div className="px-4 pt-4 mb-6">
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           <div className="bg-white rounded-lg shadow p-4">
