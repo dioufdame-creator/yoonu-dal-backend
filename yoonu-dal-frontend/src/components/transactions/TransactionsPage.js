@@ -3,9 +3,9 @@ import ExpensesPage from '../control/ExpenseTracker';
 import IncomesPage from '../incomes/IncomesPage';
 
 // ==========================================
-// TRANSACTIONS PAGE V7 - STYLE DASHBOARD
-// Pas de header vert, juste des tabs
-// Design cohérent avec Dashboard et Tontines
+// TRANSACTIONS PAGE V8 - STYLE TONTINES
+// Texte explicatif sur fond blanc
+// Design cohérent et professionnel
 // ==========================================
 
 const TransactionsPage = ({ onNavigate, toast }) => {
@@ -13,9 +13,24 @@ const TransactionsPage = ({ onNavigate, toast }) => {
 
   return (
     <div className="min-h-screen bg-gray-50 pb-20">
-      {/* Tabs directement après la barre Yoonu Dal - Pas de header vert */}
-      <div className="bg-white border-b border-gray-200 sticky top-[60px] z-10">
-        <div className="flex">
+      {/* Header avec texte explicatif - Style Tontines */}
+      <div className="bg-white border-b border-gray-200">
+        <div className="px-4 sm:px-6 py-4 sm:py-5">
+          <div className="flex items-start gap-3">
+            <span className="text-3xl sm:text-4xl">💰</span>
+            <div className="flex-1">
+              <h1 className="text-xl sm:text-2xl font-bold text-gray-900">
+                Transactions
+              </h1>
+              <p className="text-sm sm:text-base text-gray-600 mt-1">
+                Gérez vos dépenses et revenus en toute simplicité
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* Tabs */}
+        <div className="flex border-t border-gray-200">
           <button
             onClick={() => setActiveTab('expenses')}
             className={`flex-1 py-3 sm:py-4 font-semibold text-sm sm:text-base transition-all relative ${
