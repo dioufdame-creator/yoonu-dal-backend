@@ -2033,7 +2033,7 @@ def ai_chat(request):
             'title': goal.title,
             'target_amount': float(goal.target_amount),
             'current_amount': float(goal.current_amount),
-            'progress_percentage': goal.progress_percentage,
+            'progress_percentage': float(goal.progress_percentage) if goal.progress_percentage else 0,
             'category': goal.category,
             'deadline': goal.deadline.isoformat() if goal.deadline else None
         } for goal in goals]
