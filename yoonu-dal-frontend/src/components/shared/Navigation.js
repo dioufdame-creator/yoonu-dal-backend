@@ -16,9 +16,8 @@ const NavigationV2 = ({ currentPage, onNavigate, isAuthenticated, user, onLogout
   };
 
   const getUserDisplayName = () => {
-    if (user?.first_name) return user.first_name;
-    if (user?.username) return user.username;
-    if (user?.email) return user.email.split('@')[0];
+    if (user?.user?.first_name) return user.user.first_name;
+    if (user?.user?.username) return user.user.username;
     return 'Utilisateur';
   };
 
