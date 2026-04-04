@@ -1061,12 +1061,12 @@ def user_values(request):
             }, status=status.HTTP_400_BAD_REQUEST)
 
     elif request.method == 'DELETE':
-    goal_id = request.GET.get('goal_id')
+        goal_id = request.GET.get('goal_id')
     
-    if not goal_id:
-        return Response({
-            'error': 'goal_id requis dans les paramètres'
-        }, status=status.HTTP_400_BAD_REQUEST)
+        if not goal_id:
+            return Response({
+                'error': 'goal_id requis dans les paramètres'
+            }, status=status.HTTP_400_BAD_REQUEST)
     
     try:
         goal = Goal.objects.get(id=goal_id, user=user)
