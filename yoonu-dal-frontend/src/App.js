@@ -41,6 +41,7 @@ import {
 
 import GoalsPage from './components/goals/GoalsPage';
 import DebtsPage from './components/debts/DebtsPage';
+import DebtDetailPage from './components/debts/DebtDetailPage';  // ← NOUVEAU
 
 // Composant principal de l'application
 function App() {
@@ -609,6 +610,16 @@ function App() {
       toast={toastMethods}
       onNavigate={handleNavigate}
       />;
+      case 'debt-detail':
+        if (!isAuthenticated) {
+          handleNavigate('login');
+          return null;
+        }
+        return <DebtDetailPage 
+          debtId={pageParams?.debtId}
+          toast={toastMethods}
+          onNavigate={handleNavigate}
+        />;
       case 'tontines':
         if (!isAuthenticated) {
           handleNavigate('login');
