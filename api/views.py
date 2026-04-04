@@ -18,7 +18,9 @@ from django.shortcuts import get_object_or_404
 from .models import (
     UserProfile, UserValue, IncomeSource, Income, Expense, Budget,
     Goal, Saving, Tontine, TontineParticipant, TontineContribution,
-    TontinePayout, DiagnosticResult, Envelope, FinancialLeak, PredictiveAlert
+    TontinePayout, DiagnosticResult, Envelope, FinancialLeak, PredictiveAlert,
+    Debt, DebtPayment  # ← AJOUTER ICI
+
 )
 from .utils.decorators import require_premium, check_usage_limit
 # APRÈS les autres imports de .models et .utils
@@ -33,6 +35,9 @@ from django.conf import settings
 import anthropic
 import json
 import re
+#Import du serializer (à ajouter en haut de views.py)
+from .serializers import DebtSerializer, DebtPaymentSerializer
+
 
 # ==========================================
 # FONCTIONS UTILITAIRES
@@ -3478,8 +3483,6 @@ from datetime import date, timedelta
 # Import des modèles (déjà dans views.py normalement)
 # from .models import Debt, DebtPayment
 
-# Import du serializer (à ajouter en haut de views.py)
-# from .serializers import DebtSerializer, DebtPaymentSerializer
 
 
 @api_view(['GET', 'POST'])
