@@ -972,7 +972,7 @@ def manage_goals(request):
             }, status=status.HTTP_400_BAD_REQUEST)
     
     elif request.method == 'DELETE':
-        # Suppression d'un objectif
+        # Suppression d'un objectif avec SQL brut
         goal_id = request.GET.get('goal_id')
         
         if not goal_id:
@@ -981,23 +981,41 @@ def manage_goals(request):
             }, status=status.HTTP_400_BAD_REQUEST)
         
         try:
+            # Vérifier que l'objectif existe et appartient à l'user
             goal = Goal.objects.get(id=goal_id, user=user)
             goal_title = goal.title
-            goal.delete()
+            goal_id_num = int(goal_id)
+            user_id_num = user.id
+            
+            # Utiliser SQL brut pour éviter les problèmes
+            from django.db import connection
+            
+            with connection.cursor() as cursor:
+                cursor.execute(
+                    "DELETE FROM api_goal WHERE id = %s AND user_id = %s",
+                    [goal_id_num, user_id_num]
+                )
+                
+                if cursor.rowcount == 0:
+                    return Response({
+                        'error': 'Objectif non trouvé'
+                    }, status=status.HTTP_404_NOT_FOUND)
             
             return Response({
                 'message': f'Objectif "{goal_title}" supprimé avec succès'
-            })
+            }, status=status.HTTP_200_OK)
             
         except Goal.DoesNotExist:
             return Response({
                 'error': 'Objectif non trouvé'
             }, status=status.HTTP_404_NOT_FOUND)
         except Exception as e:
+            import traceback
+            print("ERREUR SUPPRESSION:", traceback.format_exc())
+            
             return Response({
                 'error': f'Erreur suppression: {str(e)}'
-            }, status=status.HTTP_400_BAD_REQUEST)
-
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 
