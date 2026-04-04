@@ -108,4 +108,10 @@ urlpatterns = [
     
     # Meta-enveloppes
     path('meta-envelopes/', views.manage_meta_envelopes, name='manage_meta_envelopes'),
+    # Dettes
+path('debts/', views.manage_debts, name='manage_debts'),
+path('debts/stats/', views.debt_stats, name='debt_stats'),
+path('debts/<int:debt_id>/', views.debt_detail, name='debt_detail'),
+path('debts/<int:debt_id>/payments/', views.debt_payments, name='debt_payments'),
+path('debts/payments/<int:payment_id>/', views.delete_debt_payment, name='delete_debt_payment'),
 ]
