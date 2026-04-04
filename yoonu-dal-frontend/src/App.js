@@ -69,7 +69,7 @@ function App() {
           if (currentUser) {
             setIsAuthenticated(true);
             setUser(currentUser);
-            showInfo(`Content de vous revoir, ${currentUser.username} !`, 3000);
+            //showInfo(`Content de vous revoir, ${currentUser.username} !`, 3000);
           } else {
             authService.clearTokens();
             setIsAuthenticated(false);
@@ -108,20 +108,20 @@ function App() {
     ];
 
     if (protectedPages.includes(page) && !isAuthenticated) {
-      showWarning('Vous devez être connecté pour accéder à cette page');
+      //showWarning('Vous devez être connecté pour accéder à cette page');
       setCurrentPage('login');
       return;
     }
 
     if ((page === 'login' || page === 'register') && isAuthenticated) {
-      showInfo('Vous êtes déjà connecté');
+      //showInfo('Vous êtes déjà connecté');
       setCurrentPage('dashboard');
       return;
     }
 
     // Navigation intelligente selon l'utilisateur
     if (page === 'diagnostic' && isAuthenticated) {
-      showInfo('Lancement de votre diagnostic personnalisé...', 2000);
+      //showInfo('Lancement de votre diagnostic personnalisé...', 2000);
     }
 
     setCurrentPage(page);
@@ -143,11 +143,11 @@ function App() {
           
           if (response.data.onboarding_complete) {
             // ✅ A déjà fait l'onboarding → Dashboard
-            showSuccess(`Bienvenue ${result.user.username} !`);
+            //showSuccess(`Bienvenue ${result.user.username} !`);
             handleNavigate('dashboard');
           } else {
             // ❌ N'a pas fait l'onboarding → Onboarding
-            showInfo('Configurons ton compte...');
+            //showInfo('Configurons ton compte...');
             handleNavigate('onboarding');
           }
         } catch (error) {
@@ -176,7 +176,7 @@ function App() {
         console.log('✅ Inscription réussie:', result.user?.username);
         setIsAuthenticated(true);
         setUser(result.user);
-        showSuccess(`Inscription réussie ! Bienvenue ${result.user?.username || result.user?.first_name}`);
+        //showSuccess(`Inscription réussie ! Bienvenue ${result.user?.username || result.user?.first_name}`);
         
         // ✅ APRÈS INSCRIPTION → ONBOARDING
         handleNavigate('onboarding');
@@ -205,14 +205,14 @@ function App() {
       setIsAuthenticated(false);
       setUser(null);
       setAuthError(null);
-      showSuccess('Déconnexion réussie');
+      //showSuccess('Déconnexion réussie');
       setCurrentPage('home');
     } catch (error) {
       console.error('🚨 Erreur lors de la déconnexion:', error);
       setIsAuthenticated(false);
       setUser(null);
       setAuthError(null);
-      showWarning('Déconnexion effectuée (erreur serveur ignorée)');
+      //showWarning('Déconnexion effectuée (erreur serveur ignorée)');
       setCurrentPage('home');
     }
   };
