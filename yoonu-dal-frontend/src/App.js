@@ -40,6 +40,7 @@ import {
 } from './components/subscription/SubscriptionComponents';
 
 import GoalsPage from './components/goals/GoalsPage';
+import DebtsPage from './components/debts/DebtsPage';
 
 // Composant principal de l'application
 function App() {
@@ -599,7 +600,15 @@ function App() {
           return null;
         }
         return <EnvelopeManager onNavigate={handleNavigate} toast={toastMethods} auth={authMethods} />;
-      
+      case 'debts':
+        if (!isAuthenticated) {
+          handleNavigate('login');
+      return null;
+      }
+      return <DebtsPage 
+      toast={toastMethods}
+      onNavigate={handleNavigate}
+      />;
       case 'tontines':
         if (!isAuthenticated) {
           handleNavigate('login');
