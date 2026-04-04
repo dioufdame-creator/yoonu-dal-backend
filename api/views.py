@@ -3314,8 +3314,8 @@ def manage_meta_envelopes(request):
         defaults = [
             ('essentiels', 50),
             ('plaisirs', 30),
-            ('projets', 15),
-            ('liberation', 5)
+            ('projets', 20),
+            ('liberation', 0)
         ]
         monthly_income = user.profile.monthly_income or 0
         print(f"\n🔍 GET /meta-envelopes/ - User: {user.username}")
@@ -3352,7 +3352,7 @@ def manage_meta_envelopes(request):
             },
             'liberation': {
                 'frontend_name': 'libération',
-                'categories': [],
+                'categories': ['dettes'],  # ✅ Catégorie dettes
                 'color': '#FFD93D'
             }
         }
@@ -3370,23 +3370,11 @@ def manage_meta_envelopes(request):
                 allocated_percentage = 0  # ✅ AJOUTER
                 print(f"   ✅ {allocated_percentage}% = {budget}F")
             
-            if envelope_type == 'liberation':
-                monthly_income_total = Income.objects.filter(
-                    user=user, date__gte=current_month
-                ).aggregate(total=Sum('amount'))['total'] or 0
-                
-                total_expenses = Expense.objects.filter(
-                    user=user, date__gte=current_month
-                ).aggregate(total=Sum('amount'))['total'] or 0
-                
-                spent = max(0, float(monthly_income_total - total_expenses))
-            else:
-                spent = Expense.objects.filter(
-                    user=user,
-                    category__in=config['categories'],
-                    date__gte=current_month
-                ).aggregate(total=Sum('amount'))['total'] or 0
-                spent = float(spent)
+            spent = Expense.objects.filter(
+                user=user,
+                category__in=config['categories'],
+                date__gte=current_month
+            ).aggregate(total=Sum('amount'))['total'] or 0
             
             remaining = max(0, budget - spent)
             percentage = (spent / budget * 100) if budget > 0 else 0
