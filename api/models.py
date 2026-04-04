@@ -335,6 +335,7 @@ class Envelope(models.Model):
         ('education', 'Éducation'),
         ('famille', 'Famille'),
         ('spiritualite', 'Spiritualité'),
+        ('dettes', 'Dettes'),
         ('autre', 'Autre')
     ]
     
