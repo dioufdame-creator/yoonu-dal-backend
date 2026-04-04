@@ -3461,3 +3461,195 @@ def check_onboarding_status(request):
             },
             'error': str(e)
         })
+# ==========================================
+# VIEWS POUR MODULE DETTES
+# À ajouter à la fin de api/views.py
+# ==========================================
+
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.response import Response
+from rest_framework import status
+from django.shortcuts import get_object_or_404
+from django.db.models import Sum, Q
+from decimal import Decimal
+from datetime import date, timedelta
+
+# Import des modèles (déjà dans views.py normalement)
+# from .models import Debt, DebtPayment
+
+# Import du serializer (à ajouter en haut de views.py)
+# from .serializers import DebtSerializer, DebtPaymentSerializer
+
+
+@api_view(['GET', 'POST'])
+@permission_classes([IsAuthenticated])
+def manage_debts(request):
+    """
+    GET: Liste toutes les dettes de l'utilisateur
+    POST: Créer une nouvelle dette
+    """
+    user = request.user
+    
+    if request.method == 'GET':
+        # Filtres optionnels
+        is_active = request.GET.get('is_active')
+        
+        debts = Debt.objects.filter(user=user)
+        
+        if is_active is not None:
+            debts = debts.filter(is_active=is_active.lower() == 'true')
+        
+        serializer = DebtSerializer(debts, many=True)
+        return Response(serializer.data)
+    
+    elif request.method == 'POST':
+        data = request.data.copy()
+        data['user'] = user.id
+        
+        serializer = DebtSerializer(data=data)
+        if serializer.is_valid():
+            serializer.save(user=user)
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+@api_view(['GET', 'PUT', 'DELETE'])
+@permission_classes([IsAuthenticated])
+def debt_detail(request, debt_id):
+    """
+    GET: Détails d'une dette
+    PUT: Modifier une dette
+    DELETE: Supprimer une dette
+    """
+    user = request.user
+    debt = get_object_or_404(Debt, id=debt_id, user=user)
+    
+    if request.method == 'GET':
+        serializer = DebtSerializer(debt)
+        return Response(serializer.data)
+    
+    elif request.method == 'PUT':
+        serializer = DebtSerializer(debt, data=request.data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+    elif request.method == 'DELETE':
+        debt_name = debt.name
+        debt.delete()
+        return Response({
+            'message': f'Dette "{debt_name}" supprimée avec succès'
+        }, status=status.HTTP_200_OK)
+
+
+@api_view(['GET', 'POST'])
+@permission_classes([IsAuthenticated])
+def debt_payments(request, debt_id):
+    """
+    GET: Liste tous les paiements d'une dette
+    POST: Ajouter un paiement à une dette
+    """
+    user = request.user
+    debt = get_object_or_404(Debt, id=debt_id, user=user)
+    
+    if request.method == 'GET':
+        payments = debt.payments.all().order_by('-payment_date')
+        serializer = DebtPaymentSerializer(payments, many=True)
+        return Response(serializer.data)
+    
+    elif request.method == 'POST':
+        data = request.data.copy()
+        data['debt'] = debt.id
+        
+        serializer = DebtPaymentSerializer(data=data)
+        if serializer.is_valid():
+            serializer.save()
+            
+            # Retourner la dette mise à jour
+            debt.refresh_from_db()
+            debt_serializer = DebtSerializer(debt)
+            
+            return Response({
+                'payment': serializer.data,
+                'debt': debt_serializer.data,
+                'message': 'Paiement enregistré avec succès'
+            }, status=status.HTTP_201_CREATED)
+        
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+@api_view(['DELETE'])
+@permission_classes([IsAuthenticated])
+def delete_debt_payment(request, payment_id):
+    """Supprimer un paiement"""
+    user = request.user
+    payment = get_object_or_404(DebtPayment, id=payment_id, debt__user=user)
+    
+    payment.delete()
+    return Response({
+        'message': 'Paiement supprimé avec succès'
+    }, status=status.HTTP_200_OK)
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def debt_stats(request):
+    """Statistiques globales des dettes"""
+    user = request.user
+    
+    # Dettes actives
+    active_debts = Debt.objects.filter(user=user, is_active=True)
+    
+    # Totaux
+    total_debt = active_debts.aggregate(
+        total=Sum('total_amount')
+    )['total'] or Decimal('0')
+    
+    total_paid = active_debts.aggregate(
+        total=Sum('amount_paid')
+    )['total'] or Decimal('0')
+    
+    total_remaining = active_debts.aggregate(
+        total=Sum('remaining_amount')
+    )['total'] or Decimal('0')
+    
+    # Paiement mensuel total
+    monthly_payments = active_debts.aggregate(
+        total=Sum('monthly_payment')
+    )['total'] or Decimal('0')
+    
+    # Progression globale
+    progress = 0
+    if total_debt > 0:
+        progress = float((total_paid / total_debt) * 100)
+    
+    # Nombre de dettes
+    debt_count = active_debts.count()
+    fully_paid_count = Debt.objects.filter(
+        user=user, is_fully_paid=True
+    ).count()
+    
+    # Prochains paiements (estimation)
+    next_payment_date = None
+    if active_debts.exists():
+        # Supposer paiements le 1er du mois
+        today = date.today()
+        if today.day == 1:
+            next_payment_date = today
+        else:
+            next_month = today.replace(day=1) + timedelta(days=32)
+            next_payment_date = next_month.replace(day=1)
+    
+    return Response({
+        'total_debt': float(total_debt),
+        'total_paid': float(total_paid),
+        'total_remaining': float(total_remaining),
+        'monthly_payments': float(monthly_payments),
+        'progress_percentage': round(progress, 1),
+        'active_debt_count': debt_count,
+        'fully_paid_count': fully_paid_count,
+        'next_payment_date': next_payment_date.isoformat() if next_payment_date else None
+    })
+
