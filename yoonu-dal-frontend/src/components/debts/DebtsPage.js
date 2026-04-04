@@ -9,6 +9,10 @@ const DebtsPage = ({ toast, onNavigate }) => {
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [selectedDebt, setSelectedDebt] = useState(null);
   const [filter, setFilter] = useState('active'); // active, all, paid
+  
+  // ✅ NOUVEAU : Recherche et tri
+  const [searchQuery, setSearchQuery] = useState('');
+  const [sortBy, setSortBy] = useState('date_desc'); // date_desc, date_asc, amount_desc, amount_asc, progress_desc, progress_asc
 
   // Formulaire création dette
   const [debtForm, setDebtForm] = useState({
@@ -164,6 +168,39 @@ const DebtsPage = ({ toast, onNavigate }) => {
     return labels[status] || status;
   };
 
+  // ✅ NOUVEAU : Filtrer et trier les dettes
+  const filteredAndSortedDebts = debts
+    .filter(debt => {
+      if (!searchQuery) return true;
+      const query = searchQuery.toLowerCase();
+      return (
+        debt.name.toLowerCase().includes(query) ||
+        debt.creditor?.toLowerCase().includes(query) ||
+        debt.debt_type.toLowerCase().includes(query) ||
+        DEBT_TYPES.find(t => t.value === debt.debt_type)?.label.toLowerCase().includes(query) ||
+        formatCurrency(debt.total_amount).toLowerCase().includes(query) ||
+        formatCurrency(debt.remaining_amount).toLowerCase().includes(query)
+      );
+    })
+    .sort((a, b) => {
+      switch (sortBy) {
+        case 'date_desc':
+          return new Date(b.created_at) - new Date(a.created_at);
+        case 'date_asc':
+          return new Date(a.created_at) - new Date(b.created_at);
+        case 'amount_desc':
+          return b.total_amount - a.total_amount;
+        case 'amount_asc':
+          return a.total_amount - b.total_amount;
+        case 'progress_desc':
+          return b.progress_percentage - a.progress_percentage;
+        case 'progress_asc':
+          return a.progress_percentage - b.progress_percentage;
+        default:
+          return 0;
+      }
+    });
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -258,19 +295,55 @@ const DebtsPage = ({ toast, onNavigate }) => {
           </button>
         </div>
 
+        {/* ✅ NOUVEAU : Recherche et Tri */}
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
+          <div className="flex flex-col md:flex-row gap-3">
+            <div className="flex-1">
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="🔍 Rechercher par nom, créancier, type, montant..."
+                className="w-full px-4 py-2 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+              />
+            </div>
+            <select
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value)}
+              className="px-4 py-2 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+            >
+              <option value="date_desc">📅 Plus récent</option>
+              <option value="date_asc">📅 Plus ancien</option>
+              <option value="amount_desc">💰 Montant décroissant</option>
+              <option value="amount_asc">💰 Montant croissant</option>
+              <option value="progress_desc">📊 Progression décroissante</option>
+              <option value="progress_asc">📊 Progression croissante</option>
+            </select>
+          </div>
+          {searchQuery && (
+            <p className="text-sm text-gray-600 mt-2">
+              {filteredAndSortedDebts.length} résultat{filteredAndSortedDebts.length > 1 ? 's' : ''} trouvé{filteredAndSortedDebts.length > 1 ? 's' : ''}
+            </p>
+          )}
+        </div>
+
         {/* Liste des dettes */}
-        {debts.length === 0 ? (
+        {filteredAndSortedDebts.length === 0 ? (
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-12 text-center">
             <div className="text-6xl mb-4">💳</div>
-            <h3 className="text-xl font-semibold text-gray-900 mb-2">Aucune dette</h3>
+            <h3 className="text-xl font-semibold text-gray-900 mb-2">
+              {searchQuery ? 'Aucune dette trouvée' : 'Aucune dette'}
+            </h3>
             <p className="text-gray-600 mb-6">
-              {filter === 'active' 
+              {searchQuery 
+                ? 'Essayez avec d\'autres mots-clés'
+                : filter === 'active' 
                 ? 'Tu n\'as aucune dette active. Bravo !'
                 : filter === 'paid'
                 ? 'Aucune dette payée pour le moment'
                 : 'Commence par ajouter une dette'}
             </p>
-            {filter === 'active' && (
+            {!searchQuery && filter === 'active' && (
               <button
                 onClick={() => setShowCreateModal(true)}
                 className="px-6 py-3 bg-green-600 text-white rounded-lg font-semibold hover:bg-green-700 transition-all"
@@ -281,7 +354,7 @@ const DebtsPage = ({ toast, onNavigate }) => {
           </div>
         ) : (
           <div className="space-y-4">
-            {debts.map(debt => {
+            {filteredAndSortedDebts.map(debt => {
               const debtType = DEBT_TYPES.find(t => t.value === debt.debt_type);
               
               return (
