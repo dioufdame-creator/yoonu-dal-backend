@@ -29,6 +29,7 @@ const NavigationV2 = ({ currentPage, onNavigate, isAuthenticated, user, onLogout
     { icon: '🏠', label: 'Accueil', page: 'dashboard' },
     { icon: '📁', label: 'Budgets', page: 'envelopes' },
     { icon: '💰', label: 'Transactions', page: 'transactions' },  // ← CHANGÉ
+    { icon: '💳', label: 'Dettes', page: 'debts' },  // ← NOUVEAU
     { icon: '🦁', label: 'Tontines', page: 'tontines' },
     { icon: '🎯', label: 'Objectifs', page: 'goals' },
     
