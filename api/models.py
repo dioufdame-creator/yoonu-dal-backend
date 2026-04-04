@@ -179,6 +179,7 @@ class Expense(models.Model):
         ('vêtements', 'Vêtements'),
         ('famille', 'Famille'),
         ('spiritualité', 'Spiritualité'),
+        ('dettes', 'Dettes & Remboursements'),  # ✅ NOUVEAU
         ('autre', 'Autre'),
     ]
 
