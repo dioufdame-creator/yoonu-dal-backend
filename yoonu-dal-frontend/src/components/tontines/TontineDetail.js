@@ -55,6 +55,22 @@ const TontineDetailPremium = ({ tontineId, onNavigate, toast }) => {
     }
   };
 
+  const handleDelete = async () => {
+    if (!window.confirm(`Êtes-vous sûr de vouloir supprimer la tontine "${tontine?.name}" ?\n\nCette action est irréversible !`)) {
+      return;
+    }
+    
+    try {
+      await API.delete(`/tontines/${tontineId}/`);
+      toast?.showSuccess?.('Tontine supprimée avec succès !');
+      onNavigate?.('tontines');
+    } catch (error) {
+      console.error('Erreur suppression:', error);
+      const errorMsg = error.response?.data?.error || error.message;
+      toast?.showError?.(`Erreur : ${errorMsg}`);
+    }
+  };
+
   const formatCurrency = (value) => {
     const num = Math.abs(value || 0);
     if (num >= 1000000) return `${(num / 1000000).toFixed(1)}M`;
@@ -95,10 +111,10 @@ const TontineDetailPremium = ({ tontineId, onNavigate, toast }) => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-50 via-orange-50 to-red-50 flex items-center justify-center p-4">
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 via-green-50/20 to-emerald-50/20 flex items-center justify-center p-4">
         <div className="text-center">
           <div className="relative">
-            <div className="w-16 h-16 sm:w-20 sm:h-20 border-4 border-orange-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+            <div className="w-16 h-16 sm:w-20 sm:h-20 border-4 border-green-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
             <div className="absolute inset-0 w-16 h-16 sm:w-20 sm:h-20 border-4 border-red-500 border-b-transparent rounded-full animate-spin mx-auto" style={{ animationDirection: 'reverse', animationDuration: '1s' }}></div>
           </div>
           <p className="text-sm sm:text-base text-gray-600 font-medium">Chargement des détails...</p>
@@ -109,14 +125,14 @@ const TontineDetailPremium = ({ tontineId, onNavigate, toast }) => {
 
   if (!tontine) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-50 via-orange-50 to-red-50 flex items-center justify-center p-4">
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 via-green-50/20 to-emerald-50/20 flex items-center justify-center p-4">
         <div className="backdrop-blur-xl bg-white/80 rounded-2xl sm:rounded-3xl shadow-2xl border-2 border-gray-200 p-8 sm:p-12 text-center max-w-md w-full">
           <div className="text-6xl sm:text-8xl mb-4">❌</div>
           <h3 className="text-xl sm:text-2xl font-bold text-gray-900 mb-3">Tontine introuvable</h3>
           <p className="text-sm sm:text-base text-gray-600 mb-6">Cette tontine n'existe pas ou vous n'y avez pas accès</p>
           <button
             onClick={() => onNavigate?.('tontines')}
-            className="bg-gradient-to-r from-orange-600 to-red-600 text-white px-6 sm:px-8 py-3 sm:py-4 rounded-xl sm:rounded-2xl font-semibold text-sm sm:text-base hover:shadow-2xl hover:shadow-orange-500/50 transition-all transform hover:scale-105"
+            className="bg-gradient-to-r from-green-600 to-emerald-600 text-white px-6 sm:px-8 py-3 sm:py-4 rounded-xl sm:rounded-2xl font-semibold text-sm sm:text-base hover:shadow-2xl hover:shadow-green-500/50 transition-all transform hover:scale-105"
           >
             ← Retour aux tontines
           </button>
@@ -131,7 +147,7 @@ const TontineDetailPremium = ({ tontineId, onNavigate, toast }) => {
     : 0;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-orange-50 to-red-50 pb-20">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-green-50/20 to-emerald-50/20 pb-20">
       <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-8 py-4 sm:py-6 lg:py-10">
         
         {/* Back Button */}
@@ -144,7 +160,7 @@ const TontineDetailPremium = ({ tontineId, onNavigate, toast }) => {
         </button>
 
         {/* Header PREMIUM */}
-        <div className="mb-6 sm:mb-8 relative overflow-hidden bg-gradient-to-br from-orange-500 via-red-600 to-amber-700 rounded-2xl sm:rounded-3xl p-6 sm:p-8 lg:p-10 text-white shadow-2xl shadow-orange-500/30">
+        <div className="mb-6 sm:mb-8 relative overflow-hidden bg-gradient-to-br from-green-600 to-emerald-600 rounded-2xl sm:rounded-3xl p-6 sm:p-8 lg:p-10 text-white shadow-2xl shadow-green-500/30">
           {/* Effets de lumière */}
           <div className="hidden sm:block absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full blur-3xl animate-pulse"></div>
           <div className="hidden sm:block absolute bottom-0 left-0 w-64 h-64 bg-yellow-500/10 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }}></div>
@@ -156,19 +172,19 @@ const TontineDetailPremium = ({ tontineId, onNavigate, toast }) => {
                   <span className="text-4xl sm:text-5xl">🦁</span>
                   <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold">{tontine.name}</h1>
                 </div>
-                <p className="text-sm sm:text-base text-orange-100 mb-2">{tontine.description || 'Pas de description'}</p>
+                <p className="text-sm sm:text-base text-green-50 mb-2">{tontine.description || 'Pas de description'}</p>
                 <div className="flex items-center gap-3">
                   <span className={`px-3 py-1 rounded-full text-xs font-bold bg-gradient-to-r ${statusConfig.color} text-white shadow-lg`}>
                     {statusConfig.icon} {statusConfig.label}
                   </span>
-                  <span className="text-xs sm:text-sm text-orange-100">Code: {tontine.invitation_code}</span>
+                  <span className="text-xs sm:text-sm text-green-50">Code: {tontine.invitation_code}</span>
                 </div>
               </div>
 
               <div className="backdrop-blur-sm bg-white/20 rounded-2xl p-4 sm:p-6 border border-white/30 text-center">
-                <p className="text-xs sm:text-sm text-orange-100 mb-1">Contribution mensuelle</p>
+                <p className="text-xs sm:text-sm text-green-50 mb-1">Contribution mensuelle</p>
                 <p className="text-3xl sm:text-4xl font-bold">{formatCurrency(tontine.monthly_contribution)}</p>
-                <p className="text-xs text-orange-100 mt-1">{formatCurrencyFull(tontine.monthly_contribution)}</p>
+                <p className="text-xs text-green-50 mt-1">{formatCurrencyFull(tontine.monthly_contribution)}</p>
               </div>
             </div>
 
@@ -188,7 +204,7 @@ const TontineDetailPremium = ({ tontineId, onNavigate, toast }) => {
                 </div>
               </div>
               
-              <p className="text-xs sm:text-sm text-orange-100 mt-2">
+              <p className="text-xs sm:text-sm text-green-50 mt-2">
                 {tontine.available_spots > 0 
                   ? `${tontine.available_spots} place(s) disponible(s)`
                   : 'Tontine complète'}
@@ -201,7 +217,7 @@ const TontineDetailPremium = ({ tontineId, onNavigate, toast }) => {
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-6 sm:mb-8">
           <div className="backdrop-blur-xl bg-white/80 rounded-xl sm:rounded-2xl p-4 sm:p-6 shadow-lg border border-white/20">
             <p className="text-xs sm:text-sm text-gray-600 mb-2">💰 Montant total</p>
-            <p className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-orange-900 to-red-900 bg-clip-text text-transparent">
+            <p className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-green-900 to-emerald-900 bg-clip-text text-transparent">
               {formatCurrency(tontine.total_amount)}
             </p>
             <p className="text-xs text-gray-500 mt-1">{formatCurrencyFull(tontine.total_amount)}</p>
@@ -228,9 +244,28 @@ const TontineDetailPremium = ({ tontineId, onNavigate, toast }) => {
           </div>
         </div>
 
+        {/* Bouton Supprimer - visible seulement pour le créateur en phase planning */}
+        {tontine.creator && tontine.status === 'planning' && (
+          <div className="mb-6">
+            <button
+              onClick={handleDelete}
+              className="w-full flex items-center justify-center gap-3 px-6 py-4 bg-gradient-to-r from-red-50 to-orange-50 text-red-700 rounded-xl font-semibold border-2 border-red-200 hover:from-red-100 hover:to-orange-100 hover:border-red-300 transition-all shadow-sm hover:shadow-md"
+            >
+              <span className="text-2xl">🗑️</span>
+              <span>Supprimer cette tontine</span>
+            </button>
+            <div className="mt-3 bg-amber-50 border-2 border-amber-200 rounded-xl px-4 py-3 flex items-start gap-3">
+              <span className="text-2xl flex-shrink-0">⚠️</span>
+              <p className="text-sm text-amber-800">
+                <strong>Attention :</strong> La suppression est irréversible et possible uniquement si la tontine est en phase de planification et sans contributions.
+              </p>
+            </div>
+          </div>
+        )}
+
         {/* Participants List */}
         <div className="backdrop-blur-xl bg-white/80 rounded-2xl sm:rounded-3xl shadow-xl border border-white/20 overflow-hidden mb-6 sm:mb-8">
-          <div className="bg-gradient-to-r from-orange-600 to-red-600 p-4 sm:p-6">
+          <div className="bg-gradient-to-r from-green-600 to-emerald-600 p-4 sm:p-6">
             <h2 className="text-xl sm:text-2xl font-bold text-white flex items-center gap-2">
               <span>👥</span>
               <span>Participants ({tontine.participants?.length || 0})</span>
@@ -252,7 +287,7 @@ const TontineDetailPremium = ({ tontineId, onNavigate, toast }) => {
                   >
                     <div className="flex items-center justify-between gap-3">
                       <div className="flex items-center gap-3 sm:gap-4 flex-1 min-w-0">
-                        <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-gradient-to-br from-orange-500 to-red-500 flex items-center justify-center text-white font-bold text-lg sm:text-xl flex-shrink-0">
+                        <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-gradient-to-br from-green-500 to-emerald-500 flex items-center justify-center text-white font-bold text-lg sm:text-xl flex-shrink-0">
                           {index + 1}
                         </div>
                         
