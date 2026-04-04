@@ -671,7 +671,7 @@ const DashboardV6 = ({ toast, auth, onNavigate, user }) => {
         {/* Greeting */}
         <div className="mb-6">
           <h1 className="text-2xl lg:text-3xl font-bold text-gray-900">
-            👋 Dalal jamm {user?.user?.first_name || user?.user?.username || 'utilisateur'}
+            🤝🏿 Dalal jamm {user?.user?.first_name || user?.user?.username || 'utilisateur'}
           </h1>
           <p className="text-sm text-gray-500">
             {new Date().toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' })}
