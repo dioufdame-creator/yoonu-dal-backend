@@ -3370,14 +3370,17 @@ def manage_meta_envelopes(request):
                 allocated_percentage = 0  # ✅ AJOUTER
                 print(f"   ✅ {allocated_percentage}% = {budget}F")
             
-            spent = Expense.objects.filter(
+            spent_value = Expense.objects.filter(
                 user=user,
                 category__in=config['categories'],
                 date__gte=current_month
-            ).aggregate(total=Sum('amount'))['total'] or 0
-            
+            ).aggregate(total=Sum('amount'))['total']
+
+            # Convertir en float proprement
+            spent = float(spent_value) if spent_value is not None else 0.0
+
             remaining = max(0, budget - spent)
-            percentage = (spent / budget * 100) if budget > 0 else 0
+            percentage = (spent / budget * 100) if budget > 0 else 0            
             
             result.append({
                 'envelope_type': config['frontend_name'],  # ✅ AJOUTER
