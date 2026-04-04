@@ -801,7 +801,7 @@ class Tontine(models.Model):
         TontineContribution = apps.get_model('api', 'TontineContribution')
         
         total = TontineContribution.objects.filter(
-            tontine=self
+            participant__tontine=self  # ✅
         ).aggregate(total=Sum('amount'))['total']
         return total or 0
 
