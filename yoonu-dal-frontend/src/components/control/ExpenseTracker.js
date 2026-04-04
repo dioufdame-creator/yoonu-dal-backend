@@ -20,6 +20,7 @@ const CATEGORY_TO_ENVELOPE = {
   'spiritualité': 'projets',
   'loisirs': 'plaisirs',
   'vêtements': 'plaisirs',
+  'dettes': 'liberation',
   'autre': 'plaisirs'
 };
 
@@ -33,6 +34,7 @@ const CATEGORIES = [
   { value: 'spiritualité', label: 'Spiritualité', icon: '🕌', color: 'from-teal-500 to-emerald-500', bgColor: 'bg-teal-50', borderColor: 'border-teal-200', textColor: 'text-teal-700' },
   { value: 'loisirs', label: 'Loisirs', icon: '🎬', color: 'from-yellow-500 to-amber-500', bgColor: 'bg-yellow-50', borderColor: 'border-yellow-200', textColor: 'text-yellow-700' },
   { value: 'vêtements', label: 'Vêtements', icon: '👔', color: 'from-cyan-500 to-blue-500', bgColor: 'bg-cyan-50', borderColor: 'border-cyan-200', textColor: 'text-cyan-700' },
+  { value: 'dettes', label: 'Dettes & Remboursements', emoji: '💳' },  // ✅ NOUVEAU
   { value: 'autre', label: 'Autre', icon: '📝', color: 'from-gray-500 to-slate-500', bgColor: 'bg-gray-50', borderColor: 'border-gray-200', textColor: 'text-gray-700' }
 ];
 
