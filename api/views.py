@@ -1476,20 +1476,20 @@ def tontine_detail(request, tontine_id):
     """Gestion détaillée d'une tontine"""
     try:
         # Récupérer la tontine (sans filtre créateur)
-tontine = get_object_or_404(Tontine, id=tontine_id)
+        tontine = get_object_or_404(Tontine, id=tontine_id)
 
-# Vérifier l'accès : créateur OU participant
-is_creator = tontine.creator == request.user
-is_participant = TontineParticipant.objects.filter(
-    tontine=tontine,
-    user=request.user
-).exists()
+        # Vérifier l'accès : créateur OU participant
+        is_creator = tontine.creator == request.user
+        is_participant = TontineParticipant.objects.filter(
+            tontine=tontine,
+            user=request.user
+        ).exists()
 
-if not (is_creator or is_participant):
-    return Response(
-        {'error': 'Vous n\'avez pas accès à cette tontine'},
-        status=status.HTTP_403_FORBIDDEN
-    )
+        if not (is_creator or is_participant):
+            return Response(
+                {'error': 'Vous n\'avez pas accès à cette tontine'},
+                status=status.HTTP_403_FORBIDDEN
+            )
 
         if request.method == 'GET':
             participants = TontineParticipant.objects.filter(tontine=tontine).order_by('position')
