@@ -669,23 +669,33 @@ class DebtPayment(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     
     def save(self, *args, **kwargs):
+        is_new = self.pk is None  # ← NOUVELLE LIGNE
         super().save(*args, **kwargs)
-    
+        
+        # ✅ CRÉER AUTOMATIQUEMENT UNE DÉPENSE  ← NOUVEAU BLOC
+        if is_new:
+            Expense.objects.create(
+                user=self.debt.user,
+                category='dettes',
+                description=f"Paiement dette: {self.debt.name}",
+                amount=self.amount,
+                date=self.payment_date
+            )
+        
         # Recalculer le montant payé
         from django.db.models import Sum
         total_paid = self.debt.payments.aggregate(
             total=Sum('amount')
         )['total'] or Decimal('0')
-    
+        
         self.debt.amount_paid = total_paid
-    
+        
         if self.debt.amount_paid >= self.debt.total_amount:
             self.debt.is_fully_paid = True
             self.debt.is_active = False
             self.debt.actual_end_date = self.payment_date
-    
-        self.debt.save()
-    
+        
+        self.debt.save()    
     def __str__(self):
         return f"{self.debt.name} - {self.amount} FCFA le {self.payment_date}"
     
