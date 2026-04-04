@@ -23,13 +23,21 @@ const TontinesListPremium = ({ onNavigate, toast }) => {
   const emptyForm = () => ({
     name: '',
     description: '',
-    total_amount: '',
+    // total_amount sera calculé automatiquement
     monthly_contribution: '',
     max_participants: '',
     duration_months: '',
     start_date: new Date().toISOString().split('T')[0]
   });
   const [form, setForm] = useState(emptyForm());
+
+  // Calcul automatique du total
+  const calculatedTotal = React.useMemo(() => {
+    const contribution = parseFloat(form.monthly_contribution) || 0;
+    const participants = parseInt(form.max_participants) || 0;
+    const duration = parseInt(form.duration_months) || 0;
+    return contribution * participants * duration;
+  }, [form.monthly_contribution, form.max_participants, form.duration_months]);
 
   useEffect(() => {
     loadTontines();
@@ -114,8 +122,33 @@ const TontinesListPremium = ({ onNavigate, toast }) => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     
-    if (!form.name || !form.total_amount || !form.monthly_contribution || !form.max_participants || !form.duration_months) {
+    // Validation des champs obligatoires
+    if (!form.name || !form.monthly_contribution || !form.max_participants || !form.duration_months) {
       toast?.showError('Remplis tous les champs obligatoires');
+      return;
+    }
+
+    // Validation du total calculé
+    if (calculatedTotal <= 0) {
+      toast?.showError('Le montant total doit être supérieur à 0. Vérifie les valeurs saisies.');
+      return;
+    }
+
+    // Validation participants
+    if (parseInt(form.max_participants) < 2) {
+      toast?.showError('Minimum 2 participants requis');
+      return;
+    }
+
+    // Validation durée
+    if (parseInt(form.duration_months) < 1) {
+      toast?.showError('Durée minimum : 1 mois');
+      return;
+    }
+
+    // Validation contribution
+    if (parseFloat(form.monthly_contribution) <= 0) {
+      toast?.showError('La contribution mensuelle doit être supérieure à 0');
       return;
     }
 
@@ -123,7 +156,7 @@ const TontinesListPremium = ({ onNavigate, toast }) => {
       const payload = {
         name: form.name,
         description: form.description,
-        total_amount: parseFloat(form.total_amount),
+        total_amount: calculatedTotal, // ✅ Calculé automatiquement
         monthly_contribution: parseFloat(form.monthly_contribution),
         max_participants: parseInt(form.max_participants),
         duration_months: parseInt(form.duration_months),
@@ -173,7 +206,7 @@ const TontinesListPremium = ({ onNavigate, toast }) => {
     setForm({
       name: tontine.name,
       description: tontine.description || '',
-      total_amount: tontine.total_amount,
+      // total_amount est calculé automatiquement
       monthly_contribution: tontine.monthly_contribution,
       max_participants: tontine.max_participants,
       duration_months: tontine.duration_months || 12,
@@ -583,16 +616,27 @@ const TontinesListPremium = ({ onNavigate, toast }) => {
                   />
                 </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Montant total *</label>
-                  <input
-                    type="number"
-                    value={form.total_amount}
-                    onChange={(e) => setForm({...form, total_amount: e.target.value})}
-                    placeholder="500000"
-                    className="w-full px-4 py-2.5 sm:py-3 text-sm sm:text-base border-2 border-gray-300 rounded-xl sm:rounded-2xl focus:ring-2 focus:ring-orange-500 focus:border-transparent"
-                    required
-                  />
+                {/* Montant total calculé automatiquement */}
+                <div className="sm:col-span-2 bg-gradient-to-r from-green-50 to-emerald-50 border-2 border-green-200 rounded-xl p-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-gray-700 mb-1">💰 Montant total (calculé automatiquement)</p>
+                      <p className="text-xs text-gray-600">Contribution × Participants × Durée</p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-green-900 to-emerald-900 bg-clip-text text-transparent">
+                        {calculatedTotal > 0 ? new Intl.NumberFormat('fr-FR').format(calculatedTotal) : '0'}
+                      </p>
+                      <p className="text-xs text-gray-600">FCFA</p>
+                    </div>
+                  </div>
+                  {calculatedTotal > 0 && (
+                    <div className="mt-2 pt-2 border-t border-green-200">
+                      <p className="text-xs text-green-700">
+                        {new Intl.NumberFormat('fr-FR').format(form.monthly_contribution || 0)} FCFA × {form.max_participants || 0} personnes × {form.duration_months || 0} mois
+                      </p>
+                    </div>
+                  )}
                 </div>
 
                 <div>
