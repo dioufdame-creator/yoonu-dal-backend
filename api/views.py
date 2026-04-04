@@ -3614,9 +3614,11 @@ def debt_stats(request):
         total=Sum('amount_paid')
     )['total'] or Decimal('0')
     
-    total_remaining = active_debts.aggregate(
-        total=Sum('remaining_amount')
-    )['total'] or Decimal('0')
+    # Calculer avec F expression
+    from django.db.models import F
+    total_remaining = active_debts.annotate(
+        remaining=F('total_amount') - F('amount_paid')
+    ).aggregate(total=Sum('remaining'))['total'] or Decimal('0')
     
     # Paiement mensuel total
     monthly_payments = active_debts.aggregate(
