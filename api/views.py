@@ -3314,8 +3314,8 @@ def manage_meta_envelopes(request):
         defaults = [
             ('essentiels', 50),
             ('plaisirs', 30),
-            ('projets', 20),
-            ('liberation', 0)
+            ('projets', 15),
+            ('liberation', 5)
         ]
         monthly_income = user.profile.monthly_income or 0
         print(f"\n🔍 GET /meta-envelopes/ - User: {user.username}")
