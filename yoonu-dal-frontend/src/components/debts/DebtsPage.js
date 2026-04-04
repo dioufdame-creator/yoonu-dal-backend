@@ -344,6 +344,12 @@ const DebtsPage = ({ toast, onNavigate }) => {
 
                   {/* Actions */}
                   <div className="flex gap-2">
+                    <button
+                      onClick={() => onNavigate('debt-detail', { debtId: debt.id })}
+                      className="flex-1 px-4 py-2 bg-blue-50 text-blue-700 rounded-lg font-semibold border-2 border-blue-200 hover:bg-blue-100 transition-all"
+                    >
+                      📊 Voir détails
+                    </button>
                     {debt.is_active && !debt.is_fully_paid && (
                       <button
                         onClick={() => {
@@ -352,7 +358,7 @@ const DebtsPage = ({ toast, onNavigate }) => {
                         }}
                         className="flex-1 px-4 py-2 bg-green-50 text-green-700 rounded-lg font-semibold border-2 border-green-200 hover:bg-green-100 transition-all"
                       >
-                        💰 Ajouter paiement
+                        💰 Paiement
                       </button>
                     )}
                     <button
