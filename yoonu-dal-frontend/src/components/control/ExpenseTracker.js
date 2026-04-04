@@ -39,10 +39,10 @@ const CATEGORIES = [
 ];
 
 const ENVELOPE_CONFIG = [
-  { type: 'essentiels', name: 'Essentiels', icon: '🏠', color: 'from-red-500 to-pink-500', bgColor: 'bg-red-50', textColor: 'text-red-700', glowColor: 'shadow-red-500/20' },
-  { type: 'plaisirs', name: 'Plaisirs', icon: '🎉', color: 'from-blue-500 to-indigo-500', bgColor: 'bg-blue-50', textColor: 'text-blue-700', glowColor: 'shadow-blue-500/20' },
-  { type: 'projets', name: 'Projets', icon: '💎', color: 'from-green-500 to-emerald-500', bgColor: 'bg-green-50', textColor: 'text-green-700', glowColor: 'shadow-green-500/20' },
-  { type: 'liberation', name: 'Libération', icon: '🔓', color: 'from-orange-500 to-amber-500', bgColor: 'bg-orange-50', textColor: 'text-orange-700', glowColor: 'shadow-orange-500/20' }
+  { type: 'essentiel', name: 'Essentiels', icon: '🏠', color: 'from-red-500 to-pink-500', bgColor: 'bg-red-50', textColor: 'text-red-700', glowColor: 'shadow-red-500/20' },
+  { type: 'plaisir', name: 'Plaisirs', icon: '🎉', color: 'from-blue-500 to-indigo-500', bgColor: 'bg-blue-50', textColor: 'text-blue-700', glowColor: 'shadow-blue-500/20' },
+  { type: 'projet', name: 'Projets', icon: '💎', color: 'from-green-500 to-emerald-500', bgColor: 'bg-green-50', textColor: 'text-green-700', glowColor: 'shadow-green-500/20' },
+  { type: 'libération', name: 'Libération', icon: '🔓', color: 'from-orange-500 to-amber-500', bgColor: 'bg-orange-50', textColor: 'text-orange-700', glowColor: 'shadow-orange-500/20' }
 ];
 
 const ExpenseTrackerPremium = ({ toast, onNavigate, auth, user }) => {
