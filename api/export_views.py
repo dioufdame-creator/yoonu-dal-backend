@@ -109,6 +109,16 @@ def format_amount(amount):
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 @require_premium
+# Mapping catégories → valeurs (identique à calculate_yoonu_score.py)
+CATEGORY_TO_VALUE = {
+    'famille': ['famille', 'alimentation', 'logement'],
+    'spiritualite': ['spiritualité'],
+    'education': ['éducation'],
+    'sante': ['santé'],
+    'travail': ['transport'],
+    'loisirs': ['loisirs', 'vêtements'],
+    'communaute': ['famille'],
+}
 def export_excel(request):
     """Export données financières vers Excel (Premium) - PÉRIODE FLEXIBLE"""
     try:
@@ -186,7 +196,7 @@ def export_excel(request):
  
         for idx, income in enumerate(incomes, 4):
             ws2.cell(row=idx, column=1, value=income.date.strftime('%d/%m/%Y'))
-            ws2.cell(row=idx, column=2, value=income.source_name or '-')
+            ws2.cell(row=idx, column=2, value=income.source or '-')
             ws2.cell(row=idx, column=3, value=income.description or '-')
             ws2.cell(row=idx, column=4, value=format_amount(income.amount)).number_format = '#,##0'
  
@@ -259,7 +269,9 @@ def export_excel(request):
  
             for idx, value in enumerate(user_values, 4):
                 # Calculer dépenses liées
-                value_expenses = expenses.filter(category__in=value.categories.split(',') if value.categories else [])
+                # Utiliser le mapping hardcodé
+                related_categories = CATEGORY_TO_VALUE.get(value.value, [])
+                value_expenses = expenses.filter(category__in=related_categories)
                 value_amount = sum(exp.amount for exp in value_expenses)
                 value_percent = (value_amount / total_expenses_raw * 100) if total_expenses_raw > 0 else 0
                 target_percent = 30 - (value.priority - 1) * 5
@@ -508,7 +520,9 @@ def export_pdf(request):
             
             for value in user_values:
                 # Calculer dépenses liées
-                value_expenses = expenses.filter(category__in=value.categories.split(',') if value.categories else [])
+                # Utiliser le mapping hardcodé
+                related_categories = CATEGORY_TO_VALUE.get(value.value, [])
+                value_expenses = expenses.filter(category__in=related_categories)
                 value_amount = sum(exp.amount for exp in value_expenses)
                 value_percent = (value_amount / total_expenses_raw * 100) if total_expenses_raw > 0 else 0
                 
