@@ -104,12 +104,6 @@ def format_amount(amount):
     if isinstance(amount, Decimal):
         return int(round(amount))
     return int(round(float(amount)))
-
-
-@api_view(['GET'])
-@permission_classes([IsAuthenticated])
-@require_premium
-# Mapping catégories → valeurs (identique à calculate_yoonu_score.py)
 CATEGORY_TO_VALUE = {
     'famille': ['famille', 'alimentation', 'logement'],
     'spiritualite': ['spiritualité'],
@@ -119,6 +113,12 @@ CATEGORY_TO_VALUE = {
     'loisirs': ['loisirs', 'vêtements'],
     'communaute': ['famille'],
 }
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+@require_premium
+# Mapping catégories → valeurs (identique à calculate_yoonu_score.py)
+
 def export_excel(request):
     """Export données financières vers Excel (Premium) - PÉRIODE FLEXIBLE"""
     try:
