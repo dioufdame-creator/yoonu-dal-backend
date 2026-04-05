@@ -138,7 +138,7 @@ def export_excel(request):
         expenses = get_period_expenses(user, start_date, now)
         incomes = get_period_incomes(user, start_date, now)
         envelopes = Envelope.objects.filter(user=user)
-        goals = Goal.objects.filter(user=user, is_completed=False)
+        goals = Goal.objects.filter(user=user, is_achieved=False)
         debts = Debt.objects.filter(user=user, is_active=True)
         tontines = TontineParticipant.objects.filter(user=user, tontine__is_active=True).select_related('tontine')
         user_values = UserValue.objects.filter(user=user).order_by('priority')[:3]
@@ -304,12 +304,12 @@ def export_excel(request):
                 remaining = target - current
                 progress = (float(goal.current_amount) / float(goal.target_amount) * 100) if goal.target_amount > 0 else 0
  
-                ws6.cell(row=idx, column=1, value=goal.name)
+                ws6.cell(row=idx, column=1, value=goal.title)
                 ws6.cell(row=idx, column=2, value=target).number_format = '#,##0'
                 ws6.cell(row=idx, column=3, value=current).number_format = '#,##0'
                 ws6.cell(row=idx, column=4, value=remaining).number_format = '#,##0'
                 ws6.cell(row=idx, column=5, value=f"{progress:.0f}%")
-                ws6.cell(row=idx, column=6, value=goal.target_date.strftime('%d/%m/%Y') if goal.target_date else '-')
+                ws6.cell(row=idx, column=6, value=goal.deadline.strftime('%d/%m/%Y') if goal.deadline else '-')
         else:
             ws6['A5'] = "Aucun objectif défini"
  
@@ -417,7 +417,7 @@ def export_pdf(request):
         expenses = get_period_expenses(user, start_date, now)
         incomes = get_period_incomes(user, start_date, now)
         envelopes = Envelope.objects.filter(user=user)
-        goals = Goal.objects.filter(user=user, is_completed=False)[:5]
+        goals = Goal.objects.filter(user=user, is_achieved=False)[:5]
         debts = Debt.objects.filter(user=user, is_active=True)
         tontines = TontineParticipant.objects.filter(user=user, tontine__is_active=True).select_related('tontine')
         user_values = UserValue.objects.filter(user=user).order_by('priority')[:3]
@@ -612,7 +612,7 @@ def export_pdf(request):
                 progress = (float(goal.current_amount) / float(goal.target_amount) * 100) if goal.target_amount > 0 else 0
                 
                 goals_data.append([
-                    goal.name[:25],
+                    goal.title[:25],
                     f'{target:,} F'.replace(',', ' '),
                     f'{current:,} F'.replace(',', ' '),
                     f'{remaining:,} F'.replace(',', ' '),
