@@ -74,7 +74,7 @@ def create_default_envelopes(user):
 
 
 
-    def update_envelope_spending(user, expense=None):
+def update_envelope_spending(user, expense=None):
     """Met à jour les dépenses de l'enveloppe correspondante à une dépense"""
     current_month = timezone.now().replace(day=1)
 
