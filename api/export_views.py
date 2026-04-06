@@ -359,7 +359,7 @@ def export_excel(request):
                 ws8.cell(row=idx, column=1, value=tontine.name)
                 ws8.cell(row=idx, column=2, value=participants_count)
                 ws8.cell(row=idx, column=3, value=format_amount(tontine.monthly_contribution)).number_format = '#,##0'
-                ws8.cell(row=idx, column=4, value=f"{tontine.current_cycle}/{participants_count}")
+                ws8.cell(row=idx, column=4, value=f"{tp.position}/{participants_count}")
                 ws8.cell(row=idx, column=5, value=tp.position)
                 ws8.cell(row=idx, column=6, value="Actif" if tp.is_active else "Inactif")
         else:
@@ -706,7 +706,7 @@ def export_pdf(request):
             for tp in tontines:
                 tontine = tp.tontine
                 participants_count = tontine.participants.count()
-                cycle_info = f"{tontine.current_cycle}/{participants_count}"
+                cycle_info = f"{tp.position}/{participants_count}"
                 status = "✅ Actif" if tp.is_active else "⏸️ Inactif"
                 
                 tontines_data.append([
