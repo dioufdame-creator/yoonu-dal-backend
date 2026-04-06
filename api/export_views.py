@@ -140,7 +140,7 @@ def export_excel(request):
         envelopes = Envelope.objects.filter(user=user)
         goals = Goal.objects.filter(user=user, is_achieved=False)
         debts = Debt.objects.filter(user=user, is_active=True)
-        tontines = TontineParticipant.objects.filter(user=user, tontine__is_active=True).select_related('tontine')
+        tontines = TontineParticipant.objects.filter(user=user, tontine__status='active').select_related('tontine')
         user_values = UserValue.objects.filter(user=user).order_by('priority')[:3]
  
         # Calculer statistiques
@@ -419,7 +419,7 @@ def export_pdf(request):
         envelopes = Envelope.objects.filter(user=user)
         goals = Goal.objects.filter(user=user, is_achieved=False)[:5]
         debts = Debt.objects.filter(user=user, is_active=True)
-        tontines = TontineParticipant.objects.filter(user=user, tontine__is_active=True).select_related('tontine')
+        tontines = TontineParticipant.objects.filter(user=user, tontine__status='active').select_related('tontine')
         user_values = UserValue.objects.filter(user=user).order_by('priority')[:3]
 
         # Stats
