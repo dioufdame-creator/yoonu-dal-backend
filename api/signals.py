@@ -143,3 +143,79 @@ def update_score_snapshot(snapshot, user):
         import traceback
         traceback.print_exc()
         print()
+# ==========================================
+# SIGNALS POUR MISE À JOUR AUTOMATIQUE DES ENVELOPPES
+# ==========================================
+
+from django.db.models.signals import post_delete
+from django.db.models import Sum
+from .models import Envelope
+
+
+def get_categories_for_envelope(envelope_type):
+    """Retourne les catégories de dépenses associées à une enveloppe"""
+    mapping = {
+        'essentiels': ['logement', 'alimentation', 'transport', 'santé'],
+        'plaisirs': ['loisirs', 'vêtements', 'autre'],
+        'projets': ['éducation', 'famille', 'spiritualité'],
+        'liberation': ['dettes'],
+    }
+    return mapping.get(envelope_type, [])
+
+
+def update_all_envelopes(user):
+    """
+    Met à jour current_spent de toutes les enveloppes pour un utilisateur
+    Appelé automatiquement quand une dépense est créée/modifiée/supprimée
+    """
+    current_month = timezone.now().replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+    
+    for envelope_type in ['essentiels', 'plaisirs', 'projets', 'liberation']:
+        categories = get_categories_for_envelope(envelope_type)
+        
+        # Calculer le total des dépenses du mois pour ces catégories
+        month_expenses = Expense.objects.filter(
+            user=user,
+            category__in=categories,
+            date__gte=current_month
+        ).aggregate(total=Sum('amount'))['total'] or Decimal('0')
+        
+        # Mettre à jour ou créer l'enveloppe
+        try:
+            envelope = Envelope.objects.get(user=user, envelope_type=envelope_type)
+            envelope.current_spent = month_expenses
+            envelope.save(update_fields=['current_spent'])
+        except Envelope.DoesNotExist:
+            # Créer l'enveloppe si elle n'existe pas
+            default_percentages = {
+                'essentiels': 50,
+                'plaisirs': 30,
+                'projets': 15,
+                'liberation': 5
+            }
+            monthly_income = user.profile.monthly_income or Decimal('0')
+            percentage = default_percentages[envelope_type]
+            
+            Envelope.objects.create(
+                user=user,
+                envelope_type=envelope_type,
+                allocated_percentage=percentage,
+                monthly_budget=(Decimal(percentage) / 100) * monthly_income,
+                current_spent=month_expenses
+            )
+
+
+@receiver(post_save, sender=Expense)
+def update_envelopes_on_expense_save(sender, instance, created, **kwargs):
+    """
+    Signal : Met à jour les enveloppes quand une dépense est créée ou modifiée
+    """
+    update_all_envelopes(instance.user)
+
+
+@receiver(post_delete, sender=Expense)
+def update_envelopes_on_expense_delete(sender, instance, **kwargs):
+    """
+    Signal : Met à jour les enveloppes quand une dépense est supprimée
+    """
+    update_all_envelopes(instance.user)
