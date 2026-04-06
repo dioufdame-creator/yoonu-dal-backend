@@ -7,7 +7,9 @@ from django.utils import timezone
 from django.test.client import RequestFactory
 from rest_framework.test import force_authenticate
 from .models import Expense, ScoreHistory
+from django.db.models import Sum  # ✅ Ajouter après ligne 9
 from decimal import Decimal
+from django.db.models.signals import post_save, post_delete  # ✅ Ajouter post_delete
 
 
 @receiver(post_save, sender=Expense)
