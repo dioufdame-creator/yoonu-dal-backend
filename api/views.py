@@ -76,25 +76,13 @@ def create_default_envelopes(user):
 
 
 def update_envelope_spending(user, expense=None):
-    """Met à jour les dépenses de l'enveloppe correspondante à une dépense"""
-    current_month = timezone.now().replace(day=1)
-
-    # ✅ AJOUT : Inclure 'liberation' dans la boucle
-    for envelope_type in ['essentiels', 'plaisirs', 'projets', 'liberation']:
-        categories = get_categories_for_envelope(envelope_type)
-        month_expenses = Expense.objects.filter(
-            user=user,
-            category__in=categories,
-            date__gte=current_month
-        ).aggregate(total=Sum('amount'))['total'] or 0
-
-        try:
-            envelope = Envelope.objects.get(user=user, envelope_type=envelope_type)
-            envelope.current_spent = month_expenses
-            envelope.save()
-        except Envelope.DoesNotExist:
-            pass
-
+    """
+    Met à jour les dépenses de l'enveloppe correspondante à une dépense
+    NOTE: Maintenant géré automatiquement par signals.py
+    Cette fonction reste pour compatibilité
+    """
+    from .signals import update_all_envelopes
+    update_all_envelopes(user)
 
 def update_all_envelopes(user):
     """Recalcule les dépenses de toutes les enveloppes"""
@@ -3329,17 +3317,20 @@ def manage_meta_envelopes(request):
         print(f"\n🔍 GET /meta-envelopes/ - User: {user.username}")
         print(f"💰 Monthly income: {monthly_income}")
         
-        for envelope_type, percentage in defaults:
-            print(f"📦 {envelope_type}: {percentage}% × {monthly_income} = {(Decimal(percentage)/100) * Decimal(str(monthly_income))}")
-            env, created = Envelope.objects.update_or_create(
-                user=user,
-                envelope_type=envelope_type,
-                defaults={
-                    'allocated_percentage': percentage,
-                    'monthly_budget': (Decimal(percentage) / 100) * Decimal(str(monthly_income))
-                }
-            )
-            print(f"   → DB: created={created}, budget={env.monthly_budget}")
+        env, created = Envelope.objects.get_or_create(
+            user=user,
+            envelope_type=envelope_type,
+            defaults={
+                'allocated_percentage': percentage,
+                'monthly_budget': (Decimal(percentage) / 100) * Decimal(str(monthly_income))
+            }
+        )
+
+        # Si existe déjà, recalculer budget sans toucher au %
+        if not created:
+            env.monthly_budget = (env.allocated_percentage / 100) * Decimal(str(monthly_income))
+            env.save(update_fields=['monthly_budget'])
+        print(f"   → DB: created={created}, budget={env.monthly_budget}")
         
         # Mapping DB → Frontend
         meta_envelopes = {
