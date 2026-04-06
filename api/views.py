@@ -2144,7 +2144,7 @@ def manage_financial_leaks(request):
 
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
-# @check_usage_limit('ai_messages_count', 50, "Messages IA")  # Décommenter si tu as ce decorator
+@check_usage_limit('ai_messages_count', 50, "Messages IA")  # Décommenter si tu as ce decorator
 def ai_chat(request):
     """Chat IA avec contexte riche : temporel, objectifs, score, enveloppes, tontines"""
     user = request.user
