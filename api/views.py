@@ -77,7 +77,12 @@ def update_envelope_spending(user, expense=None):
     """Met à jour les dépenses de l'enveloppe correspondante à une dépense"""
     current_month = timezone.now().replace(day=1)
 
-    for envelope_type in ['essentiels', 'plaisirs', 'projets']:
+    def update_envelope_spending(user, expense=None):
+    """Met à jour les dépenses de l'enveloppe correspondante à une dépense"""
+    current_month = timezone.now().replace(day=1)
+
+    # ✅ AJOUT : Inclure 'liberation' dans la boucle
+    for envelope_type in ['essentiels', 'plaisirs', 'projets', 'liberation']:
         categories = get_categories_for_envelope(envelope_type)
         month_expenses = Expense.objects.filter(
             user=user,
