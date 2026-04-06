@@ -3316,21 +3316,24 @@ def manage_meta_envelopes(request):
         monthly_income = user.profile.monthly_income or 0
         print(f"\n🔍 GET /meta-envelopes/ - User: {user.username}")
         print(f"💰 Monthly income: {monthly_income}")
-        
-        env, created = Envelope.objects.get_or_create(
-            user=user,
-            envelope_type=envelope_type,
-            defaults={
-                'allocated_percentage': percentage,
-                'monthly_budget': (Decimal(percentage) / 100) * Decimal(str(monthly_income))
-            }
-        )
+        for envelope_type, percentage in defaults:
+            print(f"📦 {envelope_type}: {percentage}% × {monthly_income}")
+    
+            env, created = Envelope.objects.get_or_create(
+                user=user,
+                envelope_type=envelope_type,
+                defaults={
+                    'allocated_percentage': percentage,
+                    'monthly_budget': (Decimal(percentage) / 100) * Decimal(str(monthly_income))
+                }
+            )
+ 
+            # Si existe déjà, recalculer budget sans toucher au %
+            if not created:
+                env.monthly_budget = (env.allocated_percentage / 100) * Decimal(str(monthly_income))
+                env.save(update_fields=['monthly_budget'])
+            print(f"   → DB: created={created}, budget={env.monthly_budget}")
 
-        # Si existe déjà, recalculer budget sans toucher au %
-        if not created:
-            env.monthly_budget = (env.allocated_percentage / 100) * Decimal(str(monthly_income))
-            env.save(update_fields=['monthly_budget'])
-        print(f"   → DB: created={created}, budget={env.monthly_budget}")
         
         # Mapping DB → Frontend
         meta_envelopes = {
