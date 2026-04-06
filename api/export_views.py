@@ -8,7 +8,7 @@ from openpyxl import Workbook
 from openpyxl.styles import Font, PatternFill, Alignment
 from reportlab.lib.pagesizes import A4
 from reportlab.lib import colors
-from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
+from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer, PageBreak
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib.units import cm
 from datetime import datetime
@@ -358,7 +358,7 @@ def export_excel(request):
                 
                 ws8.cell(row=idx, column=1, value=tontine.name)
                 ws8.cell(row=idx, column=2, value=participants_count)
-                ws8.cell(row=idx, column=3, value=format_amount(tontine.contribution_amount)).number_format = '#,##0'
+                ws8.cell(row=idx, column=3, value=format_amount(tontine.monthly_contribution)).number_format = '#,##0'
                 ws8.cell(row=idx, column=4, value=f"{tontine.current_cycle}/{participants_count}")
                 ws8.cell(row=idx, column=5, value=tp.position)
                 ws8.cell(row=idx, column=6, value="Actif" if tp.is_active else "Inactif")
@@ -712,7 +712,7 @@ def export_pdf(request):
                 tontines_data.append([
                     tontine.name[:25],
                     str(participants_count),
-                    f'{format_amount(tontine.contribution_amount):,} F'.replace(',', ' '),
+                    f'{format_amount(tontine.monthly_contribution):,} F'.replace(',', ' '),
                     cycle_info,
                     status
                 ])
