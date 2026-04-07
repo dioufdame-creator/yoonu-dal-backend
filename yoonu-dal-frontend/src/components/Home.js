@@ -10,28 +10,28 @@ const Home = ({ onNavigate, toast, auth }) => {
       problem: "Où va mon argent chaque mois ?",
       solution: "Voir clairement vos flux financiers",
       icon: "👁️",
-      color: "from-yoonu-teal to-yoonu-teal-dark"
+      color: "from-blue-500 to-blue-600"
     },
     {
       title: "Clarté", 
       problem: "Qu'est-ce qui compte vraiment pour moi ?",
       solution: "Aligner vos dépenses avec vos valeurs",
       icon: "💡",
-      color: "from-yoonu-lime to-yoonu-lime-dark"
+      color: "from-green-500 to-green-600"
     },
     {
       title: "Choix",
       problem: "Comment mieux gérer mon budget ?", 
       solution: "Les 4 enveloppes : 50% essentiels, 30% plaisirs, 15% projets, 5% libération",
       icon: "🎯",
-      color: "from-yoonu-coral to-yoonu-coral-dark"
+      color: "from-purple-500 to-purple-600"
     },
     {
       title: "Contrôle",
       problem: "Comment maintenir ces bonnes habitudes ?",
       solution: "Suivi simple et communauté d'entraide",
       icon: "🚀",
-      color: "from-yoonu-yellow to-yoonu-yellow-dark"
+      color: "from-orange-500 to-orange-600"
     }
   ];
 
@@ -57,13 +57,13 @@ const Home = ({ onNavigate, toast, auth }) => {
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-yoonu-teal/5">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
       {/* Hero Section */}
       <div className="container mx-auto px-4 py-16">
         <div className="text-center max-w-4xl mx-auto">
           <h1 className="text-5xl font-bold text-gray-900 mb-6">
             Transformez vos{' '}
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-yoonu-teal to-yoonu-coral">
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-purple-600">
               silences financiers
             </span>{' '}
             en liberté
@@ -82,7 +82,7 @@ const Home = ({ onNavigate, toast, auth }) => {
             {auth?.isAuthenticated ? (
               <button
                 onClick={() => onNavigate('dashboard')}
-                className="px-8 py-4 bg-gradient-to-r from-yoonu-teal to-yoonu-teal-dark text-white rounded-xl font-semibold hover:shadow-lg transform hover:scale-105 transition-all duration-200"
+                className="px-8 py-4 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl font-semibold hover:shadow-lg transform hover:scale-105 transition-all duration-200"
               >
                 Accéder à mon tableau de bord
               </button>
@@ -90,7 +90,7 @@ const Home = ({ onNavigate, toast, auth }) => {
               <>
                 <button
                   onClick={() => onNavigate('register')}
-                  className="px-8 py-4 bg-gradient-to-r from-yoonu-teal to-yoonu-teal-dark text-white rounded-xl font-semibold hover:shadow-lg transform hover:scale-105 transition-all duration-200"
+                  className="px-8 py-4 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl font-semibold hover:shadow-lg transform hover:scale-105 transition-all duration-200"
                 >
                   Commencer gratuitement
                 </button>
@@ -128,7 +128,7 @@ const Home = ({ onNavigate, toast, auth }) => {
                   onClick={() => setCurrentStep(index)}
                   className={`p-6 rounded-xl cursor-pointer transition-all duration-300 ${
                     currentStep === index 
-                      ? 'bg-gradient-to-br ' + step.color + ' text-white transform scale-105 shadow-lg' 
+                      ? 'bg-gradient-to-br ' + step.color + ' text-white transform scale-105' 
                       : 'bg-gray-100 hover:bg-gray-200'
                   }`}
                 >
@@ -142,7 +142,7 @@ const Home = ({ onNavigate, toast, auth }) => {
             </div>
 
             {/* Step Detail */}
-            <div className="bg-gradient-to-br from-yoonu-teal/5 to-yoonu-coral/5 p-8 rounded-2xl">
+            <div className="bg-white p-8 rounded-2xl shadow-lg">
               <div className="max-w-3xl mx-auto">
                 <h3 className="text-2xl font-bold text-gray-900 mb-4">
                   {yoonuSteps[currentStep].problem}
@@ -151,24 +151,23 @@ const Home = ({ onNavigate, toast, auth }) => {
                   {yoonuSteps[currentStep].solution}
                 </p>
                 
-                {/* Afficher les 4 enveloppes pour l'étape "Choix" */}
                 {currentStep === 2 && (
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6">
-                    <div className="bg-yoonu-teal/10 p-4 rounded-lg text-center border-2 border-yoonu-teal/20">
-                      <div className="text-2xl font-bold text-yoonu-teal">50%</div>
-                      <div className="text-sm text-gray-700 font-medium">Essentiels</div>
+                    <div className="bg-blue-100 p-4 rounded-lg text-center">
+                      <div className="text-2xl font-bold text-blue-600">50%</div>
+                      <div className="text-sm text-blue-700">Essentiels</div>
                     </div>
-                    <div className="bg-yoonu-lime/10 p-4 rounded-lg text-center border-2 border-yoonu-lime/20">
-                      <div className="text-2xl font-bold text-yoonu-lime">30%</div>
-                      <div className="text-sm text-gray-700 font-medium">Plaisirs</div>
+                    <div className="bg-green-100 p-4 rounded-lg text-center">
+                      <div className="text-2xl font-bold text-green-600">30%</div>
+                      <div className="text-sm text-green-700">Plaisirs</div>
                     </div>
-                    <div className="bg-yoonu-coral/10 p-4 rounded-lg text-center border-2 border-yoonu-coral/20">
-                      <div className="text-2xl font-bold text-yoonu-coral">15%</div>
-                      <div className="text-sm text-gray-700 font-medium">Projets</div>
+                    <div className="bg-purple-100 p-4 rounded-lg text-center">
+                      <div className="text-2xl font-bold text-purple-600">15%</div>
+                      <div className="text-sm text-purple-700">Projets</div>
                     </div>
-                    <div className="bg-yoonu-yellow/10 p-4 rounded-lg text-center border-2 border-yoonu-yellow/20">
-                      <div className="text-2xl font-bold text-yoonu-yellow-dark">5%</div>
-                      <div className="text-sm text-gray-700 font-medium">Libération</div>
+                    <div className="bg-orange-100 p-4 rounded-lg text-center">
+                      <div className="text-2xl font-bold text-orange-600">5%</div>
+                      <div className="text-sm text-orange-700">Libération</div>
                     </div>
                   </div>
                 )}
@@ -179,7 +178,7 @@ const Home = ({ onNavigate, toast, auth }) => {
       </div>
 
       {/* Témoignages */}
-      <div className="py-16 bg-gradient-to-br from-yoonu-teal/5 to-yoonu-lime/5">
+      <div className="py-16 bg-gradient-to-br from-blue-50 to-indigo-50">
         <div className="container mx-auto px-4">
           <h2 className="text-3xl font-bold text-center text-gray-900 mb-12">
             Ce que disent ceux qui l'ont essayé
@@ -187,7 +186,7 @@ const Home = ({ onNavigate, toast, auth }) => {
           
           <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
             {testimonials.map((testimonial, index) => (
-              <div key={index} className="bg-white p-6 rounded-xl shadow-lg hover:shadow-xl transition-shadow duration-200">
+              <div key={index} className="bg-white p-6 rounded-xl shadow-lg">
                 <div className="flex items-center mb-4">
                   <div className="text-3xl mr-3">{testimonial.avatar}</div>
                   <div>
@@ -203,19 +202,19 @@ const Home = ({ onNavigate, toast, auth }) => {
       </div>
 
       {/* CTA Final */}
-      <div className="py-16 bg-gradient-to-r from-yoonu-teal to-yoonu-teal-dark">
+      <div className="py-16 bg-gradient-to-r from-blue-600 to-indigo-600">
         <div className="container mx-auto px-4 text-center">
           <h2 className="text-4xl font-bold text-white mb-6">
             Prêt à reprendre le contrôle ?
           </h2>
-          <p className="text-xl text-white/90 mb-8 max-w-2xl mx-auto">
+          <p className="text-xl text-blue-100 mb-8 max-w-2xl mx-auto">
             Rejoignez les personnes qui transforment leur relation à l'argent avec Yoonu Dal.
           </p>
           
           {!auth?.isAuthenticated && (
             <button
               onClick={() => onNavigate('register')}
-              className="px-8 py-4 bg-white text-yoonu-teal rounded-xl font-semibold hover:bg-gray-100 transform hover:scale-105 transition-all duration-200 shadow-lg"
+              className="px-8 py-4 bg-white text-blue-600 rounded-xl font-semibold hover:bg-gray-100 transform hover:scale-105 transition-all duration-200"
             >
               Commencer maintenant - C'est gratuit
             </button>
