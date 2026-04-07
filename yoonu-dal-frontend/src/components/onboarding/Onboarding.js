@@ -433,7 +433,7 @@ const Onboarding = ({ toast, onNavigate }) => {
                 <div className="flex-1">
                   <p className="text-sm text-blue-900">
                     <strong>Pourquoi on demande ça ?</strong><br />
-                    Pour calculer ton Score Yoonu Dal et te donner des conseils personnalisés. Tu pourras ajuster ce montant plus tard dans les paramètres.
+                    Pour calculer ton Score Yoonu Dal et te donner des conseils personnalisés. Tu pourras ajuster ce montant plus tard dans les paramètres. C’est confidentiel et utilisé uniquement pour tes analyses.
                   </p>
                 </div>
               </div>
