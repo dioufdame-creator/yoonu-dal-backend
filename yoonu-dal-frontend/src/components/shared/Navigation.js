@@ -39,8 +39,8 @@ const NavigationV2 = ({ currentPage, onNavigate, isAuthenticated, user, onLogout
 
   const guestMenu = [
     { icon: '🏠', label: 'Accueil', page: 'home' },
-    { icon: '🔑', label: 'Connexion', page: 'login' },
-    { icon: '📝', label: 'Inscription', page: 'register' }
+    //{ icon: '🔑', label: 'Connexion', page: 'login' },
+    //{ icon: '📝', label: 'Inscription', page: 'register' }
   ];
 
   const menuItems = isAuthenticated ? mainMenu : guestMenu;
