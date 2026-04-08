@@ -64,7 +64,7 @@ const TransactionsPage = ({ onNavigate, toast, user }) => {
       <div className="transactions-wrapper">
         <div className="px-4 pt-4">
           {activeTab === 'expenses' ? (
-            <ExpensesPage onNavigate={onNavigate} toast={toast} />
+            <ExpensesPage onNavigate={onNavigate} toast={toast} user={user} />
           ) : (
             <IncomesPage onNavigate={onNavigate} toast={toast} />
           )}
