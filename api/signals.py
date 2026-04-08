@@ -21,7 +21,7 @@ def update_score_on_expense(sender, instance, created, **kwargs):
 
         existing = ScoreHistory.objects.filter(
             user=user,
-            snapshot_date=today
+            month=current_month
         ).first()
 
         if existing:
@@ -63,6 +63,7 @@ def create_score_snapshot(user):
 
             ScoreHistory.objects.create(
                 user=user,
+                month=current_month,  # AJOUTER
                 total_score=score_data.get('total_score', 0),
                 budget_score=score_data.get('budget_score', 0),
                 savings_score=score_data.get('savings_score', 0),
@@ -87,6 +88,7 @@ def create_score_snapshot(user):
 
             ScoreHistory.objects.create(
                 user=user,
+                month=current_month,  # AJOUTER
                 total_score=0,
                 budget_score=0,
                 savings_score=0,
@@ -128,12 +130,10 @@ def update_score_snapshot(snapshot, user):
             savings_rate = (savings / monthly_income * 100) if monthly_income > 0 else 0
 
             snapshot.total_score = score_data.get('total_score', 0)
-            snapshot.budget_score = score_data.get('budget_score', 0)
-            snapshot.savings_score = score_data.get('savings_score', 0)
-            snapshot.discipline_score = score_data.get('discipline_score', 0)
-            snapshot.monthly_income = monthly_income
-            snapshot.total_expenses = total_expenses
-            snapshot.savings_rate = savings_rate
+            snapshot.alignment_score = Decimal(str(score_data.get('alignment_score', 0)))
+            snapshot.discipline_score = Decimal(str(score_data.get('discipline_score', 0)))
+            snapshot.stability_score = Decimal(str(score_data.get('stability_score', 0)))
+            snapshot.improvement_score = Decimal(str(score_data.get('improvement_score', 0)))
             snapshot.save()
 
             print(f"✅ Snapshot mis à jour: {score_data.get('total_score')}\n")
