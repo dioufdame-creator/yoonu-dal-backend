@@ -8,7 +8,7 @@ import IncomesPage from '../incomes/IncomesPage';
 // Design cohérent et professionnel
 // ==========================================
 
-const TransactionsPage = ({ onNavigate, toast }) => {
+const TransactionsPage = ({ onNavigate, toast, user }) => {
   const [activeTab, setActiveTab] = useState('expenses');
 
   return (
