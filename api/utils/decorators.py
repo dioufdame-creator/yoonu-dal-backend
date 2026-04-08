@@ -35,6 +35,9 @@ def check_usage_limit(limit_field, max_limit, error_message):
         def wrapper(request, *args, **kwargs):
             user_profile = request.user.profile
 
+            # ✅ NOUVEAU : Reset automatique si nouveau mois
+            user_profile.reset_monthly_limits()
+
             if user_profile.is_premium_active():
                 return view_func(request, *args, **kwargs)
 
@@ -45,7 +48,8 @@ def check_usage_limit(limit_field, max_limit, error_message):
                     'error': f'Limite {error_message} atteinte ({max_limit}/mois)',
                     'used': current_usage,
                     'limit': max_limit,
-                    'upgrade_required': True
+                    'upgrade_required': True,
+                    'trial_available': not user_profile.trial_used
                 }, status=status.HTTP_429_TOO_MANY_REQUESTS)
 
             setattr(user_profile, limit_field, current_usage + 1)
