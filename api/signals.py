@@ -17,18 +17,18 @@ def update_score_on_expense(sender, instance, created, **kwargs):
     """Mettre à jour le score automatiquement après chaque dépense"""
     if created:
         user = instance.user
+        # ✅ DÉFINIR current_month AVANT de l'utiliser
         current_month = timezone.now().replace(day=1).date()
-
+ 
         existing = ScoreHistory.objects.filter(
             user=user,
-            month=current_month
+            month=current_month  # ✅ Maintenant current_month existe
         ).first()
-
+ 
         if existing:
             update_score_snapshot(existing, user)
         else:
             create_score_snapshot(user)
-
 
 def create_score_snapshot(user):
     """Créer un nouveau snapshot du score"""
