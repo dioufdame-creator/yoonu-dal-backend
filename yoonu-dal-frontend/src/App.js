@@ -542,7 +542,7 @@ function App() {
           handleNavigate('login');
           return null;
         }
-        return <TransactionsPage onNavigate={handleNavigate} toast={toastMethods} />;
+        return <TransactionsPage onNavigate={handleNavigate} toast={toastMethods} user={user} />;
       
       // ✅ COMPATIBILITÉ : Rediriger expenses → transactions
       case 'expenses':
