@@ -17,7 +17,7 @@ def update_score_on_expense(sender, instance, created, **kwargs):
     """Mettre à jour le score automatiquement après chaque dépense"""
     if created:
         user = instance.user
-        today = timezone.now().date()
+        current_month = timezone.now().replace(day=1).date()
 
         existing = ScoreHistory.objects.filter(
             user=user,
