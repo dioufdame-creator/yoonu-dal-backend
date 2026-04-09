@@ -3658,3 +3658,338 @@ def debt_stats(request):
         'fully_paid_count': fully_paid_count,
         'next_payment_date': next_payment_date.isoformat() if next_payment_date else None
     })
+# Ajouter ces vues dans api/views.py
+
+from datetime import date
+from dateutil.relativedelta import relativedelta
+from django.utils import timezone
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def tontine_timeline(request, tontine_id):
+    """
+    Retourne la timeline de paiement de la tontine
+    
+    GET /api/tontines/{id}/timeline/
+    """
+    try:
+        tontine = Tontine.objects.get(id=tontine_id)
+        
+        # Vérifier que user est participant
+        participant = TontineParticipant.objects.filter(
+            tontine=tontine,
+            user=request.user
+        ).first()
+        
+        if not participant and tontine.creator != request.user:
+            return Response({
+                'error': 'Vous n\'êtes pas membre de cette tontine'
+            }, status=status.HTTP_403_FORBIDDEN)
+        
+        # Construire timeline
+        participants = TontineParticipant.objects.filter(
+            tontine=tontine
+        ).select_related('user').order_by('payout_position')
+        
+        timeline = []
+        today = date.today()
+        
+        # Calculer le mois actuel par rapport au début
+        months_elapsed = (today.year - tontine.start_date.year) * 12 + (today.month - tontine.start_date.month) + 1
+        current_month_num = max(1, min(months_elapsed, tontine.duration_months))
+        
+        for idx, p in enumerate(participants, start=1):
+            month_date = tontine.start_date + relativedelta(months=idx-1)
+            
+            # Déterminer statut
+            if p.is_paid:
+                month_status = 'paid'
+            elif idx == current_month_num:
+                month_status = 'current'
+            elif idx < current_month_num:
+                month_status = 'late'  # En retard
+            else:
+                month_status = 'upcoming'
+            
+            timeline.append({
+                'month': idx,
+                'date': month_date.isoformat(),
+                'participant': {
+                    'id': p.id,
+                    'user_id': p.user.id,
+                    'name': p.user.get_full_name() or p.user.username,
+                    'is_current_user': p.user == request.user,
+                    'is_admin': p.is_admin
+                },
+                'status': month_status,
+                'amount': float(tontine.total_amount),
+                'paid_at': p.paid_at.isoformat() if p.paid_at else None
+            })
+        
+        return Response({
+            'tontine_id': tontine.id,
+            'tontine_name': tontine.name,
+            'total_months': tontine.duration_months,
+            'current_month': current_month_num,
+            'timeline': timeline
+        })
+        
+    except Tontine.DoesNotExist:
+        return Response({'error': 'Tontine non trouvée'}, status=status.HTTP_404_NOT_FOUND)
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def tontine_activity_feed(request, tontine_id):
+    """
+    Retourne le fil d'activité de la tontine
+    
+    GET /api/tontines/{id}/activity/
+    """
+    try:
+        tontine = Tontine.objects.get(id=tontine_id)
+        
+        # Vérifier participant
+        participant = TontineParticipant.objects.filter(
+            tontine=tontine,
+            user=request.user
+        ).first()
+        
+        if not participant and tontine.creator != request.user:
+            return Response({
+                'error': 'Accès refusé'
+            }, status=status.HTTP_403_FORBIDDEN)
+        
+        # Récupérer activités (30 dernières)
+        activities = TontineActivity.objects.filter(
+            tontine=tontine
+        ).select_related('participant__user', 'created_by')[:30]
+        
+        def time_ago(dt):
+            from datetime import timedelta
+            now = timezone.now()
+            diff = now - dt
+            
+            if diff < timedelta(hours=1):
+                minutes = int(diff.total_seconds() / 60)
+                if minutes == 0:
+                    return "À l'instant"
+                return f"Il y a {minutes} min"
+            elif diff < timedelta(days=1):
+                hours = int(diff.total_seconds() / 3600)
+                return f"Il y a {hours}h"
+            elif diff < timedelta(days=7):
+                days = diff.days
+                return f"Il y a {days} jour{'s' if days > 1 else ''}"
+            else:
+                return dt.strftime('%d/%m/%Y')
+        
+        activities_data = []
+        for activity in activities:
+            activities_data.append({
+                'id': activity.id,
+                'type': activity.activity_type,
+                'participant_name': activity.participant.user.get_full_name() if activity.participant else None,
+                'message': activity.message,
+                'amount': float(activity.amount) if activity.amount else None,
+                'created_at': activity.created_at.isoformat(),
+                'time_ago': time_ago(activity.created_at)
+            })
+        
+        return Response({
+            'activities': activities_data
+        })
+        
+    except Tontine.DoesNotExist:
+        return Response({'error': 'Tontine non trouvée'}, status=status.HTTP_404_NOT_FOUND)
+
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def tontine_manage_order(request, tontine_id):
+    """
+    Gérer l'ordre de paiement (admin seulement)
+    
+    POST /api/tontines/{id}/manage-order/
+    
+    Body:
+    {
+        "action": "manual" | "random",
+        "order": [2, 5, 1, 3, 4]  // Si manual
+    }
+    """
+    try:
+        tontine = Tontine.objects.get(id=tontine_id)
+        
+        # Vérifier que user est admin de la tontine
+        is_admin = TontineParticipant.objects.filter(
+            tontine=tontine,
+            user=request.user,
+            is_admin=True
+        ).exists() or tontine.creator == request.user
+        
+        if not is_admin:
+            return Response({
+                'error': 'Seul l\'administrateur peut modifier l\'ordre'
+            }, status=status.HTTP_403_FORBIDDEN)
+        
+        action = request.data.get('action')
+        
+        if action == 'random':
+            # Tirage au sort
+            import random
+            participants = list(TontineParticipant.objects.filter(tontine=tontine))
+            random.shuffle(participants)
+            
+            for idx, p in enumerate(participants, start=1):
+                p.payout_position = idx
+                p.payout_month = idx
+                p.save()
+            
+            # Créer activité
+            TontineActivity.objects.create(
+                tontine=tontine,
+                activity_type='order_change',
+                message=f"🎲 Ordre défini par tirage au sort",
+                created_by=request.user
+            )
+            
+            message = "Ordre défini par tirage au sort"
+            
+        elif action == 'manual':
+            # Ordre manuel
+            order = request.data.get('order', [])
+            
+            participants_count = TontineParticipant.objects.filter(tontine=tontine).count()
+            
+            if len(order) != participants_count:
+                return Response({
+                    'error': f'L\'ordre doit contenir tous les participants ({participants_count})'
+                }, status=status.HTTP_400_BAD_REQUEST)
+            
+            for idx, participant_id in enumerate(order, start=1):
+                try:
+                    p = TontineParticipant.objects.get(id=participant_id, tontine=tontine)
+                    p.payout_position = idx
+                    p.payout_month = idx
+                    p.save()
+                except TontineParticipant.DoesNotExist:
+                    return Response({
+                        'error': f'Participant {participant_id} non trouvé'
+                    }, status=status.HTTP_400_BAD_REQUEST)
+            
+            # Créer activité
+            TontineActivity.objects.create(
+                tontine=tontine,
+                activity_type='order_change',
+                message=f"📝 Ordre modifié manuellement par l'admin",
+                created_by=request.user
+            )
+            
+            message = "Ordre mis à jour manuellement"
+        
+        else:
+            return Response({
+                'error': 'Action invalide. Utilisez "manual" ou "random"'
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
+        return Response({
+            'success': True,
+            'message': message
+        })
+        
+    except Tontine.DoesNotExist:
+        return Response({'error': 'Tontine non trouvée'}, status=status.HTTP_404_NOT_FOUND)
+
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def validate_contribution(request, contribution_id):
+    """
+    Valider ou rejeter une contribution (admin)
+    
+    POST /api/tontine-contributions/{id}/validate/
+    
+    Body:
+    {
+        "action": "confirm" | "reject",
+        "reason": "Raison du rejet"  // Si reject
+    }
+    """
+    try:
+        contribution = TontineContribution.objects.select_related(
+            'participant__tontine',
+            'participant__user'
+        ).get(id=contribution_id)
+        
+        tontine = contribution.participant.tontine
+        
+        # Vérifier admin
+        is_admin = TontineParticipant.objects.filter(
+            tontine=tontine,
+            user=request.user,
+            is_admin=True
+        ).exists() or tontine.creator == request.user
+        
+        if not is_admin:
+            return Response({
+                'error': 'Seul l\'administrateur peut valider les contributions'
+            }, status=status.HTTP_403_FORBIDDEN)
+        
+        action = request.data.get('action')
+        
+        if action == 'confirm':
+            contribution.status = 'confirmed'
+            contribution.is_validated = True
+            contribution.validated_by = request.user
+            contribution.validated_at = timezone.now()
+            contribution.save()
+            
+            # Créer activité
+            participant_name = contribution.participant.user.get_full_name() or contribution.participant.user.username
+            TontineActivity.objects.create(
+                tontine=tontine,
+                activity_type='validation',
+                participant=contribution.participant,
+                amount=contribution.amount,
+                message=f"✅ {participant_name} a contribué {contribution.amount:,.0f} F",
+                created_by=request.user
+            )
+            
+            return Response({
+                'success': True,
+                'message': 'Contribution confirmée'
+            })
+            
+        elif action == 'reject':
+            contribution.status = 'rejected'
+            contribution.is_validated = False
+            contribution.validated_by = request.user
+            contribution.validated_at = timezone.now()
+            contribution.rejection_reason = request.data.get('reason', '')
+            contribution.save()
+            
+            # Créer activité
+            participant_name = contribution.participant.user.get_full_name() or contribution.participant.user.username
+            TontineActivity.objects.create(
+                tontine=tontine,
+                activity_type='rejection',
+                participant=contribution.participant,
+                amount=contribution.amount,
+                message=f"❌ Contribution de {participant_name} rejetée",
+                created_by=request.user
+            )
+            
+            return Response({
+                'success': True,
+                'message': 'Contribution rejetée'
+            })
+        
+        else:
+            return Response({
+                'error': 'Action invalide. Utilisez "confirm" ou "reject"'
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
+    except TontineContribution.DoesNotExist:
+        return Response({'error': 'Contribution non trouvée'}, status=status.HTTP_404_NOT_FOUND)
