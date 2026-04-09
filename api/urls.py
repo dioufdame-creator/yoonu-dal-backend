@@ -109,9 +109,15 @@ urlpatterns = [
     # Meta-enveloppes
     path('meta-envelopes/', views.manage_meta_envelopes, name='manage_meta_envelopes'),
     # Dettes
-path('debts/', views.manage_debts, name='manage_debts'),
-path('debts/stats/', views.debt_stats, name='debt_stats'),
-path('debts/<int:debt_id>/', views.debt_detail, name='debt_detail'),
-path('debts/<int:debt_id>/payments/', views.debt_payments, name='debt_payments'),
-path('debts/payments/<int:payment_id>/', views.delete_debt_payment, name='delete_debt_payment'),
+    path('debts/', views.manage_debts, name='manage_debts'),
+    path('debts/stats/', views.debt_stats, name='debt_stats'),
+    path('debts/<int:debt_id>/', views.debt_detail, name='debt_detail'),
+    path('debts/<int:debt_id>/payments/', views.debt_payments, name='debt_payments'),
+    path('debts/payments/<int:payment_id>/', views.delete_debt_payment, name='delete_debt_payment'),
+    # Tontines - Timeline et activités
+    path('tontines/<int:tontine_id>/timeline/', views.tontine_timeline, name='tontine_timeline'),
+    path('tontines/<int:tontine_id>/activity/', views.tontine_activity_feed, name='tontine_activity'),
+    path('tontines/<int:tontine_id>/manage-order/', views.tontine_manage_order, name='tontine_manage_order'),
+    path('tontine-contributions/<int:contribution_id>/validate/', views.validate_contribution, name='validate_contribution'),
+    
 ]
