@@ -2814,10 +2814,14 @@ def scan_receipt(request):
         elif image_data.startswith('R0lG'):
             media_type = 'image/gif'
 
+        # Date du jour pour le scan
+        from datetime import date
+        today = date.today().isoformat()
+        
         # Appeler Claude Vision
         client = anthropic.Anthropic(api_key=settings.ANTHROPIC_API_KEY)
 
-        system_prompt = """Tu es un expert en lecture de reçus de caisse sénégalais.
+        system_prompt = f"""Tu es un expert en lecture de reçus de caisse sénégalais.
 
 CONTEXTE :
 - Localisation : Sénégal, Afrique de l'Ouest
@@ -2828,16 +2832,16 @@ TON RÔLE :
 Extraire les informations d'un reçu de caisse et retourner du JSON structuré.
 
 FORMAT DE RÉPONSE (JSON strict) :
-{
+{{
   "amount": 23450,
   "merchant": "Auchan Dakar",
   "category": "alimentation",
   "description": "Courses Auchan",
-  "date": "2026-02-22",
+  "date": "{today}",
   "items": ["Riz 10kg - 8500 FCFA", "Huile 2L - 3000 FCFA"],
   "confidence": "high",
   "raw_text": "Texte brut du reçu si nécessaire"
-}
+}}
 
 CATÉGORIES POSSIBLES :
 - alimentation
@@ -2854,7 +2858,7 @@ CATÉGORIES POSSIBLES :
 RÈGLES :
 1. Montant TOTAL du reçu (pas les sous-totaux)
 2. Si montant en FCFA, enlever les espaces et convertir en nombre
-3. Si pas de date visible, utiliser "2026-02-22" (date du jour)
+3. Si pas de date visible, utiliser "{today}" (date du jour)
 4. Catégorie basée sur le type de magasin et articles
 5. Description courte (ex: "Courses Auchan", "Taxi Course", "Essence Total")
 6. Confidence: "high" si tout est clair, "medium" si incertain, "low" si illisible
@@ -2862,16 +2866,16 @@ RÈGLES :
 8. TOUJOURS retourner du JSON valide, même si reçu illisible
 
 Si le reçu est illisible ou ce n'est pas un reçu :
-{
+{{
   "amount": 0,
   "merchant": "Inconnu",
   "category": "autre",
   "description": "Reçu illisible",
-  "date": "2026-02-22",
+  "date": "{today}",
   "items": [],
   "confidence": "low",
   "error": "Image floue / pas un reçu"
-}
+}}
 """
 
         response = client.messages.create(
@@ -3654,4 +3658,3 @@ def debt_stats(request):
         'fully_paid_count': fully_paid_count,
         'next_payment_date': next_payment_date.isoformat() if next_payment_date else None
     })
-
