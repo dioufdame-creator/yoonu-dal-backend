@@ -830,6 +830,10 @@ class TontineParticipant(models.Model):
     payout_date = models.DateField(null=True, blank=True)
     payout_amount = models.DecimalField(max_digits=15, decimal_places=2, null=True, blank=True)
     payout_position = models.IntegerField(null=True, blank=True)
+    # Nouveaux champs pour timeline
+    payout_month = models.IntegerField(null=True, blank=True, help_text="Mois de paiement (1-12)")
+    is_paid = models.BooleanField(default=False, help_text="A reçu son paiement")
+    paid_at = models.DateTimeField(null=True, blank=True, help_text="Date du paiement")
 
     class Meta:
         unique_together = ('tontine', 'user')
@@ -868,13 +872,22 @@ class TontineParticipant(models.Model):
 
 class TontineContribution(models.Model):
     """Contributions versées dans les tontines"""
+    
+    STATUS_CHOICES = [
+        ('pending', 'En attente'),
+        ('confirmed', 'Confirmée'),
+        ('rejected', 'Rejetée'),
+    ]
+    
     participant = models.ForeignKey(TontineParticipant, on_delete=models.CASCADE, related_name='contributions')
     amount = models.DecimalField(max_digits=15, decimal_places=2)
     date = models.DateField(default=timezone.now)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
     is_validated = models.BooleanField(default=False)
     validated_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True,
                                      related_name='validated_contributions')
     validated_at = models.DateTimeField(null=True, blank=True)
+    rejection_reason = models.TextField(blank=True, null=True)
     payment_method = models.CharField(max_length=50, default='virement')
     transaction_reference = models.CharField(max_length=100, blank=True, null=True)
     notes = models.TextField(blank=True, null=True)
@@ -905,6 +918,35 @@ class TontinePayout(models.Model):
 
     def __str__(self):
         return f"Paiement à {self.recipient.user.username} - {self.tontine.name}: {self.amount}"
+
+
+class TontineActivity(models.Model):
+    """Fil d'activité d'une tontine"""
+    
+    ACTIVITY_TYPES = [
+        ('join', 'Nouveau participant'),
+        ('contribution', 'Contribution'),
+        ('payout', 'Paiement reçu'),
+        ('order_change', 'Ordre modifié'),
+        ('validation', 'Contribution validée'),
+        ('rejection', 'Contribution rejetée'),
+    ]
+    
+    tontine = models.ForeignKey(Tontine, on_delete=models.CASCADE, related_name='activities')
+    activity_type = models.CharField(max_length=20, choices=ACTIVITY_TYPES)
+    participant = models.ForeignKey(TontineParticipant, on_delete=models.CASCADE, null=True, blank=True)
+    amount = models.DecimalField(max_digits=15, decimal_places=2, null=True, blank=True)
+    message = models.TextField(help_text="Message descriptif de l'activité")
+    created_at = models.DateTimeField(auto_now_add=True)
+    created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
+    
+    class Meta:
+        ordering = ['-created_at']
+        verbose_name = 'Activité tontine'
+        verbose_name_plural = 'Activités tontines'
+    
+    def __str__(self):
+        return f"{self.tontine.name} - {self.get_activity_type_display()} - {self.created_at.strftime('%d/%m/%Y %H:%M')}"
 
 
 # ==========================================
