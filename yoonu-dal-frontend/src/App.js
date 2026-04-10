@@ -650,7 +650,7 @@ function App() {
           onNavigate={handleNavigate} 
           tontineId={pageParams?.id}
           toast={toastMethods}
-          auth={authMethods}
+          user={user}
         />;
       
       case 'tontine-analysis':
