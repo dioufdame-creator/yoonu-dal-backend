@@ -20,10 +20,19 @@ const TontineDetail = ({ tontineId, onNavigate, toast, user }) => {
     setLoading(true);
     try {
       const response = await API.get(`/tontines/${tontineId}/`);
+      console.log('Tontine chargée:', response.data);
       setTontine(response.data);
     } catch (error) {
-      console.error('Erreur:', error);
-      toast?.showError?.('Erreur chargement de la tontine');
+      console.error('Erreur détaillée:', error);
+      console.error('Response:', error.response);
+      
+      if (error.response?.status === 403) {
+        toast?.showError?.('Vous n\'avez pas accès à cette tontine');
+      } else if (error.response?.status === 404) {
+        toast?.showError?.('Tontine introuvable');
+      } else {
+        toast?.showError?.('Erreur chargement de la tontine');
+      }
     } finally {
       setLoading(false);
     }
@@ -119,6 +128,12 @@ const TontineDetail = ({ tontineId, onNavigate, toast, user }) => {
   // Vérifier si l'utilisateur est admin
   const currentUserParticipant = tontine.participants?.find(p => p.user?.id === user?.id);
   const isAdmin = currentUserParticipant?.is_admin || tontine.creator === user?.id;
+  
+  // Debug logs
+  console.log('User ID:', user?.id);
+  console.log('Tontine creator:', tontine.creator);
+  console.log('Current user participant:', currentUserParticipant);
+  console.log('Is Admin:', isAdmin);
 
   return (
     <div className="min-h-screen bg-gray-50 pb-20">
