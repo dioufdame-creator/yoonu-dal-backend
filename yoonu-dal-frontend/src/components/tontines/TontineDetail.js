@@ -1,7 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import API from '../../services/api';
+import TontineTimeline from './TontineTimeline';
+import TontineActivityFeed from './TontineActivityFeed';
+import TontineAdminPanel from './TontineAdminPanel';
 
-const TontineDetail = ({ tontineId, onNavigate, toast }) => {
+const TontineDetail = ({ tontineId, onNavigate, toast, user }) => {
   const [tontine, setTontine] = useState(null);
   const [loading, setLoading] = useState(true);
   const [showContributeModal, setShowContributeModal] = useState(false);
@@ -112,6 +115,10 @@ const TontineDetail = ({ tontineId, onNavigate, toast }) => {
   const progress = tontine.max_participants > 0 
     ? (tontine.current_participants / tontine.max_participants) * 100 
     : 0;
+  
+  // Vérifier si l'utilisateur est admin
+  const currentUserParticipant = tontine.participants?.find(p => p.user?.id === user?.id);
+  const isAdmin = currentUserParticipant?.is_admin || tontine.creator === user?.id;
 
   return (
     <div className="min-h-screen bg-gray-50 pb-20">
@@ -191,6 +198,28 @@ const TontineDetail = ({ tontineId, onNavigate, toast }) => {
               : 'Tontine complète'}
           </p>
         </div>
+
+        {/* ✅ NOUVEAU : Panneau Admin (si admin uniquement) */}
+        {isAdmin && (
+          <TontineAdminPanel 
+            tontine={tontine}
+            participants={tontine.participants || []}
+            onUpdate={loadDetail}
+            toast={toast}
+          />
+        )}
+
+        {/* ✅ NOUVEAU : Timeline de paiement */}
+        <TontineTimeline 
+          tontineId={tontine.id}
+          isAdmin={isAdmin}
+          onUpdate={loadDetail}
+        />
+
+        {/* ✅ NOUVEAU : Fil d'activité */}
+        <TontineActivityFeed 
+          tontineId={tontine.id}
+        />
 
         {/* Bouton Supprimer (si créateur + planning) */}
         {tontine.creator && tontine.status === 'planning' && (
