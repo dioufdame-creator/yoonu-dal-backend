@@ -9,6 +9,23 @@ const TontineDetail = ({ tontineId, onNavigate, toast, user }) => {
   const [loading, setLoading] = useState(true);
   const [showContributeModal, setShowContributeModal] = useState(false);
   const [contributeAmount, setContributeAmount] = useState('');
+  
+  // ✅ NOUVEAU : Récupérer le user complet depuis l'API
+  const [currentUser, setCurrentUser] = useState(null);
+
+  // ✅ Charger le user depuis l'API
+  useEffect(() => {
+    const loadUser = async () => {
+      try {
+        const response = await API.get('/user/profile/');
+        setCurrentUser(response.data);
+        console.log('✅ User chargé depuis API:', response.data);
+      } catch (error) {
+        console.error('Erreur chargement user:', error);
+      }
+    };
+    loadUser();
+  }, []);
 
   useEffect(() => {
     if (tontineId) {
@@ -125,12 +142,12 @@ const TontineDetail = ({ tontineId, onNavigate, toast, user }) => {
     ? (tontine.current_participants / tontine.max_participants) * 100 
     : 0;
   
-  // Vérifier si l'utilisateur est admin
-  const currentUserParticipant = tontine.participants?.find(p => p.user?.id === user?.id);
-  const isAdmin = currentUserParticipant?.is_admin || tontine.creator === user?.id;
+  // ✅ CORRIGÉ : Utiliser currentUser au lieu de user
+  const currentUserParticipant = tontine.participants?.find(p => p.user?.id === currentUser?.id);
+  const isAdmin = currentUserParticipant?.is_admin || tontine.creator === currentUser?.id;
   
   // Debug logs
-  console.log('User ID:', user?.id);
+  console.log('User ID:', currentUser?.id);
   console.log('Tontine creator:', tontine.creator);
   console.log('Current user participant:', currentUserParticipant);
   console.log('Is Admin:', isAdmin);
