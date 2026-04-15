@@ -17,9 +17,10 @@ const TontineDetail = ({ tontineId, onNavigate, toast, user }) => {
   useEffect(() => {
     const loadUser = async () => {
       try {
-        const response = await API.get('/user/profile/');
-        setCurrentUser(response.data);
-        console.log('✅ User chargé depuis API:', response.data);
+        const response = await API.get('/profile/');
+        // L'endpoint retourne {user: {...}, profile: {...}}
+        setCurrentUser(response.data.user);
+        console.log('✅ User chargé depuis API:', response.data.user);
       } catch (error) {
         console.error('Erreur chargement user:', error);
       }
