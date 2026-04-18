@@ -3787,15 +3787,20 @@ def tontine_activity_feed(request, tontine_id):
         
         activities_data = []
         for activity in activities:
-            activities_data.append({
-                'id': activity.id,
-                'type': activity.activity_type,
-                'participant_name': activity.participant.user.get_full_name() if activity.participant else None,
-                'message': activity.message,
-                'amount': float(activity.amount) if activity.amount else None,
-                'created_at': activity.created_at.isoformat(),
-                'time_ago': time_ago(activity.created_at)
-            })
+            try:
+                activities_data.append({
+                    'id': activity.id,
+                    'type': activity.activity_type,
+                    'participant_name': activity.participant.user.get_full_name() if activity.participant else None,
+                    'message': activity.message,
+                    'amount': float(activity.amount) if activity.amount else None,
+                    'created_at': activity.created_at.isoformat(),
+                    'time_ago': time_ago(activity.created_at)
+                })
+            except Exception as e:
+                # Log l'erreur mais continue
+                print(f"Erreur activity {activity.id}: {e}")
+                continue
         
         return Response({
             'activities': activities_data
@@ -3803,6 +3808,15 @@ def tontine_activity_feed(request, tontine_id):
         
     except Tontine.DoesNotExist:
         return Response({'error': 'Tontine non trouvée'}, status=status.HTTP_404_NOT_FOUND)
+    except Exception as e:
+        # Log l'erreur complète
+        import traceback
+        print(f"Erreur tontine_activity_feed: {e}")
+        print(traceback.format_exc())
+        return Response({
+            'error': 'Erreur serveur',
+            'detail': str(e)
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 @api_view(['POST'])
@@ -3901,6 +3915,15 @@ def tontine_manage_order(request, tontine_id):
         
     except Tontine.DoesNotExist:
         return Response({'error': 'Tontine non trouvée'}, status=status.HTTP_404_NOT_FOUND)
+    except Exception as e:
+        # Log l'erreur complète
+        import traceback
+        print(f"Erreur tontine_manage_order: {e}")
+        print(traceback.format_exc())
+        return Response({
+            'error': 'Erreur serveur',
+            'detail': str(e)
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 @api_view(['POST'])
