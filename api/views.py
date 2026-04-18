@@ -1395,8 +1395,9 @@ def manage_tontines(request):
                     'max_participants': tontine.max_participants,
                     'current_participants': tontine.participants.count(),
                     'available_spots': tontine.available_spots,
-                    'status': tontine.status,
                     'invitation_code': tontine.invitation_code,
+                    'payout_mode': tontine.payout_mode,          # ← AJOUTER
+                    'current_payout_month': tontine.current_payout_month,  # ← AJOUTER
                     'start_date': tontine.start_date.isoformat() if tontine.start_date else None,
                     'end_date': tontine.end_date.isoformat() if tontine.end_date else None,
                     'created_at': tontine.created_at.isoformat(),
