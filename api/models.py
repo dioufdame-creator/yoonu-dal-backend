@@ -758,6 +758,17 @@ class Tontine(models.Model):
     rules = models.TextField(blank=True, null=True)
     is_private = models.BooleanField(default=False)
     invitation_code = models.CharField(max_length=20, unique=True, blank=True, null=True)
+    # AJOUTER :
+    payout_mode = models.CharField(
+        max_length=10,
+        choices=[('manual', 'Manuel'), ('random', 'Aléatoire')],
+        default='manual',
+        help_text="Manuel = admin définit l'ordre. Aléatoire = tirage mensuel."
+    )
+    current_payout_month = models.IntegerField(
+        default=0,
+        help_text="Dernier mois pour lequel un tirage a été effectué (anti-double tirage)"
+    )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
