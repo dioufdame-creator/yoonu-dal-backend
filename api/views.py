@@ -1431,6 +1431,10 @@ def manage_tontines(request):
             start_date = datetime.strptime(data['start_date'], '%Y-%m-%d').date()
             end_date = start_date + relativedelta(months=int(data['duration_months']))
 
+            payout_mode = data.get('payout_mode', 'manual')
+            if payout_mode not in ['manual', 'random']:
+                payout_mode = 'manual'
+
             tontine = Tontine.objects.create(
                 name=data['name'],
                 description=data.get('description', ''),
@@ -1443,9 +1447,9 @@ def manage_tontines(request):
                 start_date=start_date,
                 end_date=end_date,
                 rules=data.get('rules', ''),
-                is_private=data.get('is_private', False)
+                is_private=data.get('is_private', False),
+                payout_mode=payout_mode
             )
-
             # Le créateur devient automatiquement participant admin
             TontineParticipant.objects.create(
                 tontine=tontine,
