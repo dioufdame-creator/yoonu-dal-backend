@@ -18,7 +18,7 @@ from django.shortcuts import get_object_or_404
 from .models import (
     UserProfile, UserValue, IncomeSource, Income, Expense, Budget,
     Goal, Saving, Tontine, TontineParticipant, TontineContribution,
-    TontinePayout, DiagnosticResult, Envelope, FinancialLeak, PredictiveAlert,
+    TontinePayout, TontineActivity, DiagnosticResult, Envelope, FinancialLeak, PredictiveAlert,
     Debt, DebtPayment  # ← AJOUTER ICI
 
 )
