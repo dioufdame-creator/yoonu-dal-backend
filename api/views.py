@@ -3834,14 +3834,26 @@ def tontine_manage_order(request, tontine_id):
     }
     """
     try:
+        # Debug logs
+        print(f"=== MANAGE ORDER DEBUG ===")
+        print(f"User: {request.user.id} - {request.user.username}")
+        print(f"Tontine ID: {tontine_id}")
+        
         tontine = Tontine.objects.get(id=tontine_id)
+        
+        print(f"Tontine: {tontine.name}")
+        print(f"Creator: {tontine.creator.id if tontine.creator else None}")
+        print(f"Action: {request.data.get('action')}")
         
         # Vérifier que user est admin de la tontine
         is_admin = TontineParticipant.objects.filter(
             tontine=tontine,
             user=request.user,
             is_admin=True
-        ).exists() or tontine.creator == request.user
+        ).exists() or (tontine.creator and tontine.creator.id == request.user.id)
+        
+        print(f"Is admin: {is_admin}")
+        print(f"=========================")
         
         if not is_admin:
             return Response({
@@ -3852,22 +3864,30 @@ def tontine_manage_order(request, tontine_id):
         
         if action == 'random':
             # Tirage au sort
+            print("🎲 Début tirage au sort...")
             import random
             participants = list(TontineParticipant.objects.filter(tontine=tontine))
+            print(f"Participants trouvés: {len(participants)}")
+            
             random.shuffle(participants)
             
             for idx, p in enumerate(participants, start=1):
+                print(f"  - Position {idx}: {p.user.username}")
                 p.payout_position = idx
                 p.payout_month = idx
                 p.save()
             
+            print("✅ Positions sauvegardées")
+            
             # Créer activité
+            print("📝 Création activité...")
             TontineActivity.objects.create(
                 tontine=tontine,
                 activity_type='order_change',
                 message=f"🎲 Ordre défini par tirage au sort",
                 created_by=request.user
             )
+            print("✅ Activité créée")
             
             message = "Ordre défini par tirage au sort"
             
