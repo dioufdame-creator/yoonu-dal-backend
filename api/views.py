@@ -1530,6 +1530,8 @@ def tontine_detail(request, tontine_id):
                 'frequency': tontine.frequency,
                 'rules': tontine.rules,
                 'is_private': tontine.is_private,
+                'payout_mode': tontine.payout_mode,
+                'current_payout_month': tontine.current_payout_month,
                 'progress_percentage': round(tontine.progress_percentage, 1),
                 'total_contributions_received': float(tontine.total_contributions_received()),
                 'created_at': tontine.created_at.isoformat(),
