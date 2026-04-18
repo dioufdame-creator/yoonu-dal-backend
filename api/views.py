@@ -3834,80 +3834,42 @@ def tontine_manage_order(request, tontine_id):
     POST /api/tontines/{id}/manage-order/
     
     Body:
-    {
-        "action": "manual" | "random",
-        "order": [2, 5, 1, 3, 4]  // Si manual
-    }
+    - Mode manuel  : {"action": "manual", "order": [2, 5, 1, 3, 4]}
+    - Mode aléatoire : {"action": "random"}
     """
     try:
-        # Debug logs
-        print(f"=== MANAGE ORDER DEBUG ===")
-        print(f"User: {request.user.id} - {request.user.username}")
-        print(f"Tontine ID: {tontine_id}")
-        
         tontine = Tontine.objects.get(id=tontine_id)
-        
-        print(f"Tontine: {tontine.name}")
-        print(f"Creator: {tontine.creator.id if tontine.creator else None}")
-        print(f"Action: {request.data.get('action')}")
-        
-        # Vérifier que user est admin de la tontine
+
+        # Vérifier admin
         is_admin = TontineParticipant.objects.filter(
             tontine=tontine,
             user=request.user,
             is_admin=True
         ).exists() or (tontine.creator and tontine.creator.id == request.user.id)
-        
-        print(f"Is admin: {is_admin}")
-        print(f"=========================")
-        
+
         if not is_admin:
             return Response({
                 'error': 'Seul l\'administrateur peut modifier l\'ordre'
             }, status=status.HTTP_403_FORBIDDEN)
-        
+
         action = request.data.get('action')
-        
-        if action == 'random':
-            # Tirage au sort
-            print("🎲 Début tirage au sort...")
-            import random
-            participants = list(TontineParticipant.objects.filter(tontine=tontine))
-            print(f"Participants trouvés: {len(participants)}")
-            
-            random.shuffle(participants)
-            
-            for idx, p in enumerate(participants, start=1):
-                print(f"  - Position {idx}: {p.user.username}")
-                p.payout_position = idx
-                p.payout_month = idx
-                p.save()
-            
-            print("✅ Positions sauvegardées")
-            
-            # Créer activité
-            print("📝 Création activité...")
-            TontineActivity.objects.create(
-                tontine=tontine,
-                activity_type='order_change',
-                message=f"🎲 Ordre défini par tirage au sort",
-                created_by=request.user
-            )
-            print("✅ Activité créée")
-            
-            message = "Ordre défini par tirage au sort"
-            
-        elif action == 'manual':
-            # Ordre manuel
+
+        # ── MODE MANUEL ──────────────────────────────────────────────
+        if action == 'manual':
+            # Bloquer si la tontine est en mode aléatoire
+            if tontine.payout_mode == 'random':
+                return Response({
+                    'error': 'Cette tontine est en mode aléatoire. L\'ordre ne peut pas être modifié manuellement.'
+                }, status=status.HTTP_400_BAD_REQUEST)
+
             order = request.data.get('order', [])
-            
             participants_count = TontineParticipant.objects.filter(tontine=tontine).count()
-            
+
             if len(order) != participants_count:
                 return Response({
                     'error': f'L\'ordre doit contenir tous les participants ({participants_count})'
                 }, status=status.HTTP_400_BAD_REQUEST)
-            
+
             for idx, participant_id in enumerate(order, start=1):
                 try:
                     p = TontineParticipant.objects.get(id=participant_id, tontine=tontine)
@@ -3918,31 +3880,90 @@ def tontine_manage_order(request, tontine_id):
                     return Response({
                         'error': f'Participant {participant_id} non trouvé'
                     }, status=status.HTTP_400_BAD_REQUEST)
-            
-            # Créer activité
+
             TontineActivity.objects.create(
                 tontine=tontine,
                 activity_type='order_change',
-                message=f"📝 Ordre modifié manuellement par l'admin",
+                message='📝 Ordre modifié manuellement par l\'admin',
                 created_by=request.user
             )
-            
-            message = "Ordre mis à jour manuellement"
-        
+
+            return Response({
+                'success': True,
+                'message': 'Ordre mis à jour manuellement'
+            })
+
+        # ── MODE ALÉATOIRE ────────────────────────────────────────────
+        elif action == 'random':
+            # Bloquer si la tontine est en mode manuel
+            if tontine.payout_mode == 'manual':
+                return Response({
+                    'error': 'Cette tontine est en mode manuel. Utilisez l\'ordre manuel pour définir les positions.'
+                }, status=status.HTTP_400_BAD_REQUEST)
+
+            # Calculer le mois en cours (1-based depuis start_date)
+            from datetime import date
+            today = date.today()
+            months_elapsed = (today.year - tontine.start_date.year) * 12 + \
+                             (today.month - tontine.start_date.month) + 1
+            current_month_num = max(1, min(months_elapsed, tontine.duration_months))
+
+            # Anti-double tirage : un seul tirage par mois
+            if tontine.current_payout_month >= current_month_num:
+                return Response({
+                    'error': f'Le tirage du mois {current_month_num} a déjà été effectué. Prochain tirage disponible le mois suivant.'
+                }, status=status.HTTP_400_BAD_REQUEST)
+
+            # Piocher uniquement parmi ceux qui n'ont pas encore reçu
+            eligible = list(TontineParticipant.objects.filter(
+                tontine=tontine,
+                is_paid=False,
+                is_active=True
+            ))
+
+            if not eligible:
+                return Response({
+                    'error': 'Tous les participants ont déjà reçu leur paiement.'
+                }, status=status.HTTP_400_BAD_REQUEST)
+
+            # Tirage
+            import random
+            winner = random.choice(eligible)
+            winner.payout_month = current_month_num
+            winner.save()
+
+            # Mettre à jour le mois courant sur la tontine
+            tontine.current_payout_month = current_month_num
+            tontine.save()
+
+            winner_name = winner.user.get_full_name() or winner.user.username
+
+            TontineActivity.objects.create(
+                tontine=tontine,
+                activity_type='order_change',
+                participant=winner,
+                message=f'🎲 Tirage du mois {current_month_num} : {winner_name} recevra les fonds !',
+                created_by=request.user
+            )
+
+            return Response({
+                'success': True,
+                'message': f'Tirage effectué ! {winner_name} recevra les fonds ce mois.',
+                'winner': {
+                    'participant_id': winner.id,
+                    'name': winner_name,
+                    'month': current_month_num
+                }
+            })
+
         else:
             return Response({
                 'error': 'Action invalide. Utilisez "manual" ou "random"'
             }, status=status.HTTP_400_BAD_REQUEST)
-        
-        return Response({
-            'success': True,
-            'message': message
-        })
-        
+
     except Tontine.DoesNotExist:
         return Response({'error': 'Tontine non trouvée'}, status=status.HTTP_404_NOT_FOUND)
     except Exception as e:
-        # Log l'erreur complète
         import traceback
         print(f"Erreur tontine_manage_order: {e}")
         print(traceback.format_exc())
@@ -3950,7 +3971,6 @@ def tontine_manage_order(request, tontine_id):
             'error': 'Erreur serveur',
             'detail': str(e)
         }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
 
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
