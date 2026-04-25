@@ -2,12 +2,11 @@ import React, { useState, useEffect } from 'react';
 import API from '../../services/api';
 
 // ==========================================
-// TONTINES LIST PREMIUM V3.2
-// Formulaire complet + Mode tirage (manuel / aléatoire)
+// TONTINES LIST PREMIUM V3.3
+// Infos réelles à la place du mini chart mocké
 // ==========================================
 
 const TontinesListPremium = ({ onNavigate, toast }) => {
-  // États UI
   const [tontines, setTontines] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('all');
@@ -18,7 +17,6 @@ const TontinesListPremium = ({ onNavigate, toast }) => {
   const [expandedId, setExpandedId] = useState(null);
   const [joinCode, setJoinCode] = useState('');
 
-  // Formulaire
   const emptyForm = () => ({
     name: '',
     description: '',
@@ -30,7 +28,6 @@ const TontinesListPremium = ({ onNavigate, toast }) => {
   });
   const [form, setForm] = useState(emptyForm());
 
-  // Calcul automatique du total
   const calculatedTotal = React.useMemo(() => {
     const contribution = parseFloat(form.monthly_contribution) || 0;
     const participants = parseInt(form.max_participants) || 0;
@@ -55,19 +52,14 @@ const TontinesListPremium = ({ onNavigate, toast }) => {
     }
   };
 
-  // Stats calculées
   const stats = {
     total: tontines.length,
     active: tontines.filter(t => t.status === 'active').length,
     planning: tontines.filter(t => t.status === 'planning').length,
     completed: tontines.filter(t => t.status === 'completed').length,
-    totalContribution: tontines
-      .filter(t => t.status === 'active' || t.status === 'planning')
-      .reduce((sum, t) => sum + (t.monthly_contribution || 0), 0),
     totalAmount: tontines.reduce((sum, t) => sum + (t.total_amount || 0), 0)
   };
 
-  // Filtrage
   const filteredTontines = tontines.filter(t => {
     const matchFilter = filter === 'all' || t.status === filter;
     const matchSearch = t.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -75,7 +67,6 @@ const TontinesListPremium = ({ onNavigate, toast }) => {
     return matchFilter && matchSearch;
   });
 
-  // Helpers
   const formatCurrency = (value) => {
     const num = Math.abs(value || 0);
     if (num >= 1000000) return `${(num / 1000000).toFixed(1)}M`;
@@ -85,6 +76,27 @@ const TontinesListPremium = ({ onNavigate, toast }) => {
 
   const formatCurrencyFull = (amount) => {
     return new Intl.NumberFormat('fr-FR').format(amount || 0) + ' FCFA';
+  };
+
+  // ✅ Formatage de date lisible
+  const formatDate = (dateStr) => {
+    if (!dateStr) return '—';
+    return new Date(dateStr).toLocaleDateString('fr-FR', {
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric'
+    });
+  };
+
+  // ✅ Calcul de la progression temporelle de la tontine
+  const getTontineProgress = (tontine) => {
+    if (!tontine.start_date || !tontine.end_date) return null;
+    const start = new Date(tontine.start_date);
+    const end = new Date(tontine.end_date);
+    const now = new Date();
+    if (now < start) return 0;
+    if (now > end) return 100;
+    return Math.round(((now - start) / (end - start)) * 100);
   };
 
   const getStatusConfig = (status) => {
@@ -117,7 +129,6 @@ const TontinesListPremium = ({ onNavigate, toast }) => {
     return configs[status] || configs.planning;
   };
 
-  // Actions
   const handleSubmit = async (e) => {
     e.preventDefault();
 
@@ -125,22 +136,18 @@ const TontinesListPremium = ({ onNavigate, toast }) => {
       toast?.showError('Remplis tous les champs obligatoires');
       return;
     }
-
     if (calculatedTotal <= 0) {
-      toast?.showError('Le montant total doit être supérieur à 0. Vérifie les valeurs saisies.');
+      toast?.showError('Le montant total doit être supérieur à 0.');
       return;
     }
-
     if (parseInt(form.max_participants) < 2) {
       toast?.showError('Minimum 2 participants requis');
       return;
     }
-
     if (parseInt(form.duration_months) < 1) {
       toast?.showError('Durée minimum : 1 mois');
       return;
     }
-
     if (parseFloat(form.monthly_contribution) <= 0) {
       toast?.showError('La contribution mensuelle doit être supérieure à 0');
       return;
@@ -178,12 +185,10 @@ const TontinesListPremium = ({ onNavigate, toast }) => {
 
   const handleJoinTontine = async (e) => {
     e.preventDefault();
-
     if (!joinCode) {
       toast?.showError('Entre le code d\'invitation');
       return;
     }
-
     try {
       await API.post('/tontines/join/', { invitation_code: joinCode });
       toast?.showSuccess('Tu as rejoint la tontine !');
@@ -221,16 +226,6 @@ const TontinesListPremium = ({ onNavigate, toast }) => {
     }
   };
 
-  const generateMockHistory = (amount) => {
-    const history = [];
-    for (let i = 6; i >= 0; i--) {
-      const variance = Math.random() * 0.2 - 0.1;
-      const value = amount * (0.5 + i * 0.08) * (1 + variance);
-      history.push({ day: 7 - i, value: Math.max(0, value) });
-    }
-    return history;
-  };
-
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-gray-50 via-orange-50 to-red-50 flex items-center justify-center p-4">
@@ -262,9 +257,7 @@ const TontinesListPremium = ({ onNavigate, toast }) => {
                 <span className="text-3xl sm:text-4xl lg:text-5xl">🦁</span>
                 <span>Mes Tontines</span>
               </h1>
-              <p className="text-xs sm:text-sm text-gray-600 mt-1 sm:mt-2">
-                Épargne collective et solidaire
-              </p>
+              <p className="text-xs sm:text-sm text-gray-600 mt-1 sm:mt-2">Épargne collective et solidaire</p>
             </div>
 
             <div className="flex gap-2 sm:gap-3">
@@ -299,25 +292,19 @@ const TontinesListPremium = ({ onNavigate, toast }) => {
           </div>
 
           <div className="backdrop-blur-xl bg-green-50/80 rounded-xl sm:rounded-2xl p-3 sm:p-4 shadow-lg border border-green-200/50">
-            <div className="text-xs sm:text-sm text-green-600 mb-1 flex items-center gap-1">
-              <span>🔥</span> Actives
-            </div>
+            <div className="text-xs sm:text-sm text-green-600 mb-1 flex items-center gap-1"><span>🔥</span> Actives</div>
             <div className="text-2xl sm:text-3xl font-bold text-green-700">{stats.active}</div>
             <div className="text-xs text-green-600 mt-0.5">En cours</div>
           </div>
 
           <div className="backdrop-blur-xl bg-blue-50/80 rounded-xl sm:rounded-2xl p-3 sm:p-4 shadow-lg border border-blue-200/50">
-            <div className="text-xs sm:text-sm text-blue-600 mb-1 flex items-center gap-1">
-              <span>📋</span> Planning
-            </div>
+            <div className="text-xs sm:text-sm text-blue-600 mb-1 flex items-center gap-1"><span>📋</span> Planning</div>
             <div className="text-2xl sm:text-3xl font-bold text-blue-700">{stats.planning}</div>
             <div className="text-xs text-blue-600 mt-0.5">À venir</div>
           </div>
 
           <div className="backdrop-blur-xl bg-gray-50/80 rounded-xl sm:rounded-2xl p-3 sm:p-4 shadow-lg border border-gray-200/50">
-            <div className="text-xs sm:text-sm text-gray-600 mb-1 flex items-center gap-1">
-              <span>✅</span> Terminées
-            </div>
+            <div className="text-xs sm:text-sm text-gray-600 mb-1 flex items-center gap-1"><span>✅</span> Terminées</div>
             <div className="text-2xl sm:text-3xl font-bold text-gray-700">{stats.completed}</div>
             <div className="text-xs text-gray-600 mt-0.5">Complétées</div>
           </div>
@@ -325,9 +312,7 @@ const TontinesListPremium = ({ onNavigate, toast }) => {
           <div className="col-span-2 backdrop-blur-xl bg-gradient-to-br from-green-500 via-emerald-600 to-green-700 rounded-xl sm:rounded-2xl p-3 sm:p-4 shadow-2xl shadow-green-500/30 text-white relative overflow-hidden">
             <div className="hidden sm:block absolute top-0 right-0 w-24 h-24 bg-white/10 rounded-full blur-2xl animate-pulse"></div>
             <div className="relative z-10">
-              <div className="text-xs sm:text-sm text-green-100 mb-1 flex items-center gap-1">
-                <span>💰</span> Total engagé
-              </div>
+              <div className="text-xs sm:text-sm text-green-100 mb-1 flex items-center gap-1"><span>💰</span> Total engagé</div>
               <div className="text-2xl sm:text-3xl lg:text-4xl font-bold mb-1">{formatCurrency(stats.totalAmount)}</div>
               <div className="text-xs text-green-100">{formatCurrencyFull(stats.totalAmount)}</div>
             </div>
@@ -407,10 +392,10 @@ const TontinesListPremium = ({ onNavigate, toast }) => {
             {filteredTontines.map((tontine) => {
               const statusConfig = getStatusConfig(tontine.status);
               const isExpanded = expandedId === tontine.id;
-              const progress = tontine.max_participants > 0
+              const participantsProgress = tontine.max_participants > 0
                 ? (tontine.current_participants / tontine.max_participants) * 100
                 : 0;
-              const history = generateMockHistory(tontine.total_amount || 0);
+              const timeProgress = getTontineProgress(tontine);
 
               return (
                 <div
@@ -422,6 +407,7 @@ const TontinesListPremium = ({ onNavigate, toast }) => {
                     <div className="hidden sm:block absolute top-0 right-0 w-32 h-32 bg-white/20 rounded-full blur-2xl"></div>
 
                     <div className="relative z-10">
+                      {/* Titre + badges */}
                       <div className="flex items-start justify-between mb-3">
                         <div className="flex-1 min-w-0">
                           <h3 className="text-lg sm:text-xl font-bold text-gray-900 mb-1 truncate">{tontine.name}</h3>
@@ -432,7 +418,6 @@ const TontinesListPremium = ({ onNavigate, toast }) => {
                           <span className={`px-3 py-1 rounded-full text-xs font-bold bg-gradient-to-r ${statusConfig.color} text-white shadow-lg`}>
                             {statusConfig.icon} {statusConfig.label}
                           </span>
-                          {/* Badge mode tirage */}
                           <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${
                             tontine.payout_mode === 'random'
                               ? 'bg-purple-100 text-purple-700'
@@ -443,24 +428,41 @@ const TontinesListPremium = ({ onNavigate, toast }) => {
                         </div>
                       </div>
 
-                      {/* Mini Trend */}
-                      <div className="hidden xs:block mb-3">
-                        <div className="flex items-end gap-0.5 h-12 sm:h-16 opacity-50 group-hover:opacity-100 transition-opacity">
-                          {history.map((item, i) => {
-                            const maxValue = Math.max(...history.map(h => h.value));
-                            const heightPercent = (item.value / maxValue) * 100;
-                            return (
-                              <div
-                                key={i}
-                                className="flex-1 bg-gradient-to-t from-orange-500 to-red-500 rounded-t transition-all duration-300 hover:opacity-80"
-                                style={{ height: `${heightPercent}%` }}
-                              ></div>
-                            );
-                          })}
+                      {/* ✅ INFOS RÉELLES à la place du mini chart mocké */}
+                      <div className="grid grid-cols-3 gap-2 mb-3 bg-white/60 rounded-xl p-2">
+                        <div className="text-center">
+                          <p className="text-xs text-gray-500 mb-0.5">Début</p>
+                          <p className="text-xs font-semibold text-gray-800">{formatDate(tontine.start_date)}</p>
+                        </div>
+                        <div className="text-center border-x border-gray-200">
+                          <p className="text-xs text-gray-500 mb-0.5">Durée</p>
+                          <p className="text-xs font-semibold text-gray-800">
+                            {tontine.duration_months ? `${tontine.duration_months} mois` : '—'}
+                          </p>
+                        </div>
+                        <div className="text-center">
+                          <p className="text-xs text-gray-500 mb-0.5">Fin</p>
+                          <p className="text-xs font-semibold text-gray-800">{formatDate(tontine.end_date)}</p>
                         </div>
                       </div>
 
-                      {/* Stats Grid */}
+                      {/* ✅ Barre de progression temporelle (si tontine active) */}
+                      {tontine.status === 'active' && timeProgress !== null && (
+                        <div className="mb-3">
+                          <div className="flex justify-between text-xs text-gray-500 mb-1">
+                            <span>⏱ Progression</span>
+                            <span>{timeProgress}%</span>
+                          </div>
+                          <div className="w-full bg-white/50 rounded-full h-1.5 overflow-hidden">
+                            <div
+                              className="h-1.5 rounded-full bg-gradient-to-r from-green-400 to-emerald-500 transition-all duration-1000"
+                              style={{ width: `${timeProgress}%` }}
+                            />
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Stats montant + contribution */}
                       <div className="grid grid-cols-2 gap-3">
                         <div className="backdrop-blur-sm bg-white/90 rounded-xl p-3 shadow-sm">
                           <p className="text-xs text-gray-600 mb-1">Montant total</p>
@@ -495,7 +497,7 @@ const TontinesListPremium = ({ onNavigate, toast }) => {
                       <div className="w-full bg-gray-100 rounded-full h-2 sm:h-2.5 shadow-inner overflow-hidden">
                         <div
                           className="h-2 sm:h-2.5 rounded-full bg-gradient-to-r from-orange-500 to-red-500 transition-all duration-1000 relative overflow-hidden"
-                          style={{ width: `${Math.min(progress, 100)}%` }}
+                          style={{ width: `${Math.min(participantsProgress, 100)}%` }}
                         >
                           <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent animate-shimmer"></div>
                         </div>
@@ -504,7 +506,7 @@ const TontinesListPremium = ({ onNavigate, toast }) => {
                       <p className="text-xs text-gray-500 mt-1">
                         {tontine.available_spots > 0
                           ? `${tontine.available_spots} place(s) disponible(s)`
-                          : 'Complet'}
+                          : '✅ Complet'}
                       </p>
                     </div>
 
@@ -585,9 +587,7 @@ const TontinesListPremium = ({ onNavigate, toast }) => {
               <button
                 onClick={() => { setShowCreateModal(false); setEditingTontine(null); }}
                 className="text-gray-400 hover:text-gray-600 transition-colors text-xl sm:text-2xl"
-              >
-                ✕
-              </button>
+              >✕</button>
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-5">
@@ -616,7 +616,7 @@ const TontinesListPremium = ({ onNavigate, toast }) => {
                   />
                 </div>
 
-                {/* Montant total calculé automatiquement */}
+                {/* Montant total calculé */}
                 <div className="sm:col-span-2 bg-gradient-to-r from-green-50 to-emerald-50 border-2 border-green-200 rounded-xl p-4">
                   <div className="flex items-center justify-between">
                     <div>
@@ -677,7 +677,7 @@ const TontinesListPremium = ({ onNavigate, toast }) => {
                   />
                 </div>
 
-                {/* ── MODE DE TIRAGE ── */}
+                {/* Mode de tirage */}
                 <div className="sm:col-span-2">
                   <label className="block text-sm font-medium text-gray-700 mb-2">Mode de tirage *</label>
                   <div className="grid grid-cols-2 gap-3">
@@ -692,9 +692,7 @@ const TontinesListPremium = ({ onNavigate, toast }) => {
                     >
                       <div className="text-2xl mb-1">📝</div>
                       <div className="font-semibold text-gray-900 text-sm">Manuel</div>
-                      <div className="text-xs text-gray-600 mt-1">
-                        L'admin définit et modifie l'ordre à tout moment
-                      </div>
+                      <div className="text-xs text-gray-600 mt-1">L'admin définit et modifie l'ordre à tout moment</div>
                     </button>
 
                     <button
@@ -708,9 +706,7 @@ const TontinesListPremium = ({ onNavigate, toast }) => {
                     >
                       <div className="text-2xl mb-1">🎲</div>
                       <div className="font-semibold text-gray-900 text-sm">Aléatoire</div>
-                      <div className="text-xs text-gray-600 mt-1">
-                        Tirage mensuel parmi ceux n'ayant pas encore reçu
-                      </div>
+                      <div className="text-xs text-gray-600 mt-1">Tirage mensuel parmi ceux n'ayant pas encore reçu</div>
                     </button>
                   </div>
                 </div>
@@ -727,7 +723,6 @@ const TontinesListPremium = ({ onNavigate, toast }) => {
                 </div>
               </div>
 
-              {/* Info Box */}
               <div className="backdrop-blur-sm bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl sm:rounded-2xl p-4 border border-blue-200">
                 <div className="flex items-start gap-3">
                   <span className="text-2xl flex-shrink-0">💡</span>
@@ -766,12 +761,7 @@ const TontinesListPremium = ({ onNavigate, toast }) => {
               <h2 className="text-xl sm:text-2xl font-bold bg-gradient-to-r from-blue-900 to-indigo-900 bg-clip-text text-transparent">
                 🔗 Rejoindre une tontine
               </h2>
-              <button
-                onClick={() => setShowJoinModal(false)}
-                className="text-gray-400 hover:text-gray-600 transition-colors text-xl sm:text-2xl"
-              >
-                ✕
-              </button>
+              <button onClick={() => setShowJoinModal(false)} className="text-gray-400 hover:text-gray-600 transition-colors text-xl sm:text-2xl">✕</button>
             </div>
 
             <form onSubmit={handleJoinTontine} className="space-y-5">
@@ -819,31 +809,14 @@ const TontinesListPremium = ({ onNavigate, toast }) => {
 
       {/* Styles */}
       <style jsx>{`
-        @keyframes fadeIn {
-          from { opacity: 0; }
-          to { opacity: 1; }
-        }
-        @keyframes scaleIn {
-          from { transform: scale(0.9); opacity: 0; }
-          to { transform: scale(1); opacity: 1; }
-        }
-        @keyframes shimmer {
-          0% { transform: translateX(-100%); }
-          100% { transform: translateX(100%); }
-        }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes scaleIn { from { transform: scale(0.9); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+        @keyframes shimmer { 0% { transform: translateX(-100%); } 100% { transform: translateX(100%); } }
         .animate-fadeIn { animation: fadeIn 0.3s ease-out; }
         .animate-scaleIn { animation: scaleIn 0.3s ease-out; }
         .animate-shimmer { animation: shimmer 2s infinite; }
-        .line-clamp-2 {
-          display: -webkit-box;
-          -webkit-line-clamp: 2;
-          -webkit-box-orient: vertical;
-          overflow: hidden;
-        }
-        .scrollbar-hide {
-          -ms-overflow-style: none;
-          scrollbar-width: none;
-        }
+        .line-clamp-2 { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+        .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
         .scrollbar-hide::-webkit-scrollbar { display: none; }
         @media (min-width: 475px) {
           .xs\\:inline { display: inline; }
