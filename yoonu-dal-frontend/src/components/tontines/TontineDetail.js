@@ -9,18 +9,15 @@ const TontineDetail = ({ tontineId, onNavigate, toast, user }) => {
   const [loading, setLoading] = useState(true);
   const [showContributeModal, setShowContributeModal] = useState(false);
   const [contributeAmount, setContributeAmount] = useState('');
-  
-  // ✅ NOUVEAU : Récupérer le user complet depuis l'API
+  const [contributeMethod, setContributeMethod] = useState('virement');
+  const [contributeRef, setContributeRef] = useState('');
   const [currentUser, setCurrentUser] = useState(null);
 
-  // ✅ Charger le user depuis l'API
   useEffect(() => {
     const loadUser = async () => {
       try {
         const response = await API.get('/profile/');
-        // L'endpoint retourne {user: {...}, profile: {...}}
         setCurrentUser(response.data.user);
-        console.log('✅ User chargé depuis API:', response.data.user);
       } catch (error) {
         console.error('Erreur chargement user:', error);
       }
@@ -38,12 +35,9 @@ const TontineDetail = ({ tontineId, onNavigate, toast, user }) => {
     setLoading(true);
     try {
       const response = await API.get(`/tontines/${tontineId}/`);
-      console.log('Tontine chargée:', response.data);
       setTontine(response.data);
     } catch (error) {
       console.error('Erreur détaillée:', error);
-      console.error('Response:', error.response);
-      
       if (error.response?.status === 403) {
         toast?.showError?.('Vous n\'avez pas accès à cette tontine');
       } else if (error.response?.status === 404) {
@@ -58,7 +52,7 @@ const TontineDetail = ({ tontineId, onNavigate, toast, user }) => {
 
   const handleContribute = async (e) => {
     e.preventDefault();
-    
+
     if (!contributeAmount) {
       toast?.showError('Entre un montant');
       return;
@@ -66,12 +60,15 @@ const TontineDetail = ({ tontineId, onNavigate, toast, user }) => {
 
     try {
       await API.post(`/tontines/${tontineId}/contribute/`, {
-        amount: parseFloat(contributeAmount)
+        amount: parseFloat(contributeAmount),
+        payment_method: contributeMethod,
+        transaction_reference: contributeRef,
       });
-      
-      toast?.showSuccess('Contribution enregistrée !');
+
+      toast?.showSuccess('Contribution enregistrée ! En attente de validation par l\'admin.');
       setShowContributeModal(false);
       setContributeAmount('');
+      setContributeRef('');
       loadDetail();
     } catch (error) {
       console.error('Erreur:', error);
@@ -83,7 +80,7 @@ const TontineDetail = ({ tontineId, onNavigate, toast, user }) => {
     if (!window.confirm(`Êtes-vous sûr de vouloir supprimer la tontine "${tontine?.name}" ?\n\nCette action est irréversible !`)) {
       return;
     }
-    
+
     try {
       await API.delete(`/tontines/${tontineId}/`);
       toast?.showSuccess?.('Tontine supprimée avec succès !');
@@ -107,6 +104,20 @@ const TontineDetail = ({ tontineId, onNavigate, toast, user }) => {
       cancelled: { label: 'Annulée', emoji: '❌', color: 'red' }
     };
     return configs[status] || configs.planning;
+  };
+
+  // Badge statut de contribution
+  const getContributionBadge = (status) => {
+    switch (status) {
+      case 'à_jour':
+        return <span className="px-2 py-0.5 bg-green-100 text-green-700 text-xs font-bold rounded-full">✅ À jour</span>;
+      case 'partiel':
+        return <span className="px-2 py-0.5 bg-orange-100 text-orange-700 text-xs font-bold rounded-full">⚠️ Partiel</span>;
+      case 'en_retard':
+        return <span className="px-2 py-0.5 bg-red-100 text-red-700 text-xs font-bold rounded-full">❌ En retard</span>;
+      default:
+        return null;
+    }
   };
 
   if (loading) {
@@ -139,23 +150,16 @@ const TontineDetail = ({ tontineId, onNavigate, toast, user }) => {
   }
 
   const statusConfig = getStatusConfig(tontine.status);
-  const progress = tontine.max_participants > 0 
-    ? (tontine.current_participants / tontine.max_participants) * 100 
+  const progress = tontine.max_participants > 0
+    ? (tontine.current_participants / tontine.max_participants) * 100
     : 0;
-  
-  // ✅ CORRIGÉ : Utiliser currentUser au lieu de user
+
   const currentUserParticipant = tontine.participants?.find(p => p.user?.id === currentUser?.id);
-  const isAdmin = currentUserParticipant?.is_admin || tontine.creator === currentUser?.id;
-  
-  // Debug logs
-  console.log('User ID:', currentUser?.id);
-  console.log('Tontine creator:', tontine.creator);
-  console.log('Current user participant:', currentUserParticipant);
-  console.log('Is Admin:', isAdmin);
+  const isAdmin = currentUserParticipant?.is_admin || tontine.creator?.id === currentUser?.id;
 
   return (
     <div className="min-h-screen bg-gray-50 pb-20">
-      {/* Header blanc épuré */}
+      {/* Header */}
       <div className="bg-white border-b border-gray-200 sticky top-0 z-10 shadow-sm">
         <div className="max-w-6xl mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
@@ -166,19 +170,30 @@ const TontineDetail = ({ tontineId, onNavigate, toast, user }) => {
               <span className="text-xl">←</span>
               <span className="font-medium">Retour</span>
             </button>
-            <span className={`px-3 py-1 rounded-full text-sm font-semibold ${
-              statusConfig.color === 'blue' ? 'bg-blue-100 text-blue-700' :
-              statusConfig.color === 'green' ? 'bg-green-100 text-green-700' :
-              statusConfig.color === 'gray' ? 'bg-gray-100 text-gray-700' :
-              'bg-red-100 text-red-700'
-            }`}>
-              {statusConfig.emoji} {statusConfig.label}
-            </span>
+            <div className="flex items-center gap-2">
+              {/* Badge mode tirage */}
+              <span className={`px-2 py-1 rounded-full text-xs font-semibold ${
+                tontine.payout_mode === 'random'
+                  ? 'bg-purple-100 text-purple-700'
+                  : 'bg-blue-100 text-blue-700'
+              }`}>
+                {tontine.payout_mode === 'random' ? '🎲 Aléatoire' : '📝 Manuel'}
+              </span>
+              <span className={`px-3 py-1 rounded-full text-sm font-semibold ${
+                statusConfig.color === 'blue' ? 'bg-blue-100 text-blue-700' :
+                statusConfig.color === 'green' ? 'bg-green-100 text-green-700' :
+                statusConfig.color === 'gray' ? 'bg-gray-100 text-gray-700' :
+                'bg-red-100 text-red-700'
+              }`}>
+                {statusConfig.emoji} {statusConfig.label}
+              </span>
+            </div>
           </div>
         </div>
       </div>
 
       <div className="max-w-6xl mx-auto px-4 py-6 space-y-6">
+
         {/* Titre et description */}
         <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
           <div className="flex items-start justify-between mb-4">
@@ -189,13 +204,22 @@ const TontineDetail = ({ tontineId, onNavigate, toast, user }) => {
             <div className="text-right ml-4">
               <p className="text-sm text-gray-500 mb-1">Code d'invitation</p>
               <p className="text-2xl font-mono font-bold text-green-600">{tontine.invitation_code}</p>
+              <button
+                onClick={() => {
+                  navigator.clipboard.writeText(tontine.invitation_code);
+                  toast?.showSuccess?.('Code copié !');
+                }}
+                className="text-xs text-gray-500 hover:text-green-600 mt-1"
+              >
+                📋 Copier
+              </button>
             </div>
           </div>
 
-          {/* Stats en ligne */}
+          {/* Stats */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 pt-4 border-t border-gray-100">
             <div>
-              <p className="text-xs text-gray-500 mb-1">💰 Contribution mensuelle</p>
+              <p className="text-xs text-gray-500 mb-1">💰 Contribution/mois</p>
               <p className="text-lg font-bold text-gray-900">{formatCurrency(tontine.monthly_contribution)}</p>
             </div>
             <div>
@@ -213,7 +237,7 @@ const TontineDetail = ({ tontineId, onNavigate, toast, user }) => {
           </div>
         </div>
 
-        {/* Progression */}
+        {/* Progression participants */}
         <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
           <div className="flex items-center justify-between mb-3">
             <h2 className="text-lg font-bold text-gray-900">Progression des participants</h2>
@@ -226,15 +250,15 @@ const TontineDetail = ({ tontineId, onNavigate, toast, user }) => {
             ></div>
           </div>
           <p className="text-sm text-gray-600 mt-2">
-            {tontine.available_spots > 0 
+            {tontine.available_spots > 0
               ? `${tontine.available_spots} place(s) disponible(s)`
-              : 'Tontine complète'}
+              : '✅ Tontine complète'}
           </p>
         </div>
 
-        {/* ✅ NOUVEAU : Panneau Admin (si admin uniquement) */}
+        {/* Panneau Admin */}
         {isAdmin && (
-          <TontineAdminPanel 
+          <TontineAdminPanel
             tontine={tontine}
             participants={tontine.participants || []}
             onUpdate={loadDetail}
@@ -242,19 +266,19 @@ const TontineDetail = ({ tontineId, onNavigate, toast, user }) => {
           />
         )}
 
-        {/* ✅ NOUVEAU : Timeline de paiement */}
-        <TontineTimeline 
+        {/* Timeline */}
+        <TontineTimeline
           tontineId={tontine.id}
           isAdmin={isAdmin}
           onUpdate={loadDetail}
         />
 
-        {/* ✅ NOUVEAU : Fil d'activité */}
-        <TontineActivityFeed 
+        {/* Fil d'activité */}
+        <TontineActivityFeed
           tontineId={tontine.id}
         />
 
-        {/* Bouton Supprimer (si créateur + planning) */}
+        {/* Zone de danger */}
         {tontine.creator && tontine.status === 'planning' && (
           <div className="bg-red-50 border border-red-200 rounded-2xl p-4">
             <div className="flex items-start gap-4">
@@ -300,21 +324,34 @@ const TontineDetail = ({ tontineId, onNavigate, toast, user }) => {
                       <div>
                         <p className="font-semibold text-gray-900">
                           {participant.user?.first_name} {participant.user?.last_name}
+                          {participant.user?.id === currentUser?.id && (
+                            <span className="ml-2 text-xs bg-blue-500 text-white px-2 py-0.5 rounded-full">Vous</span>
+                          )}
                         </p>
-                        <p className="text-sm text-gray-600">@{participant.user?.username}</p>
+                        <p className="text-sm text-gray-500">@{participant.user?.username}</p>
+                        {/* ✅ Montant total contribué */}
+                        {tontine.status === 'active' && (
+                          <p className="text-xs text-gray-400 mt-0.5">
+                            Contribué : {formatCurrency(participant.total_contributions)}
+                          </p>
+                        )}
                       </div>
                     </div>
-                    <div className="text-right">
+
+                    {/* Badges droite */}
+                    <div className="flex flex-col items-end gap-1">
                       {participant.is_admin && (
-                        <span className="px-3 py-1 bg-blue-100 text-blue-700 text-xs font-bold rounded-full">
+                        <span className="px-2 py-0.5 bg-blue-100 text-blue-700 text-xs font-bold rounded-full">
                           👑 Admin
                         </span>
                       )}
                       {participant.received_payout && (
-                        <span className="px-3 py-1 bg-green-100 text-green-700 text-xs font-bold rounded-full ml-2">
-                          ✅ Payé
+                        <span className="px-2 py-0.5 bg-green-100 text-green-700 text-xs font-bold rounded-full">
+                          💰 Payé
                         </span>
                       )}
+                      {/* ✅ Statut contribution */}
+                      {tontine.status === 'active' && getContributionBadge(participant.contribution_status)}
                     </div>
                   </div>
                 </div>
@@ -323,7 +360,7 @@ const TontineDetail = ({ tontineId, onNavigate, toast, user }) => {
           </div>
         </div>
 
-        {/* Bouton Contribuer */}
+        {/* Bouton Contribuer (fixe en bas) */}
         {tontine.status === 'active' && (
           <div className="fixed bottom-6 left-0 right-0 px-4 z-20">
             <div className="max-w-6xl mx-auto">
@@ -342,20 +379,56 @@ const TontineDetail = ({ tontineId, onNavigate, toast, user }) => {
       {showContributeModal && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6">
-            <h3 className="text-2xl font-bold text-gray-900 mb-4">💰 Nouvelle contribution</h3>
-            
+            <h3 className="text-2xl font-bold text-gray-900 mb-1">💰 Nouvelle contribution</h3>
+            <p className="text-sm text-gray-500 mb-5">
+              Votre contribution sera examinée par l'administrateur avant validation.
+            </p>
+
             <form onSubmit={handleContribute} className="space-y-4">
+              {/* Montant */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Montant (FCFA)
+                  Montant (FCFA) *
                 </label>
                 <input
                   type="number"
                   value={contributeAmount}
                   onChange={(e) => setContributeAmount(e.target.value)}
-                  placeholder="Ex: 50000"
+                  placeholder={`Ex: ${new Intl.NumberFormat('fr-FR').format(tontine.monthly_contribution)}`}
                   className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent"
                   required
+                />
+              </div>
+
+              {/* Méthode de paiement */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Méthode de paiement
+                </label>
+                <select
+                  value={contributeMethod}
+                  onChange={(e) => setContributeMethod(e.target.value)}
+                  className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent bg-white"
+                >
+                  <option value="virement">Virement bancaire</option>
+                  <option value="wave">Wave</option>
+                  <option value="orange_money">Orange Money</option>
+                  <option value="free_money">Free Money</option>
+                  <option value="cash">Espèces</option>
+                </select>
+              </div>
+
+              {/* Référence transaction */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Référence transaction (optionnel)
+                </label>
+                <input
+                  type="text"
+                  value={contributeRef}
+                  onChange={(e) => setContributeRef(e.target.value)}
+                  placeholder="Ex: TXN-2026-001"
+                  className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent"
                 />
               </div>
 
@@ -365,6 +438,7 @@ const TontineDetail = ({ tontineId, onNavigate, toast, user }) => {
                   onClick={() => {
                     setShowContributeModal(false);
                     setContributeAmount('');
+                    setContributeRef('');
                   }}
                   className="flex-1 px-6 py-3 border-2 border-gray-300 text-gray-700 rounded-xl font-semibold hover:bg-gray-50 transition-all"
                 >
@@ -374,7 +448,7 @@ const TontineDetail = ({ tontineId, onNavigate, toast, user }) => {
                   type="submit"
                   className="flex-1 px-6 py-3 bg-green-600 text-white rounded-xl font-semibold hover:bg-green-700 transition-all"
                 >
-                  Valider
+                  Envoyer
                 </button>
               </div>
             </form>
