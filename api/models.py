@@ -861,7 +861,7 @@ class TontineParticipant(models.Model):
         TontineContribution = apps.get_model('api', 'TontineContribution')
         
         total = TontineContribution.objects.filter(
-            participant=self
+            participant=self, 
             status='confirmed'  # ✅ Uniquement les contributions validées 
         ).aggregate(total=Sum('amount'))['total']
         return total or 0
