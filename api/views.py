@@ -4063,3 +4063,54 @@ def validate_contribution(request, contribution_id):
         
     except TontineContribution.DoesNotExist:
         return Response({'error': 'Contribution non trouvée'}, status=status.HTTP_404_NOT_FOUND)
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def tontine_pending_contributions(request, tontine_id):
+    """
+    Liste les contributions en attente de validation (admin)
+    GET /api/tontines/{id}/contributions/pending/
+    """
+    try:
+        tontine = Tontine.objects.get(id=tontine_id)
+
+        is_admin = TontineParticipant.objects.filter(
+            tontine=tontine,
+            user=request.user,
+            is_admin=True
+        ).exists() or tontine.creator == request.user
+
+        if not is_admin:
+            return Response({
+                'error': 'Accès réservé à l\'administrateur'
+            }, status=status.HTTP_403_FORBIDDEN)
+
+        pending = TontineContribution.objects.filter(
+            participant__tontine=tontine,
+            status='pending'
+        ).select_related('participant__user').order_by('-created_at')
+
+        data = []
+        for c in pending:
+            data.append({
+                'id': c.id,
+                'participant_id': c.participant.id,
+                'participant_name': c.participant.user.get_full_name() or c.participant.user.username,
+                'participant_username': c.participant.user.username,
+                'amount': float(c.amount),
+                'date': c.date.isoformat(),
+                'payment_method': c.payment_method,
+                'transaction_reference': c.transaction_reference or '',
+                'notes': c.notes or '',
+                'created_at': c.created_at.isoformat(),
+            })
+
+        return Response({
+            'pending_contributions': data,
+            'count': len(data)
+        })
+
+    except Tontine.DoesNotExist:
+        return Response({'error': 'Tontine non trouvée'}, status=status.HTTP_404_NOT_FOUND)
+    except Exception as e:
+        return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
