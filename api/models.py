@@ -862,6 +862,7 @@ class TontineParticipant(models.Model):
         
         total = TontineContribution.objects.filter(
             participant=self
+            status='confirmed'  # ✅ Uniquement les contributions validées 
         ).aggregate(total=Sum('amount'))['total']
         return total or 0
 
