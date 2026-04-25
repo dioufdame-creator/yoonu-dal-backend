@@ -2145,15 +2145,17 @@ def manage_financial_leaks(request):
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
+
 # ==========================================
 # IA CHAT - YOONU ASSISTANT
+# Remplace uniquement la fonction ai_chat dans views.py
 # ==========================================
 
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
-@check_usage_limit('ai_messages_count', 50, "Messages IA")  # Décommenter si tu as ce decorator
+@check_usage_limit('ai_messages_count', 50, "Messages IA")
 def ai_chat(request):
-    """Chat IA avec contexte riche : temporel, objectifs, score, enveloppes, tontines"""
+    """Chat IA - Coach financier intelligent Yoonu Dal"""
     user = request.user
 
     try:
@@ -2165,9 +2167,13 @@ def ai_chat(request):
         if not message:
             return Response({'error': 'Message requis'}, status=status.HTTP_400_BAD_REQUEST)
 
-        # CONTEXTE FINANCIER DE BASE
+        # ── CONTEXTE FINANCIER ──────────────────────────────────────
         now = datetime.now()
         start_of_month = now.replace(day=1)
+        last_day_of_month = (now.replace(day=1) + timedelta(days=32)).replace(day=1) - timedelta(days=1)
+        day_of_month = now.day
+        days_remaining = (last_day_of_month - now).days
+        month_progress = (day_of_month / last_day_of_month.day) * 100
 
         monthly_expenses = Expense.objects.filter(
             user=user, date__gte=start_of_month
@@ -2177,16 +2183,10 @@ def ai_chat(request):
             user=user, date__gte=start_of_month
         ).aggregate(total=Sum('amount'))['total'] or 0
 
-        # CONTEXTE TEMPOREL ✅ NOUVEAU
-        day_of_month = now.day
-        last_day_of_month = (now.replace(day=1) + timedelta(days=32)).replace(day=1) - timedelta(days=1)
-        days_remaining = (last_day_of_month - now).days
-        month_progress = (day_of_month / last_day_of_month.day) * 100
-        
         budget_remaining = monthly_income - monthly_expenses
         daily_budget = budget_remaining / days_remaining if days_remaining > 0 else 0
 
-        # ENVELOPPES
+        # ── ENVELOPPES ──────────────────────────────────────────────
         print("🔍 3. Chargement enveloppes...")
         envelopes = Envelope.objects.filter(user=user)
         envelopes_data = [{
@@ -2197,9 +2197,9 @@ def ai_chat(request):
             'percentage_used': int((env.current_spent / env.monthly_budget * 100) if env.monthly_budget > 0 else 0)
         } for env in envelopes]
 
-        # OBJECTIFS ✅ NOUVEAU
+        # ── OBJECTIFS ───────────────────────────────────────────────
         print("🔍 4. Chargement objectifs...")
-        goals = Goal.objects.filter(user=user, is_achieved=False).order_by('-created_at')[:5]
+        goals = Goal.objects.filter(user=user, is_achieved=False).order_by('-created_at')[:10]
         goals_data = [{
             'id': goal.id,
             'title': goal.title,
@@ -2210,7 +2210,7 @@ def ai_chat(request):
             'deadline': goal.deadline.isoformat() if goal.deadline else None
         } for goal in goals]
 
-        # SCORE YOONU DAL ✅ NOUVEAU
+        # ── SCORE YOONU DAL ──────────────────────────────────────────
         print("🔍 5. Calcul score...")
         try:
             score_result = calculate_yoonu_score(user)
@@ -2220,8 +2220,8 @@ def ai_chat(request):
             yoonu_score = 0
             score_level = 'Non calculé'
 
-        # DÉPENSES RÉCENTES
-        recent_expenses = Expense.objects.filter(user=user).order_by('-date')[:5]
+        # ── DÉPENSES RÉCENTES ────────────────────────────────────────
+        recent_expenses = Expense.objects.filter(user=user).order_by('-date')[:10]
         recent_expenses_data = [{
             'category': exp.category,
             'amount': float(exp.amount),
@@ -2229,31 +2229,50 @@ def ai_chat(request):
             'date': exp.date.isoformat()
         } for exp in recent_expenses]
 
-        # TONTINES
+        # ── REVENUS DU MOIS ──────────────────────────────────────────
+        all_incomes = Income.objects.filter(user=user, date__gte=start_of_month)
+        incomes_data = [{
+            'source': inc.source,
+            'amount': float(inc.amount),
+            'description': inc.description,
+        } for inc in all_incomes]
+
+        # ── TONTINES ────────────────────────────────────────────────
         my_tontines = Tontine.objects.filter(
             Q(creator=user) | Q(participants__user=user)
         ).distinct()
-
         tontines_data = []
         for tontine in my_tontines:
-            participants_count = tontine.participants.count()
             my_participation = tontine.participants.filter(user=user).first()
-
             tontines_data.append({
                 'id': tontine.id,
                 'name': tontine.name,
                 'monthly_contribution': float(tontine.monthly_contribution),
                 'total_amount': float(tontine.total_amount),
                 'frequency': tontine.frequency,
-                'participants': participants_count,
+                'participants': tontine.participants.count(),
                 'max_participants': tontine.max_participants,
                 'status': tontine.status,
+                'payout_mode': tontine.payout_mode,
                 'my_position': my_participation.position if my_participation else None
             })
 
-        # CONTEXTE ENRICHI ✅
+        # ── DETTES ──────────────────────────────────────────────────
+        debts = Debt.objects.filter(user=user, is_active=True)
+        debts_data = [{
+            'name': d.name,
+            'remaining_amount': float(d.remaining_amount),
+            'monthly_payment': float(d.monthly_payment),
+            'progress_percentage': float(d.progress_percentage),
+        } for d in debts]
+
+        # ── VALEURS UTILISATEUR ──────────────────────────────────────
+        user_values_qs = UserValue.objects.filter(user=user).order_by('priority')
+        values_data = [v.value for v in user_values_qs]
+
+        # ── CONTEXTE COMPLET ─────────────────────────────────────────
         user_context = {
-            'name': user.username,
+            'name': user.first_name or user.username,
             'current_date': now.strftime('%Y-%m-%d'),
             'day_of_month': day_of_month,
             'days_remaining_in_month': days_remaining,
@@ -2264,13 +2283,16 @@ def ai_chat(request):
             'daily_budget': float(daily_budget),
             'yoonu_score': yoonu_score,
             'score_level': score_level,
+            'personal_values': values_data,
             'envelopes': envelopes_data,
             'goals': goals_data,
             'recent_expenses': recent_expenses_data,
-            'tontines': tontines_data
+            'incomes_this_month': incomes_data,
+            'tontines': tontines_data,
+            'debts': debts_data,
         }
 
-        # SYSTEM PROMPT INTELLIGENT ✅
+        # ── CONTEXTE TEMPOREL ────────────────────────────────────────
         temporal_context = ""
         if day_of_month <= 5:
             temporal_context = f"🟢 DÉBUT DE MOIS (J{day_of_month}). Moment idéal pour planifier."
@@ -2278,79 +2300,104 @@ def ai_chat(request):
             temporal_context = f"🔴 FIN DE MOIS (J{day_of_month}, {days_remaining}j restants). Mode survie !"
         elif month_progress >= 50:
             temporal_context = f"🟡 MI-MOIS (J{day_of_month}). Point d'étape."
-        
+
         budget_alert = ""
         if budget_remaining < 0:
             budget_alert = f"⚠️ DÉPASSEMENT : {abs(budget_remaining):,.0f} FCFA"
         elif days_remaining > 0:
-            budget_alert = f"Budget : {budget_remaining:,.0f} FCFA pour {days_remaining}j = {daily_budget:,.0f} FCFA/jour"
+            budget_alert = f"Budget disponible : {budget_remaining:,.0f} FCFA pour {days_remaining}j = {daily_budget:,.0f} FCFA/jour"
 
-        system_prompt = f"""Tu es Yoonu, le coach financier intelligent de {user.username}.
+        # ── SYSTEM PROMPT COACH ──────────────────────────────────────
+        system_prompt = f"""Tu es Yoonu, coach financier personnel de {user.first_name or user.username}, basé au Sénégal.
 
-📍 CONTEXTE : Sénégal, FCFA, méthode Yoonu Dal (4 enveloppes)
+Tu as accès à TOUTES ses données financières en temps réel. Tu le connais intimement — ses valeurs, ses objectifs, ses habitudes, ses dettes, ses tontines.
 
-📅 SITUATION :
-{temporal_context}
-Jour {day_of_month} du mois, {days_remaining} jours restants
+━━━ PROFIL COMPLET ━━━
+Prénom : {user.first_name or user.username}
+Valeurs personnelles : {', '.join(values_data) if values_data else 'Non définies'}
+Score Yoonu Dal : {yoonu_score}/100 ({score_level})
+Date : {now.strftime('%d/%m/%Y')} — {temporal_context}
 
-💰 BUDGET :
+━━━ SITUATION FINANCIÈRE DU MOIS ━━━
 Revenus : {monthly_income:,.0f} FCFA
 Dépenses : {monthly_expenses:,.0f} FCFA
 {budget_alert}
 
-🏆 SCORE : {yoonu_score}/100 ({score_level})
+━━━ OBJECTIFS EN COURS ━━━
+{json.dumps(goals_data, ensure_ascii=False, indent=2) if goals_data else 'Aucun objectif défini'}
 
-📊 DONNÉES : {json.dumps(user_context, indent=2, ensure_ascii=False)}
+━━━ ENVELOPPES ━━━
+{json.dumps(envelopes_data, ensure_ascii=False, indent=2)}
 
-📋 ACTIONS DISPONIBLES :
+━━━ TONTINES ━━━
+{json.dumps(tontines_data, ensure_ascii=False, indent=2) if tontines_data else 'Aucune tontine'}
+
+━━━ DETTES ━━━
+{json.dumps(debts_data, ensure_ascii=False, indent=2) if debts_data else 'Aucune dette active'}
+
+━━━ REVENUS DU MOIS ━━━
+{json.dumps(incomes_data, ensure_ascii=False, indent=2) if incomes_data else 'Aucun revenu ce mois'}
+
+━━━ DÉPENSES RÉCENTES ━━━
+{json.dumps(recent_expenses_data, ensure_ascii=False, indent=2)}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+TON RÔLE : Coach financier intelligent, pas un tableau de bord.
+
+PHILOSOPHIE :
+- Tu réponds comme un ami proche qui connaît parfaitement sa situation financière
+- Tu contextualises avec SES données réelles (objectifs nommés, tontines spécifiques, dettes)
+- Tu fais des connexions intelligentes : si quelqu'un dit "je peux mettre plus", tu demandes VERS QUEL OBJECTIF, pas juste "combien"
+- Tu poses des questions stratégiques quand c'est pertinent
+- Tu peux challenger ses décisions et suggérer des stratégies long terme
+- Tu utilises le contexte temporel UNIQUEMENT quand c'est pertinent (pas à chaque message)
+- Tu connais la réalité sénégalaise : Tabaski, Korité, solidarité familiale, tontines, Wave/Orange Money
+- Réponses de longueur naturelle — ni trop courtes ni trop longues selon le contexte
+- Tu utilises les vrais noms de ses objectifs et tontines dans tes réponses
+
+QUAND CRÉER DES ACTIONS :
+- L'utilisateur te demande explicitement d'enregistrer quelque chose → génère l'action
+- Sinon → réponds sans action, engage la conversation
+
+━━━ ACTIONS DISPONIBLES ━━━
 
 1. create_expense : Créer une dépense
-   {{"type": "create_expense", "data": {{"category": "alimentation|transport|logement|santé|education|loisirs|autre", "amount": 5000, "description": "Carburant", "date": "2026-04-03"}}}}
+   {{"type": "create_expense", "data": {{"category": "alimentation|transport|logement|santé|education|loisirs|autre", "amount": 5000, "description": "Carburant", "date": "{now.strftime('%Y-%m-%d')}"}}}}
 
 2. create_income : Créer un revenu
-   {{"type": "create_income", "data": {{"source": "Salaire|Business|Freelance|Investissement|Location|Autre", "amount": 50000, "description": "Salaire avril", "date": "2026-04-03"}}}}
+   {{"type": "create_income", "data": {{"source": "Salaire|Business|Freelance|Investissement|Location|Autre", "amount": 50000, "description": "Salaire avril", "date": "{now.strftime('%Y-%m-%d')}"}}}}
 
 3. create_tontine : Créer une tontine
    {{"type": "create_tontine", "data": {{"name": "Tontine Famille", "contribution_amount": 10000, "total_participants": 10, "frequency": "monthly"}}}}
 
 FORMAT RÉPONSE JSON STRICT :
 {{
-  "message": "Ton message en 2-3 phrases MAX avec chiffres précis",
-  "actions": [
-    {{"type": "create_expense", "data": {{...}}}},
-    {{"type": "create_income", "data": {{...}}}}
-  ]
+  "message": "Ta réponse naturelle ici",
+  "actions": []
 }}
 
-DIRECTIVES :
-1. TOUJOURS utiliser contexte temporel (J{day_of_month}, {days_remaining}j restants)
-2. Budget/jour : <5k urgence, >10k confortable
-3. Chiffres précis OBLIGATOIRES
-4. 4 enveloppes : Essentiel, Plaisir, Projet, Libération
-5. MAX 3 phrases dans message
-6. Si action demandée : TOUJOURS générer l'objet action complet avec TOUS les champs
+RÈGLES FORMAT :
+- Si action demandée : TOUJOURS générer l'objet action complet avec TOUS les champs requis
+- JSON valide OBLIGATOIRE
+- Chiffres précis quand pertinents (pas systématiquement)
 
-EXEMPLES :
-BON : "50k reçu ! Ton budget passe à 12,5k/jour pour 4j. Ça respire ! 💰"
-MAUVAIS : "C'est bien" (vague, pas de chiffres)
+EXEMPLES DE BONNES RÉPONSES :
+- "Je peux mettre plus ?" → "Vers quel objectif tu veux diriger ça ? Ton terrain à {goals_data[0]['title'] if goals_data else 'X'} est à {goals_data[0]['progress_percentage'] if goals_data else 0}%, ou tu préfères renforcer ta tontine ?"
+- "Revenu ajouté" → générer create_income + confirmer avec impact sur budget
+- Question générale → répondre sans ramener systématiquement au budget/jour"""
 
-BON (avec action) : {{"message": "Revenu ajouté !", "actions": [{{"type": "create_income", "data": {{"source": "Salaire", "amount": 50000}}}}]}}
-MAUVAIS : {{"message": "Ok", "actions": []}} (action manquante)
-
-JSON valide OBLIGATOIRE. TOUJOURS inclure tous les champs requis dans les actions."""
-
-        # APPEL CLAUDE
+        # ── APPEL CLAUDE ─────────────────────────────────────────────
         print("🔍 6. Appel Claude API...")
         client = anthropic.Anthropic(api_key=settings.ANTHROPIC_API_KEY)
 
         messages = []
-        for msg in history[-10:]:
+        for msg in history[-20:]:  # 20 messages d'historique
             messages.append({'role': msg['role'], 'content': msg['content']})
         messages.append({'role': 'user', 'content': message})
 
         response = client.messages.create(
             model='claude-sonnet-4-20250514',
-            max_tokens=800,
+            max_tokens=1500,
             system=system_prompt,
             messages=messages
         )
@@ -2358,7 +2405,7 @@ JSON valide OBLIGATOIRE. TOUJOURS inclure tous les champs requis dans les action
         assistant_message = response.content[0].text
         print("🔍 7. Réponse Claude reçue")
 
-        # PARSER JSON
+        # ── PARSER JSON ───────────────────────────────────────────────
         try:
             cleaned = assistant_message.strip()
             if cleaned.startswith('```json'):
