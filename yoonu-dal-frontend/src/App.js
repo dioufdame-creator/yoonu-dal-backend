@@ -17,7 +17,7 @@ import ValueSelector from './components/consciousness/ValueSelector';
 import ExpenseTracker from './components/control/ExpenseTracker';
 import TontinesList from './components/tontines/TontinesList';
 import TontineDetail from './components/tontines/TontineDetail';
-import TontineInvitePage from './components/tontines/TontineInvitePage';
+import TontineInvitePage from './components/tontines/Tontineinvitepage';
 import IncomesPage from './components/incomes/IncomesPage';
 import TontineAnalysis from './components/tontines/TontineAnalysis';
 import EnvelopeManager from './components/envelopeManager/EnvelopeManager';
@@ -84,6 +84,17 @@ function App() {
         setAuthError('Erreur de connexion au serveur');
       } finally {
         setIsLoading(false);
+
+        // ✅ Détecter un lien d'invitation dans l'URL au chargement
+        const path = window.location.pathname;
+        if (path.startsWith('/join/')) {
+          const code = path.replace('/join/', '').trim();
+          if (code) {
+            console.log('🔗 Code d\'invitation détecté dans l\'URL:', code);
+            setCurrentPage('tontine-invite');
+            setPageParams({ code });
+          }
+        }
       }
     };
 
