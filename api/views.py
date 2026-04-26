@@ -1390,6 +1390,7 @@ def manage_tontines(request):
                     'id': tontine.id,
                     'name': tontine.name,
                     'description': tontine.description,
+                    'status': tontine.status,          # ← MANQUANT, ajouter ici
                     'total_amount': float(tontine.total_amount),
                     'monthly_contribution': float(tontine.monthly_contribution),
                     'max_participants': tontine.max_participants,
