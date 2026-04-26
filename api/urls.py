@@ -51,11 +51,12 @@ urlpatterns = [
 
     # Valeurs personnelles
     path('values/', views.user_values, name='user_values'),
-
+    
     # Tontines
     path('tontines/', views.manage_tontines, name='manage_tontines'),
     path('tontines/active/', views.active_tontines, name='active_tontines'),
     path('tontines/join/', views.join_tontine, name='join_tontine'),
+    path('tontines/invite/<str:invitation_code>/', views.tontine_public_info, name='tontine_public_info'),
     path('tontines/<int:tontine_id>/', views.tontine_detail, name='tontine_detail'),
     path('tontines/<int:tontine_id>/activate/', views.activate_tontine, name='activate_tontine'),
     path('tontines/<int:tontine_id>/contribute/', views.make_contribution, name='make_contribution'),
