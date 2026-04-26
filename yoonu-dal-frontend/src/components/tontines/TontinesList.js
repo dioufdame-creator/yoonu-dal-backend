@@ -2,8 +2,8 @@ import React, { useState, useEffect } from 'react';
 import API from '../../services/api';
 
 // ==========================================
-// TONTINES LIST PREMIUM V3.3
-// Infos réelles à la place du mini chart mocké
+// TONTINES LIST PREMIUM V3.4
+// WhatsApp enrichi avec lien direct + infos complètes
 // ==========================================
 
 const TontinesListPremium = ({ onNavigate, toast }) => {
@@ -78,7 +78,6 @@ const TontinesListPremium = ({ onNavigate, toast }) => {
     return new Intl.NumberFormat('fr-FR').format(amount || 0) + ' FCFA';
   };
 
-  // ✅ Formatage de date lisible
   const formatDate = (dateStr) => {
     if (!dateStr) return '—';
     return new Date(dateStr).toLocaleDateString('fr-FR', {
@@ -88,7 +87,6 @@ const TontinesListPremium = ({ onNavigate, toast }) => {
     });
   };
 
-  // ✅ Calcul de la progression temporelle de la tontine
   const getTontineProgress = (tontine) => {
     if (!tontine.start_date || !tontine.end_date) return null;
     const start = new Date(tontine.start_date);
@@ -127,6 +125,23 @@ const TontinesListPremium = ({ onNavigate, toast }) => {
       }
     };
     return configs[status] || configs.planning;
+  };
+
+  const handleShareWhatsApp = (tontine) => {
+    const inviteUrl = `https://yoonudal.com/join/${tontine.invitation_code}`;
+    const payoutMode = tontine.payout_mode === 'random' ? '🎲 Tirage aléatoire' : '📝 Ordre manuel';
+    const message = `🦁 *${tontine.name}* — Tontine Yoonu Dal${tontine.description ? '\n\n' + tontine.description : ''}
+
+👥 Participants : ${tontine.current_participants}/${tontine.max_participants} (${tontine.available_spots} place(s) restante(s))
+💰 Contribution : *${formatCurrencyFull(tontine.monthly_contribution)}/mois*
+🎯 Total à récupérer : *${formatCurrencyFull(tontine.total_amount)}*
+📅 Durée : ${tontine.duration_months} mois
+${payoutMode}
+
+🔑 Code d'invitation : *${tontine.invitation_code}*
+
+👉 Rejoins directement : ${inviteUrl}`;
+    window.open(`https://wa.me/?text=${encodeURIComponent(message)}`, '_blank');
   };
 
   const handleSubmit = async (e) => {
@@ -428,7 +443,7 @@ const TontinesListPremium = ({ onNavigate, toast }) => {
                         </div>
                       </div>
 
-                      {/* ✅ INFOS RÉELLES à la place du mini chart mocké */}
+                      {/* Infos réelles : Début / Durée / Fin */}
                       <div className="grid grid-cols-3 gap-2 mb-3 bg-white/60 rounded-xl p-2">
                         <div className="text-center">
                           <p className="text-xs text-gray-500 mb-0.5">Début</p>
@@ -446,7 +461,7 @@ const TontinesListPremium = ({ onNavigate, toast }) => {
                         </div>
                       </div>
 
-                      {/* ✅ Barre de progression temporelle (si tontine active) */}
+                      {/* Barre de progression temporelle */}
                       {tontine.status === 'active' && timeProgress !== null && (
                         <div className="mb-3">
                           <div className="flex justify-between text-xs text-gray-500 mb-1">
@@ -510,35 +525,29 @@ const TontinesListPremium = ({ onNavigate, toast }) => {
                       </p>
                     </div>
 
-                    {/* Code invitation */}
+                    {/* Code invitation + boutons partage */}
                     <div className="backdrop-blur-sm bg-gradient-to-br from-amber-50 to-orange-50 rounded-xl p-3 sm:p-4 border border-orange-200 mb-4">
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <p className="text-xs text-gray-600 mb-1">Code d'invitation</p>
-                          <p className="text-lg sm:text-xl font-mono font-bold text-orange-700">{tontine.invitation_code}</p>
-                        </div>
-                        <div className="flex gap-2">
-                      <button
-                        onClick={() => {
-                          navigator.clipboard.writeText(tontine.invitation_code);
-                          toast?.showSuccess('Code copié !');
-                        }}
-                        className="bg-white px-3 py-2 rounded-lg text-xs font-medium text-orange-700 hover:bg-orange-100 transition-all shadow-sm"
-                      >
-                        📋 Copier
-                      </button>
-                      <button
-                        onClick={() => {
-                          const message = `Rejoins ma tontine "${tontine.name}" sur Yoonu Dal ! 🦁\n\nCode d'invitation : *${tontine.invitation_code}*\n\nContribution : ${new Intl.NumberFormat('fr-FR').format(tontine.monthly_contribution)} FCFA/mois\nPlaces restantes : ${tontine.available_spots}\n\nTélécharge l'app : https://yoonudal.com`;
-                          const url = `https://wa.me/?text=${encodeURIComponent(message)}`;
-                          window.open(url, '_blank');
-                        }}
-                        className="bg-green-500 px-3 py-2 rounded-lg text-xs font-medium text-white hover:bg-green-600 transition-all shadow-sm"
-                      >
-                        📲 WhatsApp
-                      </button>
-                    </div>
-                     </div>
+                      <div className="mb-2">
+                        <p className="text-xs text-gray-600 mb-1">Code d'invitation</p>
+                        <p className="text-lg sm:text-xl font-mono font-bold text-orange-700">{tontine.invitation_code}</p>
+                      </div>
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => {
+                            navigator.clipboard.writeText(tontine.invitation_code);
+                            toast?.showSuccess('Code copié !');
+                          }}
+                          className="flex-1 bg-white px-3 py-2 rounded-lg text-xs font-medium text-orange-700 hover:bg-orange-100 transition-all shadow-sm"
+                        >
+                          📋 Copier
+                        </button>
+                        <button
+                          onClick={() => handleShareWhatsApp(tontine)}
+                          className="flex-1 bg-green-500 px-3 py-2 rounded-lg text-xs font-medium text-white hover:bg-green-600 transition-all shadow-sm"
+                        >
+                          📲 WhatsApp
+                        </button>
+                      </div>
                     </div>
 
                     {/* Actions */}
