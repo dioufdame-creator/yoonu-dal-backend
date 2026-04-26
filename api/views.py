@@ -4162,3 +4162,32 @@ def tontine_pending_contributions(request, tontine_id):
         return Response({'error': 'Tontine non trouvée'}, status=status.HTTP_404_NOT_FOUND)
     except Exception as e:
         return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+@api_view(['GET'])
+@permission_classes([AllowAny])
+def tontine_public_info(request, invitation_code):
+    """
+    Infos publiques d'une tontine via son code d'invitation
+    GET /api/tontines/invite/{code}/
+    Accessible sans authentification
+    """
+    try:
+        tontine = Tontine.objects.get(invitation_code=invitation_code)
+
+        return Response({
+            'name': tontine.name,
+            'description': tontine.description,
+            'monthly_contribution': float(tontine.monthly_contribution),
+            'total_amount': float(tontine.total_amount),
+            'max_participants': tontine.max_participants,
+            'current_participants': tontine.participants.count(),
+            'available_spots': tontine.available_spots,
+            'duration_months': tontine.duration_months,
+            'payout_mode': tontine.payout_mode,
+            'status': tontine.status,
+            'invitation_code': tontine.invitation_code,
+            'creator_name': tontine.creator.get_full_name() or tontine.creator.username,
+        })
+
+    except Tontine.DoesNotExist:
+        return Response({'error': 'Tontine introuvable'}, status=status.HTTP_404_NOT_FOUND)
