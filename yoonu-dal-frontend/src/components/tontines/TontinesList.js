@@ -517,16 +517,28 @@ const TontinesListPremium = ({ onNavigate, toast }) => {
                           <p className="text-xs text-gray-600 mb-1">Code d'invitation</p>
                           <p className="text-lg sm:text-xl font-mono font-bold text-orange-700">{tontine.invitation_code}</p>
                         </div>
-                        <button
-                          onClick={() => {
-                            navigator.clipboard.writeText(tontine.invitation_code);
-                            toast?.showSuccess('Code copié !');
-                          }}
-                          className="bg-white px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-medium text-orange-700 hover:bg-orange-100 transition-all shadow-sm"
-                        >
-                          📋 Copier
-                        </button>
-                      </div>
+                        <div className="flex gap-2">
+                      <button
+                        onClick={() => {
+                          navigator.clipboard.writeText(tontine.invitation_code);
+                          toast?.showSuccess('Code copié !');
+                        }}
+                        className="bg-white px-3 py-2 rounded-lg text-xs font-medium text-orange-700 hover:bg-orange-100 transition-all shadow-sm"
+                      >
+                        📋 Copier
+                      </button>
+                      <button
+                        onClick={() => {
+                          const message = `Rejoins ma tontine "${tontine.name}" sur Yoonu Dal ! 🦁\n\nCode d'invitation : *${tontine.invitation_code}*\n\nContribution : ${new Intl.NumberFormat('fr-FR').format(tontine.monthly_contribution)} FCFA/mois\nPlaces restantes : ${tontine.available_spots}\n\nTélécharge l'app : https://yoonudal.com`;
+                          const url = `https://wa.me/?text=${encodeURIComponent(message)}`;
+                          window.open(url, '_blank');
+                        }}
+                        className="bg-green-500 px-3 py-2 rounded-lg text-xs font-medium text-white hover:bg-green-600 transition-all shadow-sm"
+                      >
+                        📲 WhatsApp
+                      </button>
+                    </div>
+                     </div>
                     </div>
 
                     {/* Actions */}
