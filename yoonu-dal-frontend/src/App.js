@@ -5,11 +5,9 @@ import AlertsPage from './components/alerts/AlertsPage';
 import AlertsBadge from './components/alerts/AlertsBadge';
 import SimpleDiagnostic from './components/diagnostic/SimpleDiagnostic';
 
-// Import du service d'authentification réel
 import authService from './services/authService';
 import API from './services/api';
 
-// Import des composants essentiels
 import Navigation from './components/shared/Navigation';
 import Footer from './components/shared/Footer';
 import { ToastContainer, useToast } from './components/shared/Toast';
@@ -19,11 +17,11 @@ import ValueSelector from './components/consciousness/ValueSelector';
 import ExpenseTracker from './components/control/ExpenseTracker';
 import TontinesList from './components/tontines/TontinesList';
 import TontineDetail from './components/tontines/TontineDetail';
+import TontineInvitePage from './components/tontines/TontineInvitePage';
 import IncomesPage from './components/incomes/IncomesPage';
 import TontineAnalysis from './components/tontines/TontineAnalysis';
 import EnvelopeManager from './components/envelopeManager/EnvelopeManager';
 
-// ✅ Import TransactionsPage (Dépenses + Revenus)
 import TransactionsPage from './components/transactions/TransactionsPage';
 
 import AIChatWidget from './components/ai/AIChatWidget';
@@ -41,23 +39,19 @@ import {
 
 import GoalsPage from './components/goals/GoalsPage';
 import DebtsPage from './components/debts/DebtsPage';
-import DebtDetailPage from './components/debts/DebtDetailPage';  // ← NOUVEAU
+import DebtDetailPage from './components/debts/DebtDetailPage';
 
-// Composant principal de l'application
 function App() {
   const [currentPage, setCurrentPage] = useState('home');
   const [pageParams, setPageParams] = useState({});
   
-  // État d'authentification réel
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [user, setUser] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [authError, setAuthError] = useState(null);
   
-  // Hook pour les notifications
   const { toasts, showSuccess, showError, showWarning, showInfo, removeToast } = useToast();
 
-  // Vérifier l'authentification au chargement de l'app
   useEffect(() => {
     const initializeAuth = async () => {
       console.log('🔄 Initialisation de l\'authentification...');
@@ -71,7 +65,6 @@ function App() {
           if (currentUser) {
             setIsAuthenticated(true);
             setUser(currentUser);
-            //showInfo(`Content de vous revoir, ${currentUser.username} !`, 3000);
           } else {
             authService.clearTokens();
             setIsAuthenticated(false);
@@ -97,11 +90,9 @@ function App() {
     initializeAuth();
   }, []);
 
-  // FONCTION DE NAVIGATION SIMPLIFIÉE
   const handleNavigate = (page, params = {}) => {
     console.log('🧭 Navigation vers:', page);
     
-    // Pages qui nécessitent une authentification
     const protectedPages = [
       'dashboard', 'expenses', 'transactions', 'incomes', 'envelopes', 'tontines', 
       'tontine-detail', 'tontine-analysis',
@@ -110,27 +101,19 @@ function App() {
     ];
 
     if (protectedPages.includes(page) && !isAuthenticated) {
-      //showWarning('Vous devez être connecté pour accéder à cette page');
       setCurrentPage('login');
       return;
     }
 
     if ((page === 'login' || page === 'register') && isAuthenticated) {
-      //showInfo('Vous êtes déjà connecté');
       setCurrentPage('dashboard');
       return;
-    }
-
-    // Navigation intelligente selon l'utilisateur
-    if (page === 'diagnostic' && isAuthenticated) {
-      //showInfo('Lancement de votre diagnostic personnalisé...', 2000);
     }
 
     setCurrentPage(page);
     setPageParams(params);
   };
 
-  // ✅ FONCTION DE CONNEXION CORRIGÉE
   const handleLogin = async (credentials) => {
     try {
       const result = await authService.login(credentials);
@@ -139,22 +122,25 @@ function App() {
         setIsAuthenticated(true);
         setUser(result.user);
         
-        // ✅ VÉRIFIER SI ONBOARDING TERMINÉ
         try {
           const response = await API.get('/onboarding/status/');
           
+          // Vérifier si un code d'invitation est en attente
+          const pendingCode = localStorage.getItem('pending_invite_code');
+
           if (response.data.onboarding_complete) {
-            // ✅ A déjà fait l'onboarding → Dashboard
-            //showSuccess(`Bienvenue ${result.user.username} !`);
-            handleNavigate('dashboard');
+            if (pendingCode) {
+              localStorage.removeItem('pending_invite_code');
+              handleNavigate('tontine-invite', { code: pendingCode });
+            } else {
+              handleNavigate('dashboard');
+            }
           } else {
-            // ❌ N'a pas fait l'onboarding → Onboarding
-            //showInfo('Configurons ton compte...');
+            // Laisser le pending_invite_code en localStorage, sera géré après onboarding
             handleNavigate('onboarding');
           }
         } catch (error) {
           console.error('Erreur vérification onboarding:', error);
-          // En cas d'erreur, rediriger vers dashboard par défaut
           handleNavigate('dashboard');
         }
       }
@@ -166,7 +152,6 @@ function App() {
     }
   };
 
-  // ✅ FONCTION D'INSCRIPTION CORRIGÉE
   const handleRegister = async (userData) => {
     console.log('📝 Tentative d\'inscription pour:', userData.username);
     setAuthError(null);
@@ -178,9 +163,6 @@ function App() {
         console.log('✅ Inscription réussie:', result.user?.username);
         setIsAuthenticated(true);
         setUser(result.user);
-        //showSuccess(`Inscription réussie ! Bienvenue ${result.user?.username || result.user?.first_name}`);
-        
-        // ✅ APRÈS INSCRIPTION → ONBOARDING
         handleNavigate('onboarding');
         return { success: true };
       } else {
@@ -198,7 +180,6 @@ function App() {
     }
   };
 
-  // Fonction de déconnexion réelle
   const handleLogout = async () => {
     console.log('🚪 Déconnexion...');
     
@@ -207,14 +188,12 @@ function App() {
       setIsAuthenticated(false);
       setUser(null);
       setAuthError(null);
-      //showSuccess('Déconnexion réussie');
       setCurrentPage('home');
     } catch (error) {
       console.error('🚨 Erreur lors de la déconnexion:', error);
       setIsAuthenticated(false);
       setUser(null);
       setAuthError(null);
-      //showWarning('Déconnexion effectuée (erreur serveur ignorée)');
       setCurrentPage('home');
     }
   };
@@ -256,7 +235,6 @@ function App() {
 
   const renderPage = () => {
     switch (currentPage) {
-      // PAGE D'ACCUEIL ET AUTHENTIFICATION
       case 'home':
         return <Home onNavigate={handleNavigate} toast={toastMethods} auth={authMethods} />;
       
@@ -401,82 +379,50 @@ function App() {
                 <div className="space-y-4">
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-sm font-semibold text-gray-700 mb-2">
-                        Prénom
-                      </label>
-                      <input
-                        type="text"
-                        name="firstName"
+                      <label className="block text-sm font-semibold text-gray-700 mb-2">Prénom</label>
+                      <input type="text" name="firstName"
                         className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all"
-                        required
-                      />
+                        required />
                     </div>
                     <div>
-                      <label className="block text-sm font-semibold text-gray-700 mb-2">
-                        Nom
-                      </label>
-                      <input
-                        type="text"
-                        name="lastName"
+                      <label className="block text-sm font-semibold text-gray-700 mb-2">Nom</label>
+                      <input type="text" name="lastName"
                         className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all"
-                        required
-                      />
+                        required />
                     </div>
                   </div>
                   
                   <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-2">
-                      Nom d'utilisateur
-                    </label>
-                    <input
-                      type="text"
-                      name="username"
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">Nom d'utilisateur</label>
+                    <input type="text" name="username"
                       className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all"
-                      required
-                    />
+                      required />
                   </div>
                   
                   <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-2">
-                      Email
-                    </label>
-                    <input
-                      type="email"
-                      name="email"
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">Email</label>
+                    <input type="email" name="email"
                       className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all"
-                      required
-                    />
+                      required />
                   </div>
                   
                   <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-2">
-                      Mot de passe
-                    </label>
-                    <input
-                      type="password"
-                      name="password"
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">Mot de passe</label>
+                    <input type="password" name="password"
                       className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all"
-                      required
-                    />
+                      required />
                   </div>
                   
                   <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-2">
-                      Confirmer le mot de passe
-                    </label>
-                    <input
-                      type="password"
-                      name="confirmPassword"
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">Confirmer le mot de passe</label>
+                    <input type="password" name="confirmPassword"
                       className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all"
-                      required
-                    />
+                      required />
                   </div>
                 </div>
                 
-                <button
-                  type="submit"
-                  className="w-full mt-6 bg-gradient-to-r from-green-600 to-emerald-600 text-white py-4 rounded-xl font-bold text-lg hover:shadow-lg transform hover:scale-105 transition-all duration-200"
-                >
+                <button type="submit"
+                  className="w-full mt-6 bg-gradient-to-r from-green-600 to-emerald-600 text-white py-4 rounded-xl font-bold text-lg hover:shadow-lg transform hover:scale-105 transition-all duration-200">
                   S'inscrire
                 </button>
               </form>
@@ -484,20 +430,16 @@ function App() {
               <div className="mt-6 text-center">
                 <p className="text-gray-600">
                   Déjà un compte ?{' '}
-                  <button
-                    onClick={() => handleNavigate('login')}
-                    className="text-green-600 font-semibold hover:text-green-700"
-                  >
+                  <button onClick={() => handleNavigate('login')}
+                    className="text-green-600 font-semibold hover:text-green-700">
                     Se connecter
                   </button>
                 </p>
               </div>
               
               <div className="mt-4 text-center">
-                <button
-                  onClick={() => handleNavigate('home')}
-                  className="text-sm text-gray-500 hover:text-gray-700"
-                >
+                <button onClick={() => handleNavigate('home')}
+                  className="text-sm text-gray-500 hover:text-gray-700">
                   ← Retour à l'accueil
                 </button>
               </div>
@@ -505,7 +447,6 @@ function App() {
           </div>
         );
 
-      // ✅ ONBOARDING
       case 'onboarding':
         return (
           <Onboarding 
@@ -514,59 +455,31 @@ function App() {
             setAuth={setUser} 
           />
         );
+
       case 'goals':
-        if (!isAuthenticated) {
-          handleNavigate('login');
-          return null;
-        }
-        return <GoalsPage 
-          toast={toastMethods}
-          onNavigate={handleNavigate}
-        />;
+        if (!isAuthenticated) { handleNavigate('login'); return null; }
+        return <GoalsPage toast={toastMethods} onNavigate={handleNavigate} />;
 
       case 'score':
-        if (!isAuthenticated) {
-          handleNavigate('login');
-          return null;
-        }
-        return (
-          <YoonuScorePage 
-            toast={toastMethods}
-            onNavigate={handleNavigate}
-          />
-        );
+        if (!isAuthenticated) { handleNavigate('login'); return null; }
+        return <YoonuScorePage toast={toastMethods} onNavigate={handleNavigate} />;
 
-      // ✅✅✅ TRANSACTIONS (DÉPENSES + REVENUS DANS 1 PAGE) ✅✅✅
       case 'transactions':
-        if (!isAuthenticated) {
-          handleNavigate('login');
-          return null;
-        }
+        if (!isAuthenticated) { handleNavigate('login'); return null; }
         return <TransactionsPage onNavigate={handleNavigate} toast={toastMethods} user={user} />;
       
-      // ✅ COMPATIBILITÉ : Rediriger expenses → transactions
       case 'expenses':
-        if (!isAuthenticated) {
-          handleNavigate('login');
-          return null;
-        }
+        if (!isAuthenticated) { handleNavigate('login'); return null; }
         handleNavigate('transactions');
         return null;
       
-      // ✅ COMPATIBILITÉ : Rediriger incomes → transactions
       case 'incomes':
-        if (!isAuthenticated) {
-          handleNavigate('login');
-          return null;
-        }
+        if (!isAuthenticated) { handleNavigate('login'); return null; }
         handleNavigate('transactions');
         return null;
 
       case 'alerts':
-        if (!isAuthenticated) {
-          handleNavigate('login');
-          return null;
-        }
+        if (!isAuthenticated) { handleNavigate('login'); return null; }
         return <AlertsPage />;
 
       case 'pricing':
@@ -582,89 +495,64 @@ function App() {
         );
 
       case 'subscription':
-        if (!isAuthenticated) {
-          handleNavigate('login');
-          return null;
-        }
+        if (!isAuthenticated) { handleNavigate('login'); return null; }
         return <SubscriptionPage onNavigate={handleNavigate} user={user} toast={toastMethods} />;
 
       case 'dashboard':
-        if (!isAuthenticated) {
-          handleNavigate('login');
-          return null;
-        }
+        if (!isAuthenticated) { handleNavigate('login'); return null; }
         return <Dashboard toast={toastMethods} auth={authMethods} onNavigate={handleNavigate} user={user} />;
       
       case 'envelopes':
-        if (!isAuthenticated) {
-          handleNavigate('login');
-          return null;
-        }
+        if (!isAuthenticated) { handleNavigate('login'); return null; }
         return <EnvelopeManager onNavigate={handleNavigate} toast={toastMethods} auth={authMethods} />;
+
       case 'debts':
-        if (!isAuthenticated) {
-          handleNavigate('login');
-      return null;
-      }
-      return <DebtsPage 
-      toast={toastMethods}
-      onNavigate={handleNavigate}
-      />;
+        if (!isAuthenticated) { handleNavigate('login'); return null; }
+        return <DebtsPage toast={toastMethods} onNavigate={handleNavigate} />;
+
       case 'debt-detail':
-        if (!isAuthenticated) {
-          handleNavigate('login');
-          return null;
-        }
-        return <DebtDetailPage 
-          debtId={pageParams?.debtId}
-          toast={toastMethods}
-          onNavigate={handleNavigate}
-        />;
+        if (!isAuthenticated) { handleNavigate('login'); return null; }
+        return <DebtDetailPage debtId={pageParams?.debtId} toast={toastMethods} onNavigate={handleNavigate} />;
+
       case 'tontines':
-        if (!isAuthenticated) {
-          handleNavigate('login');
-          return null;
-        }
+        if (!isAuthenticated) { handleNavigate('login'); return null; }
         return <TontinesList onNavigate={handleNavigate} toast={toastMethods} auth={authMethods} />;
 
+      case 'tontine-invite':
+        return (
+          <TontineInvitePage
+            inviteCode={pageParams?.code}
+            onNavigate={handleNavigate}
+            toast={toastMethods}
+            isAuthenticated={isAuthenticated}
+          />
+        );
+
       case 'diagnostic':
-        if (!isAuthenticated) {
-          handleNavigate('login');
-          return null;
-        }
+        if (!isAuthenticated) { handleNavigate('login'); return null; }
         return <SimpleDiagnostic onNavigate={handleNavigate} toast={toastMethods} />;
       
       case 'values':
-        if (!isAuthenticated) {
-          handleNavigate('login');
-          return null;
-        }
+        if (!isAuthenticated) { handleNavigate('login'); return null; }
         return <ValueSelector onNavigate={handleNavigate} toast={toastMethods} auth={authMethods} />;
 
       case 'tontine-detail':
-        if (!isAuthenticated) {
-          handleNavigate('login');
-          return null;
-        }
-        return <TontineDetail 
-          onNavigate={handleNavigate} 
-          tontineId={pageParams?.id}
-          toast={toastMethods}
-          user={user}
-        />;
+        if (!isAuthenticated) { handleNavigate('login'); return null; }
+        return (
+          <TontineDetail 
+            onNavigate={handleNavigate} 
+            tontineId={pageParams?.id}
+            toast={toastMethods}
+            user={user}
+          />
+        );
       
       case 'tontine-analysis':
-        if (!isAuthenticated) {
-          handleNavigate('login');
-          return null;
-        }
+        if (!isAuthenticated) { handleNavigate('login'); return null; }
         return <TontineAnalysis onNavigate={handleNavigate} toast={toastMethods} auth={authMethods} />;
 
       case 'profile':
-        if (!isAuthenticated) {
-          handleNavigate('login');
-          return null;
-        }
+        if (!isAuthenticated) { handleNavigate('login'); return null; }
         return (
           <div className="min-h-screen bg-gray-100 flex items-center justify-center p-4">
             <div className="bg-white rounded-2xl shadow-lg p-8 max-w-md w-full">
@@ -682,7 +570,6 @@ function App() {
                   <p><strong>Statut :</strong> {user?.is_staff ? '👑 Admin' : '⭐ Utilisateur'}</p>
                   <p><strong>Membre depuis :</strong> {user?.date_joined ? new Date(user.date_joined).toLocaleDateString() : 'N/A'}</p>
                 </div>
-                
                 <div className="border-t pt-4 mt-6">
                   <button 
                     onClick={() => handleNavigate('values')}
@@ -711,10 +598,7 @@ function App() {
         );
 
       case 'settings':
-        if (!isAuthenticated) {
-          handleNavigate('login');
-          return null;
-        }
+        if (!isAuthenticated) { handleNavigate('login'); return null; }
         return (
           <div className="min-h-screen bg-gray-100 flex items-center justify-center p-4">
             <div className="bg-white rounded-2xl shadow-lg p-8 max-w-md w-full">
