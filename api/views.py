@@ -1390,6 +1390,7 @@ def manage_tontines(request):
                     'id': tontine.id,
                     'name': tontine.name,
                     'duration_months': tontine.duration_months,  # ← AJOUTER
+                    'payment_day': tontine.payment_day,
                     'description': tontine.description,
                     'status': tontine.status,          # ← MANQUANT, ajouter ici
                     'total_amount': float(tontine.total_amount),
@@ -1435,6 +1436,9 @@ def manage_tontines(request):
             end_date = start_date + relativedelta(months=int(data['duration_months']))
 
             payout_mode = data.get('payout_mode', 'manual')
+            payment_day = int(data.get('payment_day', 5))
+            if payment_day < 1 or payment_day > 28:
+                payment_day = 5
             if payout_mode not in ['manual', 'random']:
                 payout_mode = 'manual'
 
@@ -1452,6 +1456,7 @@ def manage_tontines(request):
                 rules=data.get('rules', ''),
                 is_private=data.get('is_private', False),
                 payout_mode=payout_mode
+                payment_day=payment_day,
             )
             # Le créateur devient automatiquement participant admin
             TontineParticipant.objects.create(
@@ -1513,6 +1518,7 @@ def tontine_detail(request, tontine_id):
                     'received_payout': participant.received_payout,
                     'total_contributions': float(participant.total_contributions),
                     'contribution_status': participant.contribution_status,
+                    'payment_day': tontine.payment_day,
                     'joined_at': participant.joined_at.isoformat()
                 })
 
@@ -4187,6 +4193,7 @@ def tontine_public_info(request, invitation_code):
             'payout_mode': tontine.payout_mode,
             'status': tontine.status,
             'invitation_code': tontine.invitation_code,
+            'payment_day': tontine.payment_day,
             'creator_name': tontine.creator.get_full_name() or tontine.creator.username,
         })
 
