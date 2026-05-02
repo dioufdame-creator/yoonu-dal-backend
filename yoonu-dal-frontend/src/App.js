@@ -17,7 +17,7 @@ import ValueSelector from './components/consciousness/ValueSelector';
 import ExpenseTracker from './components/control/ExpenseTracker';
 import TontinesList from './components/tontines/TontinesList';
 import TontineDetail from './components/tontines/TontineDetail';
-import TontineInvitePage from './components/tontines/Tontineinvitepage';
+import TontineInvitePage from './components/tontines/TontineInvitePage';
 import IncomesPage from './components/incomes/IncomesPage';
 import TontineAnalysis from './components/tontines/TontineAnalysis';
 import EnvelopeManager from './components/envelopeManager/EnvelopeManager';
