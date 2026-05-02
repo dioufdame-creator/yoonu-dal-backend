@@ -2,8 +2,8 @@ import React, { useState, useEffect } from 'react';
 import API from '../../services/api';
 
 // ==========================================
-// TONTINES LIST PREMIUM V3.5
-// Montant du tour = contribution × participants (pas × durée)
+// TONTINES LIST PREMIUM V3.6
+// + Jour limite de paiement (payment_day)
 // ==========================================
 
 const TontinesListPremium = ({ onNavigate, toast }) => {
@@ -24,7 +24,8 @@ const TontinesListPremium = ({ onNavigate, toast }) => {
     max_participants: '',
     duration_months: '',
     start_date: new Date().toISOString().split('T')[0],
-    payout_mode: 'manual'
+    payout_mode: 'manual',
+    payment_day: 5
   });
   const [form, setForm] = useState(emptyForm());
 
@@ -35,7 +36,6 @@ const TontinesListPremium = ({ onNavigate, toast }) => {
     return contribution * participants * duration;
   }, [form.monthly_contribution, form.max_participants, form.duration_months]);
 
-  // ✅ Montant reçu à son tour = contribution × participants
   const calculatedPayout = React.useMemo(() => {
     const contribution = parseFloat(form.monthly_contribution) || 0;
     const participants = parseInt(form.max_participants) || 0;
@@ -100,9 +100,21 @@ const TontinesListPremium = ({ onNavigate, toast }) => {
     return Math.round(((now - start) / (end - start)) * 100);
   };
 
-  // ✅ Calcul montant du tour
   const getPayoutAmount = (tontine) => {
     return (tontine.monthly_contribution || 0) * (tontine.max_participants || 0);
+  };
+
+  // ✅ Urgence paiement : jours restants avant le payment_day
+  const getPaymentUrgency = (tontine) => {
+    if (tontine.status !== 'active' || !tontine.payment_day) return null;
+    const now = new Date();
+    const day = now.getDate();
+    const payDay = tontine.payment_day;
+    const daysLeft = payDay - day;
+    if (daysLeft < 0) return null; // déjà passé ce mois
+    if (daysLeft <= 2) return { label: `⚠️ Limite dans ${daysLeft}j`, color: 'text-red-600' };
+    if (daysLeft <= 5) return { label: `⏰ Limite dans ${daysLeft}j`, color: 'text-orange-600' };
+    return null;
   };
 
   const getStatusConfig = (status) => {
@@ -124,6 +136,7 @@ const TontinesListPremium = ({ onNavigate, toast }) => {
 💰 Contribution : *${formatCurrencyFull(tontine.monthly_contribution)}/mois*
 🎯 Tu reçois à ton tour : *${formatCurrencyFull(payoutAmount)}*
 📅 Durée : ${tontine.duration_months} mois
+📆 Paiement avant le : ${tontine.payment_day} de chaque mois
 ${payoutMode}
 
 🔑 Code d'invitation : *${tontine.invitation_code}*
@@ -141,6 +154,8 @@ ${payoutMode}
     if (parseInt(form.max_participants) < 2) { toast?.showError('Minimum 2 participants requis'); return; }
     if (parseInt(form.duration_months) < 1) { toast?.showError('Durée minimum : 1 mois'); return; }
     if (parseFloat(form.monthly_contribution) <= 0) { toast?.showError('La contribution mensuelle doit être supérieure à 0'); return; }
+    const payDay = parseInt(form.payment_day);
+    if (!payDay || payDay < 1 || payDay > 28) { toast?.showError('Jour de paiement invalide (1-28)'); return; }
 
     try {
       const payload = {
@@ -151,7 +166,8 @@ ${payoutMode}
         max_participants: parseInt(form.max_participants),
         duration_months: parseInt(form.duration_months),
         start_date: form.start_date,
-        payout_mode: form.payout_mode || 'manual'
+        payout_mode: form.payout_mode || 'manual',
+        payment_day: payDay
       };
       if (editingTontine) {
         await API.patch(`/tontines/${editingTontine.id}/`, payload);
@@ -187,7 +203,8 @@ ${payoutMode}
       max_participants: tontine.max_participants,
       duration_months: tontine.duration_months || 12,
       start_date: tontine.start_date || new Date().toISOString().split('T')[0],
-      payout_mode: tontine.payout_mode || 'manual'
+      payout_mode: tontine.payout_mode || 'manual',
+      payment_day: tontine.payment_day || 5
     });
     setShowCreateModal(true);
   };
@@ -346,6 +363,7 @@ ${payoutMode}
                 ? (tontine.current_participants / tontine.max_participants) * 100 : 0;
               const timeProgress = getTontineProgress(tontine);
               const payoutAmount = getPayoutAmount(tontine);
+              const paymentUrgency = getPaymentUrgency(tontine);
 
               return (
                 <div key={tontine.id}
@@ -355,7 +373,6 @@ ${payoutMode}
                   <div className={`${statusConfig.bgColor} p-4 sm:p-6 border-b-2 ${statusConfig.borderColor} relative overflow-hidden`}>
                     <div className="hidden sm:block absolute top-0 right-0 w-32 h-32 bg-white/20 rounded-full blur-2xl"></div>
                     <div className="relative z-10">
-                      {/* Titre + badges */}
                       <div className="flex items-start justify-between mb-3">
                         <div className="flex-1 min-w-0">
                           <h3 className="text-lg sm:text-xl font-bold text-gray-900 mb-1 truncate">{tontine.name}</h3>
@@ -373,7 +390,7 @@ ${payoutMode}
                         </div>
                       </div>
 
-                      {/* Dates */}
+                      {/* Dates + jour limite */}
                       <div className="grid grid-cols-3 gap-2 mb-3 bg-white/60 rounded-xl p-2">
                         <div className="text-center">
                           <p className="text-xs text-gray-500 mb-0.5">Début</p>
@@ -384,10 +401,21 @@ ${payoutMode}
                           <p className="text-xs font-semibold text-gray-800">{tontine.duration_months ? `${tontine.duration_months} mois` : '—'}</p>
                         </div>
                         <div className="text-center">
-                          <p className="text-xs text-gray-500 mb-0.5">Fin</p>
-                          <p className="text-xs font-semibold text-gray-800">{formatDate(tontine.end_date)}</p>
+                          <p className="text-xs text-gray-500 mb-0.5">📆 Limite</p>
+                          <p className="text-xs font-semibold text-gray-800">
+                            {tontine.payment_day ? `Avant le ${tontine.payment_day}` : '—'}
+                          </p>
                         </div>
                       </div>
+
+                      {/* Alerte urgence paiement */}
+                      {paymentUrgency && (
+                        <div className="mb-3 bg-red-50 border border-red-200 rounded-lg px-3 py-1.5 text-center">
+                          <span className={`text-xs font-semibold ${paymentUrgency.color}`}>
+                            {paymentUrgency.label}
+                          </span>
+                        </div>
+                      )}
 
                       {/* Barre progression temporelle */}
                       {tontine.status === 'active' && timeProgress !== null && (
@@ -403,7 +431,7 @@ ${payoutMode}
                         </div>
                       )}
 
-                      {/* ✅ Montant du tour + contribution */}
+                      {/* Montant du tour + contribution */}
                       <div className="grid grid-cols-2 gap-3">
                         <div className="backdrop-blur-sm bg-white/90 rounded-xl p-3 shadow-sm">
                           <p className="text-xs text-gray-600 mb-1">🎯 Tu reçois à ton tour</p>
@@ -425,7 +453,6 @@ ${payoutMode}
 
                   {/* Body */}
                   <div className="p-4 sm:p-6">
-                    {/* Participants */}
                     <div className="mb-4">
                       <div className="flex items-center justify-between mb-2">
                         <span className="text-xs sm:text-sm font-medium text-gray-600">👥 Participants</span>
@@ -462,7 +489,6 @@ ${payoutMode}
                       </div>
                     </div>
 
-                    {/* Actions */}
                     <button onClick={() => setExpandedId(isExpanded ? null : tontine.id)}
                       className="w-full bg-gray-100 text-gray-700 px-4 py-2 sm:py-2.5 rounded-xl sm:rounded-2xl font-medium text-sm sm:text-base hover:bg-gray-200 transition-all flex items-center justify-center gap-2">
                       <span>{isExpanded ? '▲' : '▼'}</span>
@@ -527,7 +553,7 @@ ${payoutMode}
                     className="w-full px-4 py-2.5 sm:py-3 text-sm sm:text-base border-2 border-gray-300 rounded-xl sm:rounded-2xl focus:ring-2 focus:ring-orange-500 focus:border-transparent resize-none" />
                 </div>
 
-                {/* ✅ Montant du tour calculé */}
+                {/* Montant du tour */}
                 <div className="sm:col-span-2 bg-gradient-to-r from-green-50 to-emerald-50 border-2 border-green-200 rounded-xl p-4">
                   <div className="flex items-center justify-between">
                     <div>
@@ -572,6 +598,16 @@ ${payoutMode}
                     onChange={(e) => setForm({...form, duration_months: e.target.value})}
                     placeholder="12" min="1"
                     className="w-full px-4 py-2.5 sm:py-3 text-sm sm:text-base border-2 border-gray-300 rounded-xl sm:rounded-2xl focus:ring-2 focus:ring-orange-500 focus:border-transparent" required />
+                </div>
+
+                {/* ✅ Jour limite de paiement */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">📆 Jour limite de paiement *</label>
+                  <input type="number" value={form.payment_day}
+                    onChange={(e) => setForm({...form, payment_day: e.target.value})}
+                    placeholder="5" min="1" max="28"
+                    className="w-full px-4 py-2.5 sm:py-3 text-sm sm:text-base border-2 border-gray-300 rounded-xl sm:rounded-2xl focus:ring-2 focus:ring-orange-500 focus:border-transparent" required />
+                  <p className="text-xs text-gray-500 mt-1">Entre 1 et 28 — les contributions devront être faites avant ce jour chaque mois</p>
                 </div>
 
                 {/* Mode de tirage */}
