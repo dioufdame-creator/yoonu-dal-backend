@@ -100,6 +100,29 @@ const TontineDetail = ({ tontineId, onNavigate, toast, user }) => {
     }
   };
 
+  // ✅ Calcul jours restants avant la limite de paiement
+  const getPaymentDeadlineInfo = (tontine) => {
+    if (tontine.status !== 'active' || !tontine.payment_day) return null;
+    const now = new Date();
+    const day = now.getDate();
+    const payDay = tontine.payment_day;
+    const daysLeft = payDay - day;
+
+    if (daysLeft < 0) {
+      return { label: `Date limite dépassée ce mois (était le ${payDay})`, color: 'text-gray-500', bg: 'bg-gray-50 border-gray-200' };
+    }
+    if (daysLeft === 0) {
+      return { label: `⚠️ Aujourd'hui est la date limite !`, color: 'text-red-700', bg: 'bg-red-50 border-red-200' };
+    }
+    if (daysLeft <= 2) {
+      return { label: `🚨 Plus que ${daysLeft} jour(s) pour contribuer !`, color: 'text-red-700', bg: 'bg-red-50 border-red-200' };
+    }
+    if (daysLeft <= 5) {
+      return { label: `⏰ ${daysLeft} jours restants avant la limite`, color: 'text-orange-700', bg: 'bg-orange-50 border-orange-200' };
+    }
+    return { label: `📆 Limite de paiement : le ${payDay} de chaque mois`, color: 'text-blue-700', bg: 'bg-blue-50 border-blue-200' };
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
@@ -132,9 +155,8 @@ const TontineDetail = ({ tontineId, onNavigate, toast, user }) => {
     ? (tontine.current_participants / tontine.max_participants) * 100 : 0;
   const currentUserParticipant = tontine.participants?.find(p => p.user?.id === currentUser?.id);
   const isAdmin = currentUserParticipant?.is_admin || tontine.creator?.id === currentUser?.id;
-
-  // ✅ Montant du tour = contribution × participants
   const payoutAmount = (tontine.monthly_contribution || 0) * (tontine.max_participants || 0);
+  const deadlineInfo = getPaymentDeadlineInfo(tontine);
 
   return (
     <div className="min-h-screen bg-gray-50 pb-20">
@@ -185,7 +207,7 @@ const TontineDetail = ({ tontineId, onNavigate, toast, user }) => {
             </div>
           </div>
 
-          {/* ✅ Stats avec montant du tour */}
+          {/* Stats */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 pt-4 border-t border-gray-100">
             <div>
               <p className="text-xs text-gray-500 mb-1">💰 Contribution/mois</p>
@@ -204,6 +226,13 @@ const TontineDetail = ({ tontineId, onNavigate, toast, user }) => {
               <p className="text-lg font-bold text-green-600">{formatCurrency(payoutAmount)}</p>
             </div>
           </div>
+
+          {/* ✅ Alerte deadline paiement */}
+          {deadlineInfo && (
+            <div className={`mt-4 border rounded-xl px-4 py-3 ${deadlineInfo.bg}`}>
+              <p className={`text-sm font-medium ${deadlineInfo.color}`}>{deadlineInfo.label}</p>
+            </div>
+          )}
         </div>
 
         {/* Progression participants */}
@@ -231,10 +260,7 @@ const TontineDetail = ({ tontineId, onNavigate, toast, user }) => {
           />
         )}
 
-        {/* Timeline */}
         <TontineTimeline tontineId={tontine.id} isAdmin={isAdmin} onUpdate={loadDetail} />
-
-        {/* Fil d'activité */}
         <TontineActivityFeed tontineId={tontine.id} />
 
         {/* Zone de danger */}
@@ -308,7 +334,6 @@ const TontineDetail = ({ tontineId, onNavigate, toast, user }) => {
           </div>
         </div>
 
-        {/* Bouton Contribuer */}
         {tontine.status === 'active' && (
           <div className="fixed bottom-6 left-0 right-0 px-4 z-20">
             <div className="max-w-6xl mx-auto">
@@ -326,6 +351,11 @@ const TontineDetail = ({ tontineId, onNavigate, toast, user }) => {
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6">
             <h3 className="text-2xl font-bold text-gray-900 mb-1">💰 Nouvelle contribution</h3>
+            {deadlineInfo && (
+              <div className={`mb-4 border rounded-xl px-3 py-2 ${deadlineInfo.bg}`}>
+                <p className={`text-xs font-medium ${deadlineInfo.color}`}>{deadlineInfo.label}</p>
+              </div>
+            )}
             <p className="text-sm text-gray-500 mb-5">
               Votre contribution sera examinée par l'administrateur avant validation.
             </p>
