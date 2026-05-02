@@ -1455,7 +1455,7 @@ def manage_tontines(request):
                 end_date=end_date,
                 rules=data.get('rules', ''),
                 is_private=data.get('is_private', False),
-                payout_mode=payout_mode
+                payout_mode=payout_mode,
                 payment_day=payment_day,
             )
             # Le créateur devient automatiquement participant admin
