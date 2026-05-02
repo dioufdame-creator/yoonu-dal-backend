@@ -769,6 +769,10 @@ class Tontine(models.Model):
         default=0,
         help_text="Dernier mois pour lequel un tirage a été effectué (anti-double tirage)"
     )
+    payment_day = models.IntegerField(
+        default=5,
+        help_text="Jour limite de paiement des contributions (1-28)"
+    )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
