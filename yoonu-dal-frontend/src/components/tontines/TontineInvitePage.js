@@ -100,8 +100,6 @@ const TontineInvitePage = ({ inviteCode, onNavigate, toast, isAuthenticated }) =
   const payoutModeLabel = tontine?.payout_mode === 'random' ? '🎲 Tirage aléatoire' : '📝 Ordre manuel';
   const spotsLeft = tontine?.available_spots || 0;
   const isFull = spotsLeft <= 0;
-
-  // ✅ Montant du tour = contribution × participants
   const payoutAmount = (tontine?.monthly_contribution || 0) * (tontine?.max_participants || 0);
 
   return (
@@ -138,7 +136,6 @@ const TontineInvitePage = ({ inviteCode, onNavigate, toast, isAuthenticated }) =
                 <p className="text-xs text-gray-500">/mois</p>
               </div>
 
-              {/* ✅ Montant du tour correct */}
               <div className="bg-emerald-50 rounded-2xl p-4 text-center">
                 <p className="text-xs text-gray-500 mb-1">🎯 Tu reçois à ton tour</p>
                 <p className="text-lg font-bold text-emerald-700">
@@ -165,6 +162,16 @@ const TontineInvitePage = ({ inviteCode, onNavigate, toast, isAuthenticated }) =
                 <p className="text-xs text-gray-500">dès le {formatDate(tontine?.start_date)}</p>
               </div>
             </div>
+
+            {/* ✅ Jour limite de paiement */}
+            {tontine?.payment_day && (
+              <div className="bg-orange-50 border border-orange-200 rounded-xl p-3 mb-4 flex items-center gap-2">
+                <span className="text-lg">📆</span>
+                <p className="text-sm text-orange-800 font-medium">
+                  Paiement avant le <span className="font-bold">{tontine.payment_day}</span> de chaque mois
+                </p>
+              </div>
+            )}
 
             {/* Mode tirage + créateur */}
             <div className="flex items-center justify-between bg-gray-50 rounded-xl p-3 mb-4">
