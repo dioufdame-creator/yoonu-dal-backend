@@ -1389,6 +1389,7 @@ def manage_tontines(request):
                 tontines_data.append({
                     'id': tontine.id,
                     'name': tontine.name,
+                    'duration_months': tontine.duration_months,  # ← AJOUTER
                     'description': tontine.description,
                     'status': tontine.status,          # ← MANQUANT, ajouter ici
                     'total_amount': float(tontine.total_amount),
