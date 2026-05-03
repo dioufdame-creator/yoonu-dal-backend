@@ -3476,7 +3476,8 @@ def manage_meta_envelopes(request):
         # ✅ WRAPPER DANS UN OBJET
         return Response({
             'envelopes': result,
-            'monthly_income': float(monthly_income)
+            'monthly_income': float(monthly_income),
+            'is_estimated': is_estimated  # ✅ Frontend peut afficher un avertissement
         })        
     except Exception as e:
         return Response({
