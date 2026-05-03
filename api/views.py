@@ -3379,7 +3379,15 @@ def manage_meta_envelopes(request):
             ('projets', 15),
             ('liberation', 5)
         ]
-        monthly_income = user.profile.monthly_income or 0
+        # ✅ Revenu réel du mois en cours
+        current_month = timezone.now().replace(day=1)
+        monthly_income_real = Income.objects.filter(
+            user=user, date__gte=current_month
+        ).aggregate(total=Sum('amount'))['total'] or 0
+
+        # Fallback sur revenu déclaré si aucun revenu saisi ce mois
+        monthly_income = monthly_income_real if monthly_income_real > 0 else (user.profile.monthly_income or 0)
+        is_estimated = monthly_income_real == 0
         print(f"\n🔍 GET /meta-envelopes/ - User: {user.username}")
         print(f"💰 Monthly income: {monthly_income}")
         for envelope_type, percentage in defaults:
