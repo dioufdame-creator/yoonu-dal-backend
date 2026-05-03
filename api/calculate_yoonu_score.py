@@ -1,8 +1,8 @@
 # api/calculate_yoonu_score.py
-# Fonction de calcul du Score Yoonu Dal - VERSION CORRIGÉE
-# ✅ Retourne un DICT au lieu d'un objet
-# ✅ Score de base de 47 points même sans dépenses
-# ✅ FIX: Retourne dict au lieu de None quand pas de valeurs
+# Fonction de calcul du Score Yoonu Dal - VERSION UNIFIÉE
+# ✅ Logique cohérente sur 4 niveaux : Débutant / En chemin / Aligné / Maître Yoonu
+# ✅ Pas de score de base gratuit
+# ✅ Score 0 si pas de données
 
 from datetime import timedelta
 from django.utils import timezone
@@ -10,135 +10,117 @@ from django.db.models import Sum
 from decimal import Decimal
 
 
+# ==========================================
+# NIVEAUX UNIFIÉS — utilisés partout
+# ==========================================
+
+SCORE_LEVELS = [
+    { 'min': 80, 'label': 'Maître Yoonu', 'emoji': '🏆', 'color': 'green' },
+    { 'min': 60, 'label': 'Aligné',       'emoji': '🌳', 'color': 'blue'  },
+    { 'min': 40, 'label': 'En chemin',    'emoji': '🌿', 'color': 'amber' },
+    { 'min':  1, 'label': 'Débutant',     'emoji': '🌱', 'color': 'red'   },
+    { 'min':  0, 'label': 'Non évalué',   'emoji': '⬜', 'color': 'gray'  },
+]
+
+SCORE_MESSAGES = {
+    'Maître Yoonu': 'Excellence ! Tu maîtrises parfaitement l\'art de Yoonu Dal.',
+    'Aligné':       'Très bien ! Tes finances sont alignées avec tes valeurs.',
+    'En chemin':    'Tu progresses. Continue d\'aligner tes dépenses avec tes valeurs.',
+    'Débutant':     'C\'est le début du voyage. Enregistre tes dépenses pour progresser.',
+    'Non évalué':   'Enregistre tes dépenses pour activer ton score Yoonu Dal.',
+}
+
+
+def get_level(score):
+    """Retourne le niveau unifié basé sur le score"""
+    for level in SCORE_LEVELS:
+        if score >= level['min']:
+            return level
+    return SCORE_LEVELS[-1]
+
+
+def get_label_from_score(score):
+    return get_level(score)['label']
+
+
+def get_emoji_from_score(score):
+    return get_level(score)['emoji']
+
+
+def get_message_from_score(score):
+    label = get_label_from_score(score)
+    return SCORE_MESSAGES.get(label, '')
+
+
+# ==========================================
+# CALCUL PRINCIPAL
+# ==========================================
+
 def calculate_yoonu_score(user):
     """
-    Calcule le Score Yoonu Dal pour un utilisateur
-    Retourne un DICT avec le score et ses composantes
+    Calcule le Score Yoonu Dal pour un utilisateur.
+    Retourne un DICT avec le score et ses composantes.
+    Score 0 si pas de données suffisantes — pas de score gratuit.
     """
     from .models import YoonuScore, ScoreHistory, Expense, Income, Envelope, UserValue
 
-    # Récupérer ou créer le score
     score_obj, created = YoonuScore.objects.get_or_create(user=user)
 
-    # Période d'analyse : mois en cours
     now = timezone.now()
     start_of_month = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
 
-    # Récupérer les valeurs prioritaires de l'utilisateur (top 3)
     user_values = UserValue.objects.filter(user=user).order_by('priority')[:3]
 
+    # ✅ Pas de valeurs définies → score 0
     if not user_values.exists():
-        # ✅ FIX: Retourner un DICT au lieu de None
         score_obj.total_score = 0
         score_obj.save()
-        
-        return {
-            'total_score': 0,
-            'alignment_score': 0,
-            'discipline_score': 0,
-            'stability_score': 0,
-            'improvement_score': 0,
-            'score_change': 0,
-            'level': 'Débutant',
-            'emoji': '🌱',
-            'alignment_details': {},
-            'message': 'Complète ton diagnostic pour activer le score'
-        }
+        return _build_result(score_obj, 0, 0, 0, 0, 0, {})
 
-    # Calculer les dépenses par valeur
     expenses = Expense.objects.filter(user=user, date__gte=start_of_month)
     total_expenses = expenses.aggregate(total=Sum('amount'))['total'] or 0
 
-    # ✅ CORRECTION : Si pas de dépenses, retourner un score de base
+    # ✅ Pas de dépenses → score 0, message incitatif
     if total_expenses == 0:
-        # Score de base : 47 points pour avoir défini ses valeurs et configuré son compte
-        base_score = 47
-        
-        score_obj.total_score = base_score
-        score_obj.alignment_score = Decimal('0.00')
-        score_obj.discipline_score = Decimal('15.00')  # A configuré des enveloppes
-        score_obj.stability_score = Decimal('0.00')
-        score_obj.improvement_score = Decimal('5.00')  # Premier score
+        score_obj.total_score = 0
         score_obj.save()
-        
-        # Sauvegarder dans l'historique
-        ScoreHistory.objects.update_or_create(
-            user=user,
-            month=start_of_month,
-            defaults={
-                'total_score': base_score,
-                'alignment_score': Decimal('0.00'),
-                'discipline_score': Decimal('15.00'),
-                'stability_score': Decimal('0.00'),
-                'improvement_score': Decimal('5.00')
-            }
-        )
-        
-        # ✅ CORRECTION : Retourner un DICT
-        return {
-            'total_score': base_score,
-            'alignment_score': 0,
-            'discipline_score': 15,
-            'stability_score': 0,
-            'improvement_score': 5,
-            'score_change': 0,
-            'level': 'Débutant',
-            'emoji': '🌱',
-            'alignment_details': {},
-            'message': '🌱 Score de base - Commence à enregistrer tes dépenses pour l\'améliorer !'
-        }
+        return _build_result(score_obj, 0, 0, 0, 0, 0, {})
 
     # ========== 1. ALIGNEMENT VALEURS (35 points) ==========
 
-    # Mapping catégories → valeurs
     CATEGORY_TO_VALUE = {
-        'famille': ['famille', 'alimentation', 'logement'],
+        'famille':      ['famille', 'alimentation', 'logement'],
         'spiritualite': ['spiritualité'],
-        'education': ['éducation'],
-        'sante': ['santé'],
-        'travail': ['transport'],
-        'loisirs': ['loisirs', 'vêtements'],
-        'communaute': ['famille'],
+        'education':    ['éducation'],
+        'sante':        ['santé'],
+        'travail':      ['transport'],
+        'loisirs':      ['loisirs', 'vêtements'],
+        'communaute':   ['famille'],
     }
 
     alignment_details = {}
     alignment_total = 0
 
     for user_value in user_values:
-        value_key = user_value.value  # 'famille', 'spiritualite', etc.
-
-        # Trouver les catégories liées à cette valeur
+        value_key = user_value.value
         related_categories = CATEGORY_TO_VALUE.get(value_key, [])
 
-        # Calculer % dépenses pour cette valeur
         value_expenses = expenses.filter(category__in=related_categories).aggregate(
             total=Sum('amount')
         )['total'] or 0
 
-        value_percentage = (value_expenses / total_expenses * 100) if total_expenses > 0 else 0
-        alignment_details[value_key] = float(round(value_percentage, 1))
+        value_percentage = (float(value_expenses) / float(total_expenses) * 100) if total_expenses > 0 else 0
+        alignment_details[value_key] = round(value_percentage, 1)
 
-        # Score basé sur priorité
         if user_value.priority == 1:
             expected_min = 25
-            if value_percentage >= expected_min:
-                alignment_total += 15
-            else:
-                alignment_total += (value_percentage / expected_min) * 15
-
+            alignment_total += min(15, (value_percentage / expected_min) * 15)
         elif user_value.priority == 2:
             expected_min = 15
-            if value_percentage >= expected_min:
-                alignment_total += 12
-            else:
-                alignment_total += (value_percentage / expected_min) * 12
-
+            alignment_total += min(12, (value_percentage / expected_min) * 12)
         elif user_value.priority == 3:
             expected_min = 10
-            if value_percentage >= expected_min:
-                alignment_total += 8
-            else:
-                alignment_total += (value_percentage / expected_min) * 8
+            alignment_total += min(8, (value_percentage / expected_min) * 8)
 
     alignment_score = min(alignment_total, 35)
 
@@ -178,12 +160,10 @@ def calculate_yoonu_score(user):
 
     # ========== 3. STABILITÉ FINANCIÈRE (20 points) ==========
 
-    monthly_income = Income.objects.filter(
-        user=user, date__gte=start_of_month
-    ).aggregate(total=Sum('amount'))['total'] or 0
-
-    # Convertir en float pour éviter les erreurs
-    monthly_income = float(monthly_income)
+    monthly_income = float(
+        Income.objects.filter(user=user, date__gte=start_of_month)
+        .aggregate(total=Sum('amount'))['total'] or 0
+    )
     monthly_expenses_total = float(total_expenses)
 
     stability_total = 0
@@ -196,9 +176,8 @@ def calculate_yoonu_score(user):
         stability_total += 5
 
     savings = monthly_income - monthly_expenses_total
-    if savings > 0:
-        savings_rate = (savings / monthly_income) * 100 if monthly_income > 0 else 0
-
+    if savings > 0 and monthly_income > 0:
+        savings_rate = (savings / monthly_income) * 100
         if savings_rate >= 20:
             stability_total += 10
         elif savings_rate >= 10:
@@ -216,20 +195,17 @@ def calculate_yoonu_score(user):
     last_month_start = last_month.replace(day=1)
 
     try:
-        last_score = ScoreHistory.objects.get(
-            user=user,
-            month=last_month_start
-        ).total_score
+        last_score = ScoreHistory.objects.get(user=user, month=last_month_start).total_score
     except ScoreHistory.DoesNotExist:
-        last_score = 0
+        last_score = None
 
-    current_total = alignment_score + discipline_score + stability_score
+    current_subtotal = alignment_score + discipline_score + stability_score
 
-    if last_score == 0:
+    if last_score is None:
+        # Premier mois avec des données : score de base pour l'amélioration
         improvement_score = 5
     else:
-        improvement = current_total - last_score
-
+        improvement = current_subtotal - last_score
         if improvement >= 10:
             improvement_score = 10
         elif improvement >= 5:
@@ -245,7 +221,7 @@ def calculate_yoonu_score(user):
 
     total_score = int(alignment_score + discipline_score + stability_score + improvement_score)
 
-    # Mettre à jour le modèle
+    # Sauvegarder
     score_obj.previous_score = score_obj.total_score
     score_obj.total_score = total_score
     score_obj.alignment_score = Decimal(str(round(alignment_score, 2)))
@@ -256,7 +232,6 @@ def calculate_yoonu_score(user):
     score_obj.score_change = total_score - score_obj.previous_score
     score_obj.save()
 
-    # Sauvegarder dans l'historique
     ScoreHistory.objects.update_or_create(
         user=user,
         month=start_of_month,
@@ -269,41 +244,27 @@ def calculate_yoonu_score(user):
         }
     )
 
-    # ✅ CORRECTION : Retourner un DICT au lieu d'un objet
+    return _build_result(
+        score_obj, total_score,
+        alignment_score, discipline_score, stability_score, improvement_score,
+        alignment_details
+    )
+
+
+def _build_result(score_obj, total_score, alignment_score, discipline_score,
+                  stability_score, improvement_score, alignment_details):
+    """Construit le dict de retour unifié"""
+    level = get_level(total_score)
     return {
         'total_score': total_score,
         'alignment_score': float(alignment_score),
         'discipline_score': float(discipline_score),
         'stability_score': float(stability_score),
         'improvement_score': float(improvement_score),
-        'score_change': total_score - score_obj.previous_score,
-        'level': get_level_from_score(total_score),
-        'emoji': get_emoji_from_score(total_score),
+        'score_change': score_obj.score_change if score_obj else 0,
+        'level': level['label'],
+        'emoji': level['emoji'],
+        'color': level['color'],
+        'message': SCORE_MESSAGES.get(level['label'], ''),
         'alignment_details': alignment_details,
-        'message': 'Score calculé avec succès'
     }
-
-
-# ✅ NOUVEAU : Fonctions helper
-def get_level_from_score(score):
-    """Retourne le niveau basé sur le score"""
-    if score >= 80:
-        return 'Expert'
-    elif score >= 60:
-        return 'Avancé'
-    elif score >= 40:
-        return 'Intermédiaire'
-    else:
-        return 'Débutant'
-
-
-def get_emoji_from_score(score):
-    """Retourne l'emoji basé sur le score"""
-    if score >= 80:
-        return '🏆'
-    elif score >= 60:
-        return '⭐'
-    elif score >= 40:
-        return '🌟'
-    else:
-        return '🌱'
