@@ -3407,7 +3407,7 @@ def manage_meta_envelopes(request):
             'is_estimated': is_estimated,
             'is_current_month': is_current_month,
             'month': start_of_month.strftime('%Y-%m'),
-            MOIS_FR = ['', 'Janvier', 'Fevrier', 'Mars', 'Avril', 'Mai', 'Juin','Juillet', 'Aout', 'Septembre', 'Octobre', 'Novembre', 'Decembre']
+            MOIS_FR = ['', 'Janvier', 'Fevrier', 'Mars', 'Avril', 'Mai', 'Juin','Juillet', 'Aout', 'Septembre', 'Octobre', 'Novembre', 'Decembre'],
            'month_label': f"{MOIS_FR[start_of_month.month]} {start_of_month.year}",
         })
  
