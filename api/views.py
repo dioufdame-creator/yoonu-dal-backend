@@ -37,6 +37,7 @@ import json
 import re
 #Import du serializer (à ajouter en haut de views.py)
 from .serializers import DebtSerializer, DebtPaymentSerializer
+import calendar as cal_module
 
 
 # ==========================================
@@ -88,6 +89,31 @@ def update_all_envelopes(user):
     """Recalcule les dépenses de toutes les enveloppes"""
     update_envelope_spending(user)
 
+def get_month_range(request):
+    """
+    Retourne (start_of_month, end_of_month, is_current_month)
+    Accepte ?month=YYYY-MM, défaut = mois courant
+    """
+    month_param = request.GET.get('month')
+    now = timezone.now()
+ 
+    if month_param:
+        try:
+            year, month = map(int, month_param.split('-'))
+            start = now.replace(
+                year=year, month=month, day=1,
+                hour=0, minute=0, second=0, microsecond=0
+            )
+        except (ValueError, AttributeError):
+            start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+    else:
+        start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+ 
+    last_day = cal_module.monthrange(start.year, start.month)[1]
+    end = start.replace(day=last_day, hour=23, minute=59, second=59)
+    is_current = (start.year == now.year and start.month == now.month)
+ 
+    return start, end, is_current
 
 # ==========================================
 # VUE RACINE API
@@ -394,71 +420,62 @@ def recent_transactions(request):
 @api_view(['GET', 'POST'])
 @permission_classes([IsAuthenticated])
 def manage_incomes(request):
-    """Gestion complète des revenus"""
+    """Gestion complète des revenus — support ?month=YYYY-MM"""
     user = request.user
-
+ 
     if request.method == 'GET':
         try:
-            start_date = request.GET.get('start_date')
-            end_date = request.GET.get('end_date')
+            start_of_month, end_of_month, is_current_month = get_month_range(request)
             source = request.GET.get('source')
-
-            incomes = Income.objects.filter(user=user)
-
-            if start_date:
-                incomes = incomes.filter(date__gte=start_date)
-            if end_date:
-                incomes = incomes.filter(date__lte=end_date)
+ 
+            incomes = Income.objects.filter(
+                user=user,
+                date__gte=start_of_month.date(),
+                date__lte=end_of_month.date()
+            )
+ 
             if source:
                 incomes = incomes.filter(source=source)
-
+ 
             incomes = incomes.order_by('-date')
-
-            incomes_data = []
-            for income in incomes:
-                incomes_data.append({
-                    'id': income.id,
-                    'source': income.source,
-                    'description': income.description,
-                    'amount': float(income.amount),
-                    'date': income.date.isoformat(),
-                    'is_validated': income.is_validated,
-                    'created_at': income.created_at.isoformat()
-                })
-
+ 
+            incomes_data = [{
+                'id': i.id,
+                'source': i.source,
+                'description': i.description,
+                'amount': float(i.amount),
+                'date': i.date.isoformat(),
+                'is_validated': i.is_validated,
+                'created_at': i.created_at.isoformat()
+            } for i in incomes]
+ 
             return Response({
                 'incomes': incomes_data,
                 'total_count': len(incomes_data),
-                'total_amount': sum(i['amount'] for i in incomes_data)
+                'total_amount': sum(i['amount'] for i in incomes_data),
+                'is_current_month': is_current_month,
+                'month': start_of_month.strftime('%Y-%m'),
             })
-
+ 
         except Exception as e:
-            return Response({
-                'error': f'Erreur revenus: {str(e)}'
-            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
-    else:  # POST
+            return Response({'error': f'Erreur revenus: {str(e)}'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+ 
+    else:  # POST inchangé
         try:
             data = request.data
-
+ 
             if not data.get('source'):
-                return Response({
-                    'error': 'La source est obligatoire'
-                }, status=status.HTTP_400_BAD_REQUEST)
-
+                return Response({'error': 'La source est obligatoire'}, status=status.HTTP_400_BAD_REQUEST)
             if not data.get('amount'):
-                return Response({
-                    'error': 'Le montant est obligatoire'
-                }, status=status.HTTP_400_BAD_REQUEST)
-
-            # Parser la date si c'est une string
+                return Response({'error': 'Le montant est obligatoire'}, status=status.HTTP_400_BAD_REQUEST)
+ 
             date_input = data.get('date')
             if isinstance(date_input, str):
-                from datetime import datetime
-                parsed_date = datetime.fromisoformat(date_input.split('T')[0]).date()
+                from datetime import datetime as dt
+                parsed_date = dt.fromisoformat(date_input.split('T')[0]).date()
             else:
                 parsed_date = date_input if date_input else timezone.now().date()
-
+ 
             income = Income.objects.create(
                 user=user,
                 source=data.get('source'),
@@ -467,6 +484,7 @@ def manage_incomes(request):
                 date=parsed_date,
                 is_validated=data.get('is_validated', True)
             )
+ 
             return Response({
                 'id': income.id,
                 'source': income.source,
@@ -475,12 +493,10 @@ def manage_incomes(request):
                 'date': income.date.isoformat(),
                 'message': 'Revenu créé avec succès'
             }, status=status.HTTP_201_CREATED)
-
+ 
         except Exception as e:
-            return Response({
-                'error': f'Erreur création revenu: {str(e)}'
-            }, status=status.HTTP_400_BAD_REQUEST)
-
+            return Response({'error': f'Erreur création revenu: {str(e)}'}, status=status.HTTP_400_BAD_REQUEST)
+            
 
 # ==========================================
 # GESTION DES DÉPENSES
@@ -489,63 +505,55 @@ def manage_incomes(request):
 @api_view(['GET', 'POST'])
 @permission_classes([IsAuthenticated])
 def manage_expenses(request):
-    """Gestion complète des dépenses"""
+    """Gestion complète des dépenses — support ?month=YYYY-MM"""
     user = request.user
-
+ 
     if request.method == 'GET':
         try:
-            start_date = request.GET.get('start_date')
-            end_date = request.GET.get('end_date')
+            start_of_month, end_of_month, is_current_month = get_month_range(request)
             category = request.GET.get('category')
-
-            expenses = Expense.objects.filter(user=user)
-
-            if start_date:
-                expenses = expenses.filter(date__gte=start_date)
-            if end_date:
-                expenses = expenses.filter(date__lte=end_date)
+ 
+            expenses = Expense.objects.filter(
+                user=user,
+                date__gte=start_of_month.date(),
+                date__lte=end_of_month.date()
+            )
+ 
             if category:
                 expenses = expenses.filter(category=category)
-
+ 
             expenses = expenses.order_by('-date')
-
-            expenses_data = []
-            for expense in expenses:
-                expenses_data.append({
-                    'id': expense.id,
-                    'category': expense.category,
-                    'description': expense.description,
-                    'amount': float(expense.amount),
-                    'date': expense.date.isoformat(),
-                    'is_necessary': expense.is_necessary,
-                    'created_at': expense.created_at.isoformat()
-                })
-
+ 
+            expenses_data = [{
+                'id': e.id,
+                'category': e.category,
+                'description': e.description,
+                'amount': float(e.amount),
+                'date': e.date.isoformat(),
+                'is_necessary': e.is_necessary,
+                'created_at': e.created_at.isoformat()
+            } for e in expenses]
+ 
             return Response({
                 'expenses': expenses_data,
                 'total_count': len(expenses_data),
-                'total_amount': sum(e['amount'] for e in expenses_data)
+                'total_amount': sum(e['amount'] for e in expenses_data),
+                'is_current_month': is_current_month,
+                'month': start_of_month.strftime('%Y-%m'),
             })
-
+ 
         except Exception as e:
-            return Response({
-                'error': f'Erreur dépenses: {str(e)}'
-            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
-    else:  # POST
+            return Response({'error': f'Erreur dépenses: {str(e)}'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+ 
+    else:  # POST inchangé
         try:
             data = request.data
-
+ 
             if not data.get('category'):
-                return Response({
-                    'error': 'La catégorie est obligatoire'
-                }, status=status.HTTP_400_BAD_REQUEST)
-
+                return Response({'error': 'La catégorie est obligatoire'}, status=status.HTTP_400_BAD_REQUEST)
             if not data.get('amount'):
-                return Response({
-                    'error': 'Le montant est obligatoire'
-                }, status=status.HTTP_400_BAD_REQUEST)
-
+                return Response({'error': 'Le montant est obligatoire'}, status=status.HTTP_400_BAD_REQUEST)
+ 
             expense = Expense.objects.create(
                 user=user,
                 category=data.get('category'),
@@ -554,13 +562,10 @@ def manage_expenses(request):
                 date=data.get('date') if data.get('date') else timezone.now().date(),
                 is_necessary=data.get('is_necessary', True)
             )
-
+ 
             update_envelope_spending(user, expense)
-
-            # Recharger depuis la base pour avoir les types corrects
-            # (date arrive comme string depuis le front, refresh_from_db la convertit en objet date)
             expense.refresh_from_db()
-
+ 
             return Response({
                 'id': expense.id,
                 'category': expense.category,
@@ -569,11 +574,9 @@ def manage_expenses(request):
                 'date': expense.date.isoformat(),
                 'message': 'Dépense créée avec succès'
             }, status=status.HTTP_201_CREATED)
-
+ 
         except Exception as e:
-            return Response({
-                'error': f'Erreur création dépense: {str(e)}'
-            }, status=status.HTTP_400_BAD_REQUEST)
+            return Response({'error': f'Erreur création dépense: {str(e)}'}, status=status.HTTP_400_BAD_REQUEST)
 
 
 @api_view(['GET', 'PUT', 'DELETE'])
@@ -2558,52 +2561,55 @@ from decimal import Decimal
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def generate_predictions(request):
-    """
-    Génère et retourne les alertes prédictives pour l'utilisateur
-
-    Cette fonction :
-    1. Analyse les dépenses du mois en cours
-    2. Détecte les risques de dépassement budget
-    3. Vérifie les échéances à venir
-    4. Génère des alertes
-    """
+    """Alertes prédictives — mois courant uniquement, expiration automatique."""
     user = request.user
-
+ 
     try:
-        # Nettoyer les anciennes alertes (> 7 jours)
-        old_date = timezone.now() - timedelta(days=7)
-        PredictiveAlert.objects.filter(user=user, created_at__lt=old_date).delete()
-
-        alerts_created = []
-
-        # ========== 1. ALERTES BUDGÉTAIRES ==========
         now = timezone.now()
         start_of_month = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
-        days_in_month = 30  # Simplifié
+ 
+        # ✅ Supprimer les alertes des mois précédents
+        PredictiveAlert.objects.filter(
+            user=user,
+            created_at__lt=start_of_month
+        ).delete()
+ 
+        alerts_created = []
+ 
+        days_in_month = cal_module.monthrange(now.year, now.month)[1]
         days_elapsed = (now - start_of_month).days + 1
         days_remaining = days_in_month - days_elapsed
-
+ 
+        # Revenu réel du mois courant
+        monthly_income_real = float(
+            Income.objects.filter(user=user, date__gte=start_of_month.date())
+            .aggregate(total=Sum('amount'))['total'] or 0
+        )
+        declared_income = float(user.profile.monthly_income or 0)
+        monthly_income = monthly_income_real if monthly_income_real > 0 else declared_income
+ 
         envelopes = Envelope.objects.filter(user=user)
-
+ 
         for envelope in envelopes:
-            budget = float(envelope.monthly_budget)
-            spent = float(envelope.current_spent)
-
+            budget = float(envelope.allocated_percentage / 100) * monthly_income
+ 
+            spent = float(
+                Expense.objects.filter(
+                    user=user,
+                    category__in=get_categories_for_envelope(envelope.envelope_type),
+                    date__gte=start_of_month.date()
+                ).aggregate(total=Sum('amount'))['total'] or 0
+            )
+ 
             if budget == 0:
                 continue
-
+ 
             percent_spent = (spent / budget) * 100
-            percent_time_elapsed = (days_elapsed / days_in_month) * 100
-
-            # Projection : si on continue au même rythme
+            projected_overspend = 0
             if days_elapsed > 0:
                 daily_rate = spent / days_elapsed
-                projected_total = daily_rate * days_in_month
-                projected_overspend = projected_total - budget
-            else:
-                projected_overspend = 0
-
-            # ALERTE CRITIQUE : Déjà dépassé
+                projected_overspend = (daily_rate * days_in_month) - budget
+ 
             if spent > budget:
                 overspend = spent - budget
                 alert, created = PredictiveAlert.objects.get_or_create(
@@ -2612,53 +2618,29 @@ def generate_predictions(request):
                     title=f"Budget {envelope.envelope_type} dépassé !",
                     defaults={
                         'severity': 'critical',
-                        'message': f"Tu as déjà dépensé {spent:,.0f} FCFA sur un budget de {budget:,.0f} FCFA. Dépassement de {overspend:,.0f} FCFA.",
-                        'suggested_action': {
-                            'type': 'freeze_category',
-                            'envelope': envelope.envelope_type,
-                            'message': 'Bloquer les nouvelles dépenses ?'
-                        },
-                        'context': {
-                            'envelope': envelope.envelope_type,
-                            'budget': budget,
-                            'spent': spent,
-                            'overspend': overspend,
-                            'days_remaining': days_remaining
-                        }
+                        'message': f"Dépassement de {overspend:,.0f} FCFA sur ton budget {envelope.envelope_type}.",
+                        'suggested_action': {'type': 'freeze_category', 'envelope': envelope.envelope_type},
+                        'context': {'envelope': envelope.envelope_type, 'budget': budget, 'spent': spent, 'overspend': overspend, 'days_remaining': days_remaining}
                     }
                 )
                 if created:
                     alerts_created.append(alert)
-
-            # ALERTE WARNING : Va dépasser
+ 
             elif projected_overspend > 0 and percent_spent > 70:
                 alert, created = PredictiveAlert.objects.get_or_create(
                     user=user,
                     alert_type='budget_warning',
-                    title=f"Risque de dépassement {envelope.envelope_type}",
+                    title=f"Risque dépassement {envelope.envelope_type}",
                     defaults={
                         'severity': 'warning',
-                        'message': f"Tu as dépensé {spent:,.0f} FCFA ({percent_spent:.0f}% du budget). À ce rythme, tu dépasseras de {projected_overspend:,.0f} FCFA avant la fin du mois.",
-                        'suggested_action': {
-                            'type': 'reduce_spending',
-                            'envelope': envelope.envelope_type,
-                            'daily_limit': (budget - spent) / max(days_remaining, 1),
-                            'message': 'Activer mode économie ?'
-                        },
-                        'context': {
-                            'envelope': envelope.envelope_type,
-                            'budget': budget,
-                            'spent': spent,
-                            'projected_overspend': projected_overspend,
-                            'percent_spent': percent_spent,
-                            'days_remaining': days_remaining
-                        }
+                        'message': f"À ce rythme tu dépasseras de {projected_overspend:,.0f} FCFA avant la fin du mois.",
+                        'suggested_action': {'type': 'reduce_spending', 'envelope': envelope.envelope_type, 'daily_limit': (budget - spent) / max(days_remaining, 1)},
+                        'context': {'envelope': envelope.envelope_type, 'budget': budget, 'spent': spent, 'projected_overspend': projected_overspend, 'days_remaining': days_remaining}
                     }
                 )
                 if created:
                     alerts_created.append(alert)
-
-            # ALERTE INFO : Bon rythme mais surveillance
+ 
             elif percent_spent > 80 and projected_overspend <= 0:
                 alert, created = PredictiveAlert.objects.get_or_create(
                     user=user,
@@ -2666,91 +2648,59 @@ def generate_predictions(request):
                     title=f"Budget {envelope.envelope_type} bientôt épuisé",
                     defaults={
                         'severity': 'info',
-                        'message': f"Tu as utilisé {percent_spent:.0f}% de ton budget {envelope.envelope_type}. Il reste {budget - spent:,.0f} FCFA pour {days_remaining} jours.",
+                        'message': f"{percent_spent:.0f}% utilisé. Il reste {budget - spent:,.0f} FCFA pour {days_remaining} jours.",
                         'suggested_action': None,
-                        'context': {
-                            'envelope': envelope.envelope_type,
-                            'budget': budget,
-                            'spent': spent,
-                            'remaining': budget - spent,
-                            'days_remaining': days_remaining
-                        }
+                        'context': {'envelope': envelope.envelope_type, 'budget': budget, 'spent': spent, 'remaining': budget - spent, 'days_remaining': days_remaining}
                     }
                 )
                 if created:
                     alerts_created.append(alert)
-
-        # ========== 2. ALERTES TONTINES ==========
-        # Récupérer les tontines actives de l'utilisateur
+ 
+        # Alertes tontines
         user_tontines = TontineParticipant.objects.filter(
-            user=user,
-            tontine__status='active'
+            user=user, tontine__status='active'
         ).select_related('tontine')
-
+ 
         for participation in user_tontines:
             tontine = participation.tontine
-
-            # Vérifier si contribution due ce mois
             contributions_this_month = TontineContribution.objects.filter(
-                participant=participation,
-                date__gte=start_of_month
+                participant=participation, date__gte=start_of_month
             )
-
-            if not contributions_this_month.exists():
-                # Pas encore contribué ce mois
-                days_until_end = days_remaining
-
-                if days_until_end <= 5:
-                    alert, created = PredictiveAlert.objects.get_or_create(
-                        user=user,
-                        alert_type='tontine_due',
-                        title=f"Contribution tontine '{tontine.name}' due",
-                        defaults={
-                            'severity': 'warning' if days_until_end <= 2 else 'info',
-                            'message': f"Ta contribution de {tontine.monthly_contribution:,.0f} FCFA pour '{tontine.name}' est due dans {days_until_end} jours.",
-                            'suggested_action': {
-                                'type': 'contribute_tontine',
-                                'tontine_id': tontine.id,
-                                'amount': float(tontine.monthly_contribution),
-                                'message': 'Contribuer maintenant ?'
-                            },
-                            'context': {
-                                'tontine_id': tontine.id,
-                                'tontine_name': tontine.name,
-                                'amount': float(tontine.monthly_contribution),
-                                'days_remaining': days_until_end
-                            }
-                        }
-                    )
-                    if created:
-                        alerts_created.append(alert)
-
-        # Retourner toutes les alertes actives (non-dismissed)
+            if not contributions_this_month.exists() and days_remaining <= 5:
+                alert, created = PredictiveAlert.objects.get_or_create(
+                    user=user,
+                    alert_type='tontine_due',
+                    title=f"Contribution tontine '{tontine.name}' due",
+                    defaults={
+                        'severity': 'warning' if days_remaining <= 2 else 'info',
+                        'message': f"Ta contribution de {tontine.monthly_contribution:,.0f} FCFA est due dans {days_remaining} jours.",
+                        'suggested_action': {'type': 'contribute_tontine', 'tontine_id': tontine.id, 'amount': float(tontine.monthly_contribution)},
+                        'context': {'tontine_id': tontine.id, 'tontine_name': tontine.name, 'amount': float(tontine.monthly_contribution), 'days_remaining': days_remaining}
+                    }
+                )
+                if created:
+                    alerts_created.append(alert)
+ 
         active_alerts = PredictiveAlert.objects.filter(
-            user=user,
-            is_dismissed=False
+            user=user, is_dismissed=False
         ).order_by('-severity', '-created_at')
-
-        alerts_data = [{
-            'id': alert.id,
-            'type': alert.alert_type,
-            'severity': alert.severity,
-            'title': alert.title,
-            'message': alert.message,
-            'suggested_action': alert.suggested_action,
-            'context': alert.context,
-            'created_at': alert.created_at.isoformat()
-        } for alert in active_alerts]
-
+ 
         return Response({
-            'alerts': alerts_data,
+            'alerts': [{
+                'id': a.id,
+                'type': a.alert_type,
+                'severity': a.severity,
+                'title': a.title,
+                'message': a.message,
+                'suggested_action': a.suggested_action,
+                'context': a.context,
+                'created_at': a.created_at.isoformat()
+            } for a in active_alerts],
             'new_alerts_count': len(alerts_created)
         })
-
+ 
     except Exception as e:
-        return Response({
-            'error': f'Erreur génération prédictions: {str(e)}'
-        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        return Response({'error': f'Erreur prédictions: {str(e)}'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 @api_view(['POST'])
@@ -3313,103 +3263,82 @@ def complete_onboarding(request):
 @api_view(['GET', 'POST'])
 @permission_classes([IsAuthenticated])
 def manage_meta_envelopes(request):
-    """Retourne les 4 meta-enveloppes (Essentiel, Plaisir, Projet, Libération)"""
+    """Retourne les 4 meta-enveloppes — support ?month=YYYY-MM"""
     user = request.user
-    
-    # POST : Mettre à jour les pourcentages
+ 
     if request.method == 'POST':
         try:
             data = request.data
             monthly_income = Decimal(data.get('monthly_income', 0))
             percentages = data.get('percentages', {})
-            
+ 
             if monthly_income <= 0:
-                return Response({
-                    'error': 'Revenu mensuel requis'
-                }, status=status.HTTP_400_BAD_REQUEST)
-            
+                return Response({'error': 'Revenu mensuel requis'}, status=status.HTTP_400_BAD_REQUEST)
+ 
             total = sum(percentages.values())
             if abs(total - 100) > 0.1:
-                return Response({
-                    'error': f'Total = {total}%. Doit être 100%'
-                }, status=status.HTTP_400_BAD_REQUEST)
-            
-            # Mapping frontend → DB
+                return Response({'error': f'Total = {total}%. Doit être 100%'}, status=status.HTTP_400_BAD_REQUEST)
+ 
             name_mapping = {
                 'essentiel': 'essentiels',
                 'plaisir': 'plaisirs',
                 'projet': 'projets',
                 'libération': 'liberation'
             }
-            
+ 
             for frontend_name, db_name in name_mapping.items():
                 if frontend_name in percentages:
                     percentage = Decimal(str(percentages[frontend_name]))
-                    monthly_budget = (percentage / 100) * monthly_income
-                    
                     Envelope.objects.update_or_create(
                         user=user,
                         envelope_type=db_name,
                         defaults={
                             'allocated_percentage': percentage,
-                            'monthly_budget': monthly_budget
+                            'monthly_budget': (percentage / 100) * monthly_income
                         }
                     )
-            
+ 
             user.profile.monthly_income = monthly_income
             user.profile.save()
-            
-            return Response({
-                'message': 'Enveloppes mises à jour avec succès'
-            })
-            
-        except Exception as e:
-            return Response({
-                'error': f'Erreur: {str(e)}'
-            }, status=status.HTTP_400_BAD_REQUEST)
-    
-    # GET : Récupérer les enveloppes
-    try:
-        current_month = timezone.now().replace(day=1)
-        
-        # Créer les enveloppes par défaut si elles n'existent pas
-        defaults = [
-            ('essentiels', 50),
-            ('plaisirs', 30),
-            ('projets', 15),
-            ('liberation', 5)
-        ]
-        # ✅ Revenu réel du mois en cours
-        current_month = timezone.now().replace(day=1)
-        monthly_income_real = Income.objects.filter(
-            user=user, date__gte=current_month
-        ).aggregate(total=Sum('amount'))['total'] or 0
-
-        # Fallback sur revenu déclaré si aucun revenu saisi ce mois
-        monthly_income = monthly_income_real if monthly_income_real > 0 else (user.profile.monthly_income or 0)
-        is_estimated = monthly_income_real == 0
-        print(f"\n🔍 GET /meta-envelopes/ - User: {user.username}")
-        print(f"💰 Monthly income: {monthly_income}")
-        for envelope_type, percentage in defaults:
-            print(f"📦 {envelope_type}: {percentage}% × {monthly_income}")
-    
-            env, created = Envelope.objects.get_or_create(
-                user=user,
-                envelope_type=envelope_type,
-                defaults={
-                    'allocated_percentage': percentage,
-                    'monthly_budget': (Decimal(percentage) / 100) * Decimal(str(monthly_income))
-                }
-            )
  
-            # Si existe déjà, recalculer budget sans toucher au %
-            if not created:
-                env.monthly_budget = (env.allocated_percentage / 100) * Decimal(str(monthly_income))
-                env.save(update_fields=['monthly_budget'])
-            print(f"   → DB: created={created}, budget={env.monthly_budget}")
-
-        
-        # Mapping DB → Frontend
+            return Response({'message': 'Enveloppes mises à jour avec succès'})
+ 
+        except Exception as e:
+            return Response({'error': f'Erreur: {str(e)}'}, status=status.HTTP_400_BAD_REQUEST)
+ 
+    # GET
+    try:
+        start_of_month, end_of_month, is_current_month = get_month_range(request)
+ 
+        # ✅ Revenu réel du mois demandé (pas le revenu déclaré)
+        monthly_income_real = float(
+            Income.objects.filter(
+                user=user,
+                date__gte=start_of_month.date(),
+                date__lte=end_of_month.date()
+            ).aggregate(total=Sum('amount'))['total'] or 0
+        )
+ 
+        declared_income = float(user.profile.monthly_income or 0)
+        is_estimated = monthly_income_real == 0
+        monthly_income = monthly_income_real if not is_estimated else declared_income
+ 
+        # Créer/recalculer enveloppes (mois courant seulement)
+        if is_current_month:
+            defaults = [('essentiels', 50), ('plaisirs', 30), ('projets', 15), ('liberation', 5)]
+            for envelope_type, percentage in defaults:
+                env, created = Envelope.objects.get_or_create(
+                    user=user,
+                    envelope_type=envelope_type,
+                    defaults={
+                        'allocated_percentage': percentage,
+                        'monthly_budget': (Decimal(percentage) / 100) * Decimal(str(declared_income))
+                    }
+                )
+                if not created:
+                    env.monthly_budget = (env.allocated_percentage / 100) * Decimal(str(monthly_income))
+                    env.save(update_fields=['monthly_budget'])
+ 
         meta_envelopes = {
             'essentiels': {
                 'frontend_name': 'essentiel',
@@ -3428,61 +3357,63 @@ def manage_meta_envelopes(request):
             },
             'liberation': {
                 'frontend_name': 'libération',
-                'categories': ['dettes'],  # ✅ Catégorie dettes
+                'categories': ['dettes'],
                 'color': '#FFD93D'
             }
         }
-        
+ 
         result = []
-        
+ 
         for envelope_type, config in meta_envelopes.items():
-            print(f"🔍 Get {envelope_type}...")
             try:
                 envelope = Envelope.objects.get(user=user, envelope_type=envelope_type)
-                budget = float(envelope.monthly_budget)
-                allocated_percentage = float(envelope.allocated_percentage)  # ✅ AJOUTER
+                allocated_percentage = float(envelope.allocated_percentage)
             except Envelope.DoesNotExist:
-                budget = 0
-                allocated_percentage = 0  # ✅ AJOUTER
-                print(f"   ✅ {allocated_percentage}% = {budget}F")
-            
+                allocated_percentage = 0
+ 
+            # Budget recalculé sur le revenu réel du mois demandé
+            budget = (allocated_percentage / 100) * monthly_income
+ 
+            # ✅ Dépenses du mois demandé (pas current_spent qui est figé)
             spent_value = Expense.objects.filter(
                 user=user,
                 category__in=config['categories'],
-                date__gte=current_month
+                date__gte=start_of_month.date(),
+                date__lte=end_of_month.date()
             ).aggregate(total=Sum('amount'))['total']
-
-            # Convertir en float proprement
+ 
             spent = float(spent_value) if spent_value is not None else 0.0
-
             remaining = max(0, budget - spent)
-            percentage = (spent / budget * 100) if budget > 0 else 0            
-            
+            percentage = (spent / budget * 100) if budget > 0 else 0
+ 
             result.append({
-                'envelope_type': config['frontend_name'],  # ✅ AJOUTER
+                'envelope_type': config['frontend_name'],
                 'type': config['frontend_name'],
                 'label': config['frontend_name'].capitalize(),
                 'budget': budget,
-                'monthly_budget': budget,  # ✅ AJOUTER
-                'allocated_percentage': allocated_percentage,  # ✅ AJOUTER
+                'monthly_budget': budget,
+                'allocated_percentage': allocated_percentage,
                 'spent': spent,
-                'current_spent': spent,  # ✅ AJOUTER aussi
+                'current_spent': spent,
                 'remaining': remaining,
                 'percentage': round(percentage, 1),
                 'categories': config['categories'],
                 'color': config['color']
             })
-
-        # ✅ WRAPPER DANS UN OBJET
+ 
         return Response({
             'envelopes': result,
-            'monthly_income': float(monthly_income),
-            'is_estimated': is_estimated  # ✅ Frontend peut afficher un avertissement
-        })        
+            'monthly_income': monthly_income,
+            'is_estimated': is_estimated,
+            'is_current_month': is_current_month,
+            'month': start_of_month.strftime('%Y-%m'),
+            'month_label': start_of_month.strftime('%B %Y'),
+        })
+ 
     except Exception as e:
-        return Response({
-            'error': f'Erreur meta-envelopes: {str(e)}'
-        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        return Response({'error': f'Erreur meta-envelopes: {str(e)}'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
 # ==========================================
 # FONCTIONS MANQUANTES - À AJOUTER À LA FIN DE api/views.py
 # ==========================================
@@ -4208,3 +4139,41 @@ def tontine_public_info(request, invitation_code):
 
     except Tontine.DoesNotExist:
         return Response({'error': 'Tontine introuvable'}, status=status.HTTP_404_NOT_FOUND)
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def available_months(request):
+    """Liste des mois avec données disponibles pour le sélecteur frontend."""
+    user = request.user
+ 
+    try:
+        expense_months = Expense.objects.filter(user=user).dates('date', 'month')
+        income_months = Income.objects.filter(user=user).dates('date', 'month')
+ 
+        all_months = set()
+        for d in expense_months:
+            all_months.add((d.year, d.month))
+        for d in income_months:
+            all_months.add((d.year, d.month))
+ 
+        # Toujours inclure le mois courant
+        now = timezone.now()
+        all_months.add((now.year, now.month))
+ 
+        sorted_months = sorted(all_months, reverse=True)
+ 
+        months_data = []
+        for year, month in sorted_months:
+            month_name = cal_module.month_name[month]
+            months_data.append({
+                'value': f'{year}-{str(month).zfill(2)}',
+                'label': f'{month_name} {year}',
+                'is_current': (year == now.year and month == now.month)
+            })
+ 
+        return Response({'months': months_data})
+ 
+    except Exception as e:
+        return Response({'error': f'Erreur: {str(e)}'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        
