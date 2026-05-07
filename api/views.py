@@ -267,17 +267,22 @@ def user_profile(request):
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def dashboard_metrics(request):
-    """Métriques principales du dashboard"""
+    """Métriques principales du dashboard — support ?month=YYYY-MM"""
     user = request.user
-    current_month = timezone.now().replace(day=1)
 
     try:
+        start_of_month, end_of_month, is_current_month = get_month_range(request)
+
         monthly_income = Income.objects.filter(
-            user=user, date__gte=current_month
+            user=user,
+            date__gte=start_of_month.date(),
+            date__lte=end_of_month.date()
         ).aggregate(total=Sum('amount'))['total'] or 0
 
         total_expenses = Expense.objects.filter(
-            user=user, date__gte=current_month
+            user=user,
+            date__gte=start_of_month.date(),
+            date__lte=end_of_month.date()
         ).aggregate(total=Sum('amount'))['total'] or 0
 
         total_savings = Saving.objects.filter(
@@ -298,6 +303,8 @@ def dashboard_metrics(request):
             expense_ratio = round((total_expenses / monthly_income) * 100, 1)
             budget_aligned = expense_ratio <= 80
 
+        MOIS_FR = ['', 'Janvier', 'Fevrier', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'Aout', 'Septembre', 'Octobre', 'Novembre', 'Decembre']
+
         return Response({
             'monthly_income': float(monthly_income),
             'total_expenses': float(total_expenses),
@@ -307,14 +314,17 @@ def dashboard_metrics(request):
             'savings_rate': savings_rate,
             'expense_ratio': expense_ratio,
             'budget_aligned': budget_aligned,
-            'tontine_participation': 50
+            'tontine_participation': 50,
+            'is_current_month': is_current_month,
+            'month': start_of_month.strftime('%Y-%m'),
+            'month_label': f"{MOIS_FR[start_of_month.month]} {start_of_month.year}",
         })
 
     except Exception as e:
         return Response({
             'error': f'Erreur métriques: {str(e)}'
         }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
+        
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
