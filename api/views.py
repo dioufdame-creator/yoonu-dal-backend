@@ -3407,7 +3407,8 @@ def manage_meta_envelopes(request):
             'is_estimated': is_estimated,
             'is_current_month': is_current_month,
             'month': start_of_month.strftime('%Y-%m'),
-            'month_label': start_of_month.strftime('%B %Y'),
+            MOIS_FR = ['', 'Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin','Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre']
+           'month_label': f"{MOIS_FR[start_of_month.month]} {start_of_month.year}",
         })
  
     except Exception as e:
@@ -4165,7 +4166,8 @@ def available_months(request):
  
         months_data = []
         for year, month in sorted_months:
-            month_name = cal_module.month_name[month]
+            MOIS_FR = ['', 'Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin','Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'] 
+            month_name = MOIS_FR[month]
             months_data.append({
                 'value': f'{year}-{str(month).zfill(2)}',
                 'label': f'{month_name} {year}',
