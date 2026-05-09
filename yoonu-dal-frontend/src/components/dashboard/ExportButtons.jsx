@@ -2,29 +2,28 @@ import React, { useState } from 'react';
 import { PremiumButton } from '../subscription/SubscriptionComponents';
 import API from '../../services/api';
 
-const ExportButtons = ({ user, onNavigate, toast }) => {
+const ExportButtons = ({ user, onNavigate, toast, selectedMonth }) => {
   const [exportingPDF, setExportingPDF] = useState(false);
   const [exportingExcel, setExportingExcel] = useState(false);
+
+  const monthParam = selectedMonth ? `?month=${selectedMonth}` : '';
+  const monthLabel = selectedMonth || new Date().toISOString().slice(0, 7);
 
   const handleExportPDF = async () => {
     setExportingPDF(true);
     try {
-      // ✅ CORRECTION : Utiliser API.get au lieu de fetch
-      const response = await API.get('/export/pdf/', {
+      const response = await API.get(`/export/pdf/${monthParam}`, {
         responseType: 'blob'
       });
-
-      // Créer un blob depuis la réponse
       const blob = new Blob([response.data], { type: 'application/pdf' });
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `yoonu_dal_rapport_${new Date().toISOString().slice(0, 7)}.pdf`;
+      a.download = `yoonu_dal_rapport_${monthLabel}.pdf`;
       document.body.appendChild(a);
       a.click();
       window.URL.revokeObjectURL(url);
       document.body.removeChild(a);
-
       toast?.showSuccess?.('📄 Rapport PDF téléchargé !');
     } catch (error) {
       console.error('Erreur export PDF:', error);
@@ -37,24 +36,20 @@ const ExportButtons = ({ user, onNavigate, toast }) => {
   const handleExportExcel = async () => {
     setExportingExcel(true);
     try {
-      // ✅ CORRECTION : Utiliser API.get au lieu de fetch
-      const response = await API.get('/export/excel/', {
+      const response = await API.get(`/export/excel/${monthParam}`, {
         responseType: 'blob'
       });
-
-      // Créer un blob depuis la réponse
-      const blob = new Blob([response.data], { 
-        type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' 
+      const blob = new Blob([response.data], {
+        type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
       });
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `yoonu_dal_rapport_${new Date().toISOString().slice(0, 7)}.xlsx`;
+      a.download = `yoonu_dal_rapport_${monthLabel}.xlsx`;
       document.body.appendChild(a);
       a.click();
       window.URL.revokeObjectURL(url);
       document.body.removeChild(a);
-
       toast?.showSuccess?.('📊 Rapport Excel téléchargé !');
     } catch (error) {
       console.error('Erreur export Excel:', error);
@@ -75,15 +70,9 @@ const ExportButtons = ({ user, onNavigate, toast }) => {
         disabled={exportingPDF}
       >
         {exportingPDF ? (
-          <>
-            <span className="animate-spin">⏳</span>
-            <span>Export...</span>
-          </>
+          <><span className="animate-spin">⏳</span><span>Export...</span></>
         ) : (
-          <>
-            <span>📄</span>
-            <span>Export PDF</span>
-          </>
+          <><span>📄</span><span>Export PDF</span></>
         )}
       </PremiumButton>
 
@@ -96,15 +85,9 @@ const ExportButtons = ({ user, onNavigate, toast }) => {
         disabled={exportingExcel}
       >
         {exportingExcel ? (
-          <>
-            <span className="animate-spin">⏳</span>
-            <span>Export...</span>
-          </>
+          <><span className="animate-spin">⏳</span><span>Export...</span></>
         ) : (
-          <>
-            <span>📊</span>
-            <span>Export Excel</span>
-          </>
+          <><span>📊</span><span>Export Excel</span></>
         )}
       </PremiumButton>
     </div>
