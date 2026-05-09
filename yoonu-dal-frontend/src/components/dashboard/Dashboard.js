@@ -427,7 +427,7 @@ const DashboardV7 = ({ toast, auth, onNavigate, user }) => {
 
         {/* Export */}
         <div className="mb-6 flex justify-end">
-          <ExportButtons user={user} onNavigate={onNavigate} toast={toast} />
+          <ExportButtons user={user} onNavigate={onNavigate} toast={toast} selectedMonth={selectedMonth} />
         </div>
 
         {/* Tabs */}
