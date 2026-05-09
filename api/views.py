@@ -47,12 +47,43 @@ import calendar as cal_module
 def get_categories_for_envelope(envelope_type):
     """Retourne les catégories appartenant à une enveloppe"""
     mapping = {
-        'essentiels': ['logement', 'alimentation', 'transport', 'santé'],
-        'plaisirs': ['loisirs', 'vêtements', 'autre'],
-        'projets': ['éducation', 'famille', 'spiritualité']
+        'essentiels': [
+            'loyer',
+            'alimentation',
+            'transport',
+            'sante_courante',
+            'eau_electricite',
+            'telephone_internet',
+            'aide_menagere',
+            'solidarite_famille',
+        ],
+        'plaisirs': [
+            'restaurant',
+            'loisirs',
+            'vetements',
+            'beaute',
+            'voyage',
+        ],
+        'projets': [
+            'education',
+            'epargne',
+            'fetes_ceremonies',
+            'spiritualite',
+            'sante_exceptionnelle',
+            'immobilier',
+            'tontine_epargne',
+        ],
+        'liberation': [
+            'remboursement_dette',
+        ],
     }
-    return mapping.get(envelope_type, [])
-
+    # "autre" va dans plaisirs par défaut
+    if envelope_type not in mapping:
+        return []
+    cats = mapping[envelope_type]
+    if envelope_type == 'plaisirs':
+        cats = cats + ['autre']
+    return cats
 
 def create_default_envelopes(user):
     """Crée les enveloppes par défaut pour un utilisateur si elles n'existent pas"""
