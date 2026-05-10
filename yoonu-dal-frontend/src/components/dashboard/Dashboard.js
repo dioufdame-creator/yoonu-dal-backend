@@ -11,6 +11,20 @@ import {
 } from 'recharts';
 import ExportButtons from './ExportButtons';
 
+const CATEGORY_LABELS = {
+  loyer: 'Loyer', alimentation: 'Alimentation', transport: 'Transport',
+  sante_courante: 'Santé courante', eau_electricite: 'Eau / Électricité',
+  telephone_internet: 'Téléphone / Internet', aide_menagere: 'Aide ménagère',
+  solidarite_famille: 'Solidarité / Famille', restaurant: 'Restaurant / Café',
+  loisirs: 'Loisirs / Sorties', vetements: 'Vêtements / Mode',
+  beaute: 'Beauté / Coiffure', voyage: 'Voyage / Vacances',
+  education: 'Éducation / Scolarité', epargne: 'Épargne / Investissement',
+  fetes_ceremonies: 'Fêtes & Cérémonies', spiritualite: 'Spiritualité / Aumône',
+  sante_exceptionnelle: 'Santé exceptionnelle', immobilier: 'Immobilier / Construction',
+  tontine_epargne: 'Tontine / Épargne collective',
+  remboursement_dette: 'Remboursement dette', autre: 'Autre',
+};
+
 // ==========================================
 // DASHBOARD V7
 // ✅ Score unifié : Non évalué / Débutant / En chemin / Aligné / Maître Yoonu
