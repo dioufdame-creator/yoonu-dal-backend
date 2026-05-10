@@ -296,7 +296,7 @@ const DashboardV7 = ({ toast, auth, onNavigate, user }) => {
     const categories = {};
     let total = 0;
     expenses.forEach(exp => {
-      const cat = exp.category || 'Autres';
+      const cat = CATEGORY_LABELS[exp.category] || exp.category || 'Autres';
       const amount = parseFloat(exp.amount || 0);
       categories[cat] = (categories[cat] || 0) + amount;
       total += amount;
@@ -322,7 +322,7 @@ const DashboardV7 = ({ toast, auth, onNavigate, user }) => {
     if (expenses.length > 0) {
       const categories = {};
       expenses.forEach(exp => {
-        const cat = exp.category || 'Autres';
+        const cat = CATEGORY_LABELS[exp.category] || exp.category || 'Autres';
         categories[cat] = (categories[cat] || 0) + parseFloat(exp.amount || 0);
       });
       const topCategory = Object.entries(categories).sort((a, b) => b[1] - a[1])[0];
