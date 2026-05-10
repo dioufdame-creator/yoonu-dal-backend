@@ -170,21 +170,31 @@ class Income(models.Model):
 class Expense(models.Model):
     """Dépenses"""
     CATEGORY_CHOICES = [
-        ('alimentation', 'Alimentation'),
-        ('transport', 'Transport'),
-        ('logement', 'Logement'),
-        ('loisirs', 'Loisirs'),
-        ('santé', 'Santé'),
-        ('éducation', 'Éducation'),
-        ('vêtements', 'Vêtements'),
-        ('famille', 'Famille'),
-        ('spiritualité', 'Spiritualité'),
-        ('dettes', 'Dettes & Remboursements'),  # ✅ NOUVEAU
-        ('autre', 'Autre'),
+        ('loyer',                'Loyer'),
+        ('alimentation',         'Alimentation / Courses'),
+        ('transport',            'Transport / Carburant'),
+        ('sante_courante',       'Santé courante'),
+        ('eau_electricite',      'Eau / Électricité'),
+        ('telephone_internet',   'Téléphone / Internet'),
+        ('aide_menagere',        'Aide ménagère'),
+        ('solidarite_famille',   'Solidarité / Famille'),
+        ('restaurant',           'Restaurant / Café'),
+        ('loisirs',              'Loisirs / Sorties'),
+        ('vetements',            'Vêtements / Mode'),
+        ('beaute',               'Beauté / Coiffure'),
+        ('voyage',               'Voyage / Vacances'),
+        ('education',            'Éducation / Scolarité'),
+        ('epargne',              'Épargne / Investissement'),
+        ('fetes_ceremonies',     'Fêtes & Cérémonies'),
+        ('spiritualite',         'Spiritualité / Aumône'),
+        ('sante_exceptionnelle', 'Santé exceptionnelle'),
+        ('immobilier',           'Immobilier / Construction'),
+        ('tontine_epargne',      'Tontine / Épargne collective'),
+        ('remboursement_dette',  'Remboursement dette'),
+        ('autre',                'Autre'),
     ]
-
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='expenses')
-    category = models.CharField(max_length=20, choices=CATEGORY_CHOICES)
+    category = models.CharField(max_length=50, choices=CATEGORY_CHOICES)
     description = models.CharField(max_length=200)
     amount = models.DecimalField(max_digits=15, decimal_places=2)
     date = models.DateField(default=timezone.now)
@@ -203,7 +213,7 @@ class Budget(models.Model):
     CATEGORY_CHOICES = Expense.CATEGORY_CHOICES
 
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='budgets')
-    category = models.CharField(max_length=20, choices=CATEGORY_CHOICES)
+    category = models.CharField(max_length=50, choices=CATEGORY_CHOICES)
     allocated_amount = models.DecimalField(max_digits=15, decimal_places=2)
     period = models.CharField(max_length=10, default='monthly')
     is_active = models.BooleanField(default=True)
