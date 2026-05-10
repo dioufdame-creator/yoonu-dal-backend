@@ -3383,26 +3383,25 @@ def manage_meta_envelopes(request):
         meta_envelopes = {
             'essentiels': {
                 'frontend_name': 'essentiel',
-                'categories': ['logement', 'alimentation', 'transport', 'santé'],
+                'categories': ['loyer', 'alimentation', 'transport', 'sante_courante', 'eau_electricite', 'telephone_internet', 'aide_menagere', 'solidarite_famille'],
                 'color': '#FF6B6B'
             },
             'plaisirs': {
                 'frontend_name': 'plaisir',
-                'categories': ['loisirs', 'vêtements', 'autre'],
+                'categories': ['restaurant', 'loisirs', 'vetements', 'beaute', 'voyage', 'autre'],
                 'color': '#4ECDC4'
             },
             'projets': {
                 'frontend_name': 'projet',
-                'categories': ['éducation', 'famille', 'spiritualité'],
+                'categories': ['education', 'epargne', 'fetes_ceremonies', 'spiritualite', 'sante_exceptionnelle', 'immobilier', 'tontine_epargne'],
                 'color': '#95E1D3'
             },
             'liberation': {
-                'frontend_name': 'libération',
-                'categories': ['dettes'],
+                'frontend_name': 'liberation',
+                'categories': ['remboursement_dette'],
                 'color': '#FFD93D'
             }
-        }
- 
+        } 
         result = []
  
         for envelope_type, config in meta_envelopes.items():
