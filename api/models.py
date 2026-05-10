@@ -686,7 +686,7 @@ class DebtPayment(models.Model):
         if is_new:
             Expense.objects.create(
                 user=self.debt.user,
-                category='dettes',
+                category='remboursement_dette',
                 description=f"Paiement dette: {self.debt.name}",
                 amount=self.amount,
                 date=self.payment_date
