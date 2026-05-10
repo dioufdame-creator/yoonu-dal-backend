@@ -89,13 +89,41 @@ def calculate_yoonu_score(user):
     # ========== 1. ALIGNEMENT VALEURS (35 points) ==========
 
     CATEGORY_TO_VALUE = {
-        'famille':      ['famille', 'alimentation', 'logement'],
-        'spiritualite': ['spiritualité'],
-        'education':    ['éducation'],
-        'sante':        ['santé'],
-        'travail':      ['transport'],
-        'loisirs':      ['loisirs', 'vêtements'],
-        'communaute':   ['famille'],
+        'famille': [
+            'solidarite_famille',
+            'fetes_ceremonies',
+            'alimentation',
+            'loyer',
+            'aide_menagere',
+        ],
+        'spiritualite': [
+            'spiritualite',
+            'fetes_ceremonies',
+        ],
+        'education': [
+            'education',
+            'immobilier',
+        ],
+        'sante': [
+            'sante_courante',
+            'sante_exceptionnelle',
+        ],
+        'travail': [
+            'transport',
+            'telephone_internet',
+        ],
+        'loisirs': [
+            'loisirs',
+            'restaurant',
+            'voyage',
+            'vetements',
+            'beaute',
+        ],
+        'communaute': [
+            'solidarite_famille',
+            'fetes_ceremonies',
+            'tontine_epargne',
+        ],
     }
 
     alignment_details = {}
