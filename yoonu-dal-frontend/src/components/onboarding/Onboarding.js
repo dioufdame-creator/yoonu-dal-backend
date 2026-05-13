@@ -1,26 +1,32 @@
 import React, { useState } from 'react';
 import API from '../../services/api';
 
+// ==========================================
+// ONBOARDING V2
+// ✅ 2 étapes (valeurs + revenus)
+// ✅ 3 valeurs sans classement
+// ✅ Score 0 si pas de données
+// ==========================================
+
 const Onboarding = ({ toast, onNavigate }) => {
   const [step, setStep] = useState(0);
   const [loading, setLoading] = useState(false);
   const [data, setData] = useState({
     values: [],
-    priorities: [],
     income: ''
   });
   const [score, setScore] = useState(0);
   const [showScore, setShowScore] = useState(false);
 
   const VALUES = [
-    { id: 'famille', emoji: '💚', label: 'Famille', desc: 'Proches et relations' },
-    { id: 'spiritualite', emoji: '✨', label: 'Spiritualité', desc: 'Foi et valeurs' },
-    { id: 'education', emoji: '🎓', label: 'Éducation', desc: 'Apprentissage continu' },
-    { id: 'sante', emoji: '💪', label: 'Santé', desc: 'Bien-être physique' },
-    { id: 'travail', emoji: '💼', label: 'Travail', desc: 'Carrière professionnelle' },
-    { id: 'loisirs', emoji: '🎨', label: 'Loisirs', desc: 'Passions et hobbies' },
-    { id: 'communaute', emoji: '🤝', label: 'Communauté', desc: 'Engagement social' },
-    { id: 'securite', emoji: '🛡️', label: 'Sécurité', desc: 'Stabilité financière' }
+    { id: 'famille',      emoji: '💚', label: 'Famille',               desc: 'Tes proches, ta maison, tes racines' },
+    { id: 'spiritualite', emoji: '✨', label: 'Spiritualité / Foi',     desc: 'Ta foi, tes valeurs, ton ancrage intérieur' },
+    { id: 'education',    emoji: '🎓', label: 'Éducation',              desc: 'Apprendre, grandir, transmettre' },
+    { id: 'sante',        emoji: '💪', label: 'Santé',                  desc: 'Ton bien-être physique et mental' },
+    { id: 'liberte',      emoji: '🚀', label: 'Liberté / Indépendance', desc: 'Entreprendre, ne dépendre de personne' },
+    { id: 'securite',     emoji: '🛡️', label: 'Sécurité / Stabilité',  desc: 'Dormir tranquille, avoir un filet' },
+    { id: 'solidarite',   emoji: '🤝', label: 'Solidarité / Partage',  desc: 'Donner, soutenir, être là pour les autres' },
+    { id: 'reussite',     emoji: '🌟', label: 'Réussite',               desc: 'Progresser, accomplir, laisser une trace' },
   ];
 
   const QUICK_AMOUNTS = [50000, 100000, 200000, 500000, 1000000, 2000000];
@@ -28,33 +34,19 @@ const Onboarding = ({ toast, onNavigate }) => {
   const toggleValue = (id) => {
     setData(prev => {
       const isSelected = prev.values.includes(id);
-      
       if (isSelected) {
         return { ...prev, values: prev.values.filter(v => v !== id) };
       }
-      
       if (prev.values.length >= 3) {
-        toast?.error?.('Maximum 3 valeurs');
+        toast?.error?.('Maximum 3 valeurs — retire une pour en choisir une autre');
         return prev;
       }
-      
       return { ...prev, values: [...prev.values, id] };
     });
   };
 
-  const movePriority = (index, direction) => {
-    const newPriorities = data.priorities.length > 0 ? [...data.priorities] : [...data.values];
-    const newIndex = index + direction;
-    
-    if (newIndex >= 0 && newIndex < newPriorities.length) {
-      [newPriorities[index], newPriorities[newIndex]] = [newPriorities[newIndex], newPriorities[index]];
-      setData(prev => ({ ...prev, priorities: newPriorities }));
-    }
-  };
-
-  const formatAmount = (value) => {
-    return value.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
-  };
+  const formatAmount = (value) =>
+    value.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
 
   const handleIncomeChange = (e) => {
     const raw = e.target.value.replace(/\s/g, '');
@@ -64,23 +56,15 @@ const Onboarding = ({ toast, onNavigate }) => {
   };
 
   const next = () => {
-    if (step === 1 && data.values.length < 3) {
+    if (step === 1 && data.values.length !== 3) {
       toast?.error?.('Sélectionne exactement 3 valeurs');
       return;
     }
-
-    if (step === 2) {
-      if (data.priorities.length === 0) {
-        setData(prev => ({ ...prev, priorities: prev.values }));
-      }
-    }
-
-    if (step === 3 && !data.income) {
+    if (step === 2 && !data.income) {
       toast?.error?.('Entre ton revenu mensuel');
       return;
     }
-
-    if (step === 3) {
+    if (step === 2) {
       completeOnboarding();
     } else {
       setStep(prev => prev + 1);
@@ -89,21 +73,24 @@ const Onboarding = ({ toast, onNavigate }) => {
 
   const completeOnboarding = async () => {
     setLoading(true);
-
     try {
-      for (let i = 0; i < data.priorities.length; i++) {
+      // Sauvegarder les valeurs avec priorité = ordre de sélection
+      for (let i = 0; i < data.values.length; i++) {
         await API.post('/values/', {
-          value: data.priorities[i],
+          value: data.values[i],
           priority: i + 1
         });
       }
 
+      // Compléter l'onboarding
       const response = await API.post('/onboarding/complete/', {
         monthly_income: parseInt(data.income)
       });
 
-      const finalScore = response.data?.score?.total_score || 47;
+      // ✅ Score 0 si pas de données, pas 47
+      const finalScore = response.data?.score?.total_score || 0;
 
+      // Activer le trial premium
       try {
         await API.post('/premium/activate-trial/');
       } catch (err) {
@@ -121,6 +108,13 @@ const Onboarding = ({ toast, onNavigate }) => {
   };
 
   const animateScore = (target) => {
+    if (target === 0) {
+      setScore(0);
+      setLoading(false);
+      setTimeout(() => onNavigate('dashboard'), 3000);
+      return;
+    }
+
     let current = 0;
     const duration = 2000;
     const steps = 50;
@@ -132,21 +126,28 @@ const Onboarding = ({ toast, onNavigate }) => {
         setScore(target);
         clearInterval(timer);
         setLoading(false);
-        
-        setTimeout(() => {
-          onNavigate('dashboard');
-        }, 3000);
+        setTimeout(() => onNavigate('dashboard'), 3000);
       } else {
         setScore(Math.floor(current));
       }
     }, duration / steps);
   };
 
-  const progress = step === 0 ? 0 : ((step) / 3) * 100;
+  const getScoreLabel = (s) => {
+    if (s === 0) return { label: 'Non évalué ⬜', color: 'bg-gray-100 border-gray-300 text-gray-700' };
+    if (s >= 80) return { label: 'Maître Yoonu 🏆', color: 'bg-green-100 border-green-400 text-green-900' };
+    if (s >= 60) return { label: 'Aligné 🌳', color: 'bg-blue-100 border-blue-400 text-blue-900' };
+    if (s >= 40) return { label: 'En chemin 🌿', color: 'bg-amber-100 border-amber-300 text-amber-900' };
+    return { label: 'Débutant 🌱', color: 'bg-red-100 border-red-300 text-red-900' };
+  };
+
+  const progress = step === 0 ? 0 : ((step) / 2) * 100;
+  const scoreInfo = getScoreLabel(score);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-50 via-white to-green-50">
-      {/* Simple Header - PAS de double bande verte */}
+
+      {/* Header avec progress */}
       {!showScore && step > 0 && (
         <div className="bg-white border-b border-gray-200 sticky top-0 z-10">
           <div className="container mx-auto px-4 py-4 max-w-2xl">
@@ -157,15 +158,12 @@ const Onboarding = ({ toast, onNavigate }) => {
                 </div>
                 <h1 className="text-xl font-bold text-gray-900">Yoonu Dal</h1>
               </div>
-              
               <div className="text-sm font-medium text-gray-600">
-                Étape {step}/3
+                Étape {step}/2
               </div>
             </div>
-
-            {/* Progress bar */}
             <div className="h-1.5 bg-gray-200 rounded-full overflow-hidden">
-              <div 
+              <div
                 className="h-full bg-gradient-to-r from-green-600 to-emerald-600 transition-all duration-500"
                 style={{ width: `${progress}%` }}
               />
@@ -175,55 +173,40 @@ const Onboarding = ({ toast, onNavigate }) => {
       )}
 
       <div className="container mx-auto px-4 py-8 max-w-2xl">
-        
-        {/* STEP 0: WELCOME */}
+
+        {/* ── STEP 0 : WELCOME ── */}
         {step === 0 && (
           <div className="text-center animate-fadeIn py-12">
             <div className="mb-8">
               <div className="w-32 h-32 bg-green-600 rounded-3xl mx-auto mb-6 flex items-center justify-center shadow-xl">
                 <span className="text-6xl">🌿</span>
               </div>
-              
-              <h1 className="text-4xl font-bold text-gray-900 mb-3">
-                Yoonu Dal
-              </h1>
-              <p className="text-xl text-gray-600 mb-2">
-                Ton coach financier personnel
-              </p>
-              <p className="text-sm text-gray-500">
-                En wolof : "Le Chemin de l'Argent"
-              </p>
+              <h1 className="text-4xl font-bold text-gray-900 mb-3">Yoonu Dal</h1>
+              <p className="text-xl text-gray-600 mb-2">Ton coach financier personnel</p>
+              <p className="text-sm text-gray-500">En wolof : "Le Chemin de l'Argent"</p>
             </div>
 
-            <div className="bg-white rounded-3xl shadow-lg p-8 mb-8">
-              <div className="mb-6">
-                <span className="text-4xl mb-3 block">✨</span>
-                <h3 className="text-xl font-bold text-gray-900 mb-2">
-                  Score personnalisé
-                </h3>
-                <p className="text-gray-600 text-sm">
-                  Mesure l'alignement entre tes valeurs et tes dépenses
-                </p>
+            <div className="bg-white rounded-3xl shadow-lg p-8 mb-8 text-left space-y-6">
+              <div className="flex items-start gap-4">
+                <span className="text-3xl">✨</span>
+                <div>
+                  <h3 className="text-lg font-bold text-gray-900 mb-1">Score personnalisé</h3>
+                  <p className="text-gray-600 text-sm">Mesure l'alignement entre tes valeurs et tes dépenses</p>
+                </div>
               </div>
-
-              <div className="mb-6">
-                <span className="text-4xl mb-3 block">🔮</span>
-                <h3 className="text-xl font-bold text-gray-900 mb-2">
-                  Simulation intelligente
-                </h3>
-                <p className="text-gray-600 text-sm">
-                  Teste tes décisions avant de les prendre
-                </p>
+              <div className="flex items-start gap-4">
+                <span className="text-3xl">📊</span>
+                <div>
+                  <h3 className="text-lg font-bold text-gray-900 mb-1">Analyse automatique</h3>
+                  <p className="text-gray-600 text-sm">Insights et recommandations personnalisées</p>
+                </div>
               </div>
-
-              <div>
-                <span className="text-4xl mb-3 block">📊</span>
-                <h3 className="text-xl font-bold text-gray-900 mb-2">
-                  Analyse automatique
-                </h3>
-                <p className="text-gray-600 text-sm">
-                  Insights et recommandations personnalisées
-                </p>
+              <div className="flex items-start gap-4">
+                <span className="text-3xl">🦁</span>
+                <div>
+                  <h3 className="text-lg font-bold text-gray-900 mb-1">Tontines digitales</h3>
+                  <p className="text-gray-600 text-sm">Gère tes tontines avec tes proches, simplement</p>
+                </div>
               </div>
             </div>
 
@@ -241,47 +224,61 @@ const Onboarding = ({ toast, onNavigate }) => {
           </div>
         )}
 
-        {/* STEP 1: VALUES */}
+        {/* ── STEP 1 : VALEURS (3 sans classement) ── */}
         {step === 1 && (
           <div className="animate-slideUp">
             <div className="text-center mb-8">
-              <p className="text-green-600 font-semibold mb-2">ÉTAPE 1/3</p>
+              <p className="text-green-600 font-semibold mb-2">ÉTAPE 1/2</p>
               <h2 className="text-3xl font-bold text-gray-900 mb-3">
-                Tes priorités
+                Qu'est-ce qui compte pour toi en ce moment ?
               </h2>
-              <p className="text-gray-600 text-lg">
-                Qu'est-ce qui compte le plus pour toi dans la vie ?
+              <p className="text-gray-500 text-base">
+                Choisis 3 valeurs · Tu pourras les modifier à tout moment
               </p>
             </div>
 
-            <div className="bg-gray-50 rounded-2xl p-4 mb-6">
-              <p className="text-sm text-gray-700">
-                Choisis 3 valeurs <span className="font-bold">({data.values.length}/3)</span>
-              </p>
+            {/* Compteur */}
+            <div className="flex items-center justify-center gap-3 mb-6">
+              {[1, 2, 3].map(i => (
+                <div key={i} className={`w-10 h-10 rounded-full border-2 flex items-center justify-center font-bold text-sm transition-all ${
+                  data.values.length >= i
+                    ? 'bg-green-600 border-green-600 text-white'
+                    : 'bg-white border-gray-300 text-gray-400'
+                }`}>
+                  {data.values.length >= i
+                    ? VALUES.find(v => v.id === data.values[i-1])?.emoji || '✓'
+                    : i
+                  }
+                </div>
+              ))}
             </div>
 
             <div className="space-y-3 mb-8">
               {VALUES.map(value => {
                 const isSelected = data.values.includes(value.id);
-                
+                const isDisabled = !isSelected && data.values.length >= 3;
+
                 return (
                   <button
                     key={value.id}
                     onClick={() => toggleValue(value.id)}
-                    className={`w-full p-5 rounded-2xl border-3 transition-all ${
+                    disabled={isDisabled}
+                    className={`w-full p-4 rounded-2xl border-2 transition-all text-left ${
                       isSelected
-                        ? 'border-green-600 bg-green-50 shadow-lg'
-                        : 'border-gray-200 bg-white hover:border-gray-300'
+                        ? 'border-green-600 bg-green-50 shadow-md'
+                        : isDisabled
+                        ? 'border-gray-100 bg-gray-50 opacity-40 cursor-not-allowed'
+                        : 'border-gray-200 bg-white hover:border-green-300 hover:bg-green-50/50'
                     }`}
                   >
                     <div className="flex items-center gap-4">
-                      <span className="text-4xl">{value.emoji}</span>
-                      <div className="flex-1 text-left">
-                        <div className="font-bold text-gray-900 text-lg flex items-center gap-2">
+                      <span className="text-3xl">{value.emoji}</span>
+                      <div className="flex-1">
+                        <div className="font-bold text-gray-900 flex items-center gap-2">
                           {value.label}
-                          {isSelected && <span className="text-green-600">✓</span>}
+                          {isSelected && <span className="text-green-600 text-lg">✓</span>}
                         </div>
-                        <div className="text-sm text-gray-600">{value.desc}</div>
+                        <div className="text-sm text-gray-500">{value.desc}</div>
                       </div>
                     </div>
                   </button>
@@ -294,115 +291,32 @@ const Onboarding = ({ toast, onNavigate }) => {
               disabled={data.values.length !== 3}
               className="bg-green-600 text-white w-full py-4 rounded-2xl font-semibold text-lg shadow-lg hover:bg-green-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              Continuer →
+              {data.values.length === 3 ? 'Continuer →' : `${data.values.length}/3 sélectionnées`}
             </button>
           </div>
         )}
 
-        {/* STEP 2: PRIORITIES */}
+        {/* ── STEP 2 : REVENUS ── */}
         {step === 2 && (
           <div className="animate-slideUp">
             <div className="text-center mb-8">
-              <p className="text-green-600 font-semibold mb-2">ÉTAPE 2/3</p>
-              <h2 className="text-3xl font-bold text-gray-900 mb-3">
-                Ordre d'importance
-              </h2>
-              <p className="text-gray-600 text-lg">
-                Classe tes valeurs par ordre de priorité
-              </p>
-            </div>
-
-            <div className="space-y-3 mb-6">
-              {(data.priorities.length > 0 ? data.priorities : data.values).map((valueId, index) => {
-                const value = VALUES.find(v => v.id === valueId);
-                const arrayLength = data.priorities.length > 0 ? data.priorities.length : data.values.length;
-                
-                return (
-                  <div
-                    key={valueId}
-                    className="bg-green-50 border-2 border-green-600 rounded-2xl p-5"
-                  >
-                    <div className="flex items-center gap-4">
-                      <div className="flex flex-col gap-1">
-                        <button
-                          onClick={() => movePriority(index, -1)}
-                          disabled={index === 0}
-                          className="w-8 h-8 flex items-center justify-center bg-white border border-gray-300 rounded-lg disabled:opacity-30 hover:bg-gray-50 transition-all"
-                        >
-                          ↑
-                        </button>
-                        <button
-                          onClick={() => movePriority(index, 1)}
-                          disabled={index === arrayLength - 1}
-                          className="w-8 h-8 flex items-center justify-center bg-white border border-gray-300 rounded-lg disabled:opacity-30 hover:bg-gray-50 transition-all"
-                        >
-                          ↓
-                        </button>
-                      </div>
-                      
-                      <div className="w-12 h-12 bg-green-600 text-white rounded-2xl flex items-center justify-center font-bold text-xl">
-                        {index + 1}
-                      </div>
-                      
-                      <span className="text-4xl">{value?.emoji}</span>
-                      
-                      <div className="flex-1">
-                        <div className="font-bold text-gray-900">{value?.label}</div>
-                        <div className="text-sm text-gray-600">{value?.desc}</div>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-
-            <p className="text-center text-sm text-gray-600 mb-6">
-              💡 La valeur en haut est ta priorité #1
-            </p>
-
-            <div className="flex gap-3">
-              <button
-                onClick={() => setStep(1)}
-                className="px-6 py-4 border-2 border-gray-300 text-gray-700 rounded-2xl font-semibold hover:bg-gray-50 transition-all"
-              >
-                ← Retour
-              </button>
-              
-              <button
-                onClick={next}
-                className="flex-1 bg-green-600 text-white py-4 rounded-2xl font-semibold text-lg shadow-lg hover:bg-green-700 transition-all"
-              >
-                Continuer →
-              </button>
-            </div>
-          </div>
-        )}
-
-        {/* STEP 3: INCOME */}
-        {step === 3 && (
-          <div className="animate-slideUp">
-            <div className="text-center mb-8">
-              <p className="text-green-600 font-semibold mb-2">ÉTAPE 3/3</p>
+              <p className="text-green-600 font-semibold mb-2">ÉTAPE 2/2</p>
               <h2 className="text-3xl font-bold text-gray-900 mb-3">
                 Tes revenus mensuels
               </h2>
               <p className="text-gray-600 text-lg">
-                Pour calculer ton Score Yoonu et personnaliser ton expérience
+                Pour personnaliser tes enveloppes et ton score
               </p>
             </div>
 
             <div className="mb-6">
-              <label className="block text-sm font-medium text-gray-700 mb-3">
-                Revenu mensuel moyen
-              </label>
-              
               <div className="relative">
                 <input
                   type="text"
                   value={data.income ? formatAmount(data.income) : ''}
                   onChange={handleIncomeChange}
                   placeholder="400 000"
-                  className="w-full px-6 py-5 text-3xl font-bold text-gray-900 bg-white border-3 border-green-600 rounded-2xl focus:outline-none focus:ring-4 focus:ring-green-600/20 transition-all"
+                  className="w-full px-6 py-5 text-3xl font-bold text-gray-900 bg-white border-2 border-green-600 rounded-2xl focus:outline-none focus:ring-4 focus:ring-green-600/20 transition-all text-center"
                 />
                 <div className="absolute right-6 top-1/2 -translate-y-1/2 text-gray-400 font-semibold text-xl">
                   FCFA
@@ -412,13 +326,17 @@ const Onboarding = ({ toast, onNavigate }) => {
 
             {/* Montants rapides */}
             <div className="mb-6">
-              <p className="text-sm font-medium text-gray-700 mb-3">Montants rapides</p>
+              <p className="text-sm font-medium text-gray-500 mb-3 text-center">Montants rapides</p>
               <div className="grid grid-cols-3 gap-2">
                 {QUICK_AMOUNTS.map(amount => (
                   <button
                     key={amount}
                     onClick={() => setData(prev => ({ ...prev, income: amount.toString() }))}
-                    className="py-3 px-4 bg-white border-2 border-gray-200 hover:border-green-600 hover:bg-green-50 rounded-xl text-sm font-semibold text-gray-700 transition-all"
+                    className={`py-3 px-2 border-2 rounded-xl text-sm font-semibold transition-all ${
+                      data.income === amount.toString()
+                        ? 'border-green-600 bg-green-50 text-green-700'
+                        : 'border-gray-200 bg-white text-gray-700 hover:border-green-400'
+                    }`}
                   >
                     {formatAmount(amount)}
                   </button>
@@ -426,27 +344,23 @@ const Onboarding = ({ toast, onNavigate }) => {
               </div>
             </div>
 
-            {/* Info box */}
             <div className="bg-blue-50 border border-blue-200 rounded-2xl p-4 mb-8">
               <div className="flex gap-3">
-                <span className="text-2xl">💡</span>
-                <div className="flex-1">
-                  <p className="text-sm text-blue-900">
-                    <strong>Pourquoi on demande ça ?</strong><br />
-                    Pour calculer ton Score Yoonu Dal et te donner des conseils personnalisés. Tu pourras ajuster ce montant plus tard dans les paramètres. C’est confidentiel et utilisé uniquement pour tes analyses.
-                  </p>
-                </div>
+                <span className="text-xl">💡</span>
+                <p className="text-sm text-blue-900">
+                  Confidentiel et utilisé uniquement pour tes analyses. Tu pourras ajuster ce montant à tout moment dans ton profil.
+                </p>
               </div>
             </div>
 
             <div className="flex gap-3">
               <button
-                onClick={() => setStep(2)}
+                onClick={() => setStep(1)}
                 className="px-6 py-4 border-2 border-gray-300 text-gray-700 rounded-2xl font-semibold hover:bg-gray-50 transition-all"
               >
                 ← Retour
               </button>
-              
+
               <button
                 onClick={next}
                 disabled={loading || !data.income}
@@ -459,7 +373,7 @@ const Onboarding = ({ toast, onNavigate }) => {
                   </>
                 ) : (
                   <>
-                    <span>Calculer mon Score</span>
+                    <span>Activer mon score</span>
                     <span>✨</span>
                   </>
                 )}
@@ -468,7 +382,7 @@ const Onboarding = ({ toast, onNavigate }) => {
           </div>
         )}
 
-        {/* SCORE REVEAL */}
+        {/* ── SCORE REVEAL ── */}
         {showScore && (
           <div className="text-center animate-scaleIn py-12">
             <h2 className="text-2xl font-semibold text-gray-600 mb-8">
@@ -477,51 +391,46 @@ const Onboarding = ({ toast, onNavigate }) => {
 
             <div className="relative inline-block mb-8">
               <svg className="w-64 h-64 transform -rotate-90">
+                <circle cx="128" cy="128" r="110" className="stroke-gray-200" strokeWidth="20" fill="none" />
                 <circle
-                  cx="128"
-                  cy="128"
-                  r="110"
-                  className="stroke-gray-200"
-                  strokeWidth="20"
-                  fill="none"
-                />
-                <circle
-                  cx="128"
-                  cy="128"
-                  r="110"
+                  cx="128" cy="128" r="110"
                   className="stroke-green-600"
-                  strokeWidth="20"
-                  fill="none"
+                  strokeWidth="20" fill="none"
                   strokeDasharray={`${score * 6.9} 691`}
                   strokeLinecap="round"
-                  style={{
-                    transition: 'stroke-dasharray 0.3s ease-out',
-                    filter: 'drop-shadow(0 0 10px rgba(22, 163, 74, 0.3))'
-                  }}
+                  style={{ transition: 'stroke-dasharray 0.3s ease-out' }}
                 />
               </svg>
-
               <div className="absolute inset-0 flex flex-col items-center justify-center">
-                <div className="text-7xl font-bold text-gray-900">
-                  {score}
-                </div>
+                <div className="text-7xl font-bold text-gray-900">{score}</div>
                 <div className="text-2xl text-gray-500">/100</div>
               </div>
             </div>
 
             <div className="mb-8">
-              <div className="inline-flex items-center gap-2 px-6 py-3 bg-amber-100 border-2 border-amber-300 rounded-full mb-4">
-                <span className="text-2xl">🌿</span>
-                <span className="font-bold text-amber-900">En chemin</span>
+              <div className={`inline-flex items-center gap-2 px-6 py-3 border-2 rounded-full mb-4 ${scoreInfo.color}`}>
+                <span className="font-bold">{scoreInfo.label}</span>
               </div>
-              
-              <h3 className="text-2xl font-bold text-gray-900 mb-3">
-                Ton Score Yoonu Dal est actif !
-              </h3>
-              
-              <p className="text-gray-600 max-w-md mx-auto mb-8">
-                Commence à suivre tes dépenses pour améliorer ton score et voir l'alignement entre tes valeurs et ton argent
-              </p>
+
+              {score === 0 ? (
+                <>
+                  <h3 className="text-2xl font-bold text-gray-900 mb-3">
+                    Ton score se construira avec tes dépenses
+                  </h3>
+                  <p className="text-gray-600 max-w-md mx-auto">
+                    Commence à enregistrer tes dépenses pour voir comment elles s'alignent avec tes valeurs. Ton score s'activera automatiquement.
+                  </p>
+                </>
+              ) : (
+                <>
+                  <h3 className="text-2xl font-bold text-gray-900 mb-3">
+                    Ton Score Yoonu Dal est actif !
+                  </h3>
+                  <p className="text-gray-600 max-w-md mx-auto">
+                    Suis tes dépenses régulièrement pour voir ton alignement avec tes valeurs et améliorer ton score.
+                  </p>
+                </>
+              )}
             </div>
 
             <button
@@ -535,48 +444,12 @@ const Onboarding = ({ toast, onNavigate }) => {
       </div>
 
       <style jsx>{`
-        @keyframes fadeIn {
-          from { opacity: 0; }
-          to { opacity: 1; }
-        }
-        
-        @keyframes slideUp {
-          from {
-            opacity: 0;
-            transform: translateY(20px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
-        }
-        
-        @keyframes scaleIn {
-          from {
-            opacity: 0;
-            transform: scale(0.9);
-          }
-          to {
-            opacity: 1;
-            transform: scale(1);
-          }
-        }
-        
-        .animate-fadeIn {
-          animation: fadeIn 0.5s ease-out;
-        }
-        
-        .animate-slideUp {
-          animation: slideUp 0.5s ease-out;
-        }
-        
-        .animate-scaleIn {
-          animation: scaleIn 0.6s ease-out;
-        }
-        
-        .border-3 {
-          border-width: 3px;
-        }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes scaleIn { from { opacity: 0; transform: scale(0.9); } to { opacity: 1; transform: scale(1); } }
+        .animate-fadeIn { animation: fadeIn 0.5s ease-out; }
+        .animate-slideUp { animation: slideUp 0.5s ease-out; }
+        .animate-scaleIn { animation: scaleIn 0.6s ease-out; }
       `}</style>
     </div>
   );
