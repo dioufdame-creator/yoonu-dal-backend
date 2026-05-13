@@ -105,9 +105,10 @@ class UserValue(models.Model):
         ('spiritualite', 'Spiritualité'),
         ('education', 'Éducation'),
         ('sante', 'Santé'),
-        ('travail', 'Travail'),
-        ('loisirs', 'Loisirs'),
-        ('communaute', 'Communauté'),
+        ('liberte', 'Liberté/ Indépendance'),
+        ('securite', 'Sécurité/ Stabilité'),
+        ('solidarite', 'Solidarité'),
+        ('reussite', 'Réussite'),
     ]
 
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='user_values')
