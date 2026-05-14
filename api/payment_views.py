@@ -142,9 +142,20 @@ def create_payment(request):
 
     try:
         base_url_api = get_paydunya_base_url()
+        headers = get_paydunya_headers()
+
+        # DEBUG temporaire
+        print(f"=== PAYDUNYA DEBUG ===")
+        print(f"MODE: {getattr(settings, 'PAYDUNYA_MODE', 'NON DEFINI')}")
+        print(f"MASTER_KEY: {settings.PAYDUNYA_MASTER_KEY}")
+        print(f"PRIVATE_KEY: {settings.PAYDUNYA_PRIVATE_KEY}")
+        print(f"TOKEN: {settings.PAYDUNYA_TOKEN}")
+        print(f"URL: {base_url_api}/checkout-invoice/create")
+        print(f"=== FIN DEBUG ===")
+
         response = requests.post(
             f"{base_url_api}/checkout-invoice/create",
-            headers=get_paydunya_headers(),
+            headers=headers,
             json=payload,
             timeout=30
         )
