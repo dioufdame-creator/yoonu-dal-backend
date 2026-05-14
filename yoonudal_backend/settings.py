@@ -218,3 +218,9 @@ REST_FRAMEWORK = {
 # ==============================================================================
 # JWT CONFIGURATION
 # ===============================================================
+# variables paydunya
+PAYDUNYA_MASTER_KEY = os.environ.get('PAYDUNYA_MASTER_KEY')
+PAYDUNYA_PUBLIC_KEY = os.environ.get('PAYDUNYA_PUBLIC_KEY')
+PAYDUNYA_PRIVATE_KEY = os.environ.get('PAYDUNYA_PRIVATE_KEY')
+PAYDUNYA_TOKEN = os.environ.get('PAYDUNYA_TOKEN')
+PAYDUNYA_MODE = os.environ.get('PAYDUNYA_MODE', 'test')
