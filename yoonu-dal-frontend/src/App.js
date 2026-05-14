@@ -113,6 +113,13 @@ function App() {
     initializeAuth();
   }, []);
 
+  const handlePaymentSuccess = async () => {
+    const updatedUser = await authService.getUserProfile();
+    if (updatedUser) {
+      setUser(updatedUser);
+    }
+  };
+
   const handleNavigate = (page, params = {}) => {
     console.log('🧭 Navigation vers:', page);
     
@@ -521,6 +528,7 @@ function App() {
             onNavigate={handleNavigate}
             toast={toastMethods}
             status="success"
+            onPaymentSuccess={handlePaymentSuccess}
           />
         );
 
