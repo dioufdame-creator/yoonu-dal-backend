@@ -7,7 +7,7 @@ import API from '../services/api';
 // Vérifie le statut et active le Premium
 // ==========================================
 
-const PaymentResultPage = ({ onNavigate, toast, status: urlStatus }) => {
+const PaymentResultPage = ({ onNavigate, toast, status: urlStatus, onPaymentSuccess }) => {
   const [checking, setChecking] = useState(true);
   const [paymentStatus, setPaymentStatus] = useState(null);
 
@@ -31,6 +31,8 @@ const PaymentResultPage = ({ onNavigate, toast, status: urlStatus }) => {
 
       if (status === 'completed' || is_premium) {
         localStorage.removeItem('pending_transaction_id');
+        // Recharger le profil utilisateur pour mettre à jour le Premium
+        if (onPaymentSuccess) await onPaymentSuccess();
         setPaymentStatus('success');
         setChecking(false);
         // Redirection dashboard après 3s
