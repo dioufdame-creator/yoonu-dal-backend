@@ -91,7 +91,7 @@ def create_default_envelopes(user):
         ('essentiels', 50),
         ('plaisirs', 30),
         ('projets', 15),
-        ('projets', 5)
+        ('liberation, 0)
     ]
     monthly_income = user.profile.monthly_income or 0
 
@@ -1215,8 +1215,8 @@ def manage_envelopes(request):
             envelope_configs = [
                 ('essentiels', 50),
                 ('plaisirs', 30),
-                ('projets', 20)
-            ]
+                ('projets', 20),
+                ('liberation, 0)            ]
 
             for envelope_type, default_percentage in envelope_configs:
                 custom_percentage = data.get(f'{envelope_type}_percentage', default_percentage)
@@ -2403,7 +2403,7 @@ PHILOSOPHIE :
 - Tu poses des questions stratégiques quand c'est pertinent
 - Tu peux challenger ses décisions et suggérer des stratégies long terme
 - Tu utilises le contexte temporel UNIQUEMENT quand c'est pertinent (pas à chaque message)
-- Tu connais la réalité sénégalaise : Tabaski, Korité, solidarité familiale, tontines, Wave/Orange Money
+- Tu connais la réalité sénégalaise et africaine: Tabaski, Korité, solidarité familiale, tontines, Wave/Orange Money
 - Réponses de longueur naturelle — ni trop courtes ni trop longues selon le contexte
 - Tu utilises les vrais noms de ses objectifs et tontines dans tes réponses
 
@@ -3324,7 +3324,7 @@ def manage_meta_envelopes(request):
                 'essentiel': 'essentiels',
                 'plaisir': 'plaisirs',
                 'projet': 'projets',
-                'libération': 'liberation'
+                'liberation': 'liberation'
             }
  
             for frontend_name, db_name in name_mapping.items():
@@ -3366,7 +3366,7 @@ def manage_meta_envelopes(request):
  
         # Créer/recalculer enveloppes (mois courant seulement)
         if is_current_month:
-            defaults = [('essentiels', 50), ('plaisirs', 30), ('projets', 15), ('liberation', 5)]
+            defaults = [('essentiels', 50), ('plaisirs', 30), ('projets', 20), ('liberation', 0)]
             for envelope_type, percentage in defaults:
                 env, created = Envelope.objects.get_or_create(
                     user=user,
