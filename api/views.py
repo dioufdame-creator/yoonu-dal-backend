@@ -1798,15 +1798,31 @@ def make_contribution(request, tontine_id):
                 'error': 'Le montant est obligatoire'
             }, status=status.HTTP_400_BAD_REQUEST)
 
+        contribution_date = data.get('date') if data.get('date') else timezone.now().date()
+
         contribution = TontineContribution.objects.create(
             participant=participant,
             amount=Decimal(amount),
-            date=data.get('date') if data.get('date') else timezone.now().date(),
+            date=contribution_date,
             payment_method=data.get('payment_method', 'virement'),
             transaction_reference=data.get('transaction_reference', ''),
             notes=data.get('notes', ''),
             is_validated=False
         )
+
+        # ✅ Créer automatiquement une dépense dans l'enveloppe Projets
+        try:
+            Expense.objects.create(
+                user=user,
+                category='tontine_epargne',
+                description=f'Contribution tontine "{tontine.name}"',
+                amount=Decimal(amount),
+                date=contribution_date,
+                is_necessary=True
+            )
+            update_envelope_spending(user)
+        except Exception as e:
+            print(f'Erreur création dépense tontine: {e}')
 
         return Response({
             'id': contribution.id,
