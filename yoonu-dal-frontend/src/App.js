@@ -30,6 +30,7 @@ import Onboarding from './components/onboarding/Onboarding';
 import PricingPage from './pages/PricingPage';
 import CheckoutPage from './pages/CheckoutPage';
 import SubscriptionPage from './pages/SubscriptionPage';
+import PaymentResultPage from './pages/PaymentResultPage';
 import { 
   SubscriptionBadge, 
   PremiumGate, 
@@ -85,9 +86,16 @@ function App() {
       } finally {
         setIsLoading(false);
 
-        // ✅ Détecter un lien d'invitation dans l'URL au chargement
         const path = window.location.pathname;
-        if (path.startsWith('/join/')) {
+
+        // Détecter retour PayDunya
+        if (path.startsWith('/payment/success')) {
+          setCurrentPage('payment-success');
+        } else if (path.startsWith('/payment/cancel')) {
+          setCurrentPage('payment-cancel');
+        }
+        // Détecter un lien d'invitation dans l'URL au chargement
+        else if (path.startsWith('/join/')) {
           const code = path.replace('/join/', '').trim();
           if (code) {
             console.log('🔗 Code d\'invitation détecté dans l\'URL:', code);
@@ -136,7 +144,6 @@ function App() {
         try {
           const response = await API.get('/onboarding/status/');
           
-          // Vérifier si un code d'invitation est en attente
           const pendingCode = localStorage.getItem('pending_invite_code');
 
           if (response.data.onboarding_complete) {
@@ -147,7 +154,6 @@ function App() {
               handleNavigate('dashboard');
             }
           } else {
-            // Laisser le pending_invite_code en localStorage, sera géré après onboarding
             handleNavigate('onboarding');
           }
         } catch (error) {
@@ -502,6 +508,24 @@ function App() {
             onNavigate={handleNavigate} 
             toast={toastMethods}
             plan={pageParams?.plan || 'monthly'}
+          />
+        );
+
+      case 'payment-success':
+        return (
+          <PaymentResultPage
+            onNavigate={handleNavigate}
+            toast={toastMethods}
+            status="success"
+          />
+        );
+
+      case 'payment-cancel':
+        return (
+          <PaymentResultPage
+            onNavigate={handleNavigate}
+            toast={toastMethods}
+            status="cancel"
           />
         );
 
