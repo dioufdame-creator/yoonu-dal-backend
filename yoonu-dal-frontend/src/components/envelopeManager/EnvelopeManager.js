@@ -59,7 +59,7 @@ const EnvelopeManagerPremium = ({ toast, onNavigate, auth }) => {
       recommendedMin: 20,
       recommendedMax: 30
     },
-    libération: {
+    liberation: {
       name: 'Libération',
       icon: '🔓',
       description: 'Dettes, crédits, solidarité familiale',
