@@ -164,7 +164,7 @@ def create_payment(request):
 
         if data.get('response_code') == '00':
             paydunya_token = data.get('token')
-            checkout_url = f"{get_paydunya_checkout_base()}/{paydunya_token}"
+            checkout_url = data.get('response_text', f"{get_paydunya_checkout_base()}/{paydunya_token}")
 
             # Sauvegarder le token PayDunya
             transaction.phone_number = paydunya_token  # réutilise ce champ pour stocker le token
