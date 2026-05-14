@@ -160,6 +160,7 @@ def create_payment(request):
             timeout=30
         )
         data = response.json()
+        print(f"PAYDUNYA RESPONSE: {data}")
 
         if data.get('response_code') == '00':
             paydunya_token = data.get('token')
