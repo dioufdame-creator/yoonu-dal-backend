@@ -34,7 +34,7 @@ urlpatterns = [
 
     # Valeurs personnelles
     path('values/', views.user_values, name='user_values'),
-    path('user-values/', views.user_values, name='user_values_alt'),
+    path('user-values/', views.delete_user_values, name='delete_user_values'),
 
     # Tontines
     path('tontines/', views.manage_tontines, name='manage_tontines'),
