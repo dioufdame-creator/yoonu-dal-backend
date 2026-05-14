@@ -91,7 +91,7 @@ def create_default_envelopes(user):
         ('essentiels', 50),
         ('plaisirs', 30),
         ('projets', 15),
-        ('liberation, 0)
+        ('liberation', 0)
     ]
     monthly_income = user.profile.monthly_income or 0
 
