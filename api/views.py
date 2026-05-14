@@ -1216,7 +1216,7 @@ def manage_envelopes(request):
                 ('essentiels', 50),
                 ('plaisirs', 30),
                 ('projets', 20),
-                ('liberation, 0)            ]
+                ('liberation', 0)            ]
 
             for envelope_type, default_percentage in envelope_configs:
                 custom_percentage = data.get(f'{envelope_type}_percentage', default_percentage)
