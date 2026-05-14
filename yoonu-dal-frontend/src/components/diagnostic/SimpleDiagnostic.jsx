@@ -6,7 +6,6 @@ const SimpleDiagnostic = ({ onNavigate, toast }) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Exactement les mêmes valeurs que l'onboarding
   const VALUES = [
     { id: 'famille',      emoji: '💚', label: 'Famille',               desc: 'Tes proches, ta maison, tes racines' },
     { id: 'spiritualite', emoji: '✨', label: 'Spiritualité / Foi',     desc: 'Ta foi, tes valeurs, ton ancrage intérieur' },
@@ -18,17 +17,15 @@ const SimpleDiagnostic = ({ onNavigate, toast }) => {
     { id: 'reussite',     emoji: '🌟', label: 'Réussite',               desc: 'Progresser, accomplir, laisser une trace' },
   ];
 
-  // Charger les valeurs actuelles de l'utilisateur
   useEffect(() => {
     const loadCurrentValues = async () => {
       try {
         const response = await API.get('/values/');
         const currentValues = response.data?.values || [];
-        // Trier par priorité et extraire les IDs
         const sorted = currentValues
           .sort((a, b) => a.priority - b.priority)
           .map(v => v.value)
-          .filter(v => VALUES.find(val => val.id === v)); // garder seulement les valeurs connues
+          .filter(v => VALUES.find(val => val.id === v));
         setSelectedValues(sorted);
       } catch (error) {
         console.error('Erreur chargement valeurs:', error);
@@ -65,10 +62,10 @@ const SimpleDiagnostic = ({ onNavigate, toast }) => {
 
     setIsSubmitting(true);
     try {
-      // Supprimer les anciennes valeurs
+      // Supprimer toutes les anciennes valeurs
       await API.delete('/user-values/');
 
-      // Créer les nouvelles valeurs avec priorité
+      // Créer les nouvelles avec priorité
       for (let i = 0; i < selectedValues.length; i++) {
         await API.post('/values/', {
           value: selectedValues[i],
@@ -106,19 +103,15 @@ const SimpleDiagnostic = ({ onNavigate, toast }) => {
     <div className="min-h-screen bg-gradient-to-br from-green-50 via-white to-green-50">
       <div className="container mx-auto px-4 py-8 max-w-2xl">
 
-        {/* Header */}
         <div className="text-center mb-8">
           <div className="text-5xl mb-4">💎</div>
           <h1 className="text-3xl font-bold text-gray-900 mb-2">Mes valeurs</h1>
           <p className="text-gray-600">
             Choisis les <strong>3 priorités</strong> qui guident ta vie en ce moment
           </p>
-          <p className="text-sm text-gray-500 mt-1">
-            Tu pourras les modifier à tout moment
-          </p>
+          <p className="text-sm text-gray-500 mt-1">Tu pourras les modifier à tout moment</p>
         </div>
 
-        {/* Compteur */}
         <div className="flex items-center justify-center gap-3 mb-6">
           {[1, 2, 3].map(i => (
             <div key={i} className={`w-10 h-10 rounded-full border-2 flex items-center justify-center font-bold text-sm transition-all ${
@@ -134,7 +127,6 @@ const SimpleDiagnostic = ({ onNavigate, toast }) => {
           ))}
         </div>
 
-        {/* Statut */}
         <div className="bg-white rounded-2xl border-2 border-green-200 p-4 mb-6 text-center">
           <span className="text-gray-700 font-medium">
             {selectedValues.length === 0 && 'Commence par choisir 3 valeurs'}
@@ -144,7 +136,6 @@ const SimpleDiagnostic = ({ onNavigate, toast }) => {
           </span>
         </div>
 
-        {/* Valeurs */}
         <div className="space-y-3 mb-8">
           {VALUES.map(value => {
             const isSelected = selectedValues.includes(value.id);
@@ -184,7 +175,6 @@ const SimpleDiagnostic = ({ onNavigate, toast }) => {
           })}
         </div>
 
-        {/* Classement actuel */}
         {selectedValues.length > 0 && (
           <div className="bg-white rounded-2xl border-2 border-green-200 p-5 mb-6">
             <h3 className="font-bold text-gray-900 mb-3">Ton classement :</h3>
@@ -208,7 +198,6 @@ const SimpleDiagnostic = ({ onNavigate, toast }) => {
           </div>
         )}
 
-        {/* Boutons */}
         <div className="flex gap-3">
           <button
             onClick={() => onNavigate('dashboard')}
