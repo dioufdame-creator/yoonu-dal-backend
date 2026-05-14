@@ -1,8 +1,9 @@
 # api/calculate_yoonu_score.py
-# Fonction de calcul du Score Yoonu Dal - VERSION UNIFIÉE
-# ✅ Logique cohérente sur 4 niveaux : Débutant / En chemin / Aligné / Maître Yoonu
-# ✅ Pas de score de base gratuit
-# ✅ Score 0 si pas de données
+# Score Yoonu Dal - VERSION COMPLÈTE
+# ✅ 5 composants : alignement / discipline / stabilité / amélioration / engagement
+# ✅ Intègre objectifs, tontines, dettes
+# ✅ Seuil 10% revenu pour discipline
+# ✅ Nouvelles valeurs (liberte, securite, solidarite, reussite)
 
 from datetime import timedelta
 from django.utils import timezone
@@ -11,7 +12,7 @@ from decimal import Decimal
 
 
 # ==========================================
-# NIVEAUX UNIFIÉS — utilisés partout
+# NIVEAUX UNIFIÉS
 # ==========================================
 
 SCORE_LEVELS = [
@@ -30,9 +31,54 @@ SCORE_MESSAGES = {
     'Non évalué':   'Enregistre tes dépenses pour activer ton score Yoonu Dal.',
 }
 
+# Mapping valeurs → catégories
+CATEGORY_TO_VALUE = {
+    'famille': [
+        'solidarite_famille',
+        'fetes_ceremonies',
+        'alimentation',
+        'loyer',
+        'aide_menagere',
+    ],
+    'spiritualite': [
+        'spiritualite',
+        'fetes_ceremonies',
+    ],
+    'education': [
+        'education',
+        'immobilier',
+    ],
+    'sante': [
+        'sante_courante',
+        'sante_exceptionnelle',
+    ],
+    'liberte': [
+        'transport',
+        'telephone_internet',
+        'epargne',
+        'immobilier',
+    ],
+    'securite': [
+        'epargne',
+        'remboursement_dette',
+        'sante_courante',
+        'loyer',
+    ],
+    'solidarite': [
+        'solidarite_famille',
+        'fetes_ceremonies',
+        'tontine_epargne',
+    ],
+    'reussite': [
+        'education',
+        'epargne',
+        'immobilier',
+        'tontine_epargne',
+    ],
+}
+
 
 def get_level(score):
-    """Retourne le niveau unifié basé sur le score"""
     for level in SCORE_LEVELS:
         if score >= level['min']:
             return level
@@ -48,8 +94,7 @@ def get_emoji_from_score(score):
 
 
 def get_message_from_score(score):
-    label = get_label_from_score(score)
-    return SCORE_MESSAGES.get(label, '')
+    return SCORE_MESSAGES.get(get_label_from_score(score), '')
 
 
 # ==========================================
@@ -58,73 +103,57 @@ def get_message_from_score(score):
 
 def calculate_yoonu_score(user):
     """
-    Calcule le Score Yoonu Dal pour un utilisateur.
-    Retourne un DICT avec le score et ses composantes.
-    Score 0 si pas de données suffisantes — pas de score gratuit.
-    """
-    from .models import YoonuScore, ScoreHistory, Expense, Income, Envelope, UserValue
+    Calcule le Score Yoonu Dal — 5 composants, total 100 pts.
 
-    score_obj, created = YoonuScore.objects.get_or_create(user=user)
+    1. Alignement valeurs     → 30 pts
+    2. Discipline budgétaire  → 30 pts
+    3. Stabilité financière   → 20 pts
+    4. Amélioration continue  → 10 pts
+    5. Engagement financier   → 10 pts (objectifs + tontines + dettes)
+    """
+    from .models import (
+        YoonuScore, ScoreHistory, Expense, Income, Envelope,
+        UserValue, Goal, TontineParticipant, TontineContribution, Debt, DebtPayment
+    )
+
+    score_obj, _ = YoonuScore.objects.get_or_create(user=user)
 
     now = timezone.now()
     start_of_month = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
 
     user_values = UserValue.objects.filter(user=user).order_by('priority')[:3]
 
-    # ✅ Pas de valeurs définies → score 0
+    # Pas de valeurs → score 0
     if not user_values.exists():
         score_obj.total_score = 0
         score_obj.save()
-        return _build_result(score_obj, 0, 0, 0, 0, 0, {})
+        return _build_result(score_obj, 0, 0, 0, 0, 0, 0, {})
 
     expenses = Expense.objects.filter(user=user, date__gte=start_of_month)
     total_expenses = expenses.aggregate(total=Sum('amount'))['total'] or 0
 
-    # ✅ Pas de dépenses → score 0, message incitatif
+    # Pas de dépenses → score 0
     if total_expenses == 0:
         score_obj.total_score = 0
         score_obj.save()
-        return _build_result(score_obj, 0, 0, 0, 0, 0, {})
+        return _build_result(score_obj, 0, 0, 0, 0, 0, 0, {})
 
-    # ========== 1. ALIGNEMENT VALEURS (35 points) ==========
+    # Revenu de référence
+    monthly_income = float(
+        Income.objects.filter(user=user, date__gte=start_of_month)
+        .aggregate(total=Sum('amount'))['total'] or 0
+    )
+    declared_income = float(user.profile.monthly_income or 0)
+    reference_income = monthly_income if monthly_income > 0 else declared_income
+    total_expenses_float = float(total_expenses)
 
-    CATEGORY_TO_VALUE = {
-        'famille': [
-            'solidarite_famille',
-            'fetes_ceremonies',
-            'alimentation',
-            'loyer',
-            'aide_menagere',
-        ],
-        'spiritualite': [
-            'spiritualite',
-            'fetes_ceremonies',
-        ],
-        'education': [
-            'education',
-            'immobilier',
-        ],
-        'sante': [
-            'sante_courante',
-            'sante_exceptionnelle',
-        ],
-        'travail': [
-            'transport',
-            'telephone_internet',
-        ],
-        'loisirs': [
-            'loisirs',
-            'restaurant',
-            'voyage',
-            'vetements',
-            'beaute',
-        ],
-        'communaute': [
-            'solidarite_famille',
-            'fetes_ceremonies',
-            'tontine_epargne',
-        ],
-    }
+    # Données suffisantes = au moins 10% du revenu dépensé
+    has_sufficient_data = (
+        reference_income == 0 or
+        total_expenses_float >= reference_income * 0.10
+    )
+
+    # ========== 1. ALIGNEMENT VALEURS (30 points) ==========
 
     alignment_details = {}
     alignment_total = 0
@@ -133,30 +162,30 @@ def calculate_yoonu_score(user):
         value_key = user_value.value
         related_categories = CATEGORY_TO_VALUE.get(value_key, [])
 
-        value_expenses = expenses.filter(category__in=related_categories).aggregate(
-            total=Sum('amount')
-        )['total'] or 0
+        value_expenses = expenses.filter(
+            category__in=related_categories
+        ).aggregate(total=Sum('amount'))['total'] or 0
 
-        value_percentage = (float(value_expenses) / float(total_expenses) * 100) if total_expenses > 0 else 0
+        value_percentage = (
+            float(value_expenses) / total_expenses_float * 100
+        ) if total_expenses_float > 0 else 0
+
         alignment_details[value_key] = round(value_percentage, 1)
 
         if user_value.priority == 1:
-            expected_min = 25
-            alignment_total += min(15, (value_percentage / expected_min) * 15)
+            alignment_total += min(13, (value_percentage / 25) * 13)
         elif user_value.priority == 2:
-            expected_min = 15
-            alignment_total += min(12, (value_percentage / expected_min) * 12)
+            alignment_total += min(10, (value_percentage / 15) * 10)
         elif user_value.priority == 3:
-            expected_min = 10
-            alignment_total += min(8, (value_percentage / expected_min) * 8)
+            alignment_total += min(7, (value_percentage / 10) * 7)
 
-    alignment_score = min(alignment_total, 35)
+    alignment_score = min(alignment_total, 30)
 
-    # ========== 2. DISCIPLINE BUDGÉTAIRE (35 points) ==========
+    # ========== 2. DISCIPLINE BUDGÉTAIRE (30 points) ==========
 
     envelopes = Envelope.objects.filter(user=user, is_active=True)
 
-    if not envelopes.exists():
+    if not envelopes.exists() or not has_sufficient_data:
         discipline_score = 0
     else:
         discipline_total = 0
@@ -172,11 +201,11 @@ def calculate_yoonu_score(user):
             usage_pct = (spent / budget) * 100
 
             if usage_pct <= 80:
-                discipline_total += 12
-            elif usage_pct <= 100:
                 discipline_total += 10
+            elif usage_pct <= 100:
+                discipline_total += 8
             elif usage_pct <= 120:
-                discipline_total += 5
+                discipline_total += 4
                 overruns += 1
             else:
                 overruns += 1
@@ -184,78 +213,144 @@ def calculate_yoonu_score(user):
         if overruns > 0:
             discipline_total -= (overruns * 3)
 
-        discipline_score = max(0, min(discipline_total, 35))
+        discipline_score = max(0, min(discipline_total, 30))
 
     # ========== 3. STABILITÉ FINANCIÈRE (20 points) ==========
 
-    monthly_income = float(
-        Income.objects.filter(user=user, date__gte=start_of_month)
-        .aggregate(total=Sum('amount'))['total'] or 0
-    )
-    monthly_expenses_total = float(total_expenses)
-
     stability_total = 0
 
-    if monthly_income > monthly_expenses_total:
-        stability_total += 10
-    elif monthly_income > monthly_expenses_total * 0.9:
-        stability_total += 7
-    elif monthly_income > monthly_expenses_total * 0.8:
-        stability_total += 5
-
-    savings = monthly_income - monthly_expenses_total
-    if savings > 0 and monthly_income > 0:
-        savings_rate = (savings / monthly_income) * 100
-        if savings_rate >= 20:
+    if reference_income > 0:
+        if monthly_income > total_expenses_float:
             stability_total += 10
-        elif savings_rate >= 10:
+        elif monthly_income > total_expenses_float * 0.9:
             stability_total += 7
-        elif savings_rate >= 5:
+        elif monthly_income > total_expenses_float * 0.8:
             stability_total += 5
-        else:
-            stability_total += 3
+
+        savings = monthly_income - total_expenses_float
+        if savings > 0:
+            savings_rate = (savings / monthly_income) * 100
+            if savings_rate >= 20:
+                stability_total += 10
+            elif savings_rate >= 10:
+                stability_total += 7
+            elif savings_rate >= 5:
+                stability_total += 5
+            else:
+                stability_total += 3
+
+        # Plafonner si données insuffisantes
+        if not has_sufficient_data:
+            stability_total = min(stability_total, 5)
 
     stability_score = min(stability_total, 20)
 
     # ========== 4. AMÉLIORATION CONTINUE (10 points) ==========
 
-    last_month = start_of_month - timedelta(days=1)
-    last_month_start = last_month.replace(day=1)
-
-    try:
-        last_score = ScoreHistory.objects.get(user=user, month=last_month_start).total_score
-    except ScoreHistory.DoesNotExist:
-        last_score = None
-
-    current_subtotal = alignment_score + discipline_score + stability_score
-
-    if last_score is None:
-        # Premier mois avec des données : score de base pour l'amélioration
-        improvement_score = 5
+    if not has_sufficient_data:
+        improvement_score = 0
     else:
-        improvement = current_subtotal - last_score
-        if improvement >= 10:
-            improvement_score = 10
-        elif improvement >= 5:
-            improvement_score = 8
-        elif improvement > 0:
-            improvement_score = 6
-        elif improvement == 0:
+        last_month = start_of_month - timedelta(days=1)
+        last_month_start = last_month.replace(day=1)
+
+        try:
+            last_score = ScoreHistory.objects.get(
+                user=user, month=last_month_start
+            ).total_score
+        except ScoreHistory.DoesNotExist:
+            last_score = None
+
+        current_subtotal = alignment_score + discipline_score + stability_score
+
+        if last_score is None:
             improvement_score = 5
         else:
-            improvement_score = 3
+            improvement = current_subtotal - last_score
+            if improvement >= 10:
+                improvement_score = 10
+            elif improvement >= 5:
+                improvement_score = 8
+            elif improvement > 0:
+                improvement_score = 6
+            elif improvement == 0:
+                improvement_score = 5
+            else:
+                improvement_score = 3
+
+    # ========== 5. ENGAGEMENT FINANCIER (10 points) ==========
+    # Objectifs + Tontines + Dettes
+
+    engagement_total = 0
+
+    # — Objectifs (4 pts max) —
+    try:
+        active_goals = Goal.objects.filter(user=user, is_achieved=False)
+        if active_goals.exists():
+            engagement_total += 2  # Avoir au moins un objectif
+
+            # Contribution ce mois vers un objectif (via dépense epargne ou immobilier)
+            goal_contribution_this_month = expenses.filter(
+                category__in=['epargne', 'immobilier', 'tontine_epargne']
+            ).exists()
+            if goal_contribution_this_month:
+                engagement_total += 2  # Contribuer activement
+    except Exception:
+        pass
+
+    # — Tontines (3 pts max) —
+    try:
+        active_participations = TontineParticipant.objects.filter(
+            user=user, tontine__status='active', is_active=True
+        )
+        if active_participations.exists():
+            engagement_total += 1  # Avoir une tontine active
+
+            # Contribution tontine ce mois
+            contribution_this_month = TontineContribution.objects.filter(
+                participant__in=active_participations,
+                date__gte=start_of_month.date(),
+                status__in=['confirmed', 'pending']
+            ).exists()
+            if contribution_this_month:
+                engagement_total += 2  # Contribution à jour
+    except Exception:
+        pass
+
+    # — Dettes (3 pts max) —
+    try:
+        active_debts = Debt.objects.filter(user=user, is_active=True)
+        if active_debts.exists():
+            engagement_total += 1  # Avoir des dettes trackées (transparence)
+
+            # Remboursement ce mois
+            debt_payment_this_month = DebtPayment.objects.filter(
+                debt__user=user,
+                payment_date__gte=start_of_month.date()
+            ).exists()
+            if debt_payment_this_month:
+                engagement_total += 2  # Rembourse activement
+        else:
+            # Pas de dettes = bonne situation → bonus
+            engagement_total += 2
+    except Exception:
+        pass
+
+    engagement_score = min(engagement_total, 10)
 
     # ========== TOTAL ==========
 
-    total_score = int(alignment_score + discipline_score + stability_score + improvement_score)
+    total_score = int(
+        alignment_score + discipline_score + stability_score +
+        improvement_score + engagement_score
+    )
 
-    # Sauvegarder
+    # Sauvegarde
     score_obj.previous_score = score_obj.total_score
     score_obj.total_score = total_score
     score_obj.alignment_score = Decimal(str(round(alignment_score, 2)))
     score_obj.discipline_score = Decimal(str(round(discipline_score, 2)))
     score_obj.stability_score = Decimal(str(round(stability_score, 2)))
-    score_obj.improvement_score = Decimal(str(round(improvement_score, 2)))
+    score_obj.improvement_score = Decimal(str(round(improvement_score + engagement_score, 2)))
     score_obj.alignment_details = {k: float(v) for k, v in alignment_details.items()}
     score_obj.score_change = total_score - score_obj.previous_score
     score_obj.save()
@@ -268,20 +363,19 @@ def calculate_yoonu_score(user):
             'alignment_score': Decimal(str(round(alignment_score, 2))),
             'discipline_score': Decimal(str(round(discipline_score, 2))),
             'stability_score': Decimal(str(round(stability_score, 2))),
-            'improvement_score': Decimal(str(round(improvement_score, 2)))
+            'improvement_score': Decimal(str(round(improvement_score + engagement_score, 2))),
         }
     )
 
     return _build_result(
         score_obj, total_score,
-        alignment_score, discipline_score, stability_score, improvement_score,
-        alignment_details
+        alignment_score, discipline_score, stability_score,
+        improvement_score, engagement_score, alignment_details
     )
 
 
 def _build_result(score_obj, total_score, alignment_score, discipline_score,
-                  stability_score, improvement_score, alignment_details):
-    """Construit le dict de retour unifié"""
+                  stability_score, improvement_score, engagement_score, alignment_details):
     level = get_level(total_score)
     return {
         'total_score': total_score,
@@ -289,6 +383,7 @@ def _build_result(score_obj, total_score, alignment_score, discipline_score,
         'discipline_score': float(discipline_score),
         'stability_score': float(stability_score),
         'improvement_score': float(improvement_score),
+        'engagement_score': float(engagement_score),
         'score_change': score_obj.score_change if score_obj else 0,
         'level': level['label'],
         'emoji': level['emoji'],
