@@ -209,15 +209,12 @@ def paydunya_ipn(request):
         # Vérifier la signature (hash de la Master Key)
         received_hash = data.get('hash', '')
         master_key = settings.PAYDUNYA_MASTER_KEY
-        expected_hash = hashlib.sha512(master_key.encode()).hexdigest()
+        # PayDunya envoie le SHA-512 de la Master Key
+        expected_hash = hashlib.sha512(master_key.encode('utf-8')).hexdigest()
 
-        # DEBUG temporaire — logger les hash
-        print(f"HASH RECU: {received_hash}")
-        print(f"HASH ATTENDU: {expected_hash}")
 
-        # Temporairement désactivé pour debug
-        # if received_hash != expected_hash:
-        #     return Response({'error': 'Signature invalide'}, status=403)
+        if received_hash and received_hash != expected_hash:
+            return Response({'error': 'Signature invalide'}, status=403)
 
         # Récupérer les données
         status_paydunya = data.get('status', '')
