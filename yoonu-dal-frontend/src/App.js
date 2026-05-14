@@ -90,9 +90,13 @@ function App() {
 
         // Détecter retour PayDunya
         if (path.startsWith('/payment/success')) {
-          setCurrentPage('payment-success');
+          if (authService.isAuthenticated()) {
+            setCurrentPage('payment-success');
+          } else {
+            setCurrentPage('login');
+          }
         } else if (path.startsWith('/payment/cancel')) {
-          setCurrentPage('payment-cancel');
+          setCurrentPage('pricing');
         }
         // Détecter un lien d'invitation dans l'URL au chargement
         else if (path.startsWith('/join/')) {
