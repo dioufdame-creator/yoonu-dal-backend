@@ -645,7 +645,8 @@ const DashboardV7 = ({ toast, auth, onNavigate, user }) => {
                       { page: 'envelopes', icon: '📁', label: 'Budgets' },
                       { page: 'tontines', icon: '🦁', label: 'Tontines' },
                       { page: 'score', icon: '🎯', label: 'Score' },
-                      { page: 'alerts', icon: '🔔', label: 'Alertes' }
+                      { page: 'alerts', icon: '🔔', label: 'Alertes' },
+                      { page: 'values', icon: '💎', label: 'Mes valeurs' }
                     ].map(item => (
                       <button key={item.page} onClick={() => onNavigate(item.page)}
                         className="w-full flex items-center gap-2.5 p-2 rounded-lg hover:bg-gray-50 transition-colors text-left">
