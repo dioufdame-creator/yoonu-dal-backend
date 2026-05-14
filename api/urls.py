@@ -123,4 +123,10 @@ urlpatterns = [
     path('tontines/<int:tontine_id>/contributions/pending/', views.tontine_pending_contributions, name='tontine_pending_contributions'),
     
     path('available-months/', views.available_months),
+    path('api/payments/create/', payment_views.create_payment),
+    path('api/payments/ipn/', payment_views.paydunya_ipn),
+    path('api/payments/status/<str:transaction_id>/', payment_views.check_payment_status),
+    path('api/payments/start-trial/', payment_views.start_trial),
+    path('api/payments/subscription-status/', payment_views.subscription_status),
+    path('api/payments/transactions/', payment_views.transaction_history),
 ]
