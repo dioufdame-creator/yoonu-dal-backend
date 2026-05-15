@@ -27,6 +27,8 @@ class UserProfile(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
+    fcm_token = models.CharField(max_length=500, null=True, blank=True)
+
     # ✅ CHAMPS SUBSCRIPTION
     subscription_tier = models.CharField(
         max_length=20,
