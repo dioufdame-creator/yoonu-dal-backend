@@ -5,6 +5,7 @@ from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 from . import views
 from . import payment_views
 from . import export_views
+from . import notification_views
 
 urlpatterns = [
     # API racine
@@ -105,4 +106,8 @@ urlpatterns = [
 
     # Mois disponibles
     path('available-months/', views.available_months, name='available_months'),
+    
+    path('notifications/register-token/', notification_views.register_fcm_token),
+    path('notifications/check/', notification_views.check_and_notify),
+    path('notifications/test/', notification_views.test_notification),
 ]
