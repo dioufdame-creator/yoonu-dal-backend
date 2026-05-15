@@ -25,6 +25,11 @@ import EnvelopeManager from './components/envelopeManager/EnvelopeManager';
 import TransactionsPage from './components/transactions/TransactionsPage';
 
 import AIChatWidget from './components/ai/AIChatWidget';
+import NotificationManager from './components/notifications/NotificationManager';
+// ...
+{isAuthenticated && (
+  <NotificationManager user={user} toast={toastMethods} />
+)}
 import Onboarding from './components/onboarding/Onboarding';
 
 import PricingPage from './pages/PricingPage';
