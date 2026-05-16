@@ -26,10 +26,6 @@ import TransactionsPage from './components/transactions/TransactionsPage';
 
 import AIChatWidget from './components/ai/AIChatWidget';
 import NotificationManager from './components/notifications/NotificationManager';
-// ...
-{isAuthenticated && (
-  <NotificationManager user={user} toast={toastMethods} />
-)}
 import Onboarding from './components/onboarding/Onboarding';
 
 import PricingPage from './pages/PricingPage';
@@ -747,6 +743,9 @@ function App() {
           toast={toastMethods}
           user={user}
         />
+      )}
+      {isAuthenticated && (
+        <NotificationManager user={user} toast={toastMethods} />
       )}
     </div>
   );
