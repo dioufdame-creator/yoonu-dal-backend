@@ -1,4 +1,5 @@
 // src/services/firebaseConfig.js
+
 import { initializeApp } from 'firebase/app';
 import { getMessaging, getToken, onMessage } from 'firebase/messaging';
 
@@ -18,62 +19,59 @@ const messaging = getMessaging(app);
 
 export const requestNotificationPermission = async () => {
   try {
-    // Vérifier support
+    console.log('🔔 Étape 1: vérification support...');
     if (!('Notification' in window) || !('serviceWorker' in navigator)) {
-      console.log('❌ Notifications non supportées');
+      console.log('❌ Non supporté');
       return null;
     }
 
-    // Demander permission
-    const permission = await Notification.requestPermission();
+    console.log('🔔 Étape 2: permission actuelle =', Notification.permission);
+    let permission = Notification.permission;
+    if (permission === 'default') {
+      permission = await Notification.requestPermission();
+    }
     if (permission !== 'granted') {
       console.log('❌ Permission refusée:', permission);
       return null;
     }
-
     console.log('✅ Permission accordée');
 
-    // Enregistrer explicitement le service worker Firebase
-    let swRegistration;
-    try {
-      swRegistration = await navigator.serviceWorker.register(
-        '/firebase-messaging-sw.js',
-        { scope: '/' }
-      );
-      console.log('✅ SW Firebase enregistré:', swRegistration.scope);
+    console.log('🔔 Étape 3: SW existants...');
+    const registrations = await navigator.serviceWorker.getRegistrations();
+    registrations.forEach(r => console.log('  SW:', r.scope, r.active?.state));
 
-      // Attendre que le SW soit actif
+    console.log('🔔 Étape 4: enregistrement firebase SW...');
+    let swReg;
+    try {
+      swReg = await navigator.serviceWorker.register('/firebase-messaging-sw.js');
       await navigator.serviceWorker.ready;
-      console.log('✅ SW prêt');
-    } catch (swError) {
-      console.error('❌ Erreur enregistrement SW:', swError);
-      // Essayer avec le SW existant
-      swRegistration = await navigator.serviceWorker.ready;
+      console.log('✅ SW enregistré:', swReg.scope);
+    } catch (e) {
+      console.log('⚠️ Erreur SW:', e.message, '— utilisation SW ready');
+      swReg = await navigator.serviceWorker.ready;
     }
 
-    // Obtenir le token FCM
+    console.log('🔔 Étape 5: getToken...');
     const token = await getToken(messaging, {
       vapidKey: VAPID_KEY,
-      serviceWorkerRegistration: swRegistration
+      serviceWorkerRegistration: swReg
     });
 
     if (token) {
-      console.log('✅ Token FCM:', token.substring(0, 20) + '...');
+      console.log('✅ Token:', token.substring(0, 30) + '...');
       return token;
-    } else {
-      console.log('⚠️ Token vide - vérifier VAPID key');
-      return null;
     }
+    console.log('⚠️ Token vide');
+    return null;
 
   } catch (error) {
-    console.error('❌ Erreur FCM complète:', error.code, error.message);
+    console.error('❌ Erreur:', error.code, error.message);
     return null;
   }
 };
 
 export const onForegroundMessage = (callback) => {
   return onMessage(messaging, (payload) => {
-    console.log('📩 Notification premier plan:', payload);
     callback(payload);
   });
 };
