@@ -26,6 +26,7 @@ import TransactionsPage from './components/transactions/TransactionsPage';
 
 import AIChatWidget from './components/ai/AIChatWidget';
 import NotificationManager from './components/notifications/NotificationManager';
+import OnboardingTutorial from './components/onboarding/OnboardingTutorial';
 import Onboarding from './components/onboarding/Onboarding';
 
 import PricingPage from './pages/PricingPage';
@@ -89,7 +90,6 @@ function App() {
 
         const path = window.location.pathname;
 
-        // Détecter retour PayDunya
         if (path.startsWith('/payment/success')) {
           if (authService.isAuthenticated()) {
             setCurrentPage('payment-success');
@@ -98,9 +98,7 @@ function App() {
           }
         } else if (path.startsWith('/payment/cancel')) {
           setCurrentPage('pricing');
-        }
-        // Détecter un lien d'invitation dans l'URL au chargement
-        else if (path.startsWith('/join/')) {
+        } else if (path.startsWith('/join/')) {
           const code = path.replace('/join/', '').trim();
           if (code) {
             console.log('🔗 Code d\'invitation détecté dans l\'URL:', code);
@@ -155,7 +153,6 @@ function App() {
         
         try {
           const response = await API.get('/onboarding/status/');
-          
           const pendingCode = localStorage.getItem('pending_invite_code');
 
           if (response.data.onboarding_complete) {
@@ -746,6 +743,12 @@ function App() {
       )}
       {isAuthenticated && (
         <NotificationManager user={user} toast={toastMethods} />
+      )}
+      {isAuthenticated && (
+        <OnboardingTutorial 
+          onNavigate={handleNavigate} 
+          onClose={() => {}} 
+        />
       )}
     </div>
   );
