@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { SubscriptionBadge } from '../subscription/SubscriptionComponents';
 
+const TUTORIAL_KEY = 'yoonu_tutorial_done';
+
 const NavigationV2 = ({ currentPage, onNavigate, isAuthenticated, user, onLogout, alertsBadge }) => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
@@ -15,27 +17,27 @@ const NavigationV2 = ({ currentPage, onNavigate, isAuthenticated, user, onLogout
     closeMenus();
   };
 
+  const handleShowTutorial = () => {
+    localStorage.removeItem(TUTORIAL_KEY);
+    window.location.reload();
+  };
+
   const getUserDisplayName = () => {
     if (user?.user?.first_name) return user.user.first_name;
     if (user?.user?.username) return user.user.username;
     return 'Utilisateur';
   };
 
-  // Vérifier si Premium
   const isPremium = user?.profile?.is_premium || user?.subscription_tier === 'premium' || user?.trial_active;
 
-  // ✅✅✅ MODIFIÉ : 5 PAGES PRINCIPALES (Dépenses → Transactions) ✅✅✅
   const mainMenu = [
     { icon: '🏠', label: 'Accueil', page: 'dashboard' },
     { icon: '📁', label: 'Budgets', page: 'envelopes' },
-    { icon: '💰', label: 'Transactions', page: 'transactions' },  // ← CHANGÉ
-    { icon: '💳', label: 'Dettes', page: 'debts' },  // ← NOUVEAU
+    { icon: '💰', label: 'Transactions', page: 'transactions' },
+    { icon: '💳', label: 'Dettes', page: 'debts' },
     { icon: '🦁', label: 'Tontines', page: 'tontines' },
     { icon: '🎯', label: 'Objectifs', page: 'goals' },
-    
-    //{ icon: '👤', label: 'Profil', page: 'profile' }
   ];
-  // ✅✅✅ FIN MODIFIÉ ✅✅✅
 
   const guestMenu = [
     { icon: '🏠', label: 'Accueil', page: 'home' },
@@ -83,6 +85,18 @@ const NavigationV2 = ({ currentPage, onNavigate, isAuthenticated, user, onLogout
                   </div>
                 </button>
               ))}
+
+              {/* Bouton Aide desktop */}
+              {isAuthenticated && (
+                <button
+                  onClick={handleShowTutorial}
+                  className="px-4 py-2 rounded-xl font-medium text-white hover:bg-white/20 transition-all flex items-center gap-2"
+                  title="Revoir le tutoriel"
+                >
+                  <span className="text-xl">❓</span>
+                  <span>Aide</span>
+                </button>
+              )}
             </nav>
 
             {/* Desktop Actions */}
@@ -91,7 +105,6 @@ const NavigationV2 = ({ currentPage, onNavigate, isAuthenticated, user, onLogout
                 <>
                   {alertsBadge && <div>{alertsBadge}</div>}
 
-                  {/* Bouton Premium */}
                   {!isPremium && (
                     <button
                       onClick={() => handleNavigation('pricing')}
@@ -122,7 +135,6 @@ const NavigationV2 = ({ currentPage, onNavigate, isAuthenticated, user, onLogout
                         <div className="fixed inset-0 z-10" onClick={() => setIsUserMenuOpen(false)} />
                         
                         <div className="absolute right-0 mt-2 w-72 bg-white rounded-2xl shadow-2xl py-2 z-20">
-                          {/* Badge Premium dans dropdown */}
                           <div className="px-4 py-3 border-b">
                             <SubscriptionBadge user={user} />
                             <div className="font-bold text-gray-900 mt-2">{getUserDisplayName()}</div>
@@ -130,7 +142,6 @@ const NavigationV2 = ({ currentPage, onNavigate, isAuthenticated, user, onLogout
                           </div>
 
                           <div className="py-2">
-                            {/* Lien Pricing si pas premium */}
                             {!isPremium && (
                               <button 
                                 onClick={() => handleNavigation('pricing')} 
@@ -143,10 +154,6 @@ const NavigationV2 = ({ currentPage, onNavigate, isAuthenticated, user, onLogout
                             <button onClick={() => handleNavigation('score')} className="w-full text-left px-4 py-3 hover:bg-gray-50 flex items-center gap-3">
                               <span>🎯</span><span>Mon Score</span>
                             </button>
-                            
-                            {/* ✅✅✅ SUPPRIMÉ : "Mes revenus" n'est plus ici ✅✅✅ */}
-                            {/* Maintenant dans Transactions */}
-                            
                             <button onClick={() => handleNavigation('diagnostic')} className="w-full text-left px-4 py-3 hover:bg-gray-50 flex items-center gap-3">
                               <span>🧭</span><span>Diagnostic</span>
                             </button>
@@ -204,7 +211,6 @@ const NavigationV2 = ({ currentPage, onNavigate, isAuthenticated, user, onLogout
                     <div className="flex-1">
                       <div className="font-bold">{getUserDisplayName()}</div>
                       <div className="text-sm text-green-100">{user?.email}</div>
-                      {/* Badge dans mobile menu */}
                       <div className="mt-2">
                         <SubscriptionBadge user={user} />
                       </div>
@@ -213,7 +219,6 @@ const NavigationV2 = ({ currentPage, onNavigate, isAuthenticated, user, onLogout
                 </div>
               )}
 
-              {/* Bouton Premium mobile */}
               {isAuthenticated && !isPremium && (
                 <button
                   onClick={() => handleNavigation('pricing')}
@@ -252,6 +257,13 @@ const NavigationV2 = ({ currentPage, onNavigate, isAuthenticated, user, onLogout
                     </button>
                     <button onClick={() => handleNavigation('subscription')} className="w-full flex items-center gap-3 p-3 rounded-xl bg-gray-50">
                       <span>💎</span><span>Mon Abonnement</span>
+                    </button>
+                    {/* Bouton Aide mobile */}
+                    <button
+                      onClick={handleShowTutorial}
+                      className="w-full flex items-center gap-3 p-3 rounded-xl bg-green-50 text-green-700 font-semibold"
+                    >
+                      <span>❓</span><span>Revoir le tutoriel</span>
                     </button>
                   </div>
 
