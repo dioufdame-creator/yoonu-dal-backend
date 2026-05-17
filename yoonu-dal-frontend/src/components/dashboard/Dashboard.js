@@ -11,20 +11,6 @@ import {
 } from 'recharts';
 import ExportButtons from './ExportButtons';
 
-const CATEGORY_LABELS = {
-  loyer: 'Loyer', alimentation: 'Alimentation', transport: 'Transport',
-  sante_courante: 'Santé courante', eau_electricite: 'Eau / Électricité',
-  telephone_internet: 'Téléphone / Internet', aide_menagere: 'Aide ménagère',
-  solidarite_famille: 'Solidarité / Famille', restaurant: 'Restaurant / Café',
-  loisirs: 'Loisirs / Sorties', vetements: 'Vêtements / Mode',
-  beaute: 'Beauté / Coiffure', voyage: 'Voyage / Vacances',
-  education: 'Éducation / Scolarité', epargne: 'Épargne / Investissement',
-  fetes_ceremonies: 'Fêtes & Cérémonies', spiritualite: 'Spiritualité / Aumône',
-  sante_exceptionnelle: 'Santé exceptionnelle', immobilier: 'Immobilier / Construction',
-  tontine_epargne: 'Tontine / Épargne collective',
-  remboursement_dette: 'Remboursement dette', autre: 'Autre',
-};
-
 // ==========================================
 // DASHBOARD V7
 // ✅ Score unifié : Non évalué / Débutant / En chemin / Aligné / Maître Yoonu
@@ -296,7 +282,7 @@ const DashboardV7 = ({ toast, auth, onNavigate, user }) => {
     const categories = {};
     let total = 0;
     expenses.forEach(exp => {
-      const cat = CATEGORY_LABELS[exp.category] || exp.category || 'Autres';
+      const cat = exp.category || 'Autres';
       const amount = parseFloat(exp.amount || 0);
       categories[cat] = (categories[cat] || 0) + amount;
       total += amount;
@@ -322,7 +308,7 @@ const DashboardV7 = ({ toast, auth, onNavigate, user }) => {
     if (expenses.length > 0) {
       const categories = {};
       expenses.forEach(exp => {
-        const cat = CATEGORY_LABELS[exp.category] || exp.category || 'Autres';
+        const cat = exp.category || 'Autres';
         categories[cat] = (categories[cat] || 0) + parseFloat(exp.amount || 0);
       });
       const topCategory = Object.entries(categories).sort((a, b) => b[1] - a[1])[0];
@@ -645,8 +631,7 @@ const DashboardV7 = ({ toast, auth, onNavigate, user }) => {
                       { page: 'envelopes', icon: '📁', label: 'Budgets' },
                       { page: 'tontines', icon: '🦁', label: 'Tontines' },
                       { page: 'score', icon: '🎯', label: 'Score' },
-                      { page: 'alerts', icon: '🔔', label: 'Alertes' },
-                      { page: 'diagnostic', icon: '💎', label: 'Mes valeurs' }
+                      { page: 'alerts', icon: '🔔', label: 'Alertes' }
                     ].map(item => (
                       <button key={item.page} onClick={() => onNavigate(item.page)}
                         className="w-full flex items-center gap-2.5 p-2 rounded-lg hover:bg-gray-50 transition-colors text-left">
@@ -654,6 +639,22 @@ const DashboardV7 = ({ toast, auth, onNavigate, user }) => {
                         <span className="text-xs font-medium text-gray-900">{item.label}</span>
                       </button>
                     ))}
+                    {/* Bouton debug notifications — temporaire */}
+                    <button
+                      onClick={async () => {
+                        try {
+                          const mod = await import('../../services/firebaseConfig');
+                          const token = await mod.requestNotificationPermission();
+                          alert('Token: ' + (token ? token.substring(0, 40) + '...' : 'NULL - Firebase échoue'));
+                        } catch(e) {
+                          alert('Erreur: ' + e.message);
+                        }
+                      }}
+                      className="w-full flex items-center gap-2.5 p-2 rounded-lg hover:bg-gray-50 transition-colors text-left border border-dashed border-gray-300"
+                    >
+                      <span className="text-lg">🔔</span>
+                      <span className="text-xs font-medium text-gray-500">Debug notifs</span>
+                    </button>
                   </div>
                 </div>
               </div>
