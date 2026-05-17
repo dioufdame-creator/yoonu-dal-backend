@@ -1,6 +1,4 @@
 // src/services/firebaseConfig.js
-// Configuration Firebase + FCM pour Yoonu Dal
-
 import { initializeApp } from 'firebase/app';
 import { getMessaging, getToken, onMessage } from 'firebase/messaging';
 
@@ -15,45 +13,67 @@ const firebaseConfig = {
 
 const VAPID_KEY = "BCw3v3J96FnOiZk95HcEs65y10EELRtb-SEt5gSrtLLlbAXv1nQCIE3IAuRJyjTVrcFUTMVOthbgAXmnf2HSf8w";
 
-// Initialiser Firebase
 const app = initializeApp(firebaseConfig);
 const messaging = getMessaging(app);
 
-// ==========================================
-// DEMANDER LA PERMISSION + OBTENIR LE TOKEN
-// ==========================================
 export const requestNotificationPermission = async () => {
   try {
-    const permission = await Notification.requestPermission();
-
-    if (permission !== 'granted') {
-      console.log('❌ Permission notifications refusée');
+    // Vérifier support
+    if (!('Notification' in window) || !('serviceWorker' in navigator)) {
+      console.log('❌ Notifications non supportées');
       return null;
     }
 
-    console.log('✅ Permission notifications accordée');
+    // Demander permission
+    const permission = await Notification.requestPermission();
+    if (permission !== 'granted') {
+      console.log('❌ Permission refusée:', permission);
+      return null;
+    }
 
-    const token = await getToken(messaging, { vapidKey: VAPID_KEY });
+    console.log('✅ Permission accordée');
+
+    // Enregistrer explicitement le service worker Firebase
+    let swRegistration;
+    try {
+      swRegistration = await navigator.serviceWorker.register(
+        '/firebase-messaging-sw.js',
+        { scope: '/' }
+      );
+      console.log('✅ SW Firebase enregistré:', swRegistration.scope);
+
+      // Attendre que le SW soit actif
+      await navigator.serviceWorker.ready;
+      console.log('✅ SW prêt');
+    } catch (swError) {
+      console.error('❌ Erreur enregistrement SW:', swError);
+      // Essayer avec le SW existant
+      swRegistration = await navigator.serviceWorker.ready;
+    }
+
+    // Obtenir le token FCM
+    const token = await getToken(messaging, {
+      vapidKey: VAPID_KEY,
+      serviceWorkerRegistration: swRegistration
+    });
 
     if (token) {
-      console.log('🔑 FCM Token:', token);
+      console.log('✅ Token FCM:', token.substring(0, 20) + '...');
       return token;
     } else {
-      console.log('⚠️ Pas de token FCM');
+      console.log('⚠️ Token vide - vérifier VAPID key');
       return null;
     }
+
   } catch (error) {
-    console.error('❌ Erreur FCM:', error);
+    console.error('❌ Erreur FCM complète:', error.code, error.message);
     return null;
   }
 };
 
-// ==========================================
-// ÉCOUTER LES NOTIFICATIONS EN PREMIER PLAN
-// ==========================================
 export const onForegroundMessage = (callback) => {
   return onMessage(messaging, (payload) => {
-    console.log('📩 Notification en premier plan:', payload);
+    console.log('📩 Notification premier plan:', payload);
     callback(payload);
   });
 };
