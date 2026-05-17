@@ -24,13 +24,14 @@ MOIS_FR = ['', 'Janvier', 'Fevrier', 'Mars', 'Avril', 'Mai', 'Juin',
            'Juillet', 'Aout', 'Septembre', 'Octobre', 'Novembre', 'Decembre']
 
 CATEGORY_TO_VALUE = {
-    'famille':      ['famille', 'alimentation', 'logement'],
+    'famille':      ['solidarite_famille', 'alimentation', 'loyer', 'aide_menagere', 'fetes_ceremonies'],
     'spiritualite': ['spiritualite'],
     'education':    ['education'],
-    'sante':        ['sante'],
-    'travail':      ['transport'],
-    'loisirs':      ['loisirs', 'vetements'],
-    'communaute':   ['famille'],
+    'sante':        ['sante_courante', 'sante_exceptionnelle'],
+    'liberte':      ['transport', 'immobilier', 'epargne'],
+    'securite':     ['epargne', 'remboursement_dette', 'eau_electricite'],
+    'solidarite':   ['solidarite_famille', 'tontine_epargne', 'fetes_ceremonies'],
+    'reussite':     ['education', 'immobilier', 'epargne'],
 }
 
 
@@ -207,10 +208,12 @@ def export_excel(request):
             'liberation': 'Liberation'
         }
         env_categories = {
-            'essentiels': ['logement', 'alimentation', 'transport', 'sante'],
-            'plaisirs': ['loisirs', 'vetements', 'autre'],
-            'projets': ['education', 'famille', 'spiritualite'],
-            'liberation': ['dettes']
+            'essentiels': ['loyer', 'alimentation', 'transport', 'sante_courante',
+                           'eau_electricite', 'telephone_internet', 'aide_menagere', 'solidarite_famille'],
+            'plaisirs': ['restaurant', 'loisirs', 'vetements', 'beaute', 'voyage', 'autre'],
+            'projets': ['education', 'epargne', 'fetes_ceremonies', 'spiritualite',
+                        'sante_exceptionnelle', 'immobilier', 'tontine_epargne'],
+            'liberation': ['remboursement_dette']
         }
 
         for idx, envelope in enumerate(envelopes, 4):
@@ -478,10 +481,12 @@ def export_pdf(request):
         # PAGE 3 : Enveloppes
         elements.append(Paragraph("SYSTEME DES 4 ENVELOPPES", heading_style))
         env_categories = {
-            'essentiels': ['logement', 'alimentation', 'transport', 'sante'],
-            'plaisirs': ['loisirs', 'vetements', 'autre'],
-            'projets': ['education', 'famille', 'spiritualite'],
-            'liberation': ['dettes']
+            'essentiels': ['loyer', 'alimentation', 'transport', 'sante_courante',
+                           'eau_electricite', 'telephone_internet', 'aide_menagere', 'solidarite_famille'],
+            'plaisirs': ['restaurant', 'loisirs', 'vetements', 'beaute', 'voyage', 'autre'],
+            'projets': ['education', 'epargne', 'fetes_ceremonies', 'spiritualite',
+                        'sante_exceptionnelle', 'immobilier', 'tontine_epargne'],
+            'liberation': ['remboursement_dette']
         }
         envelope_names = {
             'essentiels': 'Essentiels',
