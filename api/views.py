@@ -2430,7 +2430,7 @@ QUAND CRÉER DES ACTIONS :
 ━━━ ACTIONS DISPONIBLES ━━━
 
 1. create_expense : Créer une dépense
-   {{"type": "create_expense", "data": {{"category": "alimentation|transport|logement|santé|education|loisirs|autre", "amount": 5000, "description": "Carburant", "date": "{now.strftime('%Y-%m-%d')}"}}}}
+   {{"type": "create_expense", "data": {{"category": "loyer|alimentation|transport|sante_courante|eau_electricite|telephone_internet|aide_menagere|solidarite_famille|restaurant|loisirs|vetements|beaute|voyage|education|epargne|fetes_ceremonies|spiritualite|sante_exceptionnelle|immobilier|tontine_epargne|remboursement_dette|autre" , "amount": 5000, "description": "Carburant", "date": "{now.strftime('%Y-%m-%d')}"}}}}
 
 2. create_income : Créer un revenu
    {{"type": "create_income", "data": {{"source": "Salaire|Business|Freelance|Investissement|Location|Autre", "amount": 50000, "description": "Salaire avril", "date": "{now.strftime('%Y-%m-%d')}"}}}}
