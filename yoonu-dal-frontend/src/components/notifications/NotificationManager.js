@@ -1,64 +1,88 @@
 // src/components/notifications/NotificationManager.js
-// Gestion des notifications push FCM côté frontend
-
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { requestNotificationPermission, onForegroundMessage } from '../../services/firebaseConfig';
 import API from '../../services/api';
 
 const NotificationManager = ({ user, toast }) => {
   const initialized = useRef(false);
+  const [showBanner, setShowBanner] = useState(false);
 
   useEffect(() => {
     if (!user || initialized.current) return;
     initialized.current = true;
 
-    initNotifications();
+    // Vérifier si notifications supportées et pas encore demandées
+    if (!('Notification' in window) || !('serviceWorker' in navigator)) return;
+
+    if (Notification.permission === 'default') {
+      // Montrer le bandeau après 3 secondes
+      setTimeout(() => setShowBanner(true), 3000);
+    } else if (Notification.permission === 'granted') {
+      // Déjà accordé — initialiser silencieusement
+      initNotifications();
+    }
   }, [user]);
 
   const initNotifications = async () => {
     try {
-      // Vérifier si les notifications sont supportées
-      if (!('Notification' in window) || !('serviceWorker' in navigator)) {
-        console.log('Notifications non supportées');
-        return;
-      }
-
-      // Demander la permission et obtenir le token
       const token = await requestNotificationPermission();
-
       if (!token) return;
 
-      // Enregistrer le token sur le backend
       await API.post('/notifications/register-token/', { token });
       console.log('✅ Token FCM enregistré');
 
-      // Vérifier les notifications à envoyer
       await API.post('/notifications/check/');
 
-      // Écouter les notifications en premier plan
       onForegroundMessage((payload) => {
         const { title, body } = payload.notification || {};
-
-        // Afficher comme toast dans l'app
         toast?.showInfo?.(`${title}: ${body}`);
-
-        // Afficher aussi une vraie notification navigateur
-        if (Notification.permission === 'granted') {
-          new Notification(title || 'Yoonu Dal', {
-            body: body,
-            icon: '/logo192.png',
-            badge: '/logo192.png',
-          });
-        }
       });
 
     } catch (error) {
-      console.error('Erreur initialisation notifications:', error);
+      console.error('Erreur notifications:', error);
     }
   };
 
-  // Ce composant ne rend rien visuellement
-  return null;
+  const handleEnable = async () => {
+    setShowBanner(false);
+    await initNotifications();
+  };
+
+  const handleDismiss = () => {
+    setShowBanner(false);
+  };
+
+  if (!showBanner) return null;
+
+  return (
+    <div className="fixed bottom-20 left-4 right-4 z-50 animate-slideUp">
+      <div className="bg-white rounded-2xl shadow-xl border border-green-200 p-4 flex items-start gap-3">
+        <span className="text-2xl flex-shrink-0">🔔</span>
+        <div className="flex-1">
+          <p className="font-bold text-gray-900 text-sm mb-0.5">
+            Activer les notifications
+          </p>
+          <p className="text-xs text-gray-500">
+            Reçois des alertes pour tes tontines, budgets et rappels financiers.
+          </p>
+          <div className="flex gap-2 mt-3">
+            <button
+              onClick={handleEnable}
+              className="flex-1 bg-green-600 text-white text-xs font-semibold py-2 rounded-xl hover:bg-green-700 transition-all"
+            >
+              Activer
+            </button>
+            <button
+              onClick={handleDismiss}
+              className="px-4 text-xs text-gray-500 hover:text-gray-700 font-medium"
+            >
+              Plus tard
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
 };
 
 export default NotificationManager;
