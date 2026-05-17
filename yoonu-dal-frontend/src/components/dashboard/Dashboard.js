@@ -186,10 +186,12 @@ const DashboardV7 = ({ toast, auth, onNavigate, user }) => {
           .filter(e => e.date?.startsWith(monthStr))
           .reduce((sum, e) => sum + parseFloat(e.amount || 0), 0);
 
-        if (daysElapsed > 0) {
-          const dailyAvg = monthlyExpenses / daysElapsed;
+        if (daysElapsed > 0 && daysRemaining > 0) {
+          const remainingBudget = monthlyIncome - monthlyExpenses;
+          const dailyBudget = remainingBudget / daysRemaining;
           setProjectionData({
-            projectedBalance: monthlyIncome - dailyAvg * daysInMonth,
+            dailyBudget,
+            remainingBudget,
             daysRemaining,
             monthlyIncome,
             currentExpenses: monthlyExpenses,
@@ -490,13 +492,16 @@ const DashboardV7 = ({ toast, auth, onNavigate, user }) => {
                   {/* Projection fin de mois — mois courant seulement */}
                   {isCurrentMonth && projectionData && (
                     <div className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs ${
-                      projectionData.projectedBalance >= 0
+                      projectionData.remainingBudget >= 0
                         ? 'bg-green-50 text-green-700 border border-green-200'
                         : 'bg-red-50 text-red-700 border border-red-200'
                     }`}>
-                      <span>{projectionData.projectedBalance >= 0 ? '✅' : '⚠️'}</span>
+                      <span>{projectionData.remainingBudget >= 0 ? '✅' : '⚠️'}</span>
                       <span>
-                        Projection fin {currentMonthName} : {projectionData.projectedBalance >= 0 ? '+' : ''}{formatCurrency(projectionData.projectedBalance)}
+                        {projectionData.remainingBudget >= 0
+                          ? `${formatCurrency(projectionData.dailyBudget)} FCFA/jour disponibles — ${projectionData.daysRemaining}j restants`
+                          : `Déficit de ${formatCurrency(Math.abs(projectionData.remainingBudget))} FCFA ce mois`
+                        }
                       </span>
                     </div>
                   )}
