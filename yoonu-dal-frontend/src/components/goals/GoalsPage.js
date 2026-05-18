@@ -127,7 +127,7 @@ const GoalsPage = ({ toast, onNavigate }) => {
       // Scénario 1 : 100% de l'enveloppe Projets
       const amount100 = Math.ceil(base);
       scenarios.push({
-        label: projetsBudget > 0 ? '100% de l'enveloppe Projets' : '100% du solde mensuel',
+        label: projetsBudget > 0 ? `100% de l'enveloppe Projets` : '100% du solde mensuel',
         amount: amount100,
         months: Math.ceil(remaining / amount100),
       });
@@ -135,7 +135,7 @@ const GoalsPage = ({ toast, onNavigate }) => {
       // Scénario 2 : 75% de l'enveloppe Projets
       const amount75 = Math.ceil(base * 0.75);
       if (amount75 > 0) scenarios.push({
-        label: projetsBudget > 0 ? '75% de l'enveloppe Projets' : '75% du solde mensuel',
+        label: projetsBudget > 0 ? `75% de l'enveloppe Projets` : '75% du solde mensuel',
         amount: amount75,
         months: Math.ceil(remaining / amount75),
       });
@@ -143,7 +143,7 @@ const GoalsPage = ({ toast, onNavigate }) => {
       // Scénario 3 : 50% de l'enveloppe Projets
       const amount50 = Math.ceil(base * 0.5);
       if (amount50 > 0) scenarios.push({
-        label: projetsBudget > 0 ? '50% de l'enveloppe Projets' : '50% du solde mensuel',
+        label: projetsBudget > 0 ? `50% de l'enveloppe Projets` : '50% du solde mensuel',
         amount: amount50,
         months: Math.ceil(remaining / amount50),
       });
