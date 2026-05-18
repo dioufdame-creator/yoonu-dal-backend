@@ -2256,14 +2256,24 @@ def ai_chat(request):
 
         # ── ENVELOPPES ──────────────────────────────────────────────
         print("🔍 3. Chargement enveloppes...")
+        start_of_month_date = now.replace(day=1).date()
         envelopes = Envelope.objects.filter(user=user)
-        envelopes_data = [{
-            'type': env.envelope_type,
-            'budget': float(env.monthly_budget),
-            'spent': float(env.current_spent),
-            'remaining': float(env.monthly_budget - env.current_spent),
-            'percentage_used': int((env.current_spent / env.monthly_budget * 100) if env.monthly_budget > 0 else 0)
-        } for env in envelopes]
+        envelopes_data = []
+        for env in envelopes:
+            categories = get_categories_for_envelope(env.envelope_type)
+            real_spent = float(Expense.objects.filter(
+                user=user,
+                category__in=categories,
+                date__gte=start_of_month_date
+            ).aggregate(total=Sum('amount'))['total'] or 0)
+            budget = float(env.monthly_budget)
+            envelopes_data.append({
+                'type': env.envelope_type,
+                'budget': budget,
+                'spent': real_spent,
+                'remaining': budget - real_spent,
+                'percentage_used': int((real_spent / budget * 100) if budget > 0 else 0)
+            })
 
         # ── OBJECTIFS ───────────────────────────────────────────────
         print("🔍 4. Chargement objectifs...")
