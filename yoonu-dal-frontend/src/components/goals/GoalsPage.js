@@ -32,6 +32,7 @@ const GoalsPage = ({ toast, onNavigate }) => {
   });
   const [form, setForm] = useState(emptyForm());
   const [contributeAmount, setContributeAmount] = useState('');
+  const [projetsBudget, setProjetsBudget] = useState(0);
 
   const CATEGORIES = [
     { value: 'all', label: 'Tous', emoji: '🎯' },
@@ -59,6 +60,7 @@ const GoalsPage = ({ toast, onNavigate }) => {
   useEffect(() => {
     loadGoals();
     loadMetrics();
+    loadEnvelopeProjets();
   }, []);
 
   const loadGoals = async () => {
@@ -76,6 +78,17 @@ const GoalsPage = ({ toast, onNavigate }) => {
       toast?.showError?.('Erreur chargement objectifs');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadEnvelopeProjets = async () => {
+    try {
+      const response = await API.get('/meta-envelopes/');
+      const envelopes = response.data.envelopes || [];
+      const projets = envelopes.find(e => e.envelope_type === 'projet' || e.type === 'projet');
+      if (projets) setProjetsBudget(parseFloat(projets.budget || projets.monthly_budget || 0));
+    } catch (error) {
+      console.error('Erreur enveloppe projets:', error);
     }
   };
 
@@ -108,35 +121,31 @@ const GoalsPage = ({ toast, onNavigate }) => {
 
     // Scénarios alternatifs
     const scenarios = [];
+    const base = projetsBudget > 0 ? projetsBudget : monthlyBalance;
 
-    if (monthlyBalance > 0) {
-      // Scénario 1 : épargner 100% du solde mensuel
-      const months100 = Math.ceil(remaining / monthlyBalance);
+    if (base > 0) {
+      // Scénario 1 : 100% de l'enveloppe Projets
+      const amount100 = Math.ceil(base);
       scenarios.push({
-        label: '100% du solde mensuel',
-        amount: monthlyBalance,
-        months: months100,
-        feasible: true
+        label: projetsBudget > 0 ? '100% de l'enveloppe Projets' : '100% du solde mensuel',
+        amount: amount100,
+        months: Math.ceil(remaining / amount100),
       });
 
-      // Scénario 2 : épargner 50% du solde
-      const amount50 = Math.ceil(monthlyBalance * 0.5);
-      const months50 = Math.ceil(remaining / amount50);
-      scenarios.push({
-        label: '50% du solde mensuel',
+      // Scénario 2 : 75% de l'enveloppe Projets
+      const amount75 = Math.ceil(base * 0.75);
+      if (amount75 > 0) scenarios.push({
+        label: projetsBudget > 0 ? '75% de l'enveloppe Projets' : '75% du solde mensuel',
+        amount: amount75,
+        months: Math.ceil(remaining / amount75),
+      });
+
+      // Scénario 3 : 50% de l'enveloppe Projets
+      const amount50 = Math.ceil(base * 0.5);
+      if (amount50 > 0) scenarios.push({
+        label: projetsBudget > 0 ? '50% de l'enveloppe Projets' : '50% du solde mensuel',
         amount: amount50,
-        months: months50,
-        feasible: true
-      });
-
-      // Scénario 3 : épargner 25% du solde
-      const amount25 = Math.ceil(monthlyBalance * 0.25);
-      const months25 = Math.ceil(remaining / amount25);
-      scenarios.push({
-        label: '25% du solde mensuel',
-        amount: amount25,
-        months: months25,
-        feasible: true
+        months: Math.ceil(remaining / amount50),
       });
     }
 
@@ -554,9 +563,10 @@ const GoalsPage = ({ toast, onNavigate }) => {
               {plan.monthlyBalance > 0 && plan.remaining > 0 && (
                 <div className="mt-4 bg-blue-50 rounded-xl p-3 border border-blue-200">
                   <p className="text-sm text-blue-800">
-                    💬 <strong>Conseil Yoonu Dal :</strong> Commence par mettre de côté{' '}
-                    <strong>{formatFull(Math.ceil(plan.monthlyBalance * 0.25))}</strong> chaque mois.
-                    Petit à petit, tu peux augmenter selon ton confort.
+                    💬 <strong>Conseil Yoonu Dal :</strong> Ton enveloppe Projets est faite pour ça.
+                    Commence par y allouer{' '}
+                    <strong>{formatFull(projetsBudget > 0 ? Math.ceil(projetsBudget * 0.5) : Math.ceil(plan.monthlyBalance * 0.25))}</strong>/mois
+                    et augmente progressivement.
                   </p>
                 </div>
               )}
