@@ -2272,7 +2272,7 @@ def ai_chat(request):
                 'budget': budget,
                 'spent': real_spent,
                 'remaining': budget - real_spent,
-                'percentage_used': int((real_spent / budget * 100) if budget > 0 else 0)
+                'percentage_used': round((real_spent / budget * 100) if budget > 0 else 0, 1)
             })
 
         # ── OBJECTIFS ───────────────────────────────────────────────
@@ -3273,8 +3273,8 @@ def complete_onboarding(request):
         defaults = [
             ('essentiels', 50),
             ('plaisirs', 30),
-            ('projets', 15),
-            ('liberation', 5)
+            ('projets', 20),
+            ('liberation', 0)
         ]
         
         for envelope_type, percentage in defaults:
