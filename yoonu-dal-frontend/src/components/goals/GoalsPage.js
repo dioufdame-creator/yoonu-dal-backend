@@ -32,6 +32,9 @@ const GoalsPage = ({ toast, onNavigate }) => {
   });
   const [form, setForm] = useState(emptyForm());
   const [contributeAmount, setContributeAmount] = useState('');
+  const [showHistoryModal, setShowHistoryModal] = useState(false);
+  const [contributions, setContributions] = useState([]);
+  const [loadingHistory, setLoadingHistory] = useState(false);
   const [projetsBudget, setProjetsBudget] = useState(0);
 
   const CATEGORIES = [
@@ -172,15 +175,37 @@ const GoalsPage = ({ toast, onNavigate }) => {
     const amount = parseFloat(contributeAmount);
 
     try {
-      await API.put(`/goals/manage/?goal_id=${selectedGoal.id}`, {
-        current_amount: parseFloat(selectedGoal.current_amount) + amount
-      });
+      await API.post(`/goals/${selectedGoal.id}/contributions/`, { amount });
       toast?.showSuccess?.('Contribution ajoutée !');
       setShowContributeModal(false);
       setContributeAmount('');
       await loadGoals();
     } catch (error) {
       toast?.showError?.('Erreur : ' + (error.response?.data?.error || error.message));
+    }
+  };
+
+  const loadHistory = async (goalId) => {
+    setLoadingHistory(true);
+    try {
+      const response = await API.get(`/goals/${goalId}/contributions/`);
+      setContributions(response.data.contributions || []);
+    } catch (error) {
+      setContributions([]);
+    } finally {
+      setLoadingHistory(false);
+    }
+  };
+
+  const handleDeleteContribution = async (contributionId, goalId) => {
+    if (!window.confirm('Supprimer cette contribution ?')) return;
+    try {
+      await API.delete(`/goals/contributions/${contributionId}/`);
+      toast?.showSuccess?.('Contribution supprimée');
+      await loadHistory(goalId);
+      await loadGoals();
+    } catch (error) {
+      toast?.showError?.('Erreur suppression');
     }
   };
 
@@ -374,13 +399,13 @@ const GoalsPage = ({ toast, onNavigate }) => {
               </div>
 
               {/* Boutons */}
-              <div className="grid grid-cols-2 gap-2 mb-2">
+              <div className="grid grid-cols-3 gap-2 mb-2">
                 <button
                   onClick={() => {
                     setSelectedGoal(goal);
                     setShowContributeModal(true);
                   }}
-                  className="flex items-center justify-center gap-1.5 px-3 py-2.5 bg-green-600 text-white rounded-xl text-sm font-semibold hover:bg-green-700 transition-all"
+                  className="flex items-center justify-center gap-1 px-2 py-2.5 bg-green-600 text-white rounded-xl text-sm font-semibold hover:bg-green-700 transition-all"
                 >
                   <span>➕</span>
                   <span>Ajouter</span>
@@ -388,12 +413,23 @@ const GoalsPage = ({ toast, onNavigate }) => {
                 <button
                   onClick={() => {
                     setSelectedGoal(goal);
+                    loadHistory(goal.id);
+                    setShowHistoryModal(true);
+                  }}
+                  className="flex items-center justify-center gap-1 px-2 py-2.5 bg-indigo-600 text-white rounded-xl text-sm font-semibold hover:bg-indigo-700 transition-all"
+                >
+                  <span>📜</span>
+                  <span>Historique</span>
+                </button>
+                <button
+                  onClick={() => {
+                    setSelectedGoal(goal);
                     setShowPlanModal(true);
                   }}
-                  className="flex items-center justify-center gap-1.5 px-3 py-2.5 bg-blue-600 text-white rounded-xl text-sm font-semibold hover:bg-blue-700 transition-all"
+                  className="flex items-center justify-center gap-1 px-2 py-2.5 bg-blue-600 text-white rounded-xl text-sm font-semibold hover:bg-blue-700 transition-all"
                 >
                   <span>💡</span>
-                  <span>Plan d'atteinte</span>
+                  <span>Plan</span>
                 </button>
               </div>
 
@@ -475,7 +511,70 @@ const GoalsPage = ({ toast, onNavigate }) => {
         </div>
       )}
 
-      {/* ── MODAL PLAN D'ATTEINTE ── */}
+      {/* ── MODAL HISTORIQUE ── */}
+      {showHistoryModal && selectedGoal && (
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl max-w-md w-full p-6 max-h-[85vh] overflow-y-auto">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-xl font-bold">📜 Historique — {selectedGoal.title}</h3>
+              <button onClick={() => setShowHistoryModal(false)}
+                className="text-gray-400 hover:text-gray-600 text-2xl">✕</button>
+            </div>
+
+            {loadingHistory ? (
+              <div className="text-center py-8">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600 mx-auto"></div>
+              </div>
+            ) : contributions.length === 0 ? (
+              <div className="text-center py-8">
+                <div className="text-4xl mb-2">📭</div>
+                <p className="text-gray-500">Aucune contribution enregistrée</p>
+                <button
+                  onClick={() => { setShowHistoryModal(false); setShowContributeModal(true); }}
+                  className="mt-3 text-green-600 font-semibold text-sm"
+                >
+                  Faire ma première contribution →
+                </button>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                <div className="text-sm text-gray-500 mb-2">
+                  {contributions.length} contribution{contributions.length > 1 ? 's' : ''} —
+                  Total : {new Intl.NumberFormat('fr-FR').format(
+                    contributions.reduce((sum, c) => sum + parseFloat(c.amount), 0)
+                  )} FCFA
+                </div>
+                {contributions.map((c) => (
+                  <div key={c.id} className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl">
+                    <div className="w-9 h-9 rounded-full bg-green-100 flex items-center justify-center flex-shrink-0">
+                      <span>➕</span>
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex justify-between items-center">
+                        <span className="font-semibold text-green-700">
+                          +{new Intl.NumberFormat('fr-FR').format(c.amount)} FCFA
+                        </span>
+                        <span className="text-xs text-gray-400">
+                          {new Date(c.created_at).toLocaleDateString('fr-FR')}
+                        </span>
+                      </div>
+                      {c.note && <p className="text-xs text-gray-500 truncate">{c.note}</p>}
+                    </div>
+                    <button
+                      onClick={() => handleDeleteContribution(c.id, selectedGoal.id)}
+                      className="text-red-400 hover:text-red-600 text-sm flex-shrink-0"
+                    >
+                      🗑️
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* ── MODAL PLAN D'ATTEINTE ── */}}
       {showPlanModal && selectedGoal && (() => {
         const plan = computePlan(selectedGoal);
         return (
