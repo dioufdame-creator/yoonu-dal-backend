@@ -175,7 +175,15 @@ const GoalsPage = ({ toast, onNavigate }) => {
     const amount = parseFloat(contributeAmount);
 
     try {
-      await API.post(`/goals/${selectedGoal.id}/contributions/`, { amount });
+      try {
+        await API.post(`/goals/${selectedGoal.id}/contributions/`, { amount });
+      } catch (err) {
+        if (err.response?.status === 404) {
+          await API.put(`/goals/manage/?goal_id=${selectedGoal.id}`, {
+            current_amount: parseFloat(selectedGoal.current_amount) + amount
+          });
+        } else { throw err; }
+      }
       toast?.showSuccess?.('Contribution ajoutée !');
       setShowContributeModal(false);
       setContributeAmount('');
@@ -574,7 +582,7 @@ const GoalsPage = ({ toast, onNavigate }) => {
         </div>
       )}
 
-      {/* ── MODAL PLAN D'ATTEINTE ── */}}
+      {/* ── MODAL PLAN D'ATTEINTE ── */}
       {showPlanModal && selectedGoal && (() => {
         const plan = computePlan(selectedGoal);
         return (
