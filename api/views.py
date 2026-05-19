@@ -19,7 +19,7 @@ from .models import (
     UserProfile, UserValue, IncomeSource, Income, Expense, Budget,
     Goal, Saving, Tontine, TontineParticipant, TontineContribution,
     TontinePayout, TontineActivity, DiagnosticResult, Envelope, FinancialLeak, PredictiveAlert,
-    Debt, DebtPayment  # ← AJOUTER ICI
+    Debt, DebtPayment, GoalContribution
 
 )
 from .utils.decorators import require_premium, check_usage_limit
@@ -4243,4 +4243,43 @@ def available_months(request):
  
     except Exception as e:
         return Response({'error': f'Erreur: {str(e)}'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+@api_view(['GET', 'POST'])
+@permission_classes([IsAuthenticated])
+def goal_payments(request, goal_id):
+    user = request.user
+    try:
+        goal = Goal.objects.get(id=goal_id, user=user)
+    except Goal.DoesNotExist:
+        return Response({'error': 'Objectif non trouvé'}, status=status.HTTP_404_NOT_FOUND)
+
+    if request.method == 'GET':
+        contributions = GoalContribution.objects.filter(goal=goal).order_by('-created_at')
+        data = [{'id': c.id, 'amount': float(c.amount), 'type': c.contribution_type, 'source': c.source, 'note': c.note or '', 'created_at': c.created_at.isoformat()} for c in contributions]
+        return Response({'contributions': data, 'total': len(data)})
+
+    elif request.method == 'POST':
+        amount = Decimal(str(request.data.get('amount', 0)))
+        if amount <= 0:
+            return Response({'error': 'Montant invalide'}, status=status.HTTP_400_BAD_REQUEST)
+        GoalContribution.objects.create(goal=goal, amount=amount, contribution_type='add', source='Manuel', note=request.data.get('note', ''))
+        goal.current_amount = Decimal(str(goal.current_amount)) + amount
+        goal.save()
+        return Response({'message': 'Contribution ajoutée', 'current_amount': float(goal.current_amount)}, status=status.HTTP_201_CREATED)
+
+
+@api_view(['DELETE'])
+@permission_classes([IsAuthenticated])
+def delete_goal_payment(request, payment_id):
+    user = request.user
+    try:
+        contribution = GoalContribution.objects.get(id=payment_id, goal__user=user)
+        goal = contribution.goal
+        contribution.delete()
+        total = GoalContribution.objects.filter(goal=goal).aggregate(total=Sum('amount'))['total'] or Decimal('0')
+        goal.current_amount = total
+        goal.save()
+        return Response({'message': 'Contribution supprimée'})
+    except GoalContribution.DoesNotExist:
+        return Response({'error': 'Contribution non trouvée'}, status=status.HTTP_404_NOT_FOUND)
         
