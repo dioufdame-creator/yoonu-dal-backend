@@ -1799,7 +1799,14 @@ def make_contribution(request, tontine_id):
             }, status=status.HTTP_400_BAD_REQUEST)
 
         contribution_date = data.get('date') if data.get('date') else timezone.now().date()
-
+        from dateutil.relativedelta import relativedelta
+        confirmed_count = TontineContribution.objects.filter(
+            participant=participant, status='confirmed'
+        ).count()
+        contribution_month = tontine.start_date.replace(day=1)
+        from dateutil.relativedelta import relativedelta
+        contribution_month = contribution_month + relativedelta(months=confirmed_count)
+        
         contribution = TontineContribution.objects.create(
             participant=participant,
             amount=Decimal(amount),
@@ -1807,6 +1814,7 @@ def make_contribution(request, tontine_id):
             payment_method=data.get('payment_method', 'virement'),
             transaction_reference=data.get('transaction_reference', ''),
             notes=data.get('notes', ''),
+            contribution_month=contribution_month,
             is_validated=False
         )
 
