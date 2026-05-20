@@ -924,6 +924,7 @@ class TontineContribution(models.Model):
     payment_method = models.CharField(max_length=50, default='virement')
     transaction_reference = models.CharField(max_length=100, blank=True, null=True)
     notes = models.TextField(blank=True, null=True)
+    contribution_month = models.DateField(null=True, blank=True, help_text="Mois concerné par ce paiement")
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
