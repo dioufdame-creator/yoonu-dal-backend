@@ -60,12 +60,15 @@ const TontineTimeline = ({ tontineId, isAdmin, onUpdate }) => {
     }
   };
 
+  const formatAmount = (amount) => {
+    if (amount >= 1000000) return `${(amount / 1000000).toFixed(1)}M F`;
+    if (amount >= 1000) return `${Math.round(amount / 1000)}k F`;
+    return `${amount.toLocaleString('fr-FR')} F`;
+  };
+
   const formatDate = (dateString) => {
     const date = new Date(dateString);
-    return date.toLocaleDateString('fr-FR', { 
-      month: 'long', 
-      year: 'numeric' 
-    });
+    return date.toLocaleDateString('fr-FR', { month: 'short', year: 'numeric' });
   };
 
   if (loading) {
@@ -87,10 +90,7 @@ const TontineTimeline = ({ tontineId, isAdmin, onUpdate }) => {
     return (
       <div className="bg-red-50 border-2 border-red-300 rounded-2xl p-6 mb-6">
         <p className="text-red-700">{error}</p>
-        <button
-          onClick={loadTimeline}
-          className="mt-3 text-red-600 font-semibold hover:underline"
-        >
+        <button onClick={loadTimeline} className="mt-3 text-red-600 font-semibold hover:underline">
           Réessayer
         </button>
       </div>
@@ -100,7 +100,7 @@ const TontineTimeline = ({ tontineId, isAdmin, onUpdate }) => {
   return (
     <div className="bg-white rounded-2xl shadow-lg p-6 mb-6">
       <div className="flex items-center justify-between mb-6">
-        <h3 className="text-2xl font-bold flex items-center gap-2">
+        <h3 className="text-xl font-bold flex items-center gap-2">
           <span>📅</span>
           <span>Ordre de paiement</span>
         </h3>
@@ -115,51 +115,42 @@ const TontineTimeline = ({ tontineId, isAdmin, onUpdate }) => {
         {timeline.map((item) => (
           <div
             key={item.month}
-            className={`p-4 rounded-xl border-2 ${getStatusColor(item.status)} transition-all hover:shadow-md`}
+            className={`p-3 rounded-xl border-2 ${getStatusColor(item.status)} transition-all hover:shadow-md`}
           >
-            <div className="flex items-center justify-between">
-              {/* Gauche : Icône + Info */}
-              <div className="flex items-center gap-3 flex-1">
-                <span className="text-3xl">{getStatusIcon(item.status)}</span>
-                
-                <div className="flex-1">
-                  <div className="flex items-center gap-2 mb-1">
-                    <span className="font-bold text-lg">
-                      Mois {item.month}
+            <div className="flex items-center gap-3">
+              {/* Icône statut */}
+              <span className="text-2xl flex-shrink-0">{getStatusIcon(item.status)}</span>
+
+              {/* Info centrale */}
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 mb-0.5 flex-wrap">
+                  <span className="font-bold text-base">Mois {item.month}</span>
+                  <span className="text-xs px-2 py-0.5 bg-white/60 rounded text-gray-600">
+                    {formatDate(item.date)}
+                  </span>
+                </div>
+                <div className="flex items-center gap-1.5 flex-wrap">
+                  <span className="text-lg">👤</span>
+                  <span className="font-semibold text-sm truncate">{item.participant.name}</span>
+                  {item.participant.is_current_user && (
+                    <span className="text-xs bg-blue-500 text-white px-1.5 py-0.5 rounded font-semibold flex-shrink-0">
+                      Vous
                     </span>
-                    <span className="text-xs px-2 py-1 bg-white/50 rounded">
-                      {formatDate(item.date)}
+                  )}
+                  {item.participant.is_admin && (
+                    <span className="text-xs bg-yellow-500 text-white px-1.5 py-0.5 rounded font-semibold flex-shrink-0">
+                      👑
                     </span>
-                  </div>
-                  
-                  <div className="flex items-center gap-2">
-                    <span className="text-2xl">👤</span>
-                    <div>
-                      <span className="font-semibold">
-                        {item.participant.name}
-                      </span>
-                      {item.participant.is_current_user && (
-                        <span className="ml-2 text-xs bg-blue-500 text-white px-2 py-1 rounded font-semibold">
-                          Vous
-                        </span>
-                      )}
-                      {item.participant.is_admin && (
-                        <span className="ml-2 text-xs bg-yellow-500 text-white px-2 py-1 rounded font-semibold">
-                          👑 Admin
-                        </span>
-                      )}
-                    </div>
-                  </div>
+                  )}
                 </div>
               </div>
-              
-              {/* Droite : Montant + Statut */}
-              <div className="text-right">
-                <div className="text-xl font-bold text-green-600 mb-1">
-                  {item.amount.toLocaleString('fr-FR')} F
+
+              {/* Montant + statut — colonne droite fixe */}
+              <div className="text-right flex-shrink-0">
+                <div className="font-bold text-green-600 text-base">
+                  {formatAmount(item.amount)}
                 </div>
-                
-                <div className={`text-sm font-semibold ${
+                <div className={`text-xs font-semibold mt-0.5 ${
                   item.status === 'paid' ? 'text-green-600' :
                   item.status === 'current' ? 'text-orange-600' :
                   item.status === 'late' ? 'text-red-600' :
@@ -167,10 +158,9 @@ const TontineTimeline = ({ tontineId, isAdmin, onUpdate }) => {
                 }`}>
                   {getStatusLabel(item.status)}
                 </div>
-                
                 {item.status === 'paid' && item.paid_at && (
-                  <div className="text-xs text-gray-600 mt-1">
-                    Payé le {new Date(item.paid_at).toLocaleDateString('fr-FR')}
+                  <div className="text-xs text-gray-500 mt-0.5">
+                    {new Date(item.paid_at).toLocaleDateString('fr-FR')}
                   </div>
                 )}
               </div>
@@ -180,24 +170,12 @@ const TontineTimeline = ({ tontineId, isAdmin, onUpdate }) => {
       </div>
 
       {/* Légende */}
-      <div className="mt-6 pt-4 border-t border-gray-200">
-        <div className="flex flex-wrap gap-4 text-sm">
-          <div className="flex items-center gap-2">
-            <span>✅</span>
-            <span className="text-gray-600">Payé</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <span>🕐</span>
-            <span className="text-gray-600">En cours ce mois</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <span>⚠️</span>
-            <span className="text-gray-600">En retard</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <span>⏳</span>
-            <span className="text-gray-600">À venir</span>
-          </div>
+      <div className="mt-4 pt-4 border-t border-gray-200">
+        <div className="flex flex-wrap gap-3 text-xs">
+          <div className="flex items-center gap-1"><span>✅</span><span className="text-gray-600">Payé</span></div>
+          <div className="flex items-center gap-1"><span>🕐</span><span className="text-gray-600">En cours</span></div>
+          <div className="flex items-center gap-1"><span>⚠️</span><span className="text-gray-600">En retard</span></div>
+          <div className="flex items-center gap-1"><span>⏳</span><span className="text-gray-600">À venir</span></div>
         </div>
       </div>
     </div>
