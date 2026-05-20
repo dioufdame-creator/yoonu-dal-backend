@@ -884,17 +884,22 @@ class TontineParticipant(models.Model):
         return total or 0
 
     @property
+    @property
     def contribution_status(self):
-        """Statut des contributions (à jour, en retard, etc.)"""
-        from decimal import Decimal
-        
-        expected = self.tontine.monthly_contribution  # Decimal
-        actual = Decimal(str(self.total_contributions))  # Convertir en Decimal
-        
-        if actual >= expected:
+        from datetime import date
+        tontine = self.tontine
+        if not tontine.start_date or tontine.status != 'active':
             return 'à_jour'
-        elif actual >= expected * Decimal('0.5'):  # Decimal * Decimal
-            return 'partiel'
+        today = date.today()
+        start = tontine.start_date
+        payment_day = tontine.payment_day or 5
+        months_elapsed = max(1, (today.year - start.year) * 12 + (today.month - start.month) + 1)
+        confirmed_count = self.contributions.filter(status='confirmed').count()
+        deadline_passed = today.day > payment_day
+        if confirmed_count >= months_elapsed:
+            return 'à_jour'
+        elif confirmed_count >= months_elapsed - 1 and not deadline_passed:
+            return 'à_compléter'
         else:
             return 'en_retard'
 
