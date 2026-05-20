@@ -884,7 +884,6 @@ class TontineParticipant(models.Model):
         return total or 0
 
     @property
-    @property
     def contribution_status(self):
         from datetime import date
         tontine = self.tontine
