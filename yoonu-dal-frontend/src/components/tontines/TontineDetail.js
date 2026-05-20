@@ -12,6 +12,9 @@ const TontineDetail = ({ tontineId, onNavigate, toast, user }) => {
   const [contributeMethod, setContributeMethod] = useState('virement');
   const [contributeRef, setContributeRef] = useState('');
   const [currentUser, setCurrentUser] = useState(null);
+  const [myContributions, setMyContributions] = useState([]);
+  const [loadingContributions, setLoadingContributions] = useState(false);
+  const [showMyPayments, setShowMyPayments] = useState(false);
 
   useEffect(() => {
     const loadUser = async () => {
@@ -36,7 +39,7 @@ const TontineDetail = ({ tontineId, onNavigate, toast, user }) => {
       setTontine(response.data);
     } catch (error) {
       if (error.response?.status === 403) {
-        toast?.showError?.('Vous n\'avez pas accès à cette tontine');
+        toast?.showError?.("Vous n\'avez pas accès à cette tontine");
       } else if (error.response?.status === 404) {
         toast?.showError?.('Tontine introuvable');
       } else {
@@ -45,6 +48,108 @@ const TontineDetail = ({ tontineId, onNavigate, toast, user }) => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const loadMyContributions = async () => {
+    if (!tontine || !currentUser) return;
+    setLoadingContributions(true);
+    try {
+      const myParticipant = tontine.participants?.find(p => p.user?.id === currentUser?.id);
+      if (!myParticipant) return;
+      const response = await API.get(`/tontines/${tontineId}/my-contributions/`);
+      setMyContributions(response.data.contributions || []);
+    } catch (error) {
+      console.error('Erreur contributions:', error);
+      setMyContributions([]);
+    } finally {
+      setLoadingContributions(false);
+    }
+  };
+
+  // Calcul des mois échus et statut
+  const getPaymentSummary = () => {
+    if (!tontine || tontine.status !== 'active') return null;
+    const today = new Date();
+    const start = new Date(tontine.start_date);
+    const paymentDay = tontine.payment_day || 5;
+
+    const monthsElapsed = Math.max(1,
+      (today.getFullYear() - start.getFullYear()) * 12 +
+      (today.getMonth() - start.getMonth()) + 1
+    );
+
+    const myParticipant = tontine.participants?.find(p => p.user?.id === currentUser?.id);
+    const confirmedCount = myContributions.filter(c => c.status === 'confirmed').length;
+    const pendingCount = myContributions.filter(c => c.status === 'pending').length;
+    const deadlinePassed = today.getDate() > paymentDay;
+
+    let status, statusColor, statusLabel;
+    if (confirmedCount >= monthsElapsed) {
+      status = 'à_jour';
+      statusColor = 'bg-green-50 border-green-300 text-green-800';
+      statusLabel = '✅ À jour';
+    } else if (confirmedCount >= monthsElapsed - 1 && !deadlinePassed) {
+      status = 'à_compléter';
+      statusColor = 'bg-amber-50 border-amber-300 text-amber-800';
+      statusLabel = '⏳ À compléter';
+    } else {
+      status = 'en_retard';
+      statusColor = 'bg-red-50 border-red-300 text-red-800';
+      statusLabel = '❌ En retard';
+    }
+
+    return {
+      monthsElapsed,
+      confirmedCount,
+      pendingCount,
+      deadlinePassed,
+      paymentDay,
+      status,
+      statusColor,
+      statusLabel,
+      missingMonths: Math.max(0, monthsElapsed - confirmedCount)
+    };
+  };
+
+  // Générer la liste des mois échus avec statut paiement
+  const getMonthsTimeline = () => {
+    if (!tontine || !tontine.start_date) return [];
+    const today = new Date();
+    const start = new Date(tontine.start_date);
+    const monthsElapsed = Math.max(1,
+      (today.getFullYear() - start.getFullYear()) * 12 +
+      (today.getMonth() - start.getMonth()) + 1
+    );
+
+    const months = [];
+    for (let i = 0; i < monthsElapsed; i++) {
+      const monthDate = new Date(start.getFullYear(), start.getMonth() + i, 1);
+      const monthStr = monthDate.toISOString().slice(0, 7);
+
+      // Chercher la contribution pour ce mois
+      const contribution = myContributions.find(c => {
+        if (c.contribution_month) {
+          return c.contribution_month.startsWith(monthStr);
+        }
+        // Fallback : ordre chronologique
+        return false;
+      });
+
+      // Si pas de contribution_month, assigner par ordre
+      const orderedContrib = !contribution && myContributions[i];
+
+      const monthName = monthDate.toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' });
+      const isCurrentMonth = (monthDate.getFullYear() === today.getFullYear() &&
+                              monthDate.getMonth() === today.getMonth());
+
+      months.push({
+        monthStr,
+        monthName,
+        isCurrentMonth,
+        contribution: contribution || orderedContrib || null,
+      });
+    }
+    return months;
   };
 
   const handleContribute = async (e) => {
@@ -56,11 +161,12 @@ const TontineDetail = ({ tontineId, onNavigate, toast, user }) => {
         payment_method: contributeMethod,
         transaction_reference: contributeRef,
       });
-      toast?.showSuccess('Contribution enregistrée ! En attente de validation par l\'admin.');
+      toast?.showSuccess("Contribution enregistrée ! En attente de validation par l\'admin.");
       setShowContributeModal(false);
       setContributeAmount('');
       setContributeRef('');
       loadDetail();
+      loadMyContributions();
     } catch (error) {
       toast?.showError(error.response?.data?.error || 'Erreur contribution');
     }
@@ -77,9 +183,7 @@ const TontineDetail = ({ tontineId, onNavigate, toast, user }) => {
     }
   };
 
-  const formatCurrency = (value) => {
-    return new Intl.NumberFormat('fr-FR').format(value || 0) + ' FCFA';
-  };
+  const formatCurrency = (value) => new Intl.NumberFormat('fr-FR').format(value || 0) + ' FCFA';
 
   const getStatusConfig = (status) => {
     const configs = {
@@ -94,34 +198,31 @@ const TontineDetail = ({ tontineId, onNavigate, toast, user }) => {
   const getContributionBadge = (status) => {
     switch (status) {
       case 'à_jour': return <span className="px-2 py-0.5 bg-green-100 text-green-700 text-xs font-bold rounded-full">✅ À jour</span>;
-      case 'partiel': return <span className="px-2 py-0.5 bg-orange-100 text-orange-700 text-xs font-bold rounded-full">⚠️ Partiel</span>;
+      case 'à_compléter': return <span className="px-2 py-0.5 bg-amber-100 text-amber-700 text-xs font-bold rounded-full">⏳ À compléter</span>;
       case 'en_retard': return <span className="px-2 py-0.5 bg-red-100 text-red-700 text-xs font-bold rounded-full">❌ En retard</span>;
       default: return null;
     }
   };
 
-  // ✅ Calcul jours restants avant la limite de paiement
   const getPaymentDeadlineInfo = (tontine) => {
     if (tontine.status !== 'active' || !tontine.payment_day) return null;
     const now = new Date();
     const day = now.getDate();
     const payDay = tontine.payment_day;
     const daysLeft = payDay - day;
-
-    if (daysLeft < 0) {
-      return { label: `Date limite dépassée ce mois (était le ${payDay})`, color: 'text-gray-500', bg: 'bg-gray-50 border-gray-200' };
-    }
-    if (daysLeft === 0) {
-      return { label: `⚠️ Aujourd'hui est la date limite !`, color: 'text-red-700', bg: 'bg-red-50 border-red-200' };
-    }
-    if (daysLeft <= 2) {
-      return { label: `🚨 Plus que ${daysLeft} jour(s) pour contribuer !`, color: 'text-red-700', bg: 'bg-red-50 border-red-200' };
-    }
-    if (daysLeft <= 5) {
-      return { label: `⏰ ${daysLeft} jours restants avant la limite`, color: 'text-orange-700', bg: 'bg-orange-50 border-orange-200' };
-    }
+    if (daysLeft < 0) return { label: `Date limite dépassée ce mois (était le ${payDay})`, color: 'text-gray-500', bg: 'bg-gray-50 border-gray-200' };
+    if (daysLeft === 0) return { label: `⚠️ Aujourd'hui est la date limite !`, color: 'text-red-700', bg: 'bg-red-50 border-red-200' };
+    if (daysLeft <= 2) return { label: `🚨 Plus que ${daysLeft} jour(s) pour contribuer !`, color: 'text-red-700', bg: 'bg-red-50 border-red-200' };
+    if (daysLeft <= 5) return { label: `⏰ ${daysLeft} jours restants avant la limite`, color: 'text-orange-700', bg: 'bg-orange-50 border-orange-200' };
     return { label: `📆 Limite de paiement : le ${payDay} de chaque mois`, color: 'text-blue-700', bg: 'bg-blue-50 border-blue-200' };
   };
+
+  // Charger les contributions quand on ouvre le panneau
+  useEffect(() => {
+    if (showMyPayments && tontine && currentUser) {
+      loadMyContributions();
+    }
+  }, [showMyPayments, tontine, currentUser]);
 
   if (loading) {
     return (
@@ -151,12 +252,13 @@ const TontineDetail = ({ tontineId, onNavigate, toast, user }) => {
   }
 
   const statusConfig = getStatusConfig(tontine.status);
-  const progress = tontine.max_participants > 0
-    ? (tontine.current_participants / tontine.max_participants) * 100 : 0;
+  const progress = tontine.max_participants > 0 ? (tontine.current_participants / tontine.max_participants) * 100 : 0;
   const currentUserParticipant = tontine.participants?.find(p => p.user?.id === currentUser?.id);
   const isAdmin = currentUserParticipant?.is_admin || tontine.creator?.id === currentUser?.id;
   const payoutAmount = (tontine.monthly_contribution || 0) * (tontine.max_participants || 0);
   const deadlineInfo = getPaymentDeadlineInfo(tontine);
+  const paymentSummary = getPaymentSummary();
+  const monthsTimeline = showMyPayments ? getMonthsTimeline() : [];
 
   return (
     <div className="min-h-screen bg-gray-50 pb-20">
@@ -190,7 +292,7 @@ const TontineDetail = ({ tontineId, onNavigate, toast, user }) => {
 
       <div className="max-w-6xl mx-auto px-4 py-6 space-y-6">
 
-        {/* Titre et description */}
+        {/* Titre */}
         <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
           <div className="flex items-start justify-between mb-4">
             <div className="flex-1">
@@ -201,13 +303,9 @@ const TontineDetail = ({ tontineId, onNavigate, toast, user }) => {
               <p className="text-sm text-gray-500 mb-1">Code d'invitation</p>
               <p className="text-2xl font-mono font-bold text-green-600">{tontine.invitation_code}</p>
               <button onClick={() => { navigator.clipboard.writeText(tontine.invitation_code); toast?.showSuccess?.('Code copié !'); }}
-                className="text-xs text-gray-500 hover:text-green-600 mt-1">
-                📋 Copier
-              </button>
+                className="text-xs text-gray-500 hover:text-green-600 mt-1">📋 Copier</button>
             </div>
           </div>
-
-          {/* Stats */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 pt-4 border-t border-gray-100">
             <div>
               <p className="text-xs text-gray-500 mb-1">💰 Contribution/mois</p>
@@ -226,14 +324,127 @@ const TontineDetail = ({ tontineId, onNavigate, toast, user }) => {
               <p className="text-lg font-bold text-green-600">{formatCurrency(payoutAmount)}</p>
             </div>
           </div>
-
-          {/* ✅ Alerte deadline paiement */}
           {deadlineInfo && (
             <div className={`mt-4 border rounded-xl px-4 py-3 ${deadlineInfo.bg}`}>
               <p className={`text-sm font-medium ${deadlineInfo.color}`}>{deadlineInfo.label}</p>
             </div>
           )}
         </div>
+
+        {/* ── MES PAIEMENTS ── */}
+        {tontine.status === 'active' && currentUserParticipant && (
+          <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
+            <button
+              onClick={() => setShowMyPayments(!showMyPayments)}
+              className="w-full px-6 py-4 flex items-center justify-between hover:bg-gray-50 transition-colors"
+            >
+              <div className="flex items-center gap-3">
+                <span className="text-2xl">💳</span>
+                <div className="text-left">
+                  <h2 className="text-lg font-bold text-gray-900">Mes paiements</h2>
+                  {paymentSummary && (
+                    <p className="text-sm text-gray-500">
+                      {paymentSummary.confirmedCount}/{paymentSummary.monthsElapsed} mois payés
+                    </p>
+                  )}
+                </div>
+              </div>
+              <div className="flex items-center gap-3">
+                {paymentSummary && (
+                  <span className={`px-3 py-1 rounded-full text-xs font-bold border ${paymentSummary.statusColor}`}>
+                    {paymentSummary.statusLabel}
+                  </span>
+                )}
+                <span className="text-gray-400">{showMyPayments ? '▲' : '▼'}</span>
+              </div>
+            </button>
+
+            {showMyPayments && (
+              <div className="px-6 pb-6 border-t border-gray-100">
+                {/* Résumé */}
+                {paymentSummary && (
+                  <div className="grid grid-cols-3 gap-3 mt-4 mb-5">
+                    <div className="bg-green-50 rounded-xl p-3 text-center">
+                      <p className="text-2xl font-bold text-green-700">{paymentSummary.confirmedCount}</p>
+                      <p className="text-xs text-gray-600">Payés</p>
+                    </div>
+                    <div className="bg-amber-50 rounded-xl p-3 text-center">
+                      <p className="text-2xl font-bold text-amber-700">{paymentSummary.pendingCount}</p>
+                      <p className="text-xs text-gray-600">En attente</p>
+                    </div>
+                    <div className="bg-red-50 rounded-xl p-3 text-center">
+                      <p className="text-2xl font-bold text-red-700">{paymentSummary.missingMonths}</p>
+                      <p className="text-xs text-gray-600">Manquants</p>
+                    </div>
+                  </div>
+                )}
+
+                {/* Timeline des mois */}
+                {loadingContributions ? (
+                  <div className="text-center py-6">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-600 mx-auto"></div>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    {monthsTimeline.map((month, idx) => {
+                      const c = month.contribution;
+                      const isPaid = c?.status === 'confirmed';
+                      const isPending = c?.status === 'pending';
+                      const isUnpaid = !c;
+
+                      return (
+                        <div key={idx} className={`flex items-center justify-between p-3 rounded-xl border ${
+                          isPaid ? 'bg-green-50 border-green-200' :
+                          isPending ? 'bg-amber-50 border-amber-200' :
+                          month.isCurrentMonth ? 'bg-blue-50 border-blue-200' :
+                          'bg-red-50 border-red-200'
+                        }`}>
+                          <div className="flex items-center gap-3">
+                            <span className="text-xl">
+                              {isPaid ? '✅' : isPending ? '⏳' : month.isCurrentMonth ? '📅' : '❌'}
+                            </span>
+                            <div>
+                              <p className="font-semibold text-gray-900 capitalize">{month.monthName}</p>
+                              {c && (
+                                <p className="text-xs text-gray-500">
+                                  {new Date(c.date).toLocaleDateString('fr-FR')} · {c.payment_method}
+                                </p>
+                              )}
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            {c ? (
+                              <p className="font-bold text-gray-900">
+                                {formatCurrency(c.amount)}
+                              </p>
+                            ) : (
+                              <p className="text-sm font-semibold text-gray-500">
+                                {month.isCurrentMonth ? 'À payer' : 'Non payé'}
+                              </p>
+                            )}
+                            {isPending && (
+                              <p className="text-xs text-amber-600">En validation</p>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+
+                {/* Bouton contribuer si pas à jour */}
+                {paymentSummary && paymentSummary.status !== 'à_jour' && (
+                  <button
+                    onClick={() => setShowContributeModal(true)}
+                    className="w-full mt-4 bg-gradient-to-r from-green-600 to-emerald-600 text-white py-3 rounded-xl font-semibold hover:shadow-lg transition-all"
+                  >
+                    💰 Payer maintenant
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Progression participants */}
         <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
@@ -354,6 +565,19 @@ const TontineDetail = ({ tontineId, onNavigate, toast, user }) => {
             {deadlineInfo && (
               <div className={`mb-4 border rounded-xl px-3 py-2 ${deadlineInfo.bg}`}>
                 <p className={`text-xs font-medium ${deadlineInfo.color}`}>{deadlineInfo.label}</p>
+              </div>
+            )}
+            {paymentSummary && (
+              <div className="mb-4 bg-blue-50 border border-blue-200 rounded-xl px-3 py-2">
+                <p className="text-xs text-blue-800 font-medium">
+                  📅 Ce paiement concernera : <strong className="capitalize">
+                    {(() => {
+                      const start = new Date(tontine.start_date);
+                      const nextMonth = new Date(start.getFullYear(), start.getMonth() + paymentSummary.confirmedCount + paymentSummary.pendingCount, 1);
+                      return nextMonth.toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' });
+                    })()}
+                  </strong>
+                </p>
               </div>
             )}
             <p className="text-sm text-gray-500 mb-5">
