@@ -1,19 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import API from '../../services/api';
 
-// ==========================================
-// YOONU SCORE PAGE V3
-// Logique de niveaux unifiée avec le backend et le dashboard
-// Débutant / En chemin / Aligné / Maître Yoonu
-// ==========================================
-
-// ✅ Niveaux unifiés — identiques au backend et au dashboard
 const getScoreConfig = (score) => {
   if (score >= 80) return {
     gradient: 'from-green-500 to-emerald-600',
     label: 'Maître Yoonu',
     emoji: '🏆',
-    message: 'Excellence ! Tu maîtrises parfaitement l\'art de Yoonu Dal.',
+    message: "Excellence ! Tu maîtrises parfaitement l'art de Yoonu Dal.",
     nextLevel: null,
     nextMin: null,
   };
@@ -29,7 +22,7 @@ const getScoreConfig = (score) => {
     gradient: 'from-amber-500 to-orange-600',
     label: 'En chemin',
     emoji: '🌿',
-    message: 'Tu progresses. Continue d\'aligner tes dépenses avec tes valeurs.',
+    message: "Tu progresses. Continue d'aligner tes dépenses avec tes valeurs.",
     nextLevel: 'Aligné',
     nextMin: 60,
   };
@@ -37,11 +30,10 @@ const getScoreConfig = (score) => {
     gradient: 'from-red-500 to-pink-600',
     label: 'Débutant',
     emoji: '🌱',
-    message: 'C\'est le début du voyage. Chaque pas compte !',
+    message: "C'est le début du voyage. Chaque pas compte !",
     nextLevel: 'En chemin',
     nextMin: 40,
   };
-  // score === 0
   return {
     gradient: 'from-gray-400 to-gray-500',
     label: 'Non évalué',
@@ -57,9 +49,7 @@ const YoonuScorePage = ({ toast, onNavigate }) => {
   const [history, setHistory] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    loadData();
-  }, []);
+  useEffect(() => { loadData(); }, []);
 
   const loadData = async () => {
     setLoading(true);
@@ -68,11 +58,9 @@ const YoonuScorePage = ({ toast, onNavigate }) => {
         API.get('/yoonu-score/').catch(() => null),
         API.get('/yoonu-score/history/').catch(() => ({ data: { history: [] } }))
       ]);
-
       if (scoreRes?.data) setScore(scoreRes.data);
       setHistory(historyRes?.data?.history || []);
     } catch (error) {
-      console.error('Erreur chargement score:', error);
       toast?.showError('Erreur lors du chargement');
     } finally {
       setLoading(false);
@@ -111,8 +99,7 @@ const YoonuScorePage = ({ toast, onNavigate }) => {
             <p className="text-gray-600 mb-8 max-w-md mx-auto leading-relaxed">
               Commence par définir tes valeurs pour calculer ton score.
             </p>
-            <button
-              onClick={() => onNavigate('values')}
+            <button onClick={() => onNavigate('values')}
               className="bg-gradient-to-r from-green-600 to-emerald-600 text-white px-8 py-4 rounded-xl font-bold text-lg hover:shadow-xl transform hover:scale-105 transition-all">
               🎯 Définir mes valeurs
             </button>
@@ -174,8 +161,7 @@ const YoonuScorePage = ({ toast, onNavigate }) => {
             </h1>
             <p className="text-sm text-gray-500 mt-1">Alignement entre tes valeurs et ton argent</p>
           </div>
-          <button
-            onClick={recalculateScore}
+          <button onClick={recalculateScore}
             className="bg-white text-gray-700 px-4 py-2 rounded-lg border border-gray-300 font-medium hover:bg-gray-50 transition-all flex items-center gap-2">
             <span>🔄</span>
             <span className="hidden sm:inline">Recalculer</span>
@@ -185,16 +171,12 @@ const YoonuScorePage = ({ toast, onNavigate }) => {
         {/* Score Principal */}
         <div className={`bg-gradient-to-br ${config.gradient} rounded-2xl p-8 lg:p-10 mb-6 text-white shadow-xl`}>
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
-
-            {/* Cercle score */}
             <div className="flex justify-center lg:justify-start">
               <div className="relative">
                 <svg className="w-48 h-48 lg:w-56 lg:h-56 transform -rotate-90">
                   <circle cx="50%" cy="50%" r="45%" className="stroke-white stroke-opacity-20" strokeWidth="12" fill="none" />
-                  <circle
-                    cx="50%" cy="50%" r="45%"
-                    className="stroke-white"
-                    strokeWidth="12" fill="none"
+                  <circle cx="50%" cy="50%" r="45%"
+                    className="stroke-white" strokeWidth="12" fill="none"
                     strokeDasharray={`${total_score * 4.4} 440`}
                     strokeLinecap="round"
                     style={{ transition: 'stroke-dasharray 1s ease-out', filter: 'drop-shadow(0 0 20px rgba(255,255,255,0.5))' }}
@@ -207,7 +189,6 @@ const YoonuScorePage = ({ toast, onNavigate }) => {
               </div>
             </div>
 
-            {/* Infos niveau */}
             <div>
               <div className="flex items-center gap-3 mb-4">
                 <span className="text-6xl">{config.emoji}</span>
@@ -226,7 +207,6 @@ const YoonuScorePage = ({ toast, onNavigate }) => {
 
               <p className="text-lg opacity-90 mb-6">{config.message}</p>
 
-              {/* Progression vers prochain niveau */}
               {config.nextMin && (
                 <div className="bg-white bg-opacity-20 rounded-xl p-4">
                   <p className="text-sm font-semibold mb-2">
@@ -236,10 +216,8 @@ const YoonuScorePage = ({ toast, onNavigate }) => {
                     Plus que {config.nextMin - total_score} point{config.nextMin - total_score > 1 ? 's' : ''} !
                   </p>
                   <div className="w-full bg-white bg-opacity-30 rounded-full h-2 mt-2 overflow-hidden">
-                    <div
-                      className="h-full bg-white rounded-full transition-all duration-1000"
-                      style={{ width: `${Math.min(((total_score - (config.nextMin - 20)) / 20) * 100, 100)}%` }}
-                    />
+                    <div className="h-full bg-white rounded-full transition-all duration-1000"
+                      style={{ width: `${Math.min(((total_score - (config.nextMin - 20)) / 20) * 100, 100)}%` }} />
                   </div>
                 </div>
               )}
@@ -280,14 +258,15 @@ const YoonuScorePage = ({ toast, onNavigate }) => {
         {/* Grid composantes */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
 
-          {/* Composantes */}
+          {/* Composantes — maxScores corrigés selon le backend */}
           <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 lg:p-8">
-            <h3 className="text-xl font-bold text-gray-900 mb-6">📊 Détail des composantes</h3>
+            <h3 className="text-xl font-bold text-gray-900 mb-2">📊 Détail des composantes</h3>
+            <p className="text-xs text-gray-400 mb-6">Total sur 100 pts = 30 + 30 + 20 + 20</p>
 
             <ScoreBar
               label="Alignement Valeurs"
               score={alignment_score || 0}
-              maxScore={35}
+              maxScore={30}
               color="from-purple-500 to-purple-600"
               icon="✨"
               description="Tes dépenses reflètent-elles tes valeurs ?"
@@ -295,7 +274,7 @@ const YoonuScorePage = ({ toast, onNavigate }) => {
             <ScoreBar
               label="Discipline Budgétaire"
               score={discipline_score || 0}
-              maxScore={35}
+              maxScore={30}
               color="from-blue-500 to-blue-600"
               icon="📊"
               description="Respectes-tu tes enveloppes ?"
@@ -309,17 +288,17 @@ const YoonuScorePage = ({ toast, onNavigate }) => {
               description="Dépenses-tu moins que tu gagnes ?"
             />
             <ScoreBar
-              label="Amélioration Continue"
+              label="Amélioration & Engagement"
               score={improvement_score || 0}
-              maxScore={10}
+              maxScore={20}
               color="from-amber-500 to-orange-600"
               icon="🚀"
-              description="Progresses-tu par rapport au mois dernier ?"
+              description="Progression + objectifs, tontines, dettes"
             />
 
             <div className="mt-4 p-4 bg-gray-50 rounded-lg">
               <p className="text-xs text-gray-600 leading-relaxed">
-                💡 <strong>Comment progresser ?</strong> Aligne tes dépenses avec tes valeurs prioritaires et respecte tes budgets par enveloppe.
+                💡 <strong>Comment progresser ?</strong> Aligne tes dépenses avec tes valeurs et maintiens une bonne discipline financière.
               </p>
             </div>
           </div>
@@ -383,7 +362,6 @@ const YoonuScorePage = ({ toast, onNavigate }) => {
                 const prevScore = idx > 0 ? arr[idx - 1].total_score : null;
                 const change = prevScore !== null ? h.total_score - prevScore : 0;
                 const conf = getScoreConfig(h.total_score);
-
                 return (
                   <div key={idx} className="bg-gray-50 rounded-xl p-4 text-center hover:bg-gray-100 transition-colors">
                     <p className="text-xs text-gray-600 mb-1">{h.month}</p>
