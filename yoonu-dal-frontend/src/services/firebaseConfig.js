@@ -62,7 +62,7 @@ export const requestNotificationPermission = async () => {
 
       // ✅ Envoyer le token au backend Django
       try {
-        const authToken = localStorage.getItem('access_token');
+        const authToken = localStorage.getItem('yoonu_dal_token');
         if (authToken) {
           const res = await fetch('https://yoonudal-api.onrender.com/api/register-fcm-token/', {
             method: 'POST',
