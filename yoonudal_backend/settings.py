@@ -224,3 +224,7 @@ PAYDUNYA_PUBLIC_KEY = os.environ.get('PAYDUNYA_PUBLIC_KEY')
 PAYDUNYA_PRIVATE_KEY = os.environ.get('PAYDUNYA_PRIVATE_KEY')
 PAYDUNYA_TOKEN = os.environ.get('PAYDUNYA_TOKEN')
 PAYDUNYA_MODE = os.environ.get('PAYDUNYA_MODE', 'test')
+
+
+FIREBASE_PROJECT_ID = 'yoonu-dal'
+FIREBASE_SERVICE_ACCOUNT_PATH = '/etc/secrets/firebase-service-account.json'
