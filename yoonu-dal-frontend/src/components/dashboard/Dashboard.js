@@ -238,6 +238,9 @@ setScoreHistory(finalScoreHistory);
   // ── Message basé sur le score ──────────────────────────────────
 
   const getIntelligentMessage = () => {
+    console.log('scoreHistory:', JSON.stringify(scoreHistory));
+  console.log('selectedMonth:', selectedMonth);
+  console.log('isCurrentMonth:', isCurrentMonth);
   // Score : mois courant ou mois historique depuis scoreHistory
   let currentScore = score?.total_score || 0;
 
