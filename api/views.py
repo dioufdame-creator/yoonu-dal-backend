@@ -3104,26 +3104,22 @@ def get_yoonu_score(request):
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def get_score_history(request):
-    """Récupérer l'historique des scores (6 derniers mois)"""
     user = request.user
-
     try:
         history = ScoreHistory.objects.filter(user=user).order_by('-month')[:6]
-
+        MOIS_FR = ['', 'Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Juin',
+                   'Juil', 'Août', 'Sep', 'Oct', 'Nov', 'Déc']
         data = [{
-            'month': h.month.strftime('%B %Y'),
+            'month': f"{MOIS_FR[h.month.month]} {h.month.year}",
             'total_score': h.total_score,
             'alignment': float(h.alignment_score),
             'discipline': float(h.discipline_score),
             'stability': float(h.stability_score),
             'improvement': float(h.improvement_score)
-        } for h in reversed(list(history))]  # Ordre chronologique
-
+        } for h in reversed(list(history))]
         return Response({'history': data})
     except Exception as e:
-        return Response({
-            'error': f'Erreur historique: {str(e)}'
-        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        return Response({'error': str(e)}, status=500)
 
 
 # api/views.py - AJOUTER ces endpoints
