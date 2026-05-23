@@ -109,14 +109,9 @@ urlpatterns = [
     # Mois disponibles
     path('available-months/', views.available_months, name='available_months'),
     
-    path('notifications/register-token/', notification_views.register_fcm_token),
-    path('notifications/check/', notification_views.check_and_notify),
-    path('notifications/test/', notification_views.test_notification),
 
     path('register-fcm-token/', register_fcm_token),
     path('unregister-fcm-token/', unregister_fcm_token),
-    path('notifications/check/', check_and_notify),
-    path('notifications/test/', test_notification),
 
     path('goals/<int:goal_id>/contributions/', views.goal_payments),
     path('goals/contributions/<int:payment_id>/', views.delete_goal_payment),
