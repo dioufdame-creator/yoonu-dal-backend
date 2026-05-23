@@ -307,7 +307,7 @@ function App() {
                       type="text"
                       name="username"
                       className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all"
-                      placeholder="votre_nom"
+                      placeholder="votre nom"
                       required
                     />
                   </div>
