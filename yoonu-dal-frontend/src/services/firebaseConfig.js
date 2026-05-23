@@ -1,5 +1,4 @@
 // src/services/firebaseConfig.js
-
 import { initializeApp } from 'firebase/app';
 import { getMessaging, getToken, onMessage } from 'firebase/messaging';
 
@@ -12,6 +11,7 @@ const firebaseConfig = {
   appId: "1:276703708612:web:29b4dc8d50afed4a255091"
 };
 
+// ✅ Clé publique VAPID correcte
 const VAPID_KEY = "BJPBFpFCNquZ7_ReC0JwzfCKmIIW_QXe20TtDPirUx0vM3ozKCKttAcjV-2nSoPFDtXS7H4CYJKdK9mhRvjcTcg";
 
 const app = initializeApp(firebaseConfig);
@@ -59,8 +59,34 @@ export const requestNotificationPermission = async () => {
 
     if (token) {
       console.log('✅ Token:', token.substring(0, 30) + '...');
+
+      // ✅ Envoyer le token au backend Django
+      try {
+        const authToken = localStorage.getItem('access_token');
+        if (authToken) {
+          const res = await fetch('https://yoonudal-api.onrender.com/api/register-fcm-token/', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${authToken}`
+            },
+            body: JSON.stringify({ token })
+          });
+          if (res.ok) {
+            console.log('✅ Token FCM sauvegardé backend');
+          } else {
+            console.log('⚠️ Erreur sauvegarde token backend:', res.status);
+          }
+        } else {
+          console.log('⚠️ Pas de token auth — token FCM non sauvegardé');
+        }
+      } catch (e) {
+        console.log('⚠️ Erreur sauvegarde token:', e.message);
+      }
+
       return token;
     }
+
     console.log('⚠️ Token vide');
     return null;
 
