@@ -6,6 +6,8 @@ from . import views
 from . import payment_views
 from . import export_views
 from . import notification_views
+from .notification_views import register_fcm_token, unregister_fcm_token, check_and_notify, test_notification
+
 
 urlpatterns = [
     # API racine
@@ -110,6 +112,11 @@ urlpatterns = [
     path('notifications/register-token/', notification_views.register_fcm_token),
     path('notifications/check/', notification_views.check_and_notify),
     path('notifications/test/', notification_views.test_notification),
+
+    path('register-fcm-token/', register_fcm_token),
+    path('unregister-fcm-token/', unregister_fcm_token),
+    path('notifications/check/', check_and_notify),
+    path('notifications/test/', test_notification),
 
     path('goals/<int:goal_id>/contributions/', views.goal_payments),
     path('goals/contributions/<int:payment_id>/', views.delete_goal_payment),
