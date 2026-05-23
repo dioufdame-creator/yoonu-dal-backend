@@ -28,7 +28,7 @@ const NotificationManager = ({ user, toast }) => {
       const token = await requestNotificationPermission();
       if (!token) return;
 
-      await API.post('/notifications/register-token/', { token });
+      await API.post('/register-fcm-token/', { token });
       console.log('✅ Token FCM enregistré');
 
       await API.post('/notifications/check/');
