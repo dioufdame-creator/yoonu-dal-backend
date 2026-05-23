@@ -128,7 +128,7 @@ const DashboardV7 = ({ toast, auth, onNavigate, user }) => {
         API.get(`/meta-envelopes/${monthParam}`).catch(() => null),
         API.get(`/expenses/${monthParam}`).catch(() => null),
         API.get(`/incomes/${monthParam}`).catch(() => null),
-        API.get('/score-history/').catch(() => null)
+        API.get('/yoonu-score/history/').catch(() => null)
       ]);
 
       if (scoreRes?.data) setScore(scoreRes.data);
@@ -159,15 +159,15 @@ const DashboardV7 = ({ toast, auth, onNavigate, user }) => {
       }
 
       let historyMonths = timeFilter === '3m' ? 3 : timeFilter === '1y' ? 12 : 6;
-      let finalScoreHistory = scoreHistoryRes?.data?.history
-        ? scoreHistoryRes.data.history.slice(-historyMonths)
-        : generateMockScoreHistory(score?.total_score || 0, historyMonths);
-      setScoreHistory(finalScoreHistory);
-
-      const finalFinancialHistory = generateMockFinancialHistory(metricsRes?.data, historyMonths);
-      setFinancialHistory(finalFinancialHistory);
-      setTrends(calculateTrends(finalScoreHistory, finalFinancialHistory));
-
+      let finalScoreHistory = scoreHistoryRes?.data?.history && scoreHistoryRes.data.history.length > 0
+  ? scoreHistoryRes.data.history.slice(-historyMonths).map(h => ({
+      ...h,
+      score: h.total_score || h.score || 0,
+      total_score: h.total_score || h.score || 0,
+    }))
+  : generateMockScoreHistory(score?.total_score || 0, historyMonths);
+setScoreHistory(finalScoreHistory);
+      
       // Projection uniquement pour le mois courant
       if (metricsRes?.data?.is_current_month && incomesRes?.data && expensesRes?.data) {
         const now = new Date();
