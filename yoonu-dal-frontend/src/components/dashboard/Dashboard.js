@@ -238,30 +238,46 @@ const DashboardV7 = ({ toast, auth, onNavigate, user }) => {
   // ── Message basé sur le score ──────────────────────────────────
 
   const getIntelligentMessage = () => {
-    const currentScore = score?.total_score || 0;
-    const totalIncome = metrics?.monthly_income || 0;
-    const totalExpenses = metrics?.total_expenses || 0;
-    const balance = totalIncome - totalExpenses;
+  // Score : mois courant ou mois historique depuis scoreHistory
+  let currentScore = score?.total_score || 0;
 
-    if (!isCurrentMonth) {
-      return {
-        icon: '📚',
-        text: `Bilan ${metrics?.month_label || 'du mois'} : solde ${balance >= 0 ? '+' : ''}${formatCurrency(balance)} FCFA. Score : ${currentScore}/100.`,
-      };
-    }
+  if (!isCurrentMonth && scoreHistory.length > 0) {
+    const MOIS_MAP = {
+      'Jan': '01', 'Fév': '02', 'Mar': '03', 'Avr': '04',
+      'Mai': '05', 'Juin': '06', 'Juil': '07', 'Août': '08',
+      'Sep': '09', 'Oct': '10', 'Nov': '11', 'Déc': '12'
+    };
+    const [selYear, selMonth] = selectedMonth.split('-');
+    const histEntry = scoreHistory.find(h => {
+      if (!h.month) return false;
+      const parts = h.month.split(' ');
+      return MOIS_MAP[parts[0]] === selMonth && parts[1] === selYear;
+    });
+    if (histEntry) currentScore = histEntry.total_score || 0;
+  }
 
-    if (currentScore === 0) return { icon: '🎯', text: 'Enregistre tes dépenses et définis tes valeurs pour activer ton Score Yoonu Dal.' };
-    if (currentScore >= 80) return { icon: '🏆', text: `Maître Yoonu ! Tes finances sont parfaitement alignées avec tes valeurs. Score : ${currentScore}/100.` };
-    if (currentScore >= 60) return { icon: '🌳', text: `Aligné ! Tes dépenses reflètent bien tes valeurs. Continue sur cette lancée. Score : ${currentScore}/100.` };
-    if (currentScore >= 40) {
-      const tip = balance < 0
-        ? `Tu as un déficit de ${formatCurrency(Math.abs(balance))} à combler.`
-        : `Tu épargnes ${formatCurrency(balance)} ce mois.`;
-      return { icon: '🌿', text: `En chemin. ${tip} Score : ${currentScore}/100.` };
-    }
-    return { icon: '🌱', text: `Débutant. Commence par enregistrer tes dépenses régulièrement et définis tes valeurs. Score : ${currentScore}/100.` };
-  };
+  const totalIncome = metrics?.monthly_income || 0;
+  const totalExpenses = metrics?.total_expenses || 0;
+  const balance = totalIncome - totalExpenses;
 
+  if (!isCurrentMonth) {
+    return {
+      icon: '📚',
+      text: `Bilan ${metrics?.month_label || 'du mois'} : solde ${balance >= 0 ? '+' : ''}${formatCurrency(balance)} FCFA. Score : ${currentScore}/100.`,
+    };
+  }
+
+  if (currentScore === 0) return { icon: '🎯', text: 'Enregistre tes dépenses et définis tes valeurs pour activer ton Score Yoonu Dal.' };
+  if (currentScore >= 80) return { icon: '🏆', text: `Maître Yoonu ! Tes finances sont parfaitement alignées avec tes valeurs. Score : ${currentScore}/100.` };
+  if (currentScore >= 60) return { icon: '🌳', text: `Aligné ! Tes dépenses reflètent bien tes valeurs. Continue sur cette lancée. Score : ${currentScore}/100.` };
+  if (currentScore >= 40) {
+    const tip = balance < 0
+      ? `Tu as un déficit de ${formatCurrency(Math.abs(balance))} à combler.`
+      : `Tu épargnes ${formatCurrency(balance)} ce mois.`;
+    return { icon: '🌿', text: `En chemin. ${tip} Score : ${currentScore}/100.` };
+  }
+  return { icon: '🌱', text: `Débutant. Commence par enregistrer tes dépenses régulièrement et définis tes valeurs. Score : ${currentScore}/100.` };
+};
   // ── Générateurs ────────────────────────────────────────────────
 
   const ComparisonBadge = ({ current, previous, inverse = false }) => {
