@@ -24,27 +24,21 @@ from decimal import Decimal
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
 def register_fcm_token(request):
-    """Enregistre le token FCM de l'utilisateur"""
     token = request.data.get('token')
-
     if not token:
         return Response({'error': 'Token requis'}, status=400)
-
     profile = request.user.profile
     profile.fcm_token = token
     profile.save(update_fields=['fcm_token'])
-
     return Response({'message': 'Token enregistré', 'success': True})
 
 
 @api_view(['DELETE'])
 @permission_classes([IsAuthenticated])
 def unregister_fcm_token(request):
-    """Supprime le token FCM (déconnexion)"""
     profile = request.user.profile
     profile.fcm_token = None
     profile.save(update_fields=['fcm_token'])
-
     return Response({'message': 'Token supprimé'})
 
 
@@ -53,45 +47,50 @@ def unregister_fcm_token(request):
 # ==========================================
 
 def send_fcm_notification(token, title, body, data=None, url='/'):
-    """
-    Envoie une notification push via FCM HTTP V1
-    """
     if not token:
+        return False
+
+    access_token = get_access_token()
+    if not access_token:
+        print('Erreur FCM: pas d\'access token')
         return False
 
     fcm_url = f"https://fcm.googleapis.com/v1/projects/{settings.FIREBASE_PROJECT_ID}/messages:send"
 
     headers = {
-        'Authorization': f'Bearer {get_access_token()}',
+        'Authorization': f'Bearer {access_token}',
         'Content-Type': 'application/json',
     }
 
+    # ✅ Format corrigé — webpush uniquement, pas de notification top-level
     message = {
         'message': {
             'token': token,
-            'notification': {
-                'title': title,
-                'body': body,
-            },
             'webpush': {
                 'notification': {
                     'title': title,
                     'body': body,
-                    'icon': '/logo192.png',
-                    'badge': '/logo192.png',
-                    'vibrate': [200, 100, 200],
-                    'requireInteraction': False,
+                    'icon': 'https://yoonudal.com/logo192.png',
+                    'badge': 'https://yoonudal.com/logo192.png',
+                    'requireInteraction': True,
                 },
                 'fcm_options': {
                     'link': f'https://yoonudal.com{url}'
                 }
             },
-            'data': data or {}
+            'data': {
+                'title': title,
+                'body': body,
+                'url': url,
+                **(data or {})
+            }
         }
     }
 
     try:
         response = requests.post(fcm_url, headers=headers, json=message, timeout=10)
+        if response.status_code != 200:
+            print(f'Erreur FCM {response.status_code}: {response.text}')
         return response.status_code == 200
     except Exception as e:
         print(f'Erreur FCM: {e}')
@@ -99,9 +98,7 @@ def send_fcm_notification(token, title, body, data=None, url='/'):
 
 
 def get_access_token():
-    """Obtient un access token Google pour FCM V1"""
     try:
-        import google.auth
         import google.auth.transport.requests
         from google.oauth2 import service_account
 
@@ -123,10 +120,6 @@ def get_access_token():
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
 def check_and_notify(request):
-    """
-    Vérifie les conditions et envoie les notifications pertinentes.
-    Appelé au chargement de l'app ou manuellement.
-    """
     user = request.user
     profile = user.profile
     token = getattr(profile, 'fcm_token', None)
@@ -200,7 +193,7 @@ def check_and_notify(request):
                 )
                 if sent:
                     notifications_sent += 1
-                    break  # Max 1 alerte budget par check
+                    break
 
     # ── 4. Contribution tontine due ──────────────────────────────
     days_remaining = days_in_month - day
@@ -256,7 +249,6 @@ def check_and_notify(request):
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
 def test_notification(request):
-    """Envoie une notification de test"""
     user = request.user
     token = getattr(user.profile, 'fcm_token', None)
 
