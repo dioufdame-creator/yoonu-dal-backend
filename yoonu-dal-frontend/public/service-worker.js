@@ -83,23 +83,6 @@ self.addEventListener('fetch', (event) => {
   );
 });
 
-// Notifications push
-self.addEventListener('push', (event) => {
-  const data = event.data ? event.data.json() : {};
-  const title = data.title || 'Yoonu Dal';
-  const options = {
-    body: data.body || 'Tu as une nouvelle notification',
-    icon: '/logo192.png',
-    badge: '/logo192.png',
-    vibrate: [200, 100, 200],
-    data: { url: data.url || '/' },
-    actions: data.actions || []
-  };
-
-  event.waitUntil(
-    self.registration.showNotification(title, options)
-  );
-});
 
 // Clic sur notification — ouvrir l'app
 self.addEventListener('notificationclick', (event) => {
