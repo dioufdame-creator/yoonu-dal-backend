@@ -12,7 +12,7 @@ const firebaseConfig = {
 };
 
 // ✅ Clé publique VAPID correcte
-const VAPID_KEY = "BJPBFpFCNquZ7_ReC0JwzfCKmIIW_QXe20TtDPirUx0vM3ozKCKttAcjV-2nSoPFDtXS7H4CYJKdK9mhRvjcTcg";
+const VAPID_KEY = "BFvkVIl3w5PPjtJ7lHuo2MVSP2wN17FJYj3-UbdrzAmurBSMx0VFQlfDuJLyC3ZZdsSuztUXMA0T9pxp-lgr8dM";
 
 const app = initializeApp(firebaseConfig);
 const messaging = getMessaging(app);
