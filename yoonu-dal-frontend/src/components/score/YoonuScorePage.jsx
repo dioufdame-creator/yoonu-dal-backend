@@ -2,45 +2,45 @@ import React, { useState, useEffect } from 'react';
 import API from '../../services/api';
 
 const getScoreConfig = (score) => {
-  if (score >= 80) return {
+  if (score >= 85) return {
     gradient: 'from-green-500 to-emerald-600',
     label: 'Maître Yoonu',
     emoji: '🏆',
-    message: "Excellence ! Tu maîtrises parfaitement l'art de Yoonu Dal.",
+    message: "Excellence ! Moins de 5% des utilisateurs atteignent ce niveau.",
     nextLevel: null,
     nextMin: null,
   };
-  if (score >= 60) return {
+  if (score >= 70) return {
     gradient: 'from-blue-500 to-indigo-600',
     label: 'Aligné',
     emoji: '🌳',
-    message: 'Très bien ! Tes finances sont alignées avec tes valeurs.',
+    message: 'Solide ! Tu maîtrises les bases et construis ton avenir.',
     nextLevel: 'Maître Yoonu',
-    nextMin: 80,
+    nextMin: 85,
   };
-  if (score >= 40) return {
+  if (score >= 50) return {
     gradient: 'from-amber-500 to-orange-600',
     label: 'En chemin',
     emoji: '🌿',
-    message: "Tu progresses. Continue d'aligner tes dépenses avec tes valeurs.",
+    message: "Tu progresses. Des zones à améliorer pour atteindre le niveau supérieur.",
     nextLevel: 'Aligné',
-    nextMin: 60,
+    nextMin: 70,
   };
-  if (score >= 1) return {
+  if (score >= 30) return {
     gradient: 'from-red-500 to-pink-600',
     label: 'Débutant',
     emoji: '🌱',
-    message: "C'est le début du voyage. Chaque pas compte !",
+    message: "Les fondations se posent. Continue d'enregistrer tes dépenses.",
     nextLevel: 'En chemin',
-    nextMin: 40,
+    nextMin: 50,
   };
   return {
     gradient: 'from-gray-400 to-gray-500',
     label: 'Non évalué',
     emoji: '⬜',
-    message: 'Enregistre tes dépenses pour activer ton score Yoonu Dal.',
+    message: 'Enregistre tes dépenses et revenus pour activer ton score.',
     nextLevel: 'Débutant',
-    nextMin: 1,
+    nextMin: 30,
   };
 };
 
@@ -70,7 +70,7 @@ const YoonuScorePage = ({ toast, onNavigate }) => {
   const recalculateScore = async () => {
     try {
       toast?.showInfo('Recalcul du score en cours...');
-      await API.post('/yoonu-score/calculate/');
+      await API.get('/yoonu-score/');
       toast?.showSuccess('Score recalculé avec succès');
       loadData();
     } catch (error) {
@@ -114,7 +114,8 @@ const YoonuScorePage = ({ toast, onNavigate }) => {
     alignment_score,
     discipline_score,
     stability_score,
-    improvement_score,
+    improvement_score,  // construction patrimoniale
+    engagement_score,   // régularité
     alignment_details,
     score_change
   } = score;
@@ -217,15 +218,15 @@ const YoonuScorePage = ({ toast, onNavigate }) => {
                   </p>
                   <div className="w-full bg-white bg-opacity-30 rounded-full h-2 mt-2 overflow-hidden">
                     <div className="h-full bg-white rounded-full transition-all duration-1000"
-                      style={{ width: `${Math.min(((total_score - (config.nextMin - 20)) / 20) * 100, 100)}%` }} />
+                      style={{ width: `${Math.min(((total_score - (config.nextMin - 15)) / 15) * 100, 100)}%` }} />
                   </div>
                 </div>
               )}
 
-              {!config.nextMin && total_score >= 80 && (
+              {!config.nextMin && total_score >= 85 && (
                 <div className="bg-white bg-opacity-20 rounded-xl p-4">
                   <p className="text-sm font-semibold">🏆 Niveau maximum atteint !</p>
-                  <p className="text-xs opacity-75 mt-1">Tu es au sommet de Yoonu Dal</p>
+                  <p className="text-xs opacity-75 mt-1">Tu es dans le top 5% des utilisateurs Yoonu Dal</p>
                 </div>
               )}
             </div>
@@ -239,7 +240,7 @@ const YoonuScorePage = ({ toast, onNavigate }) => {
             <div>
               <p className="font-semibold text-amber-900 mb-1">Comment activer ton score ?</p>
               <p className="text-sm text-amber-800 mb-3">
-                Ton score se calcule à partir de tes dépenses du mois. Il faut aussi avoir défini tes valeurs et configuré tes enveloppes budgétaires.
+                Ton score nécessite : des valeurs définies, des dépenses ce mois, et un revenu enregistré.
               </p>
               <div className="flex flex-wrap gap-2">
                 <button onClick={() => onNavigate('expenses')}
@@ -258,15 +259,15 @@ const YoonuScorePage = ({ toast, onNavigate }) => {
         {/* Grid composantes */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
 
-          {/* Composantes — maxScores corrigés selon le backend */}
+          {/* Composantes */}
           <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 lg:p-8">
             <h3 className="text-xl font-bold text-gray-900 mb-2">📊 Détail des composantes</h3>
-            <p className="text-xs text-gray-400 mb-6">Total sur 100 pts = 30 + 30 + 20 + 20</p>
+            <p className="text-xs text-gray-400 mb-6">Total sur 100 pts = 25 + 25 + 25 + 15 + 10</p>
 
             <ScoreBar
               label="Alignement Valeurs"
               score={alignment_score || 0}
-              maxScore={30}
+              maxScore={25}
               color="from-purple-500 to-purple-600"
               icon="✨"
               description="Tes dépenses reflètent-elles tes valeurs ?"
@@ -274,7 +275,7 @@ const YoonuScorePage = ({ toast, onNavigate }) => {
             <ScoreBar
               label="Discipline Budgétaire"
               score={discipline_score || 0}
-              maxScore={30}
+              maxScore={25}
               color="from-blue-500 to-blue-600"
               icon="📊"
               description="Respectes-tu tes enveloppes ?"
@@ -282,30 +283,51 @@ const YoonuScorePage = ({ toast, onNavigate }) => {
             <ScoreBar
               label="Stabilité Financière"
               score={stability_score || 0}
-              maxScore={20}
+              maxScore={25}
               color="from-green-500 to-green-600"
               icon="🛡️"
-              description="Dépenses-tu moins que tu gagnes ?"
+              description="Épargnes-tu au moins 10% de tes revenus ?"
             />
             <ScoreBar
-              label="Amélioration & Engagement"
+              label="Construction Patrimoniale"
               score={improvement_score || 0}
-              maxScore={20}
+              maxScore={15}
               color="from-amber-500 to-orange-600"
-              icon="🚀"
-              description="Progression + objectifs, tontines, dettes"
+              icon="🏗️"
+              description="Objectifs, tontines, dettes"
+            />
+            <ScoreBar
+              label="Régularité & Engagement"
+              score={engagement_score || 0}
+              maxScore={10}
+              color="from-pink-500 to-rose-600"
+              icon="📅"
+              description="Assiduité dans le suivi financier"
             />
 
-            <div className="mt-4 p-4 bg-gray-50 rounded-lg">
-              <p className="text-xs text-gray-600 leading-relaxed">
-                💡 <strong>Comment progresser ?</strong> Aligne tes dépenses avec tes valeurs et maintiens une bonne discipline financière.
-              </p>
+            {/* Niveaux */}
+            <div className="mt-6 p-4 bg-gray-50 rounded-xl">
+              <p className="text-xs font-semibold text-gray-700 mb-3">Niveaux</p>
+              <div className="space-y-1.5">
+                {[
+                  { min: 85, label: 'Maître Yoonu 🏆', color: 'text-green-600' },
+                  { min: 70, label: 'Aligné 🌳', color: 'text-blue-600' },
+                  { min: 50, label: 'En chemin 🌿', color: 'text-amber-600' },
+                  { min: 30, label: 'Débutant 🌱', color: 'text-red-600' },
+                ].map(level => (
+                  <div key={level.min} className={`flex justify-between text-xs ${total_score >= level.min ? 'font-bold' : 'text-gray-400'}`}>
+                    <span className={total_score >= level.min ? level.color : ''}>{level.label}</span>
+                    <span>{level.min}+ pts</span>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
 
           {/* Alignement valeurs */}
           <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 lg:p-8">
-            <h3 className="text-xl font-bold text-gray-900 mb-6">💎 Tes valeurs en action</h3>
+            <h3 className="text-xl font-bold text-gray-900 mb-2">💎 Tes valeurs en action</h3>
+            <p className="text-xs text-gray-400 mb-6">Part de tes dépenses par valeur déclarée</p>
 
             {alignment_details && Object.keys(alignment_details).length > 0 ? (
               <div className="space-y-4">
@@ -318,7 +340,7 @@ const YoonuScorePage = ({ toast, onNavigate }) => {
                         <div className="flex justify-between mb-1">
                           <span className="text-sm font-semibold text-gray-700 capitalize">{value}</span>
                           <span className={`text-sm font-bold ${
-                            pct >= 25 ? 'text-green-600' : pct >= 15 ? 'text-amber-600' : 'text-red-600'
+                            pct >= 20 ? 'text-green-600' : pct >= 10 ? 'text-amber-600' : 'text-red-600'
                           }`}>
                             {pct.toFixed(1)}%
                           </span>
@@ -326,19 +348,30 @@ const YoonuScorePage = ({ toast, onNavigate }) => {
                         <div className="w-full bg-gray-100 rounded-full h-2.5 overflow-hidden">
                           <div
                             className={`h-full rounded-full transition-all duration-1000 ${
-                              pct >= 25 ? 'bg-gradient-to-r from-green-500 to-green-600' :
-                              pct >= 15 ? 'bg-gradient-to-r from-amber-500 to-orange-600' :
+                              pct >= 20 ? 'bg-gradient-to-r from-green-500 to-green-600' :
+                              pct >= 10 ? 'bg-gradient-to-r from-amber-500 to-orange-600' :
                               'bg-gradient-to-r from-red-500 to-red-600'
                             }`}
-                            style={{ width: `${Math.min(pct, 100)}%` }}
+                            style={{ width: `${Math.min(pct * 2, 100)}%` }}
                           />
                         </div>
                       </div>
                     );
                   })}
-                <p className="text-xs text-gray-500 mt-4">
-                  Vert ≥25% · Orange ≥15% · Rouge &lt;15% de tes dépenses
-                </p>
+
+                <div className="mt-4 p-3 bg-gray-50 rounded-lg">
+                  <p className="text-xs text-gray-500">
+                    Vert ≥20% · Orange ≥10% · Rouge &lt;10% de tes dépenses
+                  </p>
+                </div>
+
+                {/* Conseil personnalisé */}
+                <div className="mt-2 p-3 bg-blue-50 rounded-lg border border-blue-100">
+                  <p className="text-xs text-blue-800 font-medium mb-1">💡 Pour progresser</p>
+                  <p className="text-xs text-blue-700">
+                    Ta valeur prioritaire doit représenter au moins 20% de tes dépenses pour le score maximum.
+                  </p>
+                </div>
               </div>
             ) : (
               <div className="text-center py-8">
@@ -384,7 +417,7 @@ const YoonuScorePage = ({ toast, onNavigate }) => {
         <div className="mt-6 bg-gradient-to-r from-green-600 to-emerald-600 rounded-2xl p-6 lg:p-8 text-white text-center">
           <h3 className="text-2xl font-bold mb-2">💪 Améliore ton score !</h3>
           <p className="opacity-90 mb-6 max-w-2xl mx-auto">
-            Aligne tes dépenses avec tes valeurs et maintiens une bonne discipline financière
+            Épargne au moins 10% de tes revenus, respecte tes enveloppes, et contribue à tes objectifs chaque mois.
           </p>
           <div className="flex flex-wrap gap-3 justify-center">
             <button onClick={() => onNavigate('expenses')}
@@ -394,6 +427,10 @@ const YoonuScorePage = ({ toast, onNavigate }) => {
             <button onClick={() => onNavigate('envelopes')}
               className="bg-white bg-opacity-20 text-white px-6 py-3 rounded-xl font-semibold hover:bg-opacity-30 transition-all">
               📁 Ajuster mes budgets
+            </button>
+            <button onClick={() => onNavigate('goals')}
+              className="bg-white bg-opacity-20 text-white px-6 py-3 rounded-xl font-semibold hover:bg-opacity-30 transition-all">
+              🎯 Mes objectifs
             </button>
           </div>
         </div>
