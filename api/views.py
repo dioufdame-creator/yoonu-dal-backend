@@ -3087,7 +3087,8 @@ def get_yoonu_score(request):
             'alignment_score': score_result.get('alignment_score', 0),
             'discipline_score': score_result.get('discipline_score', 0),
             'stability_score': score_result.get('stability_score', 0),
-            'improvement_score': score_result.get('improvement_score', 0) + score_result.get('engagement_score', 0),
+            'improvement_score': score_result.get('improvement_score', 0),
+            'engagement_score': score_result.get('engagement_score', 0),
             'score_change': score_result.get('score_change', 0),
             'level': score_result.get('level', 'Débutant'),
             'emoji': score_result.get('emoji', '🌱')
