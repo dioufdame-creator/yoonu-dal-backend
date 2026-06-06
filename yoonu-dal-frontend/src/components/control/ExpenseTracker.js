@@ -476,7 +476,7 @@ const ExpenseTrackerPremium = ({ toast, onNavigate, auth, user }) => {
                 <label className="block text-sm font-medium text-gray-700 mb-2">Description *</label>
                 <input type="text" value={form.description}
                   onChange={(e) => setForm({...form, description: e.target.value})}
-                  placeholder="Ex: Courses Auchan"
+                  placeholder="Ex: Courses"
                   className="w-full px-4 py-3 text-sm border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent"
                   required />
               </div>
