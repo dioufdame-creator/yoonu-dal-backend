@@ -22,7 +22,7 @@ const Home = ({ onNavigate, toast, auth }) => {
     {
       title: "Choix",
       problem: "Comment mieux gérer mon budget ?", 
-      solution: "Les 4 enveloppes : 50% essentiels, 30% plaisirs, 15% projets, 5% libération",
+      solution: "Les 4 enveloppes : 50% essentiels, 30% plaisirs, 20% projets, 0% libération",
       icon: "🎯",
       color: "from-[#F97316] to-[#C2410C]" // Coral Yoonu Dal
     },
@@ -162,11 +162,11 @@ const Home = ({ onNavigate, toast, auth }) => {
                       <div className="text-sm text-gray-700 font-medium">Plaisirs</div>
                     </div>
                     <div className="bg-orange-50 border-2 border-orange-200 p-4 rounded-lg text-center">
-                      <div className="text-2xl font-bold text-[#F97316]">15%</div>
+                      <div className="text-2xl font-bold text-[#F97316]">20%</div>
                       <div className="text-sm text-gray-700 font-medium">Projets</div>
                     </div>
                     <div className="bg-yellow-50 border-2 border-yellow-200 p-4 rounded-lg text-center">
-                      <div className="text-2xl font-bold text-[#CA8A04]">5%</div>
+                      <div className="text-2xl font-bold text-[#CA8A04]">0%</div>
                       <div className="text-sm text-gray-700 font-medium">Libération</div>
                     </div>
                   </div>
