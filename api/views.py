@@ -220,6 +220,12 @@ def register_user(request):
             first_name=data['first_name'],
             last_name=data['last_name']
         )
+        # Activer trial 30 jours automatiquement
+        try:
+            profile = user.profile
+            profile.start_trial()
+        except Exception:
+            pass
 
         return Response({
             'message': 'Utilisateur créé avec succès',
