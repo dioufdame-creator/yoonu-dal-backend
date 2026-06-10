@@ -663,22 +663,7 @@ setScoreHistory(finalScoreHistory);
                         <span className="text-xs font-medium text-gray-900">{item.label}</span>
                       </button>
                     ))}
-                    {/* Bouton debug notifications — temporaire */}
-                    <button
-                      onClick={async () => {
-                        try {
-                          const mod = await import('../../services/firebaseConfig');
-                          const token = await mod.requestNotificationPermission();
-                          alert('Token: ' + (token ? token.substring(0, 40) + '...' : 'NULL - Firebase échoue'));
-                        } catch(e) {
-                          alert('Erreur: ' + e.message);
-                        }
-                      }}
-                      className="w-full flex items-center gap-2.5 p-2 rounded-lg hover:bg-gray-50 transition-colors text-left border border-dashed border-gray-300"
-                    >
-                      <span className="text-lg">🔔</span>
-                      <span className="text-xs font-medium text-gray-500">Debug notifs</span>
-                    </button>
+                    
                   </div>
                 </div>
               </div>
