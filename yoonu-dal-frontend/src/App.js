@@ -307,7 +307,7 @@ function App() {
                       type="text"
                       name="username"
                       className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all"
-                      placeholder="votre nom"
+                      placeholder="votre nom d'utilisateur"
                       required
                     />
                   </div>
@@ -728,6 +728,16 @@ function App() {
           <AlertsBadge onClick={() => handleNavigate('alerts')} />
         ) : null}
       />
+
+      {/* ✅ Bandeau phase test */}
+      {isAuthenticated && (
+        <div className="bg-amber-50 border-b border-amber-200 px-4 py-2 text-center">
+          <p className="text-xs text-amber-800 font-medium">
+            🧪 Phase test — Merci de tester Yoonu Dal ! Partage tes retours sur le groupe WhatsApp.
+          </p>
+        </div>
+      )}
+
       <div className="flex-grow">
         {renderPage()}
       </div>
