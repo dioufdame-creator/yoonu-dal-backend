@@ -4299,4 +4299,15 @@ def delete_goal_payment(request, payment_id):
         return Response({'message': 'Contribution supprimée'})
     except GoalContribution.DoesNotExist:
         return Response({'error': 'Contribution non trouvée'}, status=status.HTTP_404_NOT_FOUND)
+
+@api_view(['DELETE'])
+@permission_classes([IsAuthenticated])
+def income_detail(request, income_id):
+    user = request.user
+    try:
+        income = get_object_or_404(Income, id=income_id, user=user)
+        income.delete()
+        return Response({'message': 'Revenu supprimé'})
+    except Exception as e:
+        return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
         
