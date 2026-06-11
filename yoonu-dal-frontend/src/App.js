@@ -57,14 +57,10 @@ function App() {
 
   useEffect(() => {
     const initializeAuth = async () => {
-      console.log('🔄 Initialisation de l\'authentification...');
       setIsLoading(true);
-      
       try {
         if (authService.isAuthenticated()) {
           const currentUser = authService.getCurrentUser();
-          console.log('✅ Token valide trouvé, utilisateur:', currentUser?.username);
-          
           if (currentUser) {
             setIsAuthenticated(true);
             setUser(currentUser);
@@ -74,22 +70,18 @@ function App() {
             setUser(null);
           }
         } else {
-          console.log('❌ Aucun token valide trouvé');
           authService.clearTokens();
           setIsAuthenticated(false);
           setUser(null);
         }
       } catch (error) {
-        console.error('🚨 Erreur initialisation auth:', error);
         authService.clearTokens();
         setIsAuthenticated(false);
         setUser(null);
         setAuthError('Erreur de connexion au serveur');
       } finally {
         setIsLoading(false);
-
         const path = window.location.pathname;
-
         if (path.startsWith('/payment/success')) {
           if (authService.isAuthenticated()) {
             setCurrentPage('payment-success');
@@ -101,44 +93,35 @@ function App() {
         } else if (path.startsWith('/join/')) {
           const code = path.replace('/join/', '').trim();
           if (code) {
-            console.log('🔗 Code d\'invitation détecté dans l\'URL:', code);
             setCurrentPage('tontine-invite');
             setPageParams({ code });
           }
         }
       }
     };
-
     initializeAuth();
   }, []);
 
   const handlePaymentSuccess = async () => {
     const updatedUser = await authService.getUserProfile();
-    if (updatedUser) {
-      setUser(updatedUser);
-    }
+    if (updatedUser) setUser(updatedUser);
   };
 
   const handleNavigate = (page, params = {}) => {
-    console.log('🧭 Navigation vers:', page);
-    
     const protectedPages = [
-      'dashboard', 'expenses', 'transactions', 'incomes', 'envelopes', 'tontines', 
+      'dashboard', 'expenses', 'transactions', 'incomes', 'envelopes', 'tontines',
       'tontine-detail', 'tontine-analysis',
       'profile', 'settings', 'score', 'alerts',
       'diagnostic', 'values'
     ];
-
     if (protectedPages.includes(page) && !isAuthenticated) {
       setCurrentPage('login');
       return;
     }
-
     if ((page === 'login' || page === 'register') && isAuthenticated) {
       setCurrentPage('dashboard');
       return;
     }
-
     setCurrentPage(page);
     setPageParams(params);
   };
@@ -146,15 +129,23 @@ function App() {
   const handleLogin = async (credentials) => {
     try {
       const result = await authService.login(credentials);
-      
+
+      // ✅ authService retourne {success, error} sans throw
+      if (!result.success) {
+        const errorMsg = result.error || 'Nom d\'utilisateur ou mot de passe incorrect.';
+        setAuthError(errorMsg);
+        showError(errorMsg);
+        return;
+      }
+
       if (result.user) {
         setIsAuthenticated(true);
         setUser(result.user);
-        
+        setAuthError(null);
+
         try {
           const response = await API.get('/onboarding/status/');
           const pendingCode = localStorage.getItem('pending_invite_code');
-
           if (response.data.onboarding_complete) {
             if (pendingCode) {
               localStorage.removeItem('pending_invite_code');
@@ -166,39 +157,35 @@ function App() {
             handleNavigate('onboarding');
           }
         } catch (error) {
-          console.error('Erreur vérification onboarding:', error);
           handleNavigate('dashboard');
         }
       }
     } catch (error) {
-      console.error('Erreur connexion:', error);
-      const errorMsg = error.response?.data?.detail || 'Nom d\'utilisateur ou mot de passe incorrect';
+      const errorMsg =
+        error.response?.data?.detail ||
+        error.response?.data?.non_field_errors?.[0] ||
+        error.message ||
+        'Nom d\'utilisateur ou mot de passe incorrect.';
       setAuthError(errorMsg);
       showError(errorMsg);
     }
   };
 
   const handleRegister = async (userData) => {
-    console.log('📝 Tentative d\'inscription pour:', userData.username);
     setAuthError(null);
-    
     try {
       const result = await authService.register(userData);
-      
       if (result.success) {
-        console.log('✅ Inscription réussie:', result.user?.username);
         setIsAuthenticated(true);
         setUser(result.user);
         handleNavigate('onboarding');
         return { success: true };
       } else {
-        console.log('❌ Inscription échouée:', result.error);
         setAuthError(result.error);
         showError(result.error || 'Erreur lors de l\'inscription');
         return { success: false, error: result.error };
       }
     } catch (error) {
-      console.error('🚨 Erreur lors de l\'inscription:', error);
       const errorMsg = 'Erreur de connexion au serveur lors de l\'inscription.';
       setAuthError(errorMsg);
       showError(errorMsg);
@@ -207,16 +194,11 @@ function App() {
   };
 
   const handleLogout = async () => {
-    console.log('🚪 Déconnexion...');
-    
     try {
       await authService.logout();
-      setIsAuthenticated(false);
-      setUser(null);
-      setAuthError(null);
-      setCurrentPage('home');
     } catch (error) {
-      console.error('🚨 Erreur lors de la déconnexion:', error);
+      // ignore
+    } finally {
       setIsAuthenticated(false);
       setUser(null);
       setAuthError(null);
@@ -224,24 +206,10 @@ function App() {
     }
   };
 
-  const clearAuthError = () => {
-    setAuthError(null);
-  };
+  const clearAuthError = () => setAuthError(null);
 
-  const toastMethods = {
-    showSuccess,
-    showError,
-    showWarning,
-    showInfo
-  };
-
-  const authMethods = {
-    onLogout: handleLogout,
-    isAuthenticated,
-    user,
-    authError,
-    clearAuthError
-  };
+  const toastMethods = { showSuccess, showError, showWarning, showInfo };
+  const authMethods = { onLogout: handleLogout, isAuthenticated, user, authError, clearAuthError };
 
   if (isLoading) {
     return (
@@ -263,12 +231,9 @@ function App() {
     switch (currentPage) {
       case 'home':
         return <Home onNavigate={handleNavigate} toast={toastMethods} auth={authMethods} />;
-      
+
       case 'login':
-        if (isAuthenticated) {
-          handleNavigate('dashboard');
-          return null;
-        }
+        if (isAuthenticated) { handleNavigate('dashboard'); return null; }
         return (
           <div className="min-h-screen bg-gradient-to-br from-slate-50 to-green-50 flex items-center justify-center p-4">
             <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-md w-full">
@@ -277,21 +242,22 @@ function App() {
                 <h2 className="text-3xl font-bold text-gray-900 mb-2">Connexion</h2>
                 <p className="text-gray-600">Bienvenue sur Yoonu Dal</p>
               </div>
-              
+
+              {/* ✅ Message d'erreur connexion */}
               {authError && (
-                <div className="mb-4 p-3 bg-red-50 border border-red-200 text-red-700 rounded-lg text-sm">
-                  {authError}
-                  <button 
-                    onClick={clearAuthError}
-                    className="ml-2 text-red-800 hover:text-red-900 font-semibold"
-                  >
-                    ✕
-                  </button>
+                <div className="mb-4 p-3 bg-red-50 border border-red-200 text-red-700 rounded-lg text-sm flex items-start gap-2">
+                  <span className="text-lg flex-shrink-0">⚠️</span>
+                  <div className="flex-1">
+                    <p className="font-semibold mb-0.5">Connexion impossible</p>
+                    <p>{authError}</p>
+                  </div>
+                  <button onClick={clearAuthError} className="text-red-400 hover:text-red-600 font-bold text-lg leading-none flex-shrink-0">✕</button>
                 </div>
               )}
-              
+
               <form onSubmit={async (e) => {
                 e.preventDefault();
+                setAuthError(null);
                 const formData = new FormData(e.target);
                 await handleLogin({
                   username: formData.get('username'),
@@ -300,56 +266,43 @@ function App() {
               }}>
                 <div className="space-y-4">
                   <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-2">
-                      Nom d'utilisateur
-                    </label>
-                    <input
-                      type="text"
-                      name="username"
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">Nom d'utilisateur</label>
+                    <input type="text" name="username"
                       className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all"
-                      placeholder="votre nom d'utilisateur"
-                      required
-                    />
+                      placeholder="votre nom d'utilisateur" required />
                   </div>
                   <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-2">
-                      Mot de passe
-                    </label>
-                    <input
-                      type="password"
-                      name="password"
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">Mot de passe</label>
+                    <input type="password" name="password"
                       className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all"
-                      placeholder="••••••••"
-                      required
-                    />
+                      placeholder="••••••••" required />
                   </div>
                 </div>
-                
-                <button
-                  type="submit"
-                  className="w-full mt-6 bg-gradient-to-r from-green-600 to-emerald-600 text-white py-4 rounded-xl font-bold text-lg hover:shadow-lg transform hover:scale-105 transition-all duration-200"
-                >
+                <button type="submit"
+                  className="w-full mt-6 bg-gradient-to-r from-green-600 to-emerald-600 text-white py-4 rounded-xl font-bold text-lg hover:shadow-lg transform hover:scale-105 transition-all duration-200">
                   Se connecter
                 </button>
               </form>
-              
-              <div className="mt-6 text-center">
+
+              {/* ✅ Mot de passe oublié */}
+              <div className="mt-4 text-center">
+                <a href="https://wa.me/221773569462?text=Bonjour%2C%20j%27ai%20oubli%C3%A9%20mon%20mot%20de%20passe%20Yoonu%20Dal."
+                  target="_blank" rel="noopener noreferrer"
+                  className="text-sm text-gray-500 hover:text-green-600 transition-colors">
+                  🔑 Mot de passe oublié ?
+                </a>
+              </div>
+
+              <div className="mt-4 text-center">
                 <p className="text-gray-600">
                   Pas encore de compte ?{' '}
-                  <button
-                    onClick={() => handleNavigate('register')}
-                    className="text-green-600 font-semibold hover:text-green-700"
-                  >
+                  <button onClick={() => handleNavigate('register')} className="text-green-600 font-semibold hover:text-green-700">
                     S'inscrire
                   </button>
                 </p>
               </div>
-              
               <div className="mt-4 text-center">
-                <button
-                  onClick={() => handleNavigate('home')}
-                  className="text-sm text-gray-500 hover:text-gray-700"
-                >
+                <button onClick={() => handleNavigate('home')} className="text-sm text-gray-500 hover:text-gray-700">
                   ← Retour à l'accueil
                 </button>
               </div>
@@ -358,10 +311,7 @@ function App() {
         );
 
       case 'register':
-        if (isAuthenticated) {
-          handleNavigate('dashboard');
-          return null;
-        }
+        if (isAuthenticated) { handleNavigate('dashboard'); return null; }
         return (
           <div className="min-h-screen bg-gradient-to-br from-slate-50 to-green-50 flex items-center justify-center p-4">
             <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-md w-full">
@@ -370,30 +320,24 @@ function App() {
                 <h2 className="text-3xl font-bold text-gray-900 mb-2">Inscription</h2>
                 <p className="text-gray-600">Rejoignez Yoonu Dal</p>
               </div>
-              
+
               {authError && (
-                <div className="mb-4 p-3 bg-red-50 border border-red-200 text-red-700 rounded-lg text-sm">
-                  {authError}
-                  <button 
-                    onClick={clearAuthError}
-                    className="ml-2 text-red-800 hover:text-red-900 font-semibold"
-                  >
-                    ✕
-                  </button>
+                <div className="mb-4 p-3 bg-red-50 border border-red-200 text-red-700 rounded-lg text-sm flex items-start gap-2">
+                  <span className="text-lg flex-shrink-0">⚠️</span>
+                  <div className="flex-1">{authError}</div>
+                  <button onClick={clearAuthError} className="text-red-400 hover:text-red-600 font-bold text-lg leading-none flex-shrink-0">✕</button>
                 </div>
               )}
-              
+
               <form onSubmit={async (e) => {
                 e.preventDefault();
                 const formData = new FormData(e.target);
                 const password = formData.get('password');
                 const confirmPassword = formData.get('confirmPassword');
-                
                 if (password !== confirmPassword) {
                   showError('Les mots de passe ne correspondent pas');
                   return;
                 }
-                
                 await handleRegister({
                   username: formData.get('username'),
                   email: formData.get('email'),
@@ -417,28 +361,24 @@ function App() {
                         required />
                     </div>
                   </div>
-                  
                   <div>
                     <label className="block text-sm font-semibold text-gray-700 mb-2">Nom d'utilisateur</label>
                     <input type="text" name="username"
                       className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all"
                       required />
                   </div>
-                  
                   <div>
                     <label className="block text-sm font-semibold text-gray-700 mb-2">Email</label>
                     <input type="email" name="email"
                       className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all"
                       required />
                   </div>
-                  
                   <div>
                     <label className="block text-sm font-semibold text-gray-700 mb-2">Mot de passe</label>
                     <input type="password" name="password"
                       className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all"
                       required />
                   </div>
-                  
                   <div>
                     <label className="block text-sm font-semibold text-gray-700 mb-2">Confirmer le mot de passe</label>
                     <input type="password" name="confirmPassword"
@@ -446,26 +386,22 @@ function App() {
                       required />
                   </div>
                 </div>
-                
                 <button type="submit"
                   className="w-full mt-6 bg-gradient-to-r from-green-600 to-emerald-600 text-white py-4 rounded-xl font-bold text-lg hover:shadow-lg transform hover:scale-105 transition-all duration-200">
                   S'inscrire
                 </button>
               </form>
-              
+
               <div className="mt-6 text-center">
                 <p className="text-gray-600">
                   Déjà un compte ?{' '}
-                  <button onClick={() => handleNavigate('login')}
-                    className="text-green-600 font-semibold hover:text-green-700">
+                  <button onClick={() => handleNavigate('login')} className="text-green-600 font-semibold hover:text-green-700">
                     Se connecter
                   </button>
                 </p>
               </div>
-              
               <div className="mt-4 text-center">
-                <button onClick={() => handleNavigate('home')}
-                  className="text-sm text-gray-500 hover:text-gray-700">
+                <button onClick={() => handleNavigate('home')} className="text-sm text-gray-500 hover:text-gray-700">
                   ← Retour à l'accueil
                 </button>
               </div>
@@ -474,13 +410,7 @@ function App() {
         );
 
       case 'onboarding':
-        return (
-          <Onboarding 
-            toast={toastMethods} 
-            onNavigate={handleNavigate}
-            setAuth={setUser} 
-          />
-        );
+        return <Onboarding toast={toastMethods} onNavigate={handleNavigate} setAuth={setUser} />;
 
       case 'goals':
         if (!isAuthenticated) { handleNavigate('login'); return null; }
@@ -493,12 +423,12 @@ function App() {
       case 'transactions':
         if (!isAuthenticated) { handleNavigate('login'); return null; }
         return <TransactionsPage onNavigate={handleNavigate} toast={toastMethods} user={user} />;
-      
+
       case 'expenses':
         if (!isAuthenticated) { handleNavigate('login'); return null; }
         handleNavigate('transactions');
         return null;
-      
+
       case 'incomes':
         if (!isAuthenticated) { handleNavigate('login'); return null; }
         handleNavigate('transactions');
@@ -512,32 +442,13 @@ function App() {
         return <PricingPage onNavigate={handleNavigate} user={user} toast={toastMethods} />;
 
       case 'checkout':
-        return (
-          <CheckoutPage 
-            onNavigate={handleNavigate} 
-            toast={toastMethods}
-            plan={pageParams?.plan || 'monthly'}
-          />
-        );
+        return <CheckoutPage onNavigate={handleNavigate} toast={toastMethods} plan={pageParams?.plan || 'monthly'} />;
 
       case 'payment-success':
-        return (
-          <PaymentResultPage
-            onNavigate={handleNavigate}
-            toast={toastMethods}
-            status="success"
-            onPaymentSuccess={handlePaymentSuccess}
-          />
-        );
+        return <PaymentResultPage onNavigate={handleNavigate} toast={toastMethods} status="success" onPaymentSuccess={handlePaymentSuccess} />;
 
       case 'payment-cancel':
-        return (
-          <PaymentResultPage
-            onNavigate={handleNavigate}
-            toast={toastMethods}
-            status="cancel"
-          />
-        );
+        return <PaymentResultPage onNavigate={handleNavigate} toast={toastMethods} status="cancel" />;
 
       case 'subscription':
         if (!isAuthenticated) { handleNavigate('login'); return null; }
@@ -546,7 +457,7 @@ function App() {
       case 'dashboard':
         if (!isAuthenticated) { handleNavigate('login'); return null; }
         return <Dashboard toast={toastMethods} auth={authMethods} onNavigate={handleNavigate} user={user} />;
-      
+
       case 'envelopes':
         if (!isAuthenticated) { handleNavigate('login'); return null; }
         return <EnvelopeManager onNavigate={handleNavigate} toast={toastMethods} auth={authMethods} />;
@@ -564,34 +475,20 @@ function App() {
         return <TontinesList onNavigate={handleNavigate} toast={toastMethods} auth={authMethods} />;
 
       case 'tontine-invite':
-        return (
-          <TontineInvitePage
-            inviteCode={pageParams?.code}
-            onNavigate={handleNavigate}
-            toast={toastMethods}
-            isAuthenticated={isAuthenticated}
-          />
-        );
+        return <TontineInvitePage inviteCode={pageParams?.code} onNavigate={handleNavigate} toast={toastMethods} isAuthenticated={isAuthenticated} />;
 
       case 'diagnostic':
         if (!isAuthenticated) { handleNavigate('login'); return null; }
         return <SimpleDiagnostic onNavigate={handleNavigate} toast={toastMethods} />;
-      
+
       case 'values':
         if (!isAuthenticated) { handleNavigate('login'); return null; }
         return <ValueSelector onNavigate={handleNavigate} toast={toastMethods} auth={authMethods} />;
 
       case 'tontine-detail':
         if (!isAuthenticated) { handleNavigate('login'); return null; }
-        return (
-          <TontineDetail 
-            onNavigate={handleNavigate} 
-            tontineId={pageParams?.id}
-            toast={toastMethods}
-            user={user}
-          />
-        );
-      
+        return <TontineDetail onNavigate={handleNavigate} tontineId={pageParams?.id} toast={toastMethods} user={user} />;
+
       case 'tontine-analysis':
         if (!isAuthenticated) { handleNavigate('login'); return null; }
         return <TontineAnalysis onNavigate={handleNavigate} toast={toastMethods} auth={authMethods} />;
@@ -616,25 +513,19 @@ function App() {
                   <p><strong>Membre depuis :</strong> {user?.date_joined ? new Date(user.date_joined).toLocaleDateString() : 'N/A'}</p>
                 </div>
                 <div className="border-t pt-4 mt-6">
-                  <button 
-                    onClick={() => handleNavigate('values')}
-                    className="w-full bg-blue-100 text-blue-700 px-4 py-3 rounded-lg hover:bg-blue-200 transition-colors duration-200 mb-3"
-                  >
+                  <button onClick={() => handleNavigate('values')}
+                    className="w-full bg-blue-100 text-blue-700 px-4 py-3 rounded-lg hover:bg-blue-200 transition-colors duration-200 mb-3">
                     💎 Gérer mes valeurs personnelles
                   </button>
                 </div>
               </div>
               <div className="flex space-x-3 mt-6">
-                <button 
-                  onClick={() => handleNavigate('dashboard')}
-                  className="flex-1 bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors duration-200"
-                >
+                <button onClick={() => handleNavigate('dashboard')}
+                  className="flex-1 bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors duration-200">
                   ← Dashboard
                 </button>
-                <button 
-                  onClick={() => handleNavigate('settings')}
-                  className="flex-1 bg-gray-200 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-300 transition-colors duration-200"
-                >
+                <button onClick={() => handleNavigate('settings')}
+                  className="flex-1 bg-gray-200 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-300 transition-colors duration-200">
                   ⚙️ Paramètres
                 </button>
               </div>
@@ -649,29 +540,17 @@ function App() {
             <div className="bg-white rounded-2xl shadow-lg p-8 max-w-md w-full">
               <h2 className="text-2xl font-bold mb-6 text-center">⚙️ Paramètres</h2>
               <div className="space-y-4">
-                <button className="w-full text-left p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors duration-200">
-                  🔔 Notifications
-                </button>
-                <button className="w-full text-left p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors duration-200">
-                  🔒 Sécurité et mot de passe
-                </button>
-                <button className="w-full text-left p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors duration-200">
-                  🎨 Apparence
-                </button>
-                <button className="w-full text-left p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors duration-200">
-                  📱 Préférences
-                </button>
-                <button 
-                  onClick={handleLogout}
-                  className="w-full text-left p-4 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 transition-colors duration-200"
-                >
+                <button className="w-full text-left p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors duration-200">🔔 Notifications</button>
+                <button className="w-full text-left p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors duration-200">🔒 Sécurité et mot de passe</button>
+                <button className="w-full text-left p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors duration-200">🎨 Apparence</button>
+                <button className="w-full text-left p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors duration-200">📱 Préférences</button>
+                <button onClick={handleLogout}
+                  className="w-full text-left p-4 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 transition-colors duration-200">
                   🚪 Déconnexion
                 </button>
               </div>
-              <button 
-                onClick={() => handleNavigate('dashboard')}
-                className="w-full mt-6 bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors duration-200"
-              >
+              <button onClick={() => handleNavigate('dashboard')}
+                className="w-full mt-6 bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors duration-200">
                 ← Retour au tableau de bord
               </button>
             </div>
@@ -700,26 +579,23 @@ function App() {
                   </div>
                 </div>
               </div>
-              <button 
-                onClick={() => handleNavigate(isAuthenticated ? 'dashboard' : 'home')}
-                className="w-full mt-6 bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors duration-200"
-              >
+              <button onClick={() => handleNavigate(isAuthenticated ? 'dashboard' : 'home')}
+                className="w-full mt-6 bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors duration-200">
                 ← Retour {isAuthenticated ? 'au dashboard' : 'à l\'accueil'}
               </button>
             </div>
           </div>
         );
-      
+
       default:
-        console.log('🏠 Page par défaut, retour à Home');
         return <Home onNavigate={handleNavigate} toast={toastMethods} auth={authMethods} />;
     }
   };
 
   return (
     <div className="App min-h-screen flex flex-col">
-      <Navigation 
-        currentPage={currentPage} 
+      <Navigation
+        currentPage={currentPage}
         onNavigate={handleNavigate}
         isAuthenticated={isAuthenticated}
         user={user}
@@ -742,23 +618,16 @@ function App() {
         {renderPage()}
       </div>
       <Footer />
-      
+
       <ToastContainer toasts={toasts} removeToast={removeToast} />
       {isAuthenticated && (
-        <AIChatWidget 
-          onNavigate={handleNavigate}
-          toast={toastMethods}
-          user={user}
-        />
+        <AIChatWidget onNavigate={handleNavigate} toast={toastMethods} user={user} />
       )}
       {isAuthenticated && (
         <NotificationManager user={user} toast={toastMethods} />
       )}
       {isAuthenticated && (
-        <OnboardingTutorial 
-          onNavigate={handleNavigate} 
-          onClose={() => {}} 
-        />
+        <OnboardingTutorial onNavigate={handleNavigate} onClose={() => {}} />
       )}
     </div>
   );
