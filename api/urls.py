@@ -117,4 +117,6 @@ urlpatterns = [
 
     path('goals/<int:goal_id>/contributions/', views.goal_payments),
     path('goals/contributions/<int:payment_id>/', views.delete_goal_payment),
+
+    path('incomes/<int:income_id>/', views.income_detail, name='income_detail'),
 ]
