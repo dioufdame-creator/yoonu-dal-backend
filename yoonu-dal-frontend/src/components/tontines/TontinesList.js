@@ -1,11 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import API from '../../services/api';
 
-// ==========================================
-// TONTINES LIST PREMIUM V3.6
-// + Jour limite de paiement (payment_day)
-// ==========================================
-
 const TontinesListPremium = ({ onNavigate, toast }) => {
   const [tontines, setTontines] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -22,24 +17,23 @@ const TontinesListPremium = ({ onNavigate, toast }) => {
     description: '',
     monthly_contribution: '',
     max_participants: '',
-    duration_months: '',
     start_date: new Date().toISOString().split('T')[0],
     payout_mode: 'manual',
     payment_day: 5
   });
   const [form, setForm] = useState(emptyForm());
 
-  const calculatedTotal = React.useMemo(() => {
-    const contribution = parseFloat(form.monthly_contribution) || 0;
-    const participants = parseInt(form.max_participants) || 0;
-    const duration = parseInt(form.duration_months) || 0;
-    return contribution * participants * duration;
-  }, [form.monthly_contribution, form.max_participants, form.duration_months]);
-
+  // ✅ durée = nombre de participants
   const calculatedPayout = React.useMemo(() => {
     const contribution = parseFloat(form.monthly_contribution) || 0;
     const participants = parseInt(form.max_participants) || 0;
     return contribution * participants;
+  }, [form.monthly_contribution, form.max_participants]);
+
+  const calculatedTotal = React.useMemo(() => {
+    const contribution = parseFloat(form.monthly_contribution) || 0;
+    const participants = parseInt(form.max_participants) || 0;
+    return contribution * participants * participants; // durée = participants
   }, [form.monthly_contribution, form.max_participants]);
 
   useEffect(() => { loadTontines(); }, []);
@@ -79,9 +73,8 @@ const TontinesListPremium = ({ onNavigate, toast }) => {
     return num.toString();
   };
 
-  const formatCurrencyFull = (amount) => {
-    return new Intl.NumberFormat('fr-FR').format(amount || 0) + ' FCFA';
-  };
+  const formatCurrencyFull = (amount) =>
+    new Intl.NumberFormat('fr-FR').format(amount || 0) + ' FCFA';
 
   const formatDate = (dateStr) => {
     if (!dateStr) return '—';
@@ -100,18 +93,14 @@ const TontinesListPremium = ({ onNavigate, toast }) => {
     return Math.round(((now - start) / (end - start)) * 100);
   };
 
-  const getPayoutAmount = (tontine) => {
-    return (tontine.monthly_contribution || 0) * (tontine.max_participants || 0);
-  };
+  const getPayoutAmount = (tontine) =>
+    (tontine.monthly_contribution || 0) * (tontine.max_participants || 0);
 
-  // ✅ Urgence paiement : jours restants avant le payment_day
   const getPaymentUrgency = (tontine) => {
     if (tontine.status !== 'active' || !tontine.payment_day) return null;
     const now = new Date();
-    const day = now.getDate();
-    const payDay = tontine.payment_day;
-    const daysLeft = payDay - day;
-    if (daysLeft < 0) return null; // déjà passé ce mois
+    const daysLeft = tontine.payment_day - now.getDate();
+    if (daysLeft < 0) return null;
     if (daysLeft <= 2) return { label: `⚠️ Limite dans ${daysLeft}j`, color: 'text-red-600' };
     if (daysLeft <= 5) return { label: `⏰ Limite dans ${daysLeft}j`, color: 'text-orange-600' };
     return null;
@@ -147,15 +136,15 @@ ${payoutMode}
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!form.name || !form.monthly_contribution || !form.max_participants || !form.duration_months) {
+    if (!form.name || !form.monthly_contribution || !form.max_participants) {
       toast?.showError('Remplis tous les champs obligatoires'); return;
     }
-    if (calculatedTotal <= 0) { toast?.showError('Le montant total doit être supérieur à 0.'); return; }
     if (parseInt(form.max_participants) < 2) { toast?.showError('Minimum 2 participants requis'); return; }
-    if (parseInt(form.duration_months) < 1) { toast?.showError('Durée minimum : 1 mois'); return; }
     if (parseFloat(form.monthly_contribution) <= 0) { toast?.showError('La contribution mensuelle doit être supérieure à 0'); return; }
     const payDay = parseInt(form.payment_day);
     if (!payDay || payDay < 1 || payDay > 28) { toast?.showError('Jour de paiement invalide (1-28)'); return; }
+
+    const participants = parseInt(form.max_participants);
 
     try {
       const payload = {
@@ -163,8 +152,8 @@ ${payoutMode}
         description: form.description,
         total_amount: calculatedTotal,
         monthly_contribution: parseFloat(form.monthly_contribution),
-        max_participants: parseInt(form.max_participants),
-        duration_months: parseInt(form.duration_months),
+        max_participants: participants,
+        duration_months: participants, // ✅ durée = nombre de participants
         start_date: form.start_date,
         payout_mode: form.payout_mode || 'manual',
         payment_day: payDay
@@ -201,7 +190,6 @@ ${payoutMode}
       description: tontine.description || '',
       monthly_contribution: tontine.monthly_contribution,
       max_participants: tontine.max_participants,
-      duration_months: tontine.duration_months || 12,
       start_date: tontine.start_date || new Date().toISOString().split('T')[0],
       payout_mode: tontine.payout_mode || 'manual',
       payment_day: tontine.payment_day || 5
@@ -270,7 +258,7 @@ ${payoutMode}
           </div>
         </div>
 
-        {/* Stats Cards */}
+        {/* Stats */}
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-4 mb-6 sm:mb-8">
           <div className="backdrop-blur-xl bg-white/80 rounded-xl sm:rounded-2xl p-3 sm:p-4 shadow-lg border border-white/20">
             <div className="text-xs sm:text-sm text-gray-600 mb-1">Total</div>
@@ -369,7 +357,6 @@ ${payoutMode}
                 <div key={tontine.id}
                   className="group backdrop-blur-xl bg-white/80 rounded-2xl sm:rounded-3xl border-2 border-gray-200 overflow-hidden hover:shadow-2xl hover:shadow-orange-500/20 transition-all duration-500 sm:transform sm:hover:scale-105">
 
-                  {/* Header */}
                   <div className={`${statusConfig.bgColor} p-4 sm:p-6 border-b-2 ${statusConfig.borderColor} relative overflow-hidden`}>
                     <div className="hidden sm:block absolute top-0 right-0 w-32 h-32 bg-white/20 rounded-full blur-2xl"></div>
                     <div className="relative z-10">
@@ -397,8 +384,8 @@ ${payoutMode}
                           <p className="text-xs font-semibold text-gray-800">{formatDate(tontine.start_date)}</p>
                         </div>
                         <div className="text-center border-x border-gray-200">
-                          <p className="text-xs text-gray-500 mb-0.5">Durée</p>
-                          <p className="text-xs font-semibold text-gray-800">{tontine.duration_months ? `${tontine.duration_months} mois` : '—'}</p>
+                          <p className="text-xs text-gray-500 mb-0.5">Participants</p>
+                          <p className="text-xs font-semibold text-gray-800">{tontine.max_participants} mois</p>
                         </div>
                         <div className="text-center">
                           <p className="text-xs text-gray-500 mb-0.5">📆 Limite</p>
@@ -408,16 +395,12 @@ ${payoutMode}
                         </div>
                       </div>
 
-                      {/* Alerte urgence paiement */}
                       {paymentUrgency && (
                         <div className="mb-3 bg-red-50 border border-red-200 rounded-lg px-3 py-1.5 text-center">
-                          <span className={`text-xs font-semibold ${paymentUrgency.color}`}>
-                            {paymentUrgency.label}
-                          </span>
+                          <span className={`text-xs font-semibold ${paymentUrgency.color}`}>{paymentUrgency.label}</span>
                         </div>
                       )}
 
-                      {/* Barre progression temporelle */}
                       {tontine.status === 'active' && timeProgress !== null && (
                         <div className="mb-3">
                           <div className="flex justify-between text-xs text-gray-500 mb-1">
@@ -431,7 +414,6 @@ ${payoutMode}
                         </div>
                       )}
 
-                      {/* Montant du tour + contribution */}
                       <div className="grid grid-cols-2 gap-3">
                         <div className="backdrop-blur-sm bg-white/90 rounded-xl p-3 shadow-sm">
                           <p className="text-xs text-gray-600 mb-1">🎯 Tu reçois à ton tour</p>
@@ -451,7 +433,6 @@ ${payoutMode}
                     </div>
                   </div>
 
-                  {/* Body */}
                   <div className="p-4 sm:p-6">
                     <div className="mb-4">
                       <div className="flex items-center justify-between mb-2">
@@ -461,17 +442,14 @@ ${payoutMode}
                         </span>
                       </div>
                       <div className="w-full bg-gray-100 rounded-full h-2 sm:h-2.5 shadow-inner overflow-hidden">
-                        <div className="h-2 sm:h-2.5 rounded-full bg-gradient-to-r from-orange-500 to-red-500 transition-all duration-1000 relative overflow-hidden"
-                          style={{ width: `${Math.min(participantsProgress, 100)}%` }}>
-                          <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent animate-shimmer"></div>
-                        </div>
+                        <div className="h-2 sm:h-2.5 rounded-full bg-gradient-to-r from-orange-500 to-red-500 transition-all duration-1000"
+                          style={{ width: `${Math.min(participantsProgress, 100)}%` }} />
                       </div>
                       <p className="text-xs text-gray-500 mt-1">
                         {tontine.available_spots > 0 ? `${tontine.available_spots} place(s) disponible(s)` : '✅ Complet'}
                       </p>
                     </div>
 
-                    {/* Code invitation */}
                     <div className="backdrop-blur-sm bg-gradient-to-br from-amber-50 to-orange-50 rounded-xl p-3 sm:p-4 border border-orange-200 mb-4">
                       <div className="mb-2">
                         <p className="text-xs text-gray-600 mb-1">Code d'invitation</p>
@@ -496,7 +474,7 @@ ${payoutMode}
                     </button>
 
                     {isExpanded && (
-                      <div className="mt-4 pt-4 border-t border-gray-100 flex flex-col gap-2 animate-fadeIn">
+                      <div className="mt-4 pt-4 border-t border-gray-100 flex flex-col gap-2">
                         <button onClick={() => onNavigate?.('tontine-detail', { id: tontine.id })}
                           className="w-full bg-gradient-to-r from-blue-50 to-indigo-50 text-blue-700 px-4 py-2.5 rounded-xl font-medium text-sm sm:text-base hover:shadow-lg transition-all transform hover:scale-105">
                           👁️ Voir détails
@@ -527,8 +505,8 @@ ${payoutMode}
 
       {/* Modal Create/Edit */}
       {showCreateModal && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-3 sm:p-4 animate-fadeIn overflow-y-auto py-8">
-          <div className="bg-white/95 backdrop-blur-xl rounded-2xl sm:rounded-3xl shadow-2xl max-w-2xl w-full p-5 sm:p-8 animate-scaleIn my-auto max-h-[90vh] overflow-y-auto border border-white/20">
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-3 sm:p-4 overflow-y-auto py-8">
+          <div className="bg-white/95 backdrop-blur-xl rounded-2xl sm:rounded-3xl shadow-2xl max-w-2xl w-full p-5 sm:p-8 my-auto max-h-[90vh] overflow-y-auto border border-white/20">
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-xl sm:text-2xl font-bold bg-gradient-to-r from-green-900 to-emerald-900 bg-clip-text text-transparent">
                 {editingTontine ? '✏️ Modifier la tontine' : '➕ Nouvelle tontine'}
@@ -553,12 +531,12 @@ ${payoutMode}
                     className="w-full px-4 py-2.5 sm:py-3 text-sm sm:text-base border-2 border-gray-300 rounded-xl sm:rounded-2xl focus:ring-2 focus:ring-orange-500 focus:border-transparent resize-none" />
                 </div>
 
-                {/* Montant du tour */}
+                {/* Récapitulatif montant */}
                 <div className="sm:col-span-2 bg-gradient-to-r from-green-50 to-emerald-50 border-2 border-green-200 rounded-xl p-4">
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-sm font-medium text-gray-700 mb-1">🎯 Montant reçu à son tour</p>
-                      <p className="text-xs text-gray-600">Contribution × Participants</p>
+                      <p className="text-xs text-gray-600">Contribution × Participants · Durée = Participants</p>
                     </div>
                     <div className="text-right">
                       <p className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-green-900 to-emerald-900 bg-clip-text text-transparent">
@@ -570,14 +548,14 @@ ${payoutMode}
                   {calculatedPayout > 0 && (
                     <div className="mt-2 pt-2 border-t border-green-200">
                       <p className="text-xs text-green-700">
-                        {new Intl.NumberFormat('fr-FR').format(form.monthly_contribution || 0)} FCFA × {form.max_participants || 0} personnes
+                        {new Intl.NumberFormat('fr-FR').format(form.monthly_contribution || 0)} FCFA × {form.max_participants || 0} personnes · {form.max_participants || 0} mois
                       </p>
                     </div>
                   )}
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Contribution mensuelle *</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Contribution mensuelle (FCFA) *</label>
                   <input type="number" value={form.monthly_contribution}
                     onChange={(e) => setForm({...form, monthly_contribution: e.target.value})}
                     placeholder="50000"
@@ -585,29 +563,28 @@ ${payoutMode}
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Nombre max participants *</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Nombre de participants *</label>
                   <input type="number" value={form.max_participants}
                     onChange={(e) => setForm({...form, max_participants: e.target.value})}
                     placeholder="10" min="2"
                     className="w-full px-4 py-2.5 sm:py-3 text-sm sm:text-base border-2 border-gray-300 rounded-xl sm:rounded-2xl focus:ring-2 focus:ring-orange-500 focus:border-transparent" required />
+                  <p className="text-xs text-gray-500 mt-1">La durée sera automatiquement égale au nombre de participants</p>
                 </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Durée (mois) *</label>
-                  <input type="number" value={form.duration_months}
-                    onChange={(e) => setForm({...form, duration_months: e.target.value})}
-                    placeholder="12" min="1"
-                    className="w-full px-4 py-2.5 sm:py-3 text-sm sm:text-base border-2 border-gray-300 rounded-xl sm:rounded-2xl focus:ring-2 focus:ring-orange-500 focus:border-transparent" required />
-                </div>
-
-                {/* ✅ Jour limite de paiement */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">📆 Jour limite de paiement *</label>
                   <input type="number" value={form.payment_day}
                     onChange={(e) => setForm({...form, payment_day: e.target.value})}
                     placeholder="5" min="1" max="28"
                     className="w-full px-4 py-2.5 sm:py-3 text-sm sm:text-base border-2 border-gray-300 rounded-xl sm:rounded-2xl focus:ring-2 focus:ring-orange-500 focus:border-transparent" required />
-                  <p className="text-xs text-gray-500 mt-1">Entre 1 et 28 — les contributions devront être faites avant ce jour chaque mois</p>
+                  <p className="text-xs text-gray-500 mt-1">Entre 1 et 28</p>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Date de début *</label>
+                  <input type="date" value={form.start_date}
+                    onChange={(e) => setForm({...form, start_date: e.target.value})}
+                    className="w-full px-4 py-2.5 sm:py-3 text-sm sm:text-base border-2 border-gray-300 rounded-xl sm:rounded-2xl focus:ring-2 focus:ring-orange-500 focus:border-transparent" required />
                 </div>
 
                 {/* Mode de tirage */}
@@ -628,21 +605,14 @@ ${payoutMode}
                     </button>
                   </div>
                 </div>
-
-                <div className="sm:col-span-2">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Date de début *</label>
-                  <input type="date" value={form.start_date}
-                    onChange={(e) => setForm({...form, start_date: e.target.value})}
-                    className="w-full px-4 py-2.5 sm:py-3 text-sm sm:text-base border-2 border-gray-300 rounded-xl sm:rounded-2xl focus:ring-2 focus:ring-orange-500 focus:border-transparent" required />
-                </div>
               </div>
 
               <div className="backdrop-blur-sm bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl sm:rounded-2xl p-4 border border-blue-200">
                 <div className="flex items-start gap-3">
                   <span className="text-2xl flex-shrink-0">💡</span>
                   <div className="text-sm text-gray-700">
-                    <p className="font-semibold mb-1">Astuce :</p>
-                    <p>Le mode de tirage ne peut pas être modifié après la création de la tontine.</p>
+                    <p className="font-semibold mb-1">Règle de la tontine :</p>
+                    <p>La durée est automatiquement égale au nombre de participants — chaque personne reçoit une fois à son tour. Le mode de tirage ne peut pas être modifié après création.</p>
                   </div>
                 </div>
               </div>
@@ -664,8 +634,8 @@ ${payoutMode}
 
       {/* Modal Join */}
       {showJoinModal && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-fadeIn">
-          <div className="bg-white/95 backdrop-blur-xl rounded-2xl sm:rounded-3xl shadow-2xl max-w-md w-full p-6 sm:p-8 animate-scaleIn border border-white/20">
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white/95 backdrop-blur-xl rounded-2xl sm:rounded-3xl shadow-2xl max-w-md w-full p-6 sm:p-8 border border-white/20">
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-xl sm:text-2xl font-bold bg-gradient-to-r from-blue-900 to-indigo-900 bg-clip-text text-transparent">
                 🔗 Rejoindre une tontine
