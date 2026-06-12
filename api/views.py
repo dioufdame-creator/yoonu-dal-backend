@@ -1478,7 +1478,7 @@ def manage_tontines(request):
     else:  # POST
         try:
             data = request.data
-            required_fields = ['name', 'total_amount', 'monthly_contribution', 'max_participants', 'duration_months',
+            required_fields = ['name', 'total_amount', 'monthly_contribution', 'max_participants',
                                'start_date']
 
             for field in required_fields:
