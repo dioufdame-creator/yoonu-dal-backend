@@ -1505,7 +1505,7 @@ def manage_tontines(request):
                 total_amount=Decimal(data['total_amount']),
                 monthly_contribution=Decimal(data['monthly_contribution']),
                 max_participants=int(data['max_participants']),
-                duration_months=int(data['duration_months']),
+                duration_months=int(data['max_participants']),
                 frequency=data.get('frequency', 'monthly'),
                 start_date=start_date,
                 end_date=end_date,
