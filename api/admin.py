@@ -101,7 +101,11 @@ class BudgetAdmin(admin.ModelAdmin):
     readonly_fields = ('created_at', 'updated_at')
 
     def usage_percentage_display(self, obj):
-        percentage = obj.usage_percentage
+        try:
+            percentage = float(obj.usage_percentage)
+        except (TypeError, ValueError):
+            percentage = 0
+
         if percentage > 100:
             color = 'red'
         elif percentage > 80:
@@ -129,7 +133,12 @@ class GoalAdmin(admin.ModelAdmin):
     date_hierarchy = 'deadline'
 
     def progress_bar(self, obj):
-        percentage = obj.progress_percentage
+        # ✅ Conversion sécurisée en float — évite l'erreur SafeString sur {:.1f}
+        try:
+            percentage = float(obj.progress_percentage)
+        except (TypeError, ValueError):
+            percentage = 0
+
         if percentage >= 100:
             color = 'green'
         elif percentage >= 50:
@@ -176,7 +185,10 @@ class TontineParticipantInline(admin.TabularInline):
     def display_total_contributions(self, obj):
         """Affichage formaté des contributions totales"""
         if obj.pk:
-            return f"{obj.total_contributions:,.0f} FCFA"
+            try:
+                return f"{float(obj.total_contributions):,.0f} FCFA"
+            except (TypeError, ValueError):
+                return "-"
         return "-"
 
     display_total_contributions.short_description = 'Contributions totales'
@@ -184,7 +196,10 @@ class TontineParticipantInline(admin.TabularInline):
     def display_expected_contributions(self, obj):
         """Affichage formaté des contributions attendues"""
         if obj.pk:
-            return f"{obj.expected_contributions:,.0f} FCFA"
+            try:
+                return f"{float(obj.expected_contributions):,.0f} FCFA"
+            except (TypeError, ValueError):
+                return "-"
         return "-"
 
     display_expected_contributions.short_description = 'Contributions attendues'
@@ -204,7 +219,7 @@ class TontineAdmin(admin.ModelAdmin):
     )
     list_filter = ('status', 'frequency', 'is_private', 'start_date', 'created_at')
     search_fields = ('name', 'description', 'creator__username')
-    readonly_fields = ('invitation_code', 'created_at', 'updated_at', 'display_progress_percentage')  # ✅ CORRIGÉ
+    readonly_fields = ('invitation_code', 'created_at', 'updated_at', 'display_progress_percentage')
     date_hierarchy = 'start_date'
     inlines = [TontineParticipantInline]
 
@@ -222,7 +237,7 @@ class TontineAdmin(admin.ModelAdmin):
             'fields': ('is_private', 'invitation_code', 'rules')
         }),
         ('Statistiques', {
-            'fields': ('display_progress_percentage',),  # ✅ CORRIGÉ
+            'fields': ('display_progress_percentage',),
             'classes': ('collapse',)
         }),
         ('Dates système', {
@@ -238,7 +253,11 @@ class TontineAdmin(admin.ModelAdmin):
     participants_count.short_description = 'Participants'
 
     def progress_display(self, obj):
-        percentage = obj.progress_percentage
+        try:
+            percentage = float(obj.progress_percentage)
+        except (TypeError, ValueError):
+            percentage = 0
+
         return format_html(
             '<div style="width: 100px; background-color: #f0f0f0;">'
             '<div style="width: {}%; background-color: #4CAF50; height: 15px; text-align: center; color: white; font-size: 11px;">'
@@ -252,7 +271,10 @@ class TontineAdmin(admin.ModelAdmin):
     def display_progress_percentage(self, obj):
         """Affichage du pourcentage de progression"""
         if obj.pk:
-            return f"{obj.progress_percentage:.1f}%"
+            try:
+                return f"{float(obj.progress_percentage):.1f}%"
+            except (TypeError, ValueError):
+                return "-"
         return "-"
 
     display_progress_percentage.short_description = 'Pourcentage de progression'
@@ -295,7 +317,10 @@ class TontineParticipantAdmin(admin.ModelAdmin):
     def display_total_contributions(self, obj):
         """Affichage formaté des contributions totales"""
         if obj.pk:
-            return f"{obj.total_contributions:,.0f} FCFA"
+            try:
+                return f"{float(obj.total_contributions):,.0f} FCFA"
+            except (TypeError, ValueError):
+                return "-"
         return "-"
 
     display_total_contributions.short_description = 'Contributions totales'
@@ -303,7 +328,10 @@ class TontineParticipantAdmin(admin.ModelAdmin):
     def display_expected_contributions(self, obj):
         """Affichage formaté des contributions attendues"""
         if obj.pk:
-            return f"{obj.expected_contributions:,.0f} FCFA"
+            try:
+                return f"{float(obj.expected_contributions):,.0f} FCFA"
+            except (TypeError, ValueError):
+                return "-"
         return "-"
 
     display_expected_contributions.short_description = 'Contributions attendues'
@@ -408,7 +436,6 @@ class DiagnosticResultAdmin(admin.ModelAdmin):
 # CONFIGURATION ADMIN SITE
 # ==========================================
 
-# Personnalisation de l'interface admin
 admin.site.site_header = "Administration Yoonu Dal"
 admin.site.site_title = "Yoonu Dal Admin"
 admin.site.index_title = "Tableau de bord administrateur"
