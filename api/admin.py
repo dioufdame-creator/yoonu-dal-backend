@@ -112,10 +112,15 @@ class BudgetAdmin(admin.ModelAdmin):
             color = 'orange'
         else:
             color = 'green'
+
+        # ✅ Formater en string AVANT format_html (format_html échappe les args en SafeString,
+        # ce qui casse les format specs comme {:.1f})
+        percentage_str = f"{percentage:.1f}"
+
         return format_html(
-            '<span style="color: {};">{:.1f}%</span>',
+            '<span style="color: {};">{}%</span>',
             color,
-            percentage
+            percentage_str
         )
 
     usage_percentage_display.short_description = 'Utilisation'
@@ -133,7 +138,6 @@ class GoalAdmin(admin.ModelAdmin):
     date_hierarchy = 'deadline'
 
     def progress_bar(self, obj):
-        # ✅ Conversion sécurisée en float — évite l'erreur SafeString sur {:.1f}
         try:
             percentage = float(obj.progress_percentage)
         except (TypeError, ValueError):
@@ -146,13 +150,17 @@ class GoalAdmin(admin.ModelAdmin):
         else:
             color = 'red'
 
+        # ✅ Formater en string AVANT format_html
+        percentage_str = f"{percentage:.1f}"
+        width = min(percentage, 100)
+
         return format_html(
             '<div style="width: 100px; background-color: #f0f0f0;">'
             '<div style="width: {}%; background-color: {}; height: 20px; text-align: center; color: white;">'
-            '{:.1f}%</div></div>',
-            min(percentage, 100),
+            '{}%</div></div>',
+            width,
             color,
-            percentage
+            percentage_str
         )
 
     progress_bar.short_description = 'Progression'
@@ -258,12 +266,16 @@ class TontineAdmin(admin.ModelAdmin):
         except (TypeError, ValueError):
             percentage = 0
 
+        # ✅ Formater en string AVANT format_html
+        percentage_str = f"{percentage:.0f}"
+        width = min(percentage, 100)
+
         return format_html(
             '<div style="width: 100px; background-color: #f0f0f0;">'
             '<div style="width: {}%; background-color: #4CAF50; height: 15px; text-align: center; color: white; font-size: 11px;">'
-            '{:.0f}%</div></div>',
-            min(percentage, 100),
-            percentage
+            '{}%</div></div>',
+            width,
+            percentage_str
         )
 
     progress_display.short_description = 'Progression'
