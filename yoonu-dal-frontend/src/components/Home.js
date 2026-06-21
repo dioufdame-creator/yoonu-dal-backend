@@ -3,35 +3,34 @@ import React, { useState } from 'react';
 const Home = ({ onNavigate, toast, auth }) => {
   const [currentStep, setCurrentStep] = useState(0);
   
-  // Les 4 étapes Yoonu Dal avec palette cohérente
   const yoonuSteps = [
     {
       title: "Conscience",
       problem: "Où va mon argent chaque mois ?",
       solution: "Voir clairement vos flux financiers",
       icon: "👁️",
-      color: "from-[#14B8A6] to-[#0F766E]" // Teal Yoonu Dal
+      color: "from-[#14B8A6] to-[#0F766E]"
     },
     {
       title: "Clarté", 
       problem: "Qu'est-ce qui compte vraiment pour moi ?",
       solution: "Aligner vos dépenses avec vos valeurs",
       icon: "💡",
-      color: "from-[#84CC16] to-[#65A30D]" // Lime Yoonu Dal
+      color: "from-[#84CC16] to-[#65A30D]"
     },
     {
       title: "Choix",
       problem: "Comment mieux gérer mon budget ?", 
       solution: "Les 4 enveloppes : 50% essentiels, 30% plaisirs, 20% projets, 0% libération",
       icon: "🎯",
-      color: "from-[#F97316] to-[#C2410C]" // Coral Yoonu Dal
+      color: "from-[#F97316] to-[#C2410C]"
     },
     {
       title: "Contrôle",
       problem: "Comment maintenir ces bonnes habitudes ?",
       solution: "Suivi simple et communauté d'entraide",
       icon: "🚀",
-      color: "from-[#FDE047] to-[#CA8A04]" // Yellow Yoonu Dal
+      color: "from-[#FDE047] to-[#CA8A04]"
     }
   ];
 
@@ -78,7 +77,7 @@ const Home = ({ onNavigate, toast, auth }) => {
           </p>
 
           {/* CTA Buttons */}
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+          <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
             {auth?.isAuthenticated ? (
               <button
                 onClick={() => onNavigate('dashboard')}
@@ -100,7 +99,13 @@ const Home = ({ onNavigate, toast, auth }) => {
                 >
                   Se connecter
                 </button>
-                <button onClick={() => onNavigate('home2')}>Voir Home2</button>
+                {/* ✅ Bouton comparaison Home2 */}
+                <button
+                  onClick={() => onNavigate('home2')}
+                  className="px-4 py-2 bg-gray-800 text-white rounded-lg text-sm font-medium hover:bg-gray-700 transition-all"
+                >
+                  👁️ Voir Home2
+                </button>
               </>
             )}
           </div>
@@ -120,7 +125,6 @@ const Home = ({ onNavigate, toast, auth }) => {
             </p>
           </div>
 
-          {/* Steps Interactive */}
           <div className="max-w-6xl mx-auto">
             <div className="grid md:grid-cols-4 gap-6 mb-8">
               {yoonuSteps.map((step, index) => (
@@ -142,7 +146,6 @@ const Home = ({ onNavigate, toast, auth }) => {
               ))}
             </div>
 
-            {/* Step Detail */}
             <div className="bg-white border-2 border-gray-200 p-8 rounded-2xl shadow-lg">
               <div className="max-w-3xl mx-auto">
                 <h3 className="text-2xl font-bold text-gray-900 mb-4">
