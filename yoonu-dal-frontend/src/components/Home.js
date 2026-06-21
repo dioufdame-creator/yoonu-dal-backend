@@ -100,6 +100,7 @@ const Home = ({ onNavigate, toast, auth }) => {
                 >
                   Se connecter
                 </button>
+                <button onClick={() => onNavigate('home2')}>Voir Home2</button>
               </>
             )}
           </div>
