@@ -12,6 +12,7 @@ import Navigation from './components/shared/Navigation';
 import Footer from './components/shared/Footer';
 import { ToastContainer, useToast } from './components/shared/Toast';
 import Home from './components/Home';
+import Home2 from './components/Home2';
 import Dashboard from './components/dashboard/Dashboard';
 import ValueSelector from './components/consciousness/ValueSelector';
 import ExpenseTracker from './components/control/ExpenseTracker';
@@ -130,7 +131,6 @@ function App() {
     try {
       const result = await authService.login(credentials);
 
-      // ✅ authService retourne {success, error} sans throw
       if (!result.success) {
         const errorMsg = result.error || 'Nom d\'utilisateur ou mot de passe incorrect.';
         setAuthError(errorMsg);
@@ -232,6 +232,10 @@ function App() {
       case 'home':
         return <Home onNavigate={handleNavigate} toast={toastMethods} auth={authMethods} />;
 
+      // ✅ Landing page alternative pour comparaison
+      case 'home2':
+        return <Home2 onNavigate={handleNavigate} toast={toastMethods} auth={authMethods} />;
+
       case 'login':
         if (isAuthenticated) { handleNavigate('dashboard'); return null; }
         return (
@@ -243,7 +247,6 @@ function App() {
                 <p className="text-gray-600">Bienvenue sur Yoonu Dal</p>
               </div>
 
-              {/* ✅ Message d'erreur connexion */}
               {authError && (
                 <div className="mb-4 p-3 bg-red-50 border border-red-200 text-red-700 rounded-lg text-sm flex items-start gap-2">
                   <span className="text-lg flex-shrink-0">⚠️</span>
@@ -284,7 +287,6 @@ function App() {
                 </button>
               </form>
 
-              {/* ✅ Mot de passe oublié */}
               <div className="mt-4 text-center">
                 <a href="https://wa.me/221773569462?text=Bonjour%2C%20j%27ai%20oubli%C3%A9%20mon%20mot%20de%20passe%20Yoonu%20Dal."
                   target="_blank" rel="noopener noreferrer"
@@ -634,3 +636,4 @@ function App() {
 }
 
 export default App;
+
