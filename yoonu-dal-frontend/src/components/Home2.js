@@ -1,59 +1,55 @@
 import React from 'react';
-import { useNavigate } from 'react-router-dom';
 
 // ============================================================
 // COMPOSANT HOME2 - Landing Page améliorée de Yoonu Dal
-// Remplace ou complète le Home.js existant
+// Compatible avec le système de navigation de App.js
+// Utilise onNavigate(page) au lieu de useNavigate de react-router
 // ============================================================
 
-const Home2 = () => {
-  const navigate = useNavigate();
+const Home2 = ({ onNavigate }) => {
 
   return (
     <div style={css.page}>
 
       {/* ======================================================
           SECTION 1 : HERO
-          Texte à gauche, mockup téléphone à droite (desktop)
-          Empilés sur mobile
+          Texte en haut, mockup téléphone en dessous (mobile-first)
       ====================================================== */}
       <section style={css.hero}>
-        <div style={css.heroText}>
 
-          {/* Badge livre */}
-          <div style={css.bookBadge}>
-            📖 Inspiré du livre <em>Les Silences de nos Portefeuilles</em>
-          </div>
+        {/* Badge livre */}
+        <div style={css.bookBadge}>
+          📖 Inspiré du livre <em>Les Silences de nos Portefeuilles</em>
+        </div>
 
-          {/* Titre principal */}
-          <h1 style={css.heroTitle}>
-            Transformez vos{' '}
-            <span style={css.heroTitleGreen}>silences financiers</span>{' '}
-            en liberté
-          </h1>
+        {/* Titre principal */}
+        <h1 style={css.heroTitle}>
+          Transformez vos{' '}
+          <span style={css.heroTitleGreen}>silences financiers</span>{' '}
+          en liberté
+        </h1>
 
-          {/* Sous-titre */}
-          <p style={css.heroSubtitle}>
-            Yoonu Dal vous guide vers une relation apaisée avec l'argent.
-            Pas de miracles, juste une méthode éprouvée en 4 étapes.
-            Que vous gagniez beaucoup ou peu, commencez là où vous êtes.
-          </p>
+        {/* Sous-titre */}
+        <p style={css.heroSubtitle}>
+          Yoonu Dal vous guide vers une relation apaisée avec l'argent.
+          Pas de miracles, juste une méthode éprouvée en 4 étapes.
+          Que vous gagniez beaucoup ou peu, commencez là où vous êtes.
+        </p>
 
-          {/* Boutons CTA */}
-          <div style={css.ctaGroup}>
-            <button
-              style={css.btnPrimary}
-              onClick={() => navigate('/register')}
-            >
-              Commencer gratuitement
-            </button>
-            <button
-              style={css.btnSecondary}
-              onClick={() => navigate('/login')}
-            >
-              Se connecter
-            </button>
-          </div>
+        {/* Boutons CTA */}
+        <div style={css.ctaGroup}>
+          <button
+            style={css.btnPrimary}
+            onClick={() => onNavigate('register')}
+          >
+            Commencer gratuitement
+          </button>
+          <button
+            style={css.btnSecondary}
+            onClick={() => onNavigate('login')}
+          >
+            Se connecter
+          </button>
         </div>
 
         {/* Mockup téléphone */}
@@ -62,6 +58,7 @@ const Home2 = () => {
             src="/assets/images/phone_mockup_dashboard.png"
             alt="Tableau de bord Yoonu Dal sur smartphone"
             style={css.heroImage}
+            onError={(e) => { e.target.style.display = 'none'; }}
           />
         </div>
       </section>
@@ -109,7 +106,7 @@ const Home2 = () => {
               num: '3',
               icon: '🎯',
               title: 'Choix',
-              text: 'Alignez vos décisions d\'achat avec vos priorités profondes.',
+              text: "Alignez vos décisions d'achat avec vos priorités profondes.",
               color: '#2563eb',
               bg: '#eff6ff',
             },
@@ -179,30 +176,11 @@ const Home2 = () => {
         </p>
         <button
           style={css.btnCta}
-          onClick={() => navigate('/register')}
+          onClick={() => onNavigate('register')}
         >
           Commencer maintenant — C'est gratuit
         </button>
       </section>
-
-      {/* ======================================================
-          FOOTER
-      ====================================================== */}
-      <footer style={css.footer}>
-        <div style={css.footerLeft}>
-          <div style={css.footerLogo}>🌱 Yoonu Dal</div>
-          <div style={css.footerTagline}>Une approche humaine vers la sérénité financière</div>
-        </div>
-        <div style={css.footerRight}>
-          <div style={css.footerContactTitle}>Contact</div>
-          <a href="mailto:contact@yoonudal.com" style={css.footerEmail}>
-            contact@yoonudal.com
-          </a>
-        </div>
-        <div style={css.footerCopyright}>
-          © 2026 Yoonu Dal. Tous droits réservés.
-        </div>
-      </footer>
 
     </div>
   );
@@ -224,15 +202,10 @@ const css = {
     display: 'flex',
     flexDirection: 'column',
     alignItems: 'center',
-    padding: '48px 24px 0',
-    maxWidth: '1100px',
-    margin: '0 auto',
-    // Sur desktop (>768px), utiliser flexDirection: 'row' via CSS media query
-    // Ici on garde column pour mobile-first
-  },
-  heroText: {
     textAlign: 'center',
-    maxWidth: '600px',
+    padding: '48px 24px 0',
+    maxWidth: '700px',
+    margin: '0 auto',
   },
   bookBadge: {
     display: 'inline-block',
@@ -246,7 +219,7 @@ const css = {
     marginBottom: '24px',
   },
   heroTitle: {
-    fontSize: 'clamp(28px, 5vw, 44px)',
+    fontSize: 'clamp(28px, 6vw, 44px)',
     fontWeight: '800',
     lineHeight: '1.2',
     marginTop: 0,
@@ -261,12 +234,14 @@ const css = {
     color: '#4b5563',
     lineHeight: '1.7',
     marginBottom: '32px',
+    maxWidth: '520px',
   },
   ctaGroup: {
     display: 'flex',
     flexDirection: 'column',
     gap: '12px',
     alignItems: 'center',
+    width: '100%',
   },
   btnPrimary: {
     width: '100%',
@@ -301,7 +276,7 @@ const css = {
   },
   heroImage: {
     width: '100%',
-    maxWidth: '280px',
+    maxWidth: '260px',
     height: 'auto',
     filter: 'drop-shadow(0 24px 40px rgba(0,0,0,0.12))',
   },
@@ -312,7 +287,6 @@ const css = {
     color: '#ffffff',
     textAlign: 'center',
     padding: '56px 24px',
-    marginTop: '-2px',
   },
   questionTitle: {
     fontSize: 'clamp(22px, 4vw, 32px)',
@@ -350,7 +324,7 @@ const css = {
   },
   stepsGrid: {
     display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
+    gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
     gap: '16px',
     maxWidth: '900px',
     margin: '0 auto',
@@ -455,54 +429,6 @@ const css = {
     fontWeight: '700',
     cursor: 'pointer',
     boxShadow: '0 4px 20px rgba(0,0,0,0.15)',
-  },
-
-  // ---- FOOTER ----
-  footer: {
-    backgroundColor: '#111827',
-    color: '#9ca3af',
-    padding: '40px 24px',
-    display: 'flex',
-    flexWrap: 'wrap',
-    gap: '24px',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    position: 'relative',
-  },
-  footerLeft: {
-    minWidth: '200px',
-  },
-  footerLogo: {
-    fontSize: '18px',
-    fontWeight: '700',
-    color: '#ffffff',
-    marginBottom: '8px',
-  },
-  footerTagline: {
-    fontSize: '14px',
-    lineHeight: '1.5',
-  },
-  footerRight: {
-    minWidth: '160px',
-  },
-  footerContactTitle: {
-    fontSize: '14px',
-    fontWeight: '700',
-    color: '#ffffff',
-    marginBottom: '8px',
-  },
-  footerEmail: {
-    fontSize: '14px',
-    color: '#9ca3af',
-    textDecoration: 'none',
-  },
-  footerCopyright: {
-    width: '100%',
-    fontSize: '13px',
-    textAlign: 'center',
-    borderTop: '1px solid #1f2937',
-    paddingTop: '20px',
-    marginTop: '8px',
   },
 };
 
