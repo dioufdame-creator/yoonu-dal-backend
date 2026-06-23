@@ -19,6 +19,7 @@ const CATEGORY_TO_ENVELOPE = {
   'telephone_internet':  'essentiel',
   'aide_menagere':       'essentiel',
   'solidarite_famille':  'essentiel',
+  'maison_courses':      'essentiel',
   // PLAISIRS
   'restaurant':          'plaisir',
   'loisirs':             'plaisir',
@@ -48,6 +49,9 @@ const CATEGORIES = [
   { value: 'telephone_internet',  label: 'Téléphone / Internet',  icon: '📱', color: 'from-indigo-500 to-blue-500',   bgColor: 'bg-indigo-50',  borderColor: 'border-indigo-200',  textColor: 'text-indigo-700',  group: 'Essentiels' },
   { value: 'aide_menagere',       label: 'Aide ménagère',         icon: '🧹', color: 'from-cyan-500 to-teal-500',     bgColor: 'bg-cyan-50',    borderColor: 'border-cyan-200',    textColor: 'text-cyan-700',    group: 'Essentiels' },
   { value: 'solidarite_famille',  label: 'Solidarité / Famille',  icon: '👨‍👩‍👧', color: 'from-purple-500 to-pink-500',  bgColor: 'bg-purple-50',  borderColor: 'border-purple-200',  textColor: 'text-purple-700',  group: 'Essentiels' },
+  { value: 'maison_courses',  label: 'Maison / Courses',  icon: '👨‍👩‍👧', color: 'from-purple-500 to-pink-500',  bgColor: 'bg-purple-50',  borderColor: 'border-purple-200',  textColor: 'text-purple-700',  group: 'Essentiels' },
+  
+
   // PLAISIRS
   { value: 'restaurant',          label: 'Restaurant / Café',     icon: '🍜', color: 'from-orange-400 to-amber-500',  bgColor: 'bg-orange-50',  borderColor: 'border-orange-200',  textColor: 'text-orange-700',  group: 'Plaisirs' },
   { value: 'loisirs',             label: 'Loisirs / Sorties',     icon: '🎬', color: 'from-yellow-500 to-orange-500', bgColor: 'bg-yellow-50',  borderColor: 'border-yellow-200',  textColor: 'text-yellow-700',  group: 'Plaisirs' },
