@@ -30,10 +30,6 @@ const Home2 = ({ onNavigate }) => {
           <button style={css.btnPrimary} onClick={() => onNavigate('register')}>
             Commencer gratuitement
           </button>
-          <button style={css.btnSecondary} onClick={() => onNavigate('login')}>
-            Se connecter
-          </button>
-        </div>
 
         <div style={css.heroImageWrap}>
           <img
