@@ -37,7 +37,7 @@ const Home2 = ({ onNavigate }) => {
 
         <div style={css.heroImageWrap}>
           <img
-            src="/assets/images/dashboard_v2_mobile.png"
+            src="/dashboard_v2_mobile.png"
             alt="Tableau de bord Yoonu Dal montrant le score et le reste par jour"
             style={css.heroImage}
             onError={(e) => { e.target.style.display = 'none'; }}
