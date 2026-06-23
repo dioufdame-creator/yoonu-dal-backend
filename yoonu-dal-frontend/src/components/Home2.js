@@ -55,7 +55,7 @@ const Home2 = ({ onNavigate }) => {
         {/* Mockup téléphone */}
         <div style={css.heroImageWrap}>
           <img
-            src="/assets/images/phone_mockup_dashboard.png"
+            src="/phone_mockup_dashboard.png"
             alt="Tableau de bord Yoonu Dal sur smartphone"
             style={css.heroImage}
             onError={(e) => { e.target.style.display = 'none'; }}
