@@ -1,62 +1,44 @@
 import React from 'react';
 
 // ============================================================
-// COMPOSANT HOME2 - Landing Page améliorée de Yoonu Dal
-// Compatible avec le système de navigation de App.js
-// Utilise onNavigate(page) au lieu de useNavigate de react-router
+// COMPOSANT HOME2 (V2) - Landing Page Yoonu Dal
+// Structure : Problème -> Solution -> Preuve -> Méthode -> Origine
 // ============================================================
 
 const Home2 = ({ onNavigate }) => {
-
   return (
     <div style={css.page}>
 
       {/* ======================================================
-          SECTION 1 : HERO
-          Texte en haut, mockup téléphone en dessous (mobile-first)
+          SECTION 1 : HERO (Problème + Solution)
       ====================================================== */}
       <section style={css.hero}>
-
-        {/* Badge livre */}
         <div style={css.bookBadge}>
           📖 Inspiré du livre <em>Les Silences de nos Portefeuilles</em>
         </div>
 
-        {/* Titre principal */}
         <h1 style={css.heroTitle}>
-          Transformez vos{' '}
-          <span style={css.heroTitleGreen}>silences financiers</span>{' '}
-          en liberté
+          Où part votre argent <span style={css.heroTitleGreen}>chaque mois ?</span>
         </h1>
 
-        {/* Sous-titre */}
         <p style={css.heroSubtitle}>
-          Yoonu Dal vous guide vers une relation apaisée avec l'argent.
-          Pas de miracles, juste une méthode éprouvée en 4 étapes.
-          Que vous gagniez beaucoup ou peu, commencez là où vous êtes.
+          Vous ne le savez pas vraiment. C'est normal. <br/>
+          <strong>Yoonu Dal</strong> suit vos dépenses, calcule votre reste à vivre par jour et vous aide à reprendre le contrôle.
         </p>
 
-        {/* Boutons CTA */}
         <div style={css.ctaGroup}>
-          <button
-            style={css.btnPrimary}
-            onClick={() => onNavigate('register')}
-          >
+          <button style={css.btnPrimary} onClick={() => onNavigate('register')}>
             Commencer gratuitement
           </button>
-          <button
-            style={css.btnSecondary}
-            onClick={() => onNavigate('login')}
-          >
+          <button style={css.btnSecondary} onClick={() => onNavigate('login')}>
             Se connecter
           </button>
         </div>
 
-        {/* Mockup téléphone */}
         <div style={css.heroImageWrap}>
           <img
-            src="/phone_mockup_dashboard.png"
-            alt="Tableau de bord Yoonu Dal sur smartphone"
+            src="/assets/images/dashboard_v2_mobile.png"
+            alt="Tableau de bord Yoonu Dal montrant le score et le reste par jour"
             style={css.heroImage}
             onError={(e) => { e.target.style.display = 'none'; }}
           />
@@ -64,60 +46,76 @@ const Home2 = ({ onNavigate }) => {
       </section>
 
       {/* ======================================================
-          SECTION 2 : QUESTION CLÉ (fond vert)
+          SECTION 2 : FONCTIONNALITÉS (Ce que vous pouvez faire)
       ====================================================== */}
-      <section style={css.questionSection}>
-        <h2 style={css.questionTitle}>Où va votre argent chaque mois ?</h2>
-        <p style={css.questionText}>
-          La plupart des gens ne le savent pas vraiment.
-          Yoonu Dal vous donne cette clarté en quelques minutes.
-        </p>
+      <section style={css.featuresSection}>
+        <h2 style={css.sectionTitle}>Ce que vous pouvez faire avec Yoonu Dal</h2>
+        
+        <div style={css.featuresGrid}>
+          {[
+            { icon: '💰', title: 'Suivre vos dépenses', text: 'Catégorisez automatiquement où va votre argent.' },
+            { icon: '📅', title: 'Reste par jour', text: 'Sachez exactement combien vous pouvez dépenser aujourd\'hui.' },
+            { icon: '🎯', title: 'Objectifs d\'épargne', text: 'Définissez des cibles et suivez votre progression.' },
+            { icon: '🤝', title: 'Gérer vos tontines', text: 'Suivez vos cotisations de groupe sans stress.' },
+            { icon: '🤖', title: 'Yoonu IA', text: 'Un assistant intelligent pour répondre à vos questions financières.' },
+            { icon: '📈', title: 'Score Yoonu', text: 'Évaluez la santé de vos finances sur 100 points.' }
+          ].map((feat, i) => (
+            <div key={i} style={css.featureCard}>
+              <div style={css.featureIcon}>{feat.icon}</div>
+              <h3 style={css.featureTitle}>{feat.title}</h3>
+              <p style={css.featureText}>{feat.text}</p>
+            </div>
+          ))}
+        </div>
       </section>
 
       {/* ======================================================
-          SECTION 3 : LA MÉTHODE EN 4 ÉTAPES
+          SECTION 3 : TÉMOIGNAGES (Preuve)
+      ====================================================== */}
+      <section style={css.testimonialsSection}>
+        <h2 style={css.sectionTitle}>Ce que disent nos premiers testeurs</h2>
+
+        <div style={css.testimonialsGrid}>
+          {[
+            {
+              quote: '"J\'ai enfin de la visibilité. Je sais exactement ce qu\'il me reste jusqu\'à la fin du mois."',
+              author: 'Testeur phase bêta',
+              highlight: true
+            },
+            {
+              quote: '"Le score et le calcul par jour changent tout. Je comprends enfin où part mon argent."',
+              author: 'Testeur phase bêta',
+              highlight: false
+            },
+            {
+              quote: '"L\'interface est simple. Les 4 enveloppes m\'ont aidé à structurer mon budget sans me priver."',
+              author: 'Testeur phase bêta',
+              highlight: false
+            },
+          ].map((t, i) => (
+            <div key={i} style={{...css.testimonialCard, ...(t.highlight ? css.testimonialHighlight : {})}}>
+              <p style={css.testimonialQuote}>{t.quote}</p>
+              <div style={css.testimonialAuthor}>— {t.author}</div>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* ======================================================
+          SECTION 4 : LA MÉTHODE EN 4 ÉTAPES
       ====================================================== */}
       <section style={css.methodSection}>
         <h2 style={css.sectionTitle}>La méthode Yoonu Dal</h2>
         <p style={css.sectionSubtitle}>
-          Inspirée du livre <em>Les Silences de nos Portefeuilles</em>,
-          une approche progressive pour reprendre le contrôle.
+          Une approche progressive pour reprendre le contrôle.
         </p>
 
         <div style={css.stepsGrid}>
           {[
-            {
-              num: '1',
-              icon: '👁️',
-              title: 'Conscience',
-              text: 'Ouvrez les yeux sur vos habitudes financières sans aucun jugement.',
-              color: '#0a8043',
-              bg: '#f0fdf4',
-            },
-            {
-              num: '2',
-              icon: '💡',
-              title: 'Clarté',
-              text: 'Comprenez exactement où va votre argent chaque mois.',
-              color: '#d97706',
-              bg: '#fffbeb',
-            },
-            {
-              num: '3',
-              icon: '🎯',
-              title: 'Choix',
-              text: "Alignez vos décisions d'achat avec vos priorités profondes.",
-              color: '#2563eb',
-              bg: '#eff6ff',
-            },
-            {
-              num: '4',
-              icon: '🚀',
-              title: 'Contrôle',
-              text: 'Reprenez le contrôle et construisez votre liberté financière.',
-              color: '#7c3aed',
-              bg: '#f5f3ff',
-            },
+            { num: '1', icon: '👁️', title: 'Conscience', text: 'Ouvrez les yeux sur vos habitudes sans jugement.', color: '#0a8043', bg: '#f0fdf4' },
+            { num: '2', icon: '💡', title: 'Clarté', text: 'Comprenez exactement où va votre argent.', color: '#d97706', bg: '#fffbeb' },
+            { num: '3', icon: '🎯', title: 'Choix', text: 'Alignez vos achats avec vos priorités.', color: '#2563eb', bg: '#eff6ff' },
+            { num: '4', icon: '🚀', title: 'Contrôle', text: 'Construisez votre liberté financière.', color: '#7c3aed', bg: '#f5f3ff' },
           ].map((step) => (
             <div key={step.num} style={{ ...css.stepCard, backgroundColor: step.bg }}>
               <div style={{ ...css.stepNum, color: step.color }}>{step.num}.</div>
@@ -130,55 +128,15 @@ const Home2 = ({ onNavigate }) => {
       </section>
 
       {/* ======================================================
-          SECTION 4 : TÉMOIGNAGES
-      ====================================================== */}
-      <section style={css.testimonialsSection}>
-        <h2 style={css.sectionTitle}>Ce que disent ceux qui l'ont essayé</h2>
-
-        <div style={css.testimonialsGrid}>
-          {[
-            {
-              avatar: '👩🏾‍🏫',
-              name: 'Amsatou D.',
-              role: 'Enseignante',
-              quote: '"Fini l\'angoisse de fin de mois. Je sais exactement où va mon argent."',
-            },
-            {
-              avatar: '👨🏾‍💻',
-              name: 'Diégane F.',
-              role: 'Développeur',
-              quote: '"Les 4 enveloppes ont changé ma relation à l\'argent. Simple mais efficace."',
-            },
-            {
-              avatar: '👩🏾‍💼',
-              name: 'Laeticia K.',
-              role: 'Entrepreneure',
-              quote: '"Grâce aux tontines digitales, j\'ai pu racheter mon local."',
-            },
-          ].map((t) => (
-            <div key={t.name} style={css.testimonialCard}>
-              <div style={css.testimonialAvatar}>{t.avatar}</div>
-              <div style={css.testimonialName}>{t.name}</div>
-              <div style={css.testimonialRole}>{t.role}</div>
-              <p style={css.testimonialQuote}>{t.quote}</p>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {/* ======================================================
-          SECTION 5 : CTA FINAL (fond vert foncé)
+          SECTION 5 : CTA FINAL
       ====================================================== */}
       <section style={css.ctaSection}>
         <h2 style={css.ctaTitle}>Prêt à reprendre le contrôle ?</h2>
         <p style={css.ctaText}>
-          Rejoignez les personnes qui transforment leur relation à l'argent avec Yoonu Dal.
+          Commencez dès aujourd'hui. L'application est en phase de test gratuite.
         </p>
-        <button
-          style={css.btnCta}
-          onClick={() => onNavigate('register')}
-        >
-          Commencer maintenant — C'est gratuit
+        <button style={css.btnCta} onClick={() => onNavigate('register')}>
+          Créer mon compte gratuitement
         </button>
       </section>
 
@@ -204,7 +162,7 @@ const css = {
     alignItems: 'center',
     textAlign: 'center',
     padding: '48px 24px 0',
-    maxWidth: '700px',
+    maxWidth: '800px',
     margin: '0 auto',
   },
   bookBadge: {
@@ -219,9 +177,9 @@ const css = {
     marginBottom: '24px',
   },
   heroTitle: {
-    fontSize: 'clamp(28px, 6vw, 44px)',
+    fontSize: 'clamp(32px, 6vw, 48px)',
     fontWeight: '800',
-    lineHeight: '1.2',
+    lineHeight: '1.15',
     marginTop: 0,
     marginBottom: '20px',
     color: '#111827',
@@ -230,23 +188,23 @@ const css = {
     color: '#0a8043',
   },
   heroSubtitle: {
-    fontSize: '17px',
+    fontSize: '18px',
     color: '#4b5563',
-    lineHeight: '1.7',
-    marginBottom: '32px',
-    maxWidth: '520px',
+    lineHeight: '1.6',
+    marginBottom: '36px',
+    maxWidth: '600px',
   },
   ctaGroup: {
     display: 'flex',
-    flexDirection: 'column',
-    gap: '12px',
-    alignItems: 'center',
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'center',
+    gap: '16px',
     width: '100%',
+    marginBottom: '48px',
   },
   btnPrimary: {
-    width: '100%',
-    maxWidth: '320px',
-    padding: '16px 24px',
+    padding: '16px 28px',
     backgroundColor: '#0a8043',
     color: '#ffffff',
     border: 'none',
@@ -257,9 +215,7 @@ const css = {
     boxShadow: '0 4px 14px rgba(10, 128, 67, 0.25)',
   },
   btnSecondary: {
-    width: '100%',
-    maxWidth: '320px',
-    padding: '16px 24px',
+    padding: '16px 28px',
     backgroundColor: '#ffffff',
     color: '#111827',
     border: '1.5px solid #d1d5db',
@@ -269,37 +225,111 @@ const css = {
     cursor: 'pointer',
   },
   heroImageWrap: {
-    marginTop: '40px',
     width: '100%',
     display: 'flex',
     justifyContent: 'center',
+    position: 'relative',
+    zIndex: 10,
   },
   heroImage: {
     width: '100%',
-    maxWidth: '260px',
+    maxWidth: '320px',
     height: 'auto',
-    filter: 'drop-shadow(0 24px 40px rgba(0,0,0,0.12))',
+    filter: 'drop-shadow(0 24px 40px rgba(0,0,0,0.15))',
+    transform: 'translateY(20px)',
   },
 
-  // ---- QUESTION SECTION ----
-  questionSection: {
-    backgroundColor: '#0a8043',
-    color: '#ffffff',
+  // ---- FEATURES ----
+  featuresSection: {
+    backgroundColor: '#f9fafb',
+    padding: '80px 24px 64px',
     textAlign: 'center',
-    padding: '56px 24px',
   },
-  questionTitle: {
-    fontSize: 'clamp(22px, 4vw, 32px)',
+  sectionTitle: {
+    fontSize: 'clamp(24px, 4vw, 32px)',
     fontWeight: '800',
     marginTop: 0,
-    marginBottom: '16px',
+    marginBottom: '40px',
+    color: '#111827',
   },
-  questionText: {
-    fontSize: '17px',
-    opacity: 0.9,
-    maxWidth: '560px',
+  featuresGrid: {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
+    gap: '24px',
+    maxWidth: '1000px',
     margin: '0 auto',
+  },
+  featureCard: {
+    backgroundColor: '#ffffff',
+    borderRadius: '16px',
+    padding: '24px',
+    textAlign: 'left',
+    border: '1px solid #f3f4f6',
+    boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05)',
+  },
+  featureIcon: {
+    fontSize: '28px',
+    marginBottom: '16px',
+    backgroundColor: '#f0fdf4',
+    width: '48px',
+    height: '48px',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: '12px',
+  },
+  featureTitle: {
+    fontSize: '18px',
+    fontWeight: '700',
+    marginBottom: '8px',
+    marginTop: 0,
+  },
+  featureText: {
+    fontSize: '15px',
+    color: '#4b5563',
+    lineHeight: '1.5',
+    margin: 0,
+  },
+
+  // ---- TESTIMONIALS ----
+  testimonialsSection: {
+    padding: '64px 24px',
+    backgroundColor: '#ffffff',
+    textAlign: 'center',
+  },
+  testimonialsGrid: {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
+    gap: '24px',
+    maxWidth: '1000px',
+    margin: '0 auto',
+  },
+  testimonialCard: {
+    backgroundColor: '#f9fafb',
+    borderRadius: '16px',
+    padding: '32px 24px',
+    textAlign: 'left',
+    border: '1px solid #e5e7eb',
+    display: 'flex',
+    flexDirection: 'column',
+    justifyContent: 'space-between',
+  },
+  testimonialHighlight: {
+    backgroundColor: '#0a8043',
+    color: '#ffffff',
+    border: 'none',
+  },
+  testimonialQuote: {
+    fontSize: '16px',
     lineHeight: '1.6',
+    fontStyle: 'italic',
+    margin: '0 0 20px 0',
+    color: 'inherit',
+  },
+  testimonialAuthor: {
+    fontSize: '14px',
+    fontWeight: '700',
+    opacity: 0.8,
   },
 
   // ---- METHOD SECTION ----
@@ -307,13 +337,6 @@ const css = {
     padding: '64px 24px',
     backgroundColor: '#f9fafb',
     textAlign: 'center',
-  },
-  sectionTitle: {
-    fontSize: 'clamp(22px, 4vw, 30px)',
-    fontWeight: '800',
-    marginTop: 0,
-    marginBottom: '12px',
-    color: '#111827',
   },
   sectionSubtitle: {
     fontSize: '16px',
@@ -324,9 +347,9 @@ const css = {
   },
   stepsGrid: {
     display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-    gap: '16px',
-    maxWidth: '900px',
+    gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
+    gap: '20px',
+    maxWidth: '1000px',
     margin: '0 auto',
   },
   stepCard: {
@@ -335,7 +358,7 @@ const css = {
     textAlign: 'left',
   },
   stepNum: {
-    fontSize: '13px',
+    fontSize: '14px',
     fontWeight: '700',
     marginBottom: '8px',
     opacity: 0.7,
@@ -356,49 +379,6 @@ const css = {
     margin: 0,
   },
 
-  // ---- TESTIMONIALS ----
-  testimonialsSection: {
-    padding: '64px 24px',
-    backgroundColor: '#ffffff',
-    textAlign: 'center',
-  },
-  testimonialsGrid: {
-    display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))',
-    gap: '20px',
-    maxWidth: '900px',
-    margin: '40px auto 0',
-  },
-  testimonialCard: {
-    backgroundColor: '#f9fafb',
-    borderRadius: '16px',
-    padding: '28px 20px',
-    textAlign: 'left',
-    border: '1px solid #e5e7eb',
-  },
-  testimonialAvatar: {
-    fontSize: '36px',
-    marginBottom: '12px',
-  },
-  testimonialName: {
-    fontSize: '15px',
-    fontWeight: '700',
-    color: '#111827',
-    marginBottom: '2px',
-  },
-  testimonialRole: {
-    fontSize: '13px',
-    color: '#6b7280',
-    marginBottom: '14px',
-  },
-  testimonialQuote: {
-    fontSize: '14px',
-    color: '#374151',
-    lineHeight: '1.6',
-    fontStyle: 'italic',
-    margin: 0,
-  },
-
   // ---- CTA FINAL ----
   ctaSection: {
     background: 'linear-gradient(135deg, #0a8043 0%, #065f46 100%)',
@@ -407,13 +387,13 @@ const css = {
     padding: '72px 24px',
   },
   ctaTitle: {
-    fontSize: 'clamp(24px, 4vw, 34px)',
+    fontSize: 'clamp(26px, 4vw, 36px)',
     fontWeight: '800',
     marginTop: 0,
     marginBottom: '16px',
   },
   ctaText: {
-    fontSize: '17px',
+    fontSize: '18px',
     opacity: 0.9,
     maxWidth: '500px',
     margin: '0 auto 32px',
