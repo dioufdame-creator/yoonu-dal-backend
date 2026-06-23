@@ -2,8 +2,8 @@ import React from 'react';
 
 // ============================================================
 // COMPOSANT HOME2 (V3) - Landing Page Yoonu Dal
-// Fusion du meilleur de Home (design, couleurs, layout) 
-// et Home2 (structure efficace, fonctionnalités, preuve)
+// Base : Home2 (mobile-first, efficace)
+// Enrichi avec : Couleurs, dégradés et éléments clés de Home
 // ============================================================
 
 const Home2 = ({ onNavigate }) => {
@@ -12,90 +12,46 @@ const Home2 = ({ onNavigate }) => {
 
       {/* ======================================================
           SECTION 1 : HERO (Problème + Solution)
-          Layout 2 colonnes : Texte à gauche, Téléphone à droite
+          Base mobile-first, enrichie avec dégradé du titre
       ====================================================== */}
-      <section style={css.heroSection}>
-        <div style={css.heroContainer}>
-          
-          {/* Colonne gauche : Texte */}
-          <div style={css.heroLeft}>
-            <div style={css.bookBadge}>
-              📖 Inspiré du livre <em>Les Silences de nos Portefeuilles</em>
-            </div>
+      <section style={css.hero}>
+        <div style={css.bookBadge}>
+          📖 Inspiré du livre <em>Les Silences de nos Portefeuilles</em>
+        </div>
 
-            <h1 style={css.heroTitle}>
-              Transformez vos{' '}
-              <span style={css.heroTitleGradient}>silences financiers</span>{' '}
-              en liberté
-            </h1>
+        <h1 style={css.heroTitle}>
+          Transformez vos{' '}
+          <span style={css.heroTitleGradient}>silences financiers</span>{' '}
+          en liberté
+        </h1>
 
-            <p style={css.heroSubtitle}>
-              Yoonu Dal vous guide vers une relation apaisée avec l'argent.
-              Pas de miracles, juste une méthode éprouvée en 4 étapes.
-              Que vous gagniez beaucoup ou peu, Yoonu Dal commence là où vous êtes.
-            </p>
+        <p style={css.heroSubtitle}>
+          Vous ne le savez pas vraiment. C'est normal. <br/>
+          <strong>Yoonu Dal</strong> suit vos dépenses, calcule votre reste à vivre par jour et vous aide à reprendre le contrôle.
+        </p>
 
-            <div style={css.ctaGroup}>
-              <button style={css.btnPrimary} onClick={() => onNavigate('register')}>
-                Commencer gratuitement
-              </button>
-              <button style={css.btnSecondary} onClick={() => onNavigate('login')}>
-                Se connecter
-              </button>
-            </div>
-          </div>
+        <div style={css.ctaGroup}>
+          <button style={css.btnPrimary} onClick={() => onNavigate('register')}>
+            Commencer gratuitement
+          </button>
+          <button style={css.btnSecondary} onClick={() => onNavigate('login')}>
+            Se connecter
+          </button>
+        </div>
 
-          {/* Colonne droite : Téléphone avec halos */}
-          <div style={css.heroRight}>
-            <div style={css.phoneWrapper}>
-              {/* Halos décoratifs */}
-              <div style={css.haloTeal}></div>
-              <div style={css.haloOrange}></div>
-
-              {/* Mockup téléphone */}
-              <div style={css.phoneFrame}>
-                <img
-                  src="/dashboard_v2_mobile.png"
-                  alt="Tableau de bord Yoonu Dal"
-                  style={css.phoneImage}
-                  onError={(e) => { e.target.style.display = 'none'; }}
-                />
-              </div>
-
-              {/* Badge score flottant */}
-              <div style={css.badgeScore}>
-                <span style={css.badgeIcon}>🏆</span>
-                <div>
-                  <div style={css.badgeLabel}>Score</div>
-                  <div style={css.badgeValue}>90/100</div>
-                </div>
-              </div>
-
-              {/* Badge maître flottant */}
-              <div style={css.badgeMaitre}>
-                <span style={css.badgeIcon}>✅</span>
-                <div style={css.badgeMaitreText}>Maître Yoonu</div>
-              </div>
-            </div>
-          </div>
-
+        <div style={css.heroImageWrap}>
+          <img
+            src="/dashboard_v2_mobile.png"
+            alt="Tableau de bord Yoonu Dal montrant le score et le reste par jour"
+            style={css.heroImage}
+            onError={(e) => { e.target.style.display = 'none'; }}
+          />
         </div>
       </section>
 
       {/* ======================================================
-          SECTION 2 : "Où va votre argent" (Dégradé teal)
-      ====================================================== */}
-      <section style={css.questionSection}>
-        <h2 style={css.questionTitle}>Où va votre argent chaque mois ?</h2>
-        <p style={css.questionText}>
-          La plupart des gens ne le savent pas vraiment. 
-          Yoonu Dal vous donne cette clarté en quelques minutes.
-        </p>
-      </section>
-
-      {/* ======================================================
-          SECTION 3 : "Transformez vos silences" (Dégradé)
-          Sous le téléphone, comme demandé
+          SECTION 2 : "Transformez vos silences" (Dégradé)
+          Nouvelle section enrichie de Home
       ====================================================== */}
       <section style={css.transformSection}>
         <h2 style={css.transformTitle}>
@@ -108,7 +64,17 @@ const Home2 = ({ onNavigate }) => {
       </section>
 
       {/* ======================================================
-          SECTION 4 : FONCTIONNALITÉS
+          SECTION 3 : QUESTION CLÉ (Dégradé teal)
+      ====================================================== */}
+      <section style={css.questionSection}>
+        <h2 style={css.questionTitle}>Où va votre argent chaque mois ?</h2>
+        <p style={css.questionText}>
+          La plupart des gens ne le savent pas vraiment. Yoonu Dal vous donne cette clarté en quelques minutes.
+        </p>
+      </section>
+
+      {/* ======================================================
+          SECTION 4 : FONCTIONNALITÉS (Ce que vous pouvez faire)
       ====================================================== */}
       <section style={css.featuresSection}>
         <h2 style={css.sectionTitle}>Ce que vous pouvez faire avec Yoonu Dal</h2>
@@ -132,7 +98,7 @@ const Home2 = ({ onNavigate }) => {
       </section>
 
       {/* ======================================================
-          SECTION 5 : TÉMOIGNAGES
+          SECTION 5 : TÉMOIGNAGES (Preuve)
       ====================================================== */}
       <section style={css.testimonialsSection}>
         <h2 style={css.sectionTitle}>Ce que disent nos premiers testeurs</h2>
@@ -169,7 +135,7 @@ const Home2 = ({ onNavigate }) => {
       <section style={css.methodSection}>
         <h2 style={css.sectionTitle}>La méthode Yoonu Dal</h2>
         <p style={css.sectionSubtitle}>
-          Une approche progressive pour reprendre le contrôle de vos finances.
+          Une approche progressive pour reprendre le contrôle.
         </p>
 
         <div style={css.stepsGrid}>
@@ -217,40 +183,23 @@ const css = {
     overflowX: 'hidden',
   },
 
-  // ---- HERO SECTION ----
-  heroSection: {
-    padding: '64px 24px 0',
-    backgroundColor: 'linear-gradient(to bottom right, #f0fdfa 0%, #f5f3ff 100%)',
-  },
-  heroContainer: {
-    maxWidth: '1200px',
-    margin: '0 auto',
-    display: 'grid',
-    gridTemplateColumns: '1fr 1fr',
-    gap: '48px',
-    alignItems: 'center',
-    '@media (max-width: 768px)': {
-      gridTemplateColumns: '1fr',
-      gap: '32px',
-    }
-  },
-  heroLeft: {
+  // ---- HERO ----
+  hero: {
     display: 'flex',
     flexDirection: 'column',
-  },
-  heroRight: {
-    display: 'flex',
-    justifyContent: 'center',
     alignItems: 'center',
+    textAlign: 'center',
+    padding: '48px 24px 0',
+    maxWidth: '800px',
+    margin: '0 auto',
   },
   bookBadge: {
     display: 'inline-block',
-    width: 'fit-content',
     backgroundColor: '#f0fdfa',
     color: '#14B8A6',
     border: '1px solid #99f6e4',
     borderRadius: '20px',
-    padding: '8px 16px',
+    padding: '6px 16px',
     fontSize: '13px',
     fontWeight: '600',
     marginBottom: '24px',
@@ -273,13 +222,17 @@ const css = {
     fontSize: '18px',
     color: '#4b5563',
     lineHeight: '1.6',
-    marginBottom: '32px',
+    marginBottom: '36px',
+    maxWidth: '600px',
   },
   ctaGroup: {
     display: 'flex',
     flexDirection: 'row',
     flexWrap: 'wrap',
+    justifyContent: 'center',
     gap: '16px',
+    width: '100%',
+    marginBottom: '48px',
   },
   btnPrimary: {
     padding: '16px 28px',
@@ -291,134 +244,33 @@ const css = {
     fontWeight: '700',
     cursor: 'pointer',
     boxShadow: '0 4px 14px rgba(20, 184, 166, 0.25)',
-    transition: 'transform 0.2s, box-shadow 0.2s',
   },
   btnSecondary: {
     padding: '16px 28px',
     backgroundColor: '#ffffff',
     color: '#111827',
-    border: '2px solid #e5e7eb',
+    border: '1.5px solid #d1d5db',
     borderRadius: '12px',
     fontSize: '16px',
     fontWeight: '700',
     cursor: 'pointer',
-    transition: 'background-color 0.2s',
   },
-
-  // ---- PHONE ----
-  phoneWrapper: {
-    position: 'relative',
+  heroImageWrap: {
     width: '100%',
-    maxWidth: '320px',
-  },
-  haloTeal: {
-    position: 'absolute',
-    top: '-24px',
-    right: '-24px',
-    width: '96px',
-    height: '96px',
-    backgroundColor: '#99f6e4',
-    borderRadius: '50%',
-    opacity: 0.4,
-    filter: 'blur(32px)',
-    zIndex: 0,
-  },
-  haloOrange: {
-    position: 'absolute',
-    bottom: '-24px',
-    left: '-24px',
-    width: '112px',
-    height: '112px',
-    backgroundColor: '#fed7aa',
-    borderRadius: '50%',
-    opacity: 0.4,
-    filter: 'blur(32px)',
-    zIndex: 0,
-  },
-  phoneFrame: {
+    display: 'flex',
+    justifyContent: 'center',
     position: 'relative',
     zIndex: 10,
-    backgroundColor: '#1f2937',
-    borderRadius: '48px',
-    padding: '10px',
-    boxShadow: '0 24px 40px rgba(0, 0, 0, 0.15)',
-    border: '4px solid #374151',
   },
-  phoneImage: {
+  heroImage: {
     width: '100%',
+    maxWidth: '320px',
     height: 'auto',
-    borderRadius: '40px',
-    display: 'block',
-  },
-  badgeScore: {
-    position: 'absolute',
-    right: '-32px',
-    top: '64px',
-    backgroundColor: '#ffffff',
-    borderRadius: '24px',
-    boxShadow: '0 8px 24px rgba(0, 0, 0, 0.12)',
-    padding: '12px 16px',
-    display: 'flex',
-    alignItems: 'center',
-    gap: '8px',
-    border: '1px solid #f3f4f6',
-    zIndex: 20,
-  },
-  badgeIcon: {
-    fontSize: '20px',
-  },
-  badgeLabel: {
-    fontSize: '11px',
-    color: '#6b7280',
-    fontWeight: '600',
-  },
-  badgeValue: {
-    fontSize: '14px',
-    fontWeight: '700',
-    color: '#14B8A6',
-  },
-  badgeMaitre: {
-    position: 'absolute',
-    left: '-48px',
-    bottom: '80px',
-    backgroundColor: '#ffffff',
-    borderRadius: '24px',
-    boxShadow: '0 8px 24px rgba(0, 0, 0, 0.12)',
-    padding: '10px 12px',
-    display: 'flex',
-    alignItems: 'center',
-    gap: '8px',
-    border: '1px solid #f3f4f6',
-    zIndex: 20,
-  },
-  badgeMaitreText: {
-    fontSize: '12px',
-    fontWeight: '700',
-    color: '#111827',
+    filter: 'drop-shadow(0 24px 40px rgba(0,0,0,0.15))',
+    transform: 'translateY(20px)',
   },
 
-  // ---- QUESTION SECTION ----
-  questionSection: {
-    background: 'linear-gradient(to right, #14B8A6, #0F766E)',
-    color: '#ffffff',
-    textAlign: 'center',
-    padding: '56px 24px',
-  },
-  questionTitle: {
-    fontSize: 'clamp(24px, 4vw, 36px)',
-    fontWeight: '800',
-    marginTop: 0,
-    marginBottom: '16px',
-  },
-  questionText: {
-    fontSize: '18px',
-    opacity: 0.9,
-    maxWidth: '560px',
-    margin: '0 auto',
-    lineHeight: '1.6',
-  },
-
-  // ---- TRANSFORM SECTION ----
+  // ---- TRANSFORM SECTION (Nouveau, enrichi de Home) ----
   transformSection: {
     background: 'linear-gradient(135deg, #14B8A6 0%, #F97316 100%)',
     color: '#ffffff',
@@ -437,6 +289,27 @@ const css = {
     maxWidth: '600px',
     margin: '0 auto',
     lineHeight: '1.7',
+  },
+
+  // ---- QUESTION SECTION ----
+  questionSection: {
+    background: 'linear-gradient(to right, #14B8A6, #0F766E)',
+    color: '#ffffff',
+    textAlign: 'center',
+    padding: '56px 24px',
+  },
+  questionTitle: {
+    fontSize: 'clamp(24px, 4vw, 32px)',
+    fontWeight: '800',
+    marginTop: 0,
+    marginBottom: '16px',
+  },
+  questionText: {
+    fontSize: '17px',
+    opacity: 0.9,
+    maxWidth: '560px',
+    margin: '0 auto',
+    lineHeight: '1.6',
   },
 
   // ---- FEATURES ----
