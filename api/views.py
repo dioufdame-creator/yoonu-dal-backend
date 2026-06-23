@@ -62,6 +62,7 @@ def get_categories_for_envelope(envelope_type):
             'telephone_internet',
             'aide_menagere',
             'solidarite_famille',
+            'maison_courses',
         ],
         'plaisirs': [
             'restaurant',
