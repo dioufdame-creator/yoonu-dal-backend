@@ -3427,7 +3427,7 @@ def manage_meta_envelopes(request):
         meta_envelopes = {
             'essentiels': {
                 'frontend_name': 'essentiel',
-                'categories': ['loyer', 'alimentation', 'transport', 'sante_courante', 'eau_electricite', 'telephone_internet', 'aide_menagere', 'solidarite_famille'],
+                'categories': ['loyer', 'alimentation', 'transport', 'sante_courante', 'eau_electricite', 'telephone_internet', 'aide_menagere', 'solidarite_famille','maison_courses'],
                 'color': '#FF6B6B'
             },
             'plaisirs': {
