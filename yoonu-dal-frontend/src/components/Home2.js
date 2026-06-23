@@ -1,9 +1,8 @@
 import React from 'react';
 
 // ============================================================
-// COMPOSANT HOME2 (V3) - Landing Page Yoonu Dal
-// Base : Home2 (mobile-first, efficace)
-// Enrichi avec : Couleurs, dégradés et éléments clés de Home
+// COMPOSANT HOME2 - Landing Page Yoonu Dal
+// Contenu exact de v2, harmonisé en couleurs premium
 // ============================================================
 
 const Home2 = ({ onNavigate }) => {
@@ -12,7 +11,6 @@ const Home2 = ({ onNavigate }) => {
 
       {/* ======================================================
           SECTION 1 : HERO (Problème + Solution)
-          Base mobile-first, enrichie avec dégradé du titre
       ====================================================== */}
       <section style={css.hero}>
         <div style={css.bookBadge}>
@@ -20,9 +18,7 @@ const Home2 = ({ onNavigate }) => {
         </div>
 
         <h1 style={css.heroTitle}>
-          Transformez vos{' '}
-          <span style={css.heroTitleGradient}>silences financiers</span>{' '}
-          en liberté
+          Où part votre argent <span style={css.heroTitleGreen}>chaque mois ?</span>
         </h1>
 
         <p style={css.heroSubtitle}>
@@ -50,31 +46,7 @@ const Home2 = ({ onNavigate }) => {
       </section>
 
       {/* ======================================================
-          SECTION 2 : "Transformez vos silences" (Dégradé)
-          Nouvelle section enrichie de Home
-      ====================================================== */}
-      <section style={css.transformSection}>
-        <h2 style={css.transformTitle}>
-          Transformez vos silences financiers en liberté
-        </h2>
-        <p style={css.transformText}>
-          Avec Yoonu Dal, vous suivez vos dépenses, calculez votre reste à vivre par jour 
-          et reprenez le contrôle de votre argent. Pas de miracles, juste une méthode éprouvée.
-        </p>
-      </section>
-
-      {/* ======================================================
-          SECTION 3 : QUESTION CLÉ (Dégradé teal)
-      ====================================================== */}
-      <section style={css.questionSection}>
-        <h2 style={css.questionTitle}>Où va votre argent chaque mois ?</h2>
-        <p style={css.questionText}>
-          La plupart des gens ne le savent pas vraiment. Yoonu Dal vous donne cette clarté en quelques minutes.
-        </p>
-      </section>
-
-      {/* ======================================================
-          SECTION 4 : FONCTIONNALITÉS (Ce que vous pouvez faire)
+          SECTION 2 : FONCTIONNALITÉS (Ce que vous pouvez faire)
       ====================================================== */}
       <section style={css.featuresSection}>
         <h2 style={css.sectionTitle}>Ce que vous pouvez faire avec Yoonu Dal</h2>
@@ -98,7 +70,7 @@ const Home2 = ({ onNavigate }) => {
       </section>
 
       {/* ======================================================
-          SECTION 5 : TÉMOIGNAGES (Preuve)
+          SECTION 3 : TÉMOIGNAGES (Preuve)
       ====================================================== */}
       <section style={css.testimonialsSection}>
         <h2 style={css.sectionTitle}>Ce que disent nos premiers testeurs</h2>
@@ -130,7 +102,7 @@ const Home2 = ({ onNavigate }) => {
       </section>
 
       {/* ======================================================
-          SECTION 6 : LA MÉTHODE EN 4 ÉTAPES
+          SECTION 4 : LA MÉTHODE EN 4 ÉTAPES
       ====================================================== */}
       <section style={css.methodSection}>
         <h2 style={css.sectionTitle}>La méthode Yoonu Dal</h2>
@@ -140,10 +112,10 @@ const Home2 = ({ onNavigate }) => {
 
         <div style={css.stepsGrid}>
           {[
-            { num: '1', icon: '👁️', title: 'Conscience', text: 'Ouvrez les yeux sur vos habitudes sans jugement.', color: '#14B8A6', bg: '#f0fdfa' },
-            { num: '2', icon: '💡', title: 'Clarté', text: 'Comprenez exactement où va votre argent.', color: '#84CC16', bg: '#fefce8' },
-            { num: '3', icon: '🎯', title: 'Choix', text: 'Alignez vos achats avec vos priorités.', color: '#F97316', bg: '#fff7ed' },
-            { num: '4', icon: '🚀', title: 'Contrôle', text: 'Construisez votre liberté financière.', color: '#FDE047', bg: '#fefce8' },
+            { num: '1', icon: '👁️', title: 'Conscience', text: 'Ouvrez les yeux sur vos habitudes sans jugement.', color: '#0a8043', bg: '#f0fdf4' },
+            { num: '2', icon: '💡', title: 'Clarté', text: 'Comprenez exactement où va votre argent.', color: '#d97706', bg: '#fffbeb' },
+            { num: '3', icon: '🎯', title: 'Choix', text: 'Alignez vos achats avec vos priorités.', color: '#2563eb', bg: '#eff6ff' },
+            { num: '4', icon: '🚀', title: 'Contrôle', text: 'Construisez votre liberté financière.', color: '#7c3aed', bg: '#f5f3ff' },
           ].map((step) => (
             <div key={step.num} style={{ ...css.stepCard, backgroundColor: step.bg }}>
               <div style={{ ...css.stepNum, color: step.color }}>{step.num}.</div>
@@ -156,7 +128,7 @@ const Home2 = ({ onNavigate }) => {
       </section>
 
       {/* ======================================================
-          SECTION 7 : CTA FINAL
+          SECTION 5 : CTA FINAL
       ====================================================== */}
       <section style={css.ctaSection}>
         <h2 style={css.ctaTitle}>Prêt à reprendre le contrôle ?</h2>
@@ -173,7 +145,7 @@ const Home2 = ({ onNavigate }) => {
 };
 
 // ============================================================
-// STYLES
+// STYLES - Harmonisés en couleurs premium (dégradés teal-orange)
 // ============================================================
 const css = {
   page: {
@@ -212,7 +184,7 @@ const css = {
     marginBottom: '20px',
     color: '#111827',
   },
-  heroTitleGradient: {
+  heroTitleGreen: {
     background: 'linear-gradient(to right, #14B8A6, #F97316)',
     WebkitBackgroundClip: 'text',
     WebkitTextFillColor: 'transparent',
@@ -268,48 +240,6 @@ const css = {
     height: 'auto',
     filter: 'drop-shadow(0 24px 40px rgba(0,0,0,0.15))',
     transform: 'translateY(20px)',
-  },
-
-  // ---- TRANSFORM SECTION (Nouveau, enrichi de Home) ----
-  transformSection: {
-    background: 'linear-gradient(135deg, #14B8A6 0%, #F97316 100%)',
-    color: '#ffffff',
-    textAlign: 'center',
-    padding: '72px 24px',
-  },
-  transformTitle: {
-    fontSize: 'clamp(28px, 5vw, 40px)',
-    fontWeight: '800',
-    marginTop: 0,
-    marginBottom: '20px',
-  },
-  transformText: {
-    fontSize: '18px',
-    opacity: 0.95,
-    maxWidth: '600px',
-    margin: '0 auto',
-    lineHeight: '1.7',
-  },
-
-  // ---- QUESTION SECTION ----
-  questionSection: {
-    background: 'linear-gradient(to right, #14B8A6, #0F766E)',
-    color: '#ffffff',
-    textAlign: 'center',
-    padding: '56px 24px',
-  },
-  questionTitle: {
-    fontSize: 'clamp(24px, 4vw, 32px)',
-    fontWeight: '800',
-    marginTop: 0,
-    marginBottom: '16px',
-  },
-  questionText: {
-    fontSize: '17px',
-    opacity: 0.9,
-    maxWidth: '560px',
-    margin: '0 auto',
-    lineHeight: '1.6',
   },
 
   // ---- FEATURES ----
@@ -454,7 +384,7 @@ const css = {
 
   // ---- CTA FINAL ----
   ctaSection: {
-    background: 'linear-gradient(135deg, #14B8A6 0%, #0F766E 100%)',
+    background: 'linear-gradient(to right, #14B8A6, #0F766E)',
     color: '#ffffff',
     textAlign: 'center',
     padding: '72px 24px',
