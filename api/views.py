@@ -2256,13 +2256,16 @@ def ai_chat(request):
         if not message:
             return Response({'error': 'Message requis'}, status=status.HTTP_400_BAD_REQUEST)
 
-        # ── CONTEXTE FINANCIER ──────────────────────────────────────
+        from dateutil.relativedelta import relativedelta
+
+        # ── CONTEXTE FINANCIER MOIS COURANT ─────────────────────────
         now = datetime.now()
         start_of_month = now.replace(day=1)
         last_day_of_month = (now.replace(day=1) + timedelta(days=32)).replace(day=1) - timedelta(days=1)
         day_of_month = now.day
         days_remaining = (last_day_of_month - now).days
         month_progress = (day_of_month / last_day_of_month.day) * 100
+        start_of_month_date = now.replace(day=1).date()
 
         monthly_expenses = Expense.objects.filter(
             user=user, date__gte=start_of_month
@@ -2277,7 +2280,6 @@ def ai_chat(request):
 
         # ── ENVELOPPES ──────────────────────────────────────────────
         print("🔍 3. Chargement enveloppes...")
-        start_of_month_date = now.replace(day=1).date()
         envelopes = Envelope.objects.filter(user=user)
         envelopes_data = []
         for env in envelopes:
@@ -2369,6 +2371,93 @@ def ai_chat(request):
         user_values_qs = UserValue.objects.filter(user=user).order_by('priority')
         values_data = [v.value for v in user_values_qs]
 
+        # ── HISTORIQUE 6 MOIS ────────────────────────────────────────
+        print("🔍 5b. Chargement historique 6 mois...")
+        history_months = []
+        for i in range(1, 7):
+            m_start = (start_of_month - relativedelta(months=i)).replace(
+                day=1, hour=0, minute=0, second=0, microsecond=0
+            )
+            m_end = (m_start + relativedelta(months=1)).replace(
+                day=1, hour=0, minute=0, second=0, microsecond=0
+            ) - timedelta(days=1)
+
+            m_expenses = float(
+                Expense.objects.filter(
+                    user=user,
+                    date__gte=m_start.date(),
+                    date__lte=m_end.date()
+                ).aggregate(total=Sum('amount'))['total'] or 0
+            )
+            m_income = float(
+                Income.objects.filter(
+                    user=user,
+                    date__gte=m_start.date(),
+                    date__lte=m_end.date()
+                ).aggregate(total=Sum('amount'))['total'] or 0
+            )
+
+            m_by_envelope = {}
+            for env_type in ['essentiels', 'plaisirs', 'projets', 'liberation']:
+                cats = get_categories_for_envelope(env_type)
+                m_by_envelope[env_type] = float(
+                    Expense.objects.filter(
+                        user=user,
+                        category__in=cats,
+                        date__gte=m_start.date(),
+                        date__lte=m_end.date()
+                    ).aggregate(total=Sum('amount'))['total'] or 0
+                )
+
+            # Top catégorie du mois
+            top_cat = (
+                Expense.objects.filter(
+                    user=user,
+                    date__gte=m_start.date(),
+                    date__lte=m_end.date()
+                )
+                .values('category')
+                .annotate(total=Sum('amount'))
+                .order_by('-total')
+                .first()
+            )
+
+            history_months.append({
+                'month': m_start.strftime('%B %Y'),
+                'month_key': m_start.strftime('%Y-%m'),
+                'income': m_income,
+                'expenses': m_expenses,
+                'balance': round(m_income - m_expenses, 0),
+                'savings_rate': round(((m_income - m_expenses) / m_income * 100) if m_income > 0 else 0, 1),
+                'by_envelope': m_by_envelope,
+                'top_category': top_cat['category'] if top_cat else None,
+                'top_category_amount': float(top_cat['total']) if top_cat else 0,
+            })
+
+        # ── TOP CATÉGORIES 6 MOIS ────────────────────────────────────
+        six_months_ago = (start_of_month - relativedelta(months=6)).date()
+        cat_totals = (
+            Expense.objects.filter(user=user, date__gte=six_months_ago)
+            .values('category')
+            .annotate(total=Sum('amount'))
+            .order_by('-total')[:8]
+        )
+        top_categories_6m = [
+            {'category': c['category'], 'total_6m': float(c['total'])}
+            for c in cat_totals
+        ]
+
+        # ── SCORE HISTORIQUE ─────────────────────────────────────────
+        score_history_data = []
+        for h in ScoreHistory.objects.filter(user=user).order_by('-month')[:6]:
+            score_history_data.append({
+                'month': h.month.strftime('%B %Y'),
+                'score': h.total_score,
+                'alignment': float(h.alignment_score),
+                'discipline': float(h.discipline_score),
+                'stability': float(h.stability_score),
+            })
+
         # ── CONTEXTE COMPLET ─────────────────────────────────────────
         user_context = {
             'name': user.first_name or user.username,
@@ -2389,6 +2478,9 @@ def ai_chat(request):
             'incomes_this_month': incomes_data,
             'tontines': tontines_data,
             'debts': debts_data,
+            'history_6_months': history_months,
+            'top_categories_6m': top_categories_6m,
+            'score_history': score_history_data,
         }
 
         # ── CONTEXTE TEMPOREL ────────────────────────────────────────
@@ -2409,7 +2501,7 @@ def ai_chat(request):
         # ── SYSTEM PROMPT COACH ──────────────────────────────────────
         system_prompt = f"""Tu es Yoonu, coach financier personnel de {user.first_name or user.username}, basé au Sénégal.
 
-Tu as accès à TOUTES ses données financières en temps réel. Tu le connais intimement — ses valeurs, ses objectifs, ses habitudes, ses dettes, ses tontines.
+Tu as accès à TOUTES ses données financières — mois courant ET historique complet 6 mois. Tu le connais intimement.
 
 ━━━ PROFIL COMPLET ━━━
 Prénom : {user.first_name or user.username}
@@ -2417,16 +2509,16 @@ Valeurs personnelles : {', '.join(values_data) if values_data else 'Non définie
 Score Yoonu Dal : {yoonu_score}/100 ({score_level})
 Date : {now.strftime('%d/%m/%Y')} — {temporal_context}
 
-━━━ SITUATION FINANCIÈRE DU MOIS ━━━
+━━━ SITUATION FINANCIÈRE DU MOIS COURANT ━━━
 Revenus : {monthly_income:,.0f} FCFA
 Dépenses : {monthly_expenses:,.0f} FCFA
 {budget_alert}
 
+━━━ ENVELOPPES CE MOIS ━━━
+{json.dumps(envelopes_data, ensure_ascii=False, indent=2)}
+
 ━━━ OBJECTIFS EN COURS ━━━
 {json.dumps(goals_data, ensure_ascii=False, indent=2) if goals_data else 'Aucun objectif défini'}
-
-━━━ ENVELOPPES ━━━
-{json.dumps(envelopes_data, ensure_ascii=False, indent=2)}
 
 ━━━ TONTINES ━━━
 {json.dumps(tontines_data, ensure_ascii=False, indent=2) if tontines_data else 'Aucune tontine'}
@@ -2440,19 +2532,35 @@ Dépenses : {monthly_expenses:,.0f} FCFA
 ━━━ DÉPENSES RÉCENTES ━━━
 {json.dumps(recent_expenses_data, ensure_ascii=False, indent=2)}
 
+━━━ HISTORIQUE 6 DERNIERS MOIS ━━━
+{json.dumps(history_months, ensure_ascii=False, indent=2)}
+
+━━━ TOP CATÉGORIES SUR 6 MOIS ━━━
+{json.dumps(top_categories_6m, ensure_ascii=False, indent=2)}
+
+━━━ ÉVOLUTION DU SCORE YOONU DAL ━━━
+{json.dumps(score_history_data, ensure_ascii=False, indent=2) if score_history_data else 'Historique score non disponible'}
+
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-TON RÔLE : Coach financier intelligent, pas un tableau de bord.
+TON RÔLE : Coach financier intelligent avec mémoire complète.
 
 PHILOSOPHIE :
-- Tu réponds comme un ami proche qui connaît parfaitement sa situation financière
-- Tu contextualises avec SES données réelles (objectifs nommés, tontines spécifiques, dettes)
-- Tu fais des connexions intelligentes : si quelqu'un dit "je peux mettre plus", tu demandes VERS QUEL OBJECTIF, pas juste "combien"
-- Tu poses des questions stratégiques quand c'est pertinent
-- Tu peux challenger ses décisions et suggérer des stratégies long terme
-- Tu utilises le contexte temporel UNIQUEMENT quand c'est pertinent (pas à chaque message)
-- Tu connais la réalité sénégalaise et africaine: Tabaski, Korité, solidarité familiale, tontines, Wave/Orange Money
-- Réponses de longueur naturelle — ni trop courtes ni trop longues selon le contexte
+- Tu réponds comme un ami proche qui connaît parfaitement sa situation financière sur plusieurs mois
+- Tu fais des COMPARAISONS TEMPORELLES pertinentes : "En mai tu avais dépensé X en plaisirs, ce mois c'est Y"
+- Tu détectes les PATTERNS : dépenses récurrentes, catégories qui dérapent, mois difficiles vs bons mois
+- Tu identifies les ANOMALIES : "solidarité famille a doublé ce mois vs la moyenne des 6 derniers mois"
+- Tu fais des projections : "à ce rythme de dépenses, dans 3 mois ton objectif sera atteint"
+- Tu contextualises avec la réalité sénégalaise : Tabaski, Korité, rentrée scolaire, fin d'année
 - Tu utilises les vrais noms de ses objectifs et tontines dans tes réponses
+- Réponses de longueur naturelle selon le contexte
+
+CAPACITÉS D'ANALYSE AVEC L'HISTORIQUE :
+- Comparer mois par mois sur n'importe quelle enveloppe ou catégorie
+- Calculer des moyennes et tendances sur 6 mois
+- Identifier les mois où le budget a été respecté vs dépassé
+- Analyser l'évolution du taux d'épargne
+- Repérer les patterns de solidarité familiale, fêtes, événements récurrents
+- Lier l'évolution du score Yoonu Dal aux comportements financiers
 
 QUAND CRÉER DES ACTIONS :
 - L'utilisateur te demande explicitement d'enregistrer quelque chose → génère l'action
@@ -2461,10 +2569,10 @@ QUAND CRÉER DES ACTIONS :
 ━━━ ACTIONS DISPONIBLES ━━━
 
 1. create_expense : Créer une dépense
-   {{"type": "create_expense", "data": {{"category": "loyer|alimentation|transport|sante_courante|eau_electricite|telephone_internet|aide_menagere|solidarite_famille|restaurant|loisirs|vetements|beaute|voyage|education|epargne|fetes_ceremonies|spiritualite|sante_exceptionnelle|immobilier|tontine_epargne|remboursement_dette|autre" , "amount": 5000, "description": "Carburant", "date": "{now.strftime('%Y-%m-%d')}"}}}}
+   {{"type": "create_expense", "data": {{"category": "loyer|alimentation|transport|sante_courante|eau_electricite|telephone_internet|aide_menagere|solidarite_famille|maison_courses|restaurant|loisirs|vetements|beaute|voyage|education|epargne|fetes_ceremonies|spiritualite|sante_exceptionnelle|immobilier|tontine_epargne|remboursement_dette|autre", "amount": 5000, "description": "Carburant", "date": "{now.strftime('%Y-%m-%d')}"}}}}
 
 2. create_income : Créer un revenu
-   {{"type": "create_income", "data": {{"source": "Salaire|Business|Freelance|Investissement|Location|Autre", "amount": 50000, "description": "Salaire avril", "date": "{now.strftime('%Y-%m-%d')}"}}}}
+   {{"type": "create_income", "data": {{"source": "Salaire|Business|Freelance|Investissement|Location|Autre", "amount": 50000, "description": "Salaire juin", "date": "{now.strftime('%Y-%m-%d')}"}}}}
 
 3. create_tontine : Créer une tontine
    {{"type": "create_tontine", "data": {{"name": "Tontine Famille", "contribution_amount": 10000, "total_participants": 10, "frequency": "monthly"}}}}
@@ -2476,21 +2584,24 @@ FORMAT RÉPONSE JSON STRICT :
 }}
 
 RÈGLES FORMAT :
-- Si action demandée : TOUJOURS générer l'objet action complet avec TOUS les champs requis
 - JSON valide OBLIGATOIRE
-- Chiffres précis quand pertinents (pas systématiquement)
+- Si action demandée : générer l'objet action complet avec TOUS les champs requis
+- Chiffres précis quand pertinents
 
-EXEMPLES DE BONNES RÉPONSES :
-- "Je peux mettre plus ?" → "Vers quel objectif tu veux diriger ça ? Ton terrain à {goals_data[0]['title'] if goals_data else 'X'} est à {goals_data[0]['progress_percentage'] if goals_data else 0}%, ou tu préfères renforcer ta tontine ?"
-- "Revenu ajouté" → générer create_income + confirmer avec impact sur budget
-- Question générale → répondre sans ramener systématiquement au budget/jour"""
+EXEMPLES DE BONNES RÉPONSES AVEC HISTORIQUE :
+- "Compare avec le mois précédent" → comparer chaque enveloppe, calculer les écarts en FCFA et %, identifier ce qui a changé
+- "Comment évolue ma solidarité famille ?" → analyser la catégorie sur 6 mois, calculer la moyenne, identifier les pics
+- "Mon taux d'épargne s'améliore ?" → calculer le taux mois par mois sur 6 mois, donner la tendance
+- "Quel a été mon meilleur mois ?" → identifier le mois avec le meilleur solde ou taux d'épargne
+- "Je peux mettre plus ?" → "Vers quel objectif ? Ton {goals_data[0]['title'] if goals_data else 'objectif'} est à {goals_data[0]['progress_percentage'] if goals_data else 0}%"
+"""
 
         # ── APPEL CLAUDE ─────────────────────────────────────────────
         print("🔍 6. Appel Claude API...")
         client = anthropic.Anthropic(api_key=settings.ANTHROPIC_API_KEY)
 
         messages = []
-        for msg in history[-20:]:  # 20 messages d'historique
+        for msg in history[-20:]:
             messages.append({'role': msg['role'], 'content': msg['content']})
         messages.append({'role': 'user', 'content': message})
 
@@ -2515,10 +2626,10 @@ EXEMPLES DE BONNES RÉPONSES :
                 cleaned = cleaned[:-3]
             cleaned = cleaned.strip()
 
-            start = cleaned.find('{')
-            end = cleaned.rfind('}')
-            if start != -1 and end != -1:
-                cleaned = cleaned[start:end + 1]
+            start_idx = cleaned.find('{')
+            end_idx = cleaned.rfind('}')
+            if start_idx != -1 and end_idx != -1:
+                cleaned = cleaned[start_idx:end_idx + 1]
 
             parsed = json.loads(cleaned)
 
@@ -2540,7 +2651,6 @@ EXEMPLES DE BONNES RÉPONSES :
         import traceback
         traceback.print_exc()
         return Response({'error': f'Erreur IA: {str(e)}'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
 
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
