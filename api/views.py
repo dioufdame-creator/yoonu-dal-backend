@@ -2495,7 +2495,7 @@ EXEMPLES DE BONNES RÉPONSES :
         messages.append({'role': 'user', 'content': message})
 
         response = client.messages.create(
-            model='claude-sonnet-4-20250514',
+            model='claude-sonnet-4-6',
             max_tokens=1500,
             system=system_prompt,
             messages=messages
@@ -2979,7 +2979,7 @@ Si le reçu est illisible ou ce n'est pas un reçu :
 """
 
         response = client.messages.create(
-            model='claude-sonnet-4-20250514',
+            model='claude-sonnet-4-6',
             max_tokens=1000,
             system=system_prompt,
             messages=[
