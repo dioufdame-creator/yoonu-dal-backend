@@ -8,6 +8,12 @@ from . import export_views
 from . import notification_views
 from .notification_views import register_fcm_token, unregister_fcm_token, check_and_notify, test_notification
 
+from .views import (
+    ai_conversations,
+    ai_conversation_detail,
+    ai_memory,
+    ai_chat_v2,
+)
 
 urlpatterns = [
     # API racine
@@ -119,4 +125,10 @@ urlpatterns = [
     path('goals/contributions/<int:payment_id>/', views.delete_goal_payment),
 
     path('incomes/<int:income_id>/', views.income_detail, name='income_detail'),
+
+    path('ai/chat/v2/', ai_chat_v2, name='ai_chat_v2'),
+    path('ai/conversations/', ai_conversations, name='ai_conversations'),
+    path('ai/conversations/<int:conversation_id>/', ai_conversation_detail, name='ai_conversation_detail'),
+    path('ai/memory/', ai_memory, name='ai_memory'),
+
 ]
