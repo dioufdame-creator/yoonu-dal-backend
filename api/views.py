@@ -4421,4 +4421,465 @@ def income_detail(request, income_id):
         return Response({'message': 'Revenu supprimé'})
     except Exception as e:
         return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+# ==========================================
+# À AJOUTER DANS api/views.py
+# (après la fonction ai_chat existante)
+# ==========================================
+
+from .models import AIConversation, AIMessage, AIMemory
+
+
+# ── LISTE ET CRÉATION DE CONVERSATIONS ──────────────────────
+
+@api_view(['GET', 'POST'])
+@permission_classes([IsAuthenticated])
+def ai_conversations(request):
+    """Lister ou créer des conversations IA"""
+    user = request.user
+
+    if request.method == 'GET':
+        conversations = AIConversation.objects.filter(
+            user=user, is_active=True
+        ).order_by('-updated_at')[:20]
+
+        return Response({
+            'conversations': [{
+                'id': c.id,
+                'title': c.title,
+                'message_count': c.message_count,
+                'created_at': c.created_at.isoformat(),
+                'updated_at': c.updated_at.isoformat(),
+            } for c in conversations]
+        })
+
+    elif request.method == 'POST':
+        conversation = AIConversation.objects.create(
+            user=user,
+            title=request.data.get('title', 'Nouvelle conversation')
+        )
+        return Response({
+            'id': conversation.id,
+            'title': conversation.title,
+            'created_at': conversation.created_at.isoformat(),
+        }, status=status.HTTP_201_CREATED)
+
+
+# ── DÉTAIL D'UNE CONVERSATION ────────────────────────────────
+
+@api_view(['GET', 'DELETE'])
+@permission_classes([IsAuthenticated])
+def ai_conversation_detail(request, conversation_id):
+    """Récupérer ou supprimer une conversation"""
+    user = request.user
+
+    try:
+        conversation = AIConversation.objects.get(id=conversation_id, user=user)
+    except AIConversation.DoesNotExist:
+        return Response({'error': 'Conversation non trouvée'}, status=status.HTTP_404_NOT_FOUND)
+
+    if request.method == 'GET':
+        messages_qs = conversation.messages.all().order_by('created_at')
+        return Response({
+            'id': conversation.id,
+            'title': conversation.title,
+            'messages': [{
+                'role': m.role,
+                'content': m.content,
+                'actions': m.actions,
+                'created_at': m.created_at.isoformat(),
+            } for m in messages_qs],
+            'created_at': conversation.created_at.isoformat(),
+            'updated_at': conversation.updated_at.isoformat(),
+        })
+
+    elif request.method == 'DELETE':
+        conversation.is_active = False
+        conversation.save()
+        return Response({'message': 'Conversation supprimée'})
+
+
+# ── MÉMOIRE IA ───────────────────────────────────────────────
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def ai_memory(request):
+    """Récupérer la mémoire persistante de l'IA"""
+    user = request.user
+    memory, _ = AIMemory.objects.get_or_create(user=user)
+    return Response({'facts': memory.facts, 'updated_at': memory.updated_at.isoformat()})
+
+
+# ── CHAT AVEC HISTORIQUE SAUVEGARDÉ ─────────────────────────
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+@check_usage_limit('ai_messages_count', 50, "Messages IA")
+def ai_chat_v2(request):
+    """
+    Chat IA avec sauvegarde automatique et mémoire persistante.
+    Remplace ai_chat — même logique financière + persistence.
+    """
+    user = request.user
+
+    try:
+        message = request.data.get('message', '')
+        conversation_id = request.data.get('conversation_id')
+
+        if not message:
+            return Response({'error': 'Message requis'}, status=status.HTTP_400_BAD_REQUEST)
+
+        from dateutil.relativedelta import relativedelta
+
+        # ── RÉCUPÉRER OU CRÉER LA CONVERSATION ──────────────────────
+        if conversation_id:
+            try:
+                conversation = AIConversation.objects.get(id=conversation_id, user=user)
+            except AIConversation.DoesNotExist:
+                conversation = AIConversation.objects.create(user=user)
+        else:
+            conversation = AIConversation.objects.create(user=user)
+
+        # ── CHARGER L'HISTORIQUE DE LA CONVERSATION ─────────────────
+        saved_messages = conversation.messages.order_by('created_at').values('role', 'content')
+        history = list(saved_messages)
+
+        # ── MÉMOIRE PERSISTANTE ──────────────────────────────────────
+        memory, _ = AIMemory.objects.get_or_create(user=user)
+        memory_facts = memory.facts
+
+        # ── CONTEXTE FINANCIER ───────────────────────────────────────
+        now = datetime.now()
+        start_of_month = now.replace(day=1)
+        last_day_of_month = (now.replace(day=1) + timedelta(days=32)).replace(day=1) - timedelta(days=1)
+        day_of_month = now.day
+        days_remaining = (last_day_of_month - now).days
+        month_progress = (day_of_month / last_day_of_month.day) * 100
+        start_of_month_date = now.replace(day=1).date()
+
+        monthly_expenses = float(Expense.objects.filter(
+            user=user, date__gte=start_of_month
+        ).aggregate(total=Sum('amount'))['total'] or 0)
+
+        monthly_income = float(Income.objects.filter(
+            user=user, date__gte=start_of_month
+        ).aggregate(total=Sum('amount'))['total'] or 0)
+
+        budget_remaining = monthly_income - monthly_expenses
+        daily_budget = budget_remaining / days_remaining if days_remaining > 0 else 0
+
+        # ── ENVELOPPES ───────────────────────────────────────────────
+        envelopes = Envelope.objects.filter(user=user)
+        envelopes_data = []
+        for env in envelopes:
+            categories = get_categories_for_envelope(env.envelope_type)
+            real_spent = float(Expense.objects.filter(
+                user=user, category__in=categories, date__gte=start_of_month_date
+            ).aggregate(total=Sum('amount'))['total'] or 0)
+            budget = float(env.monthly_budget)
+            envelopes_data.append({
+                'type': env.envelope_type,
+                'budget': budget,
+                'spent': real_spent,
+                'remaining': budget - real_spent,
+                'percentage_used': round((real_spent / budget * 100) if budget > 0 else 0, 1)
+            })
+
+        # ── OBJECTIFS ────────────────────────────────────────────────
+        goals = Goal.objects.filter(user=user, is_achieved=False).order_by('-created_at')[:10]
+        goals_data = [{
+            'id': g.id, 'title': g.title,
+            'target_amount': float(g.target_amount),
+            'current_amount': float(g.current_amount),
+            'progress_percentage': float(g.progress_percentage) if g.progress_percentage else 0,
+            'deadline': g.deadline.isoformat() if g.deadline else None
+        } for g in goals]
+
+        # ── SCORE ────────────────────────────────────────────────────
+        try:
+            score_result = calculate_yoonu_score(user)
+            yoonu_score = score_result.get('total_score', 0)
+            score_level = score_result.get('level', 'Débutant')
+        except:
+            yoonu_score = 0
+            score_level = 'Non calculé'
+
+        # ── TONTINES ─────────────────────────────────────────────────
+        my_tontines = Tontine.objects.filter(
+            Q(creator=user) | Q(participants__user=user)
+        ).distinct()
+        tontines_data = [{
+            'id': t.id, 'name': t.name,
+            'monthly_contribution': float(t.monthly_contribution),
+            'status': t.status,
+            'my_position': t.participants.filter(user=user).first().position if t.participants.filter(user=user).exists() else None
+        } for t in my_tontines]
+
+        # ── DETTES ───────────────────────────────────────────────────
+        debts_data = [{
+            'name': d.name,
+            'remaining_amount': float(d.remaining_amount),
+            'monthly_payment': float(d.monthly_payment),
+        } for d in Debt.objects.filter(user=user, is_active=True)]
+
+        # ── VALEURS ──────────────────────────────────────────────────
+        values_data = [v.value for v in UserValue.objects.filter(user=user).order_by('priority')]
+
+        # ── REVENUS DU MOIS ──────────────────────────────────────────
+        incomes_data = [{
+            'source': inc.source, 'amount': float(inc.amount)
+        } for inc in Income.objects.filter(user=user, date__gte=start_of_month)]
+
+        # ── DÉPENSES RÉCENTES ────────────────────────────────────────
+        recent_expenses_data = [{
+            'category': e.category, 'amount': float(e.amount),
+            'description': e.description, 'date': e.date.isoformat()
+        } for e in Expense.objects.filter(user=user).order_by('-date')[:10]]
+
+        # ── HISTORIQUE 6 MOIS ────────────────────────────────────────
+        history_months = []
+        for i in range(1, 7):
+            m_start = (start_of_month - relativedelta(months=i)).replace(
+                day=1, hour=0, minute=0, second=0, microsecond=0
+            )
+            m_end = (m_start + relativedelta(months=1)).replace(
+                day=1, hour=0, minute=0, second=0, microsecond=0
+            ) - timedelta(days=1)
+            m_expenses = float(Expense.objects.filter(
+                user=user, date__gte=m_start.date(), date__lte=m_end.date()
+            ).aggregate(total=Sum('amount'))['total'] or 0)
+            m_income = float(Income.objects.filter(
+                user=user, date__gte=m_start.date(), date__lte=m_end.date()
+            ).aggregate(total=Sum('amount'))['total'] or 0)
+            m_by_envelope = {}
+            for env_type in ['essentiels', 'plaisirs', 'projets', 'liberation']:
+                cats = get_categories_for_envelope(env_type)
+                m_by_envelope[env_type] = float(
+                    Expense.objects.filter(
+                        user=user, category__in=cats,
+                        date__gte=m_start.date(), date__lte=m_end.date()
+                    ).aggregate(total=Sum('amount'))['total'] or 0
+                )
+            history_months.append({
+                'month': m_start.strftime('%B %Y'),
+                'month_key': m_start.strftime('%Y-%m'),
+                'income': m_income, 'expenses': m_expenses,
+                'balance': round(m_income - m_expenses, 0),
+                'savings_rate': round(((m_income - m_expenses) / m_income * 100) if m_income > 0 else 0, 1),
+                'by_envelope': m_by_envelope,
+            })
+
+        # ── TOP CATÉGORIES 6 MOIS ────────────────────────────────────
+        six_months_ago = (start_of_month - relativedelta(months=6)).date()
+        top_categories_6m = [{
+            'category': c['category'], 'total_6m': float(c['total'])
+        } for c in Expense.objects.filter(user=user, date__gte=six_months_ago)
+            .values('category').annotate(total=Sum('amount')).order_by('-total')[:8]]
+
+        # ── SCORE HISTORIQUE ─────────────────────────────────────────
+        score_history_data = [{
+            'month': h.month.strftime('%B %Y'), 'score': h.total_score
+        } for h in ScoreHistory.objects.filter(user=user).order_by('-month')[:6]]
+
+        # ── CONTEXTE TEMPOREL ────────────────────────────────────────
+        temporal_context = ""
+        if day_of_month <= 5:
+            temporal_context = f"🟢 DÉBUT DE MOIS (J{day_of_month})."
+        elif days_remaining <= 5:
+            temporal_context = f"🔴 FIN DE MOIS ({days_remaining}j restants)."
+        elif month_progress >= 50:
+            temporal_context = f"🟡 MI-MOIS (J{day_of_month})."
+
+        budget_alert = ""
+        if budget_remaining < 0:
+            budget_alert = f"⚠️ DÉPASSEMENT : {abs(budget_remaining):,.0f} FCFA"
+        elif days_remaining > 0:
+            budget_alert = f"Budget : {budget_remaining:,.0f} FCFA pour {days_remaining}j = {daily_budget:,.0f} FCFA/jour"
+
+        # ── MÉMOIRE EN TEXTE ─────────────────────────────────────────
+        memory_text = ""
+        if memory_facts:
+            memory_lines = [f"- {k}: {v}" for k, v in memory_facts.items() if k != 'derniere_mise_a_jour']
+            if memory_lines:
+                memory_text = "\n".join(memory_lines)
+
+        # ── SYSTEM PROMPT ────────────────────────────────────────────
+        system_prompt = f"""Tu es Yoonu, coach financier personnel de {user.first_name or user.username}, basé au Sénégal.
+Tu as une MÉMOIRE PERSISTANTE entre les sessions et accès à tout l'historique financier.
+
+━━━ MÉMOIRE PERSISTANTE ━━━
+Ce que tu sais déjà sur {user.first_name or user.username} depuis vos conversations précédentes :
+{memory_text if memory_text else "Première conversation — construis ta mémoire au fil des échanges"}
+
+━━━ PROFIL ━━━
+Prénom : {user.first_name or user.username}
+Valeurs : {', '.join(values_data) if values_data else 'Non définies'}
+Score Yoonu Dal : {yoonu_score}/100 ({score_level})
+Date : {now.strftime('%d/%m/%Y')} — {temporal_context}
+
+━━━ SITUATION FINANCIÈRE DU MOIS ━━━
+Revenus : {monthly_income:,.0f} FCFA
+Dépenses : {monthly_expenses:,.0f} FCFA
+{budget_alert}
+
+━━━ ENVELOPPES ━━━
+{json.dumps(envelopes_data, ensure_ascii=False, indent=2)}
+
+━━━ OBJECTIFS ━━━
+{json.dumps(goals_data, ensure_ascii=False, indent=2) if goals_data else 'Aucun objectif'}
+
+━━━ TONTINES ━━━
+{json.dumps(tontines_data, ensure_ascii=False, indent=2) if tontines_data else 'Aucune tontine'}
+
+━━━ DETTES ━━━
+{json.dumps(debts_data, ensure_ascii=False, indent=2) if debts_data else 'Aucune dette'}
+
+━━━ REVENUS CE MOIS ━━━
+{json.dumps(incomes_data, ensure_ascii=False, indent=2) if incomes_data else 'Aucun revenu'}
+
+━━━ DÉPENSES RÉCENTES ━━━
+{json.dumps(recent_expenses_data, ensure_ascii=False, indent=2)}
+
+━━━ HISTORIQUE 6 MOIS ━━━
+{json.dumps(history_months, ensure_ascii=False, indent=2)}
+
+━━━ TOP CATÉGORIES 6 MOIS ━━━
+{json.dumps(top_categories_6m, ensure_ascii=False, indent=2)}
+
+━━━ ÉVOLUTION SCORE ━━━
+{json.dumps(score_history_data, ensure_ascii=False, indent=2) if score_history_data else 'Non disponible'}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+TON RÔLE : Coach financier avec mémoire longue durée.
+
+GESTION DE LA MÉMOIRE :
+- Tu retiens les informations importantes entre sessions
+- Événements à venir (mariage, voyage, rentrée scolaire, fêtes)
+- Patterns détectés (solidarité famille en pic certains mois, dérapages plaisirs)
+- Préférences de l'utilisateur (comment il veut qu'on lui parle)
+- Décisions prises ensemble (stratégies, engagements)
+- Contexte personnel (situation professionnelle, projets de vie)
+À chaque message, extrait les nouveaux faits importants dans extract_memory.
+
+PHILOSOPHIE :
+- Tu te souviens des conversations précédentes et tu les utilises
+- Tu fais des liens : "La dernière fois tu m'avais dit que...", "On avait parlé de..."
+- Tu détectes les patterns sur 6 mois
+- Tu fais des comparaisons temporelles pertinentes
+- Tu connais la réalité sénégalaise : Tabaski, Korité, solidarité familiale, tontines
+- Réponses naturelles, ni trop courtes ni trop longues
+
+QUAND CRÉER DES ACTIONS :
+- L'utilisateur demande explicitement d'enregistrer → génère l'action
+- Sinon → réponds sans action
+
+━━━ ACTIONS DISPONIBLES ━━━
+1. create_expense: {{"type":"create_expense","data":{{"category":"alimentation|transport|loyer|solidarite_famille|restaurant|loisirs|education|tontine_epargne|...","amount":5000,"description":"Carburant","date":"{now.strftime('%Y-%m-%d')}"}}}}
+2. create_income: {{"type":"create_income","data":{{"source":"Salaire|Business|Freelance|Autre","amount":50000,"description":"Salaire","date":"{now.strftime('%Y-%m-%d')}"}}}}
+3. create_tontine: {{"type":"create_tontine","data":{{"name":"Tontine Famille","contribution_amount":10000,"total_participants":10,"frequency":"monthly"}}}}
+
+FORMAT RÉPONSE JSON STRICT :
+{{
+  "message": "Ta réponse naturelle",
+  "actions": [],
+  "extract_memory": {{
+    "evenements_a_venir": "...",
+    "pattern_depenses": "...",
+    "contexte_personnel": "...",
+    "preferences": "...",
+    "objectifs_prioritaires": "...",
+    "decisions_prises": "..."
+  }}
+}}
+
+RÈGLES :
+- extract_memory : seulement les champs avec de nouvelles infos, laisser vide sinon
+- JSON valide OBLIGATOIRE
+- Ne mets pas extract_memory dans le message visible
+"""
+
+        # ── APPEL CLAUDE ─────────────────────────────────────────────
+        client = anthropic.Anthropic(api_key=settings.ANTHROPIC_API_KEY)
+
+        api_messages = []
+        for msg in history[-20:]:
+            api_messages.append({'role': msg['role'], 'content': msg['content']})
+        api_messages.append({'role': 'user', 'content': message})
+
+        response = client.messages.create(
+            model='claude-sonnet-4-6',
+            max_tokens=1500,
+            system=system_prompt,
+            messages=api_messages
+        )
+
+        assistant_message_raw = response.content[0].text
+
+        # ── PARSER JSON ───────────────────────────────────────────────
+        actions = []
+        assistant_text = assistant_message_raw
+        new_memory = {}
+
+        try:
+            cleaned = assistant_message_raw.strip()
+            for prefix in ['```json', '```']:
+                if cleaned.startswith(prefix):
+                    cleaned = cleaned[len(prefix):]
+            if cleaned.endswith('```'):
+                cleaned = cleaned[:-3]
+            cleaned = cleaned.strip()
+            start_idx = cleaned.find('{')
+            end_idx = cleaned.rfind('}')
+            if start_idx != -1 and end_idx != -1:
+                cleaned = cleaned[start_idx:end_idx + 1]
+            parsed = json.loads(cleaned)
+            assistant_text = parsed.get('message', assistant_message_raw)
+            actions = parsed.get('actions', [])
+            new_memory = parsed.get('extract_memory', {})
+        except json.JSONDecodeError:
+            pass
+
+        # ── SAUVEGARDER LES MESSAGES ─────────────────────────────────
+        AIMessage.objects.create(
+            conversation=conversation,
+            role='user',
+            content=message,
+            actions=[]
+        )
+        AIMessage.objects.create(
+            conversation=conversation,
+            role='assistant',
+            content=assistant_text,
+            actions=actions
+        )
+
+        # ── METTRE À JOUR LE COMPTEUR ────────────────────────────────
+        conversation.message_count += 1
+        if conversation.message_count == 1 and conversation.title == 'Nouvelle conversation':
+            # Auto-titre basé sur le premier message utilisateur
+            conversation.title = message[:60] + ('...' if len(message) > 60 else '')
+        conversation.save()
+
+        # ── METTRE À JOUR LA MÉMOIRE ─────────────────────────────────
+        if new_memory:
+            current_facts = memory.facts or {}
+            for key, value in new_memory.items():
+                if value and value.strip():
+                    current_facts[key] = value
+            current_facts['derniere_mise_a_jour'] = now.strftime('%Y-%m-%d')
+            memory.facts = current_facts
+            memory.save()
+
+        return Response({
+            'message': assistant_text,
+            'actions': actions,
+            'conversation_id': conversation.id,
+            'conversation_title': conversation.title,
+        })
+
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return Response({'error': f'Erreur IA: {str(e)}'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
         
