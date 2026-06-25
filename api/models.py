@@ -1087,3 +1087,60 @@ class GoalMilestone(models.Model):
     
     def __str__(self):
         return f"{self.goal.title} - {self.get_milestone_type_display()}"
+
+
+# ==========================================
+# À AJOUTER DANS api/models.py
+# ==========================================
+
+class AIConversation(models.Model):
+    """Conversation IA sauvegardée"""
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='ai_conversations')
+    title = models.CharField(max_length=200, blank=True, default='Nouvelle conversation')
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    is_active = models.BooleanField(default=True)
+    message_count = models.IntegerField(default=0)
+
+    class Meta:
+        ordering = ['-updated_at']
+
+    def __str__(self):
+        return f"{self.user.username} - {self.title}"
+
+
+class AIMessage(models.Model):
+    """Message dans une conversation IA"""
+    ROLE_CHOICES = [('user', 'User'), ('assistant', 'Assistant')]
+    conversation = models.ForeignKey(AIConversation, on_delete=models.CASCADE, related_name='messages')
+    role = models.CharField(max_length=10, choices=ROLE_CHOICES)
+    content = models.TextField()
+    actions = models.JSONField(default=list, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['created_at']
+
+    def __str__(self):
+        return f"{self.role}: {self.content[:50]}"
+
+
+class AIMemory(models.Model):
+    """Mémoire persistante de l'IA par utilisateur"""
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='ai_memory')
+    facts = models.JSONField(default=dict, blank=True)
+    # Structure des facts :
+    # {
+    #   "projets_importants": "Prépare un mariage en décembre 2026",
+    #   "pattern_depenses": "Solidarité famille pic en mai (Tabaski)",
+    #   "objectifs_prioritaires": "Fondation à financer avant juillet",
+    #   "contexte_personnel": "Entrepreneur, revenus variables",
+    #   "preferences": "Préfère les réponses courtes et directes",
+    #   "evenements_a_venir": "Mariage décembre, rentrée scolaire septembre",
+    #   "derniere_mise_a_jour": "2026-06-24"
+    # }
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"Mémoire de {self.user.username}"
+
