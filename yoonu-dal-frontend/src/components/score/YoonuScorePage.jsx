@@ -114,14 +114,17 @@ const YoonuScorePage = ({ toast, onNavigate }) => {
     alignment_score,
     discipline_score,
     stability_score,
-    improvement_score,  // construction patrimoniale
-    engagement_score,   // régularité
+    improvement_score,
+    engagement_score,
     alignment_details,
     score_change
   } = score;
 
   const config = getScoreConfig(total_score);
   const isNotEvaluated = total_score === 0;
+
+  // Circumférence pour r=85 : 2 * PI * 85 ≈ 534
+  const CIRCUMFERENCE = 534;
 
   const ScoreBar = ({ label, score, maxScore, color, icon, description }) => {
     const percentage = maxScore > 0 ? (score / maxScore) * 100 : 0;
@@ -170,31 +173,52 @@ const YoonuScorePage = ({ toast, onNavigate }) => {
         </div>
 
         {/* Score Principal */}
-        <div className={`bg-gradient-to-br ${config.gradient} rounded-2xl p-8 lg:p-10 mb-6 text-white shadow-xl`}>
+        <div className={`bg-gradient-to-br ${config.gradient} rounded-2xl p-6 lg:p-10 mb-6 text-white shadow-xl`}>
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
+
+            {/* ✅ Cercle score — viewBox fixe, valeurs absolues */}
             <div className="flex justify-center lg:justify-start">
-              <div className="relative">
-                <svg className="w-48 h-48 lg:w-56 lg:h-56 transform -rotate-90">
-                  <circle cx="50%" cy="50%" r="45%" className="stroke-white stroke-opacity-20" strokeWidth="12" fill="none" />
-                  <circle cx="50%" cy="50%" r="45%"
-                    className="stroke-white" strokeWidth="12" fill="none"
-                    strokeDasharray={`${total_score * 4.4} 440`}
+              <div className="relative w-48 h-48 lg:w-56 lg:h-56 flex-shrink-0">
+                <svg
+                  viewBox="0 0 200 200"
+                  className="w-full h-full transform -rotate-90"
+                  style={{ overflow: 'visible' }}
+                >
+                  {/* Cercle de fond */}
+                  <circle
+                    cx="100" cy="100" r="85"
+                    stroke="rgba(255,255,255,0.25)"
+                    strokeWidth="14"
+                    fill="none"
+                  />
+                  {/* Cercle de progression */}
+                  <circle
+                    cx="100" cy="100" r="85"
+                    stroke="white"
+                    strokeWidth="14"
+                    fill="none"
                     strokeLinecap="round"
-                    style={{ transition: 'stroke-dasharray 1s ease-out', filter: 'drop-shadow(0 0 20px rgba(255,255,255,0.5))' }}
+                    strokeDasharray={`${(total_score / 100) * CIRCUMFERENCE} ${CIRCUMFERENCE}`}
+                    style={{
+                      transition: 'stroke-dasharray 1s ease-out',
+                      filter: 'drop-shadow(0 0 12px rgba(255,255,255,0.6))'
+                    }}
                   />
                 </svg>
+                {/* Score centré */}
                 <div className="absolute inset-0 flex flex-col items-center justify-center">
-                  <div className="text-6xl lg:text-7xl font-bold">{total_score}</div>
-                  <div className="text-xl opacity-80">/100</div>
+                  <div className="text-5xl lg:text-6xl font-bold leading-none">{total_score}</div>
+                  <div className="text-lg opacity-80 mt-1">/100</div>
                 </div>
               </div>
             </div>
 
+            {/* Infos droite */}
             <div>
               <div className="flex items-center gap-3 mb-4">
-                <span className="text-6xl">{config.emoji}</span>
+                <span className="text-5xl">{config.emoji}</span>
                 <div>
-                  <h2 className="text-3xl font-bold">{config.label}</h2>
+                  <h2 className="text-2xl lg:text-3xl font-bold">{config.label}</h2>
                   {score_change !== 0 && score_change !== undefined && !isNotEvaluated && (
                     <div className="flex items-center gap-2 mt-1">
                       <span className={`text-lg font-semibold ${score_change > 0 ? 'text-green-200' : 'text-red-200'}`}>
@@ -206,7 +230,7 @@ const YoonuScorePage = ({ toast, onNavigate }) => {
                 </div>
               </div>
 
-              <p className="text-lg opacity-90 mb-6">{config.message}</p>
+              <p className="text-base lg:text-lg opacity-90 mb-6">{config.message}</p>
 
               {config.nextMin && (
                 <div className="bg-white bg-opacity-20 rounded-xl p-4">
@@ -365,7 +389,6 @@ const YoonuScorePage = ({ toast, onNavigate }) => {
                   </p>
                 </div>
 
-                {/* Conseil personnalisé */}
                 <div className="mt-2 p-3 bg-blue-50 rounded-lg border border-blue-100">
                   <p className="text-xs text-blue-800 font-medium mb-1">💡 Pour progresser</p>
                   <p className="text-xs text-blue-700">
