@@ -329,27 +329,30 @@ const AIChatWidgetV4 = ({ onNavigate, toast, user }) => {
                 <div className="space-y-2">
                   {conversations.map(conv => (
                     <div
-                      key={conv.id}
-                      onClick={() => openConversation(conv)}
-                      className={`p-3 rounded-xl border cursor-pointer hover:border-green-400 hover:bg-green-50 transition-all group ${
-                        conversationId === conv.id ? 'border-green-500 bg-green-50' : 'border-gray-200 bg-white'
-                      }`}
-                    >
-                      <div className="flex items-start justify-between gap-2">
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm font-semibold text-gray-800 truncate">{conv.title}</p>
-                          <p className="text-xs text-gray-500 mt-0.5">
-                            {conv.message_count} message{conv.message_count > 1 ? 's' : ''} · {new Date(conv.updated_at).toLocaleDateString('fr-FR')}
-                          </p>
-                        </div>
-                        <button
-                          onClick={(e) => deleteConversation(e, conv.id)}
-                          className="opacity-0 group-hover:opacity-100 text-red-400 hover:text-red-600 text-xs p-1 rounded flex-shrink-0 transition-opacity"
-                        >
-                          🗑️
-                        </button>
-                      </div>
-                    </div>
+  key={conv.id}
+  className={`rounded-xl border flex items-stretch overflow-hidden transition-all ${
+    conversationId === conv.id ? 'border-green-500 bg-green-50' : 'border-gray-200 bg-white'
+  }`}
+>
+  {/* Zone clic conversation */}
+  <div
+    onClick={() => openConversation(conv)}
+    className="flex-1 min-w-0 p-3 cursor-pointer hover:bg-green-50 transition-colors"
+  >
+    <p className="text-sm font-semibold text-gray-800 truncate">{conv.title}</p>
+    <p className="text-xs text-gray-500 mt-0.5">
+      {conv.message_count} message{conv.message_count > 1 ? 's' : ''} · {new Date(conv.updated_at).toLocaleDateString('fr-FR')}
+    </p>
+  </div>
+  {/* Bouton supprimer — séparé, toujours visible */}
+  <button
+    onClick={(e) => deleteConversation(e, conv.id)}
+    className="px-3 border-l border-gray-200 text-gray-300 hover:text-red-500 hover:bg-red-50 transition-all flex-shrink-0 flex items-center"
+    title="Supprimer"
+  >
+    🗑️
+  </button>
+</div>
                   ))}
                 </div>
               )}
