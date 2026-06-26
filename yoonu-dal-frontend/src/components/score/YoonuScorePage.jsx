@@ -44,6 +44,8 @@ const getScoreConfig = (score) => {
   };
 };
 
+const CIRCUMFERENCE = 2 * Math.PI * 85; // ≈ 534
+
 const YoonuScorePage = ({ toast, onNavigate }) => {
   const [score, setScore] = useState(null);
   const [history, setHistory] = useState([]);
@@ -123,9 +125,6 @@ const YoonuScorePage = ({ toast, onNavigate }) => {
   const config = getScoreConfig(total_score);
   const isNotEvaluated = total_score === 0;
 
-  // Circumférence pour r=85 : 2 * PI * 85 ≈ 534
-  const CIRCUMFERENCE = 534;
-
   const ScoreBar = ({ label, score, maxScore, color, icon, description }) => {
     const percentage = maxScore > 0 ? (score / maxScore) * 100 : 0;
     return (
@@ -174,53 +173,66 @@ const YoonuScorePage = ({ toast, onNavigate }) => {
 
         {/* Score Principal */}
         <div className={`bg-gradient-to-br ${config.gradient} rounded-2xl p-6 lg:p-10 mb-6 text-white shadow-xl`}>
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
+          <div className="flex flex-col lg:flex-row gap-8 items-center">
 
-            {/* ✅ Cercle score — viewBox fixe, valeurs absolues */}
-            <div className="flex justify-center lg:justify-start">
-              <div className="relative w-48 h-48 lg:w-56 lg:h-56 flex-shrink-0">
+            {/* ✅ Cercle score — taille fixe en pixels, pas de classes Tailwind sur SVG */}
+            <div className="flex-shrink-0 flex justify-center">
+              <div style={{ position: 'relative', width: '192px', height: '192px' }}>
                 <svg
                   viewBox="0 0 200 200"
-                  className="w-full h-full transform -rotate-90"
-                  style={{ overflow: 'visible' }}
+                  width="192"
+                  height="192"
+                  style={{ transform: 'rotate(-90deg)', display: 'block' }}
                 >
-                  {/* Cercle de fond */}
+                  {/* Fond */}
                   <circle
-                    cx="100" cy="100" r="85"
+                    cx="100"
+                    cy="100"
+                    r="85"
                     stroke="rgba(255,255,255,0.25)"
                     strokeWidth="14"
                     fill="none"
                   />
-                  {/* Cercle de progression */}
+                  {/* Progression */}
                   <circle
-                    cx="100" cy="100" r="85"
+                    cx="100"
+                    cy="100"
+                    r="85"
                     stroke="white"
                     strokeWidth="14"
                     fill="none"
                     strokeLinecap="round"
                     strokeDasharray={`${(total_score / 100) * CIRCUMFERENCE} ${CIRCUMFERENCE}`}
-                    style={{
-                      transition: 'stroke-dasharray 1s ease-out',
-                      filter: 'drop-shadow(0 0 12px rgba(255,255,255,0.6))'
-                    }}
+                    style={{ transition: 'stroke-dasharray 1s ease-out' }}
                   />
                 </svg>
                 {/* Score centré */}
-                <div className="absolute inset-0 flex flex-col items-center justify-center">
-                  <div className="text-5xl lg:text-6xl font-bold leading-none">{total_score}</div>
-                  <div className="text-lg opacity-80 mt-1">/100</div>
+                <div style={{
+                  position: 'absolute',
+                  inset: 0,
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  justifyContent: 'center'
+                }}>
+                  <span style={{ fontSize: '52px', fontWeight: 'bold', lineHeight: 1, color: 'white' }}>
+                    {total_score}
+                  </span>
+                  <span style={{ fontSize: '18px', opacity: 0.8, marginTop: '4px', color: 'white' }}>
+                    /100
+                  </span>
                 </div>
               </div>
             </div>
 
-            {/* Infos droite */}
-            <div>
-              <div className="flex items-center gap-3 mb-4">
+            {/* Infos */}
+            <div className="flex-1 text-center lg:text-left">
+              <div className="flex items-center justify-center lg:justify-start gap-3 mb-4">
                 <span className="text-5xl">{config.emoji}</span>
                 <div>
                   <h2 className="text-2xl lg:text-3xl font-bold">{config.label}</h2>
                   {score_change !== 0 && score_change !== undefined && !isNotEvaluated && (
-                    <div className="flex items-center gap-2 mt-1">
+                    <div className="flex items-center justify-center lg:justify-start gap-2 mt-1">
                       <span className={`text-lg font-semibold ${score_change > 0 ? 'text-green-200' : 'text-red-200'}`}>
                         {score_change > 0 ? '↗️' : '↘️'} {Math.abs(score_change)} points
                       </span>
