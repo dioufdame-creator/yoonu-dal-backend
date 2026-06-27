@@ -90,7 +90,6 @@ const DashboardV7 = ({ toast, auth, onNavigate, user }) => {
   const [activeTab, setActiveTab] = useState('apercu');
   const [timeFilter, setTimeFilter] = useState('6m');
 
-  // Sélecteur de mois
   const currentMonthValue = new Date().toISOString().slice(0, 7);
   const [selectedMonth, setSelectedMonth] = useState(currentMonthValue);
   const [isCurrentMonth, setIsCurrentMonth] = useState(true);
@@ -160,15 +159,14 @@ const DashboardV7 = ({ toast, auth, onNavigate, user }) => {
 
       let historyMonths = timeFilter === '3m' ? 3 : timeFilter === '1y' ? 12 : 6;
       let finalScoreHistory = scoreHistoryRes?.data?.history && scoreHistoryRes.data.history.length > 0
-  ? scoreHistoryRes.data.history.slice(-historyMonths).map(h => ({
-      ...h,
-      score: h.total_score || h.score || 0,
-      total_score: h.total_score || h.score || 0,
-    }))
-  : generateMockScoreHistory(score?.total_score || 0, historyMonths);
-setScoreHistory(finalScoreHistory);
-      
-      // Projection uniquement pour le mois courant
+        ? scoreHistoryRes.data.history.slice(-historyMonths).map(h => ({
+            ...h,
+            score: h.total_score || h.score || 0,
+            total_score: h.total_score || h.score || 0,
+          }))
+        : generateMockScoreHistory(scoreRes?.data?.total_score || 0, historyMonths);
+      setScoreHistory(finalScoreHistory);
+
       if (metricsRes?.data?.is_current_month && incomesRes?.data && expensesRes?.data) {
         const now = new Date();
         const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
@@ -225,7 +223,7 @@ setScoreHistory(finalScoreHistory);
     return ((current - previous) / previous) * 100;
   };
 
-  // ── Score Color — niveaux unifiés ──────────────────────────────
+  // ── Score Color ────────────────────────────────────────────────
 
   const getScoreColor = (scoreValue) => {
     if (!scoreValue || scoreValue === 0) return { text: 'text-gray-500', ring: 'stroke-gray-300', label: 'Non évalué ⬜', color: '#9CA3AF' };
@@ -238,49 +236,46 @@ setScoreHistory(finalScoreHistory);
   // ── Message basé sur le score ──────────────────────────────────
 
   const getIntelligentMessage = () => {
-    console.log('scoreHistory:', JSON.stringify(scoreHistory));
-  console.log('selectedMonth:', selectedMonth);
-  console.log('isCurrentMonth:', isCurrentMonth);
-  // Score : mois courant ou mois historique depuis scoreHistory
-  let currentScore = score?.total_score || 0;
+    let currentScore = score?.total_score || 0;
 
-  if (!isCurrentMonth && scoreHistory.length > 0) {
-    const MOIS_MAP = {
-      'Jan': '01', 'Fév': '02', 'Mar': '03', 'Avr': '04',
-      'Mai': '05', 'Juin': '06', 'Juil': '07', 'Août': '08',
-      'Sep': '09', 'Oct': '10', 'Nov': '11', 'Déc': '12'
-    };
-    const [selYear, selMonth] = selectedMonth.split('-');
-    const histEntry = scoreHistory.find(h => {
-      if (!h.month) return false;
-      const parts = h.month.split(' ');
-      return MOIS_MAP[parts[0]] === selMonth && parts[1] === selYear;
-    });
-    if (histEntry) currentScore = histEntry.total_score || 0;
-  }
+    if (!isCurrentMonth && scoreHistory.length > 0) {
+      const MOIS_MAP = {
+        'Jan': '01', 'Fév': '02', 'Mar': '03', 'Avr': '04',
+        'Mai': '05', 'Juin': '06', 'Juil': '07', 'Août': '08',
+        'Sep': '09', 'Oct': '10', 'Nov': '11', 'Déc': '12'
+      };
+      const [selYear, selMonth] = selectedMonth.split('-');
+      const histEntry = scoreHistory.find(h => {
+        if (!h.month) return false;
+        const parts = h.month.split(' ');
+        return MOIS_MAP[parts[0]] === selMonth && parts[1] === selYear;
+      });
+      if (histEntry) currentScore = histEntry.total_score || 0;
+    }
 
-  const totalIncome = metrics?.monthly_income || 0;
-  const totalExpenses = metrics?.total_expenses || 0;
-  const balance = totalIncome - totalExpenses;
+    const totalIncome = metrics?.monthly_income || 0;
+    const totalExpenses = metrics?.total_expenses || 0;
+    const balance = totalIncome - totalExpenses;
 
-  if (!isCurrentMonth) {
-    return {
-      icon: '📚',
-      text: `Bilan ${metrics?.month_label || 'du mois'} : solde ${balance >= 0 ? '+' : ''}${formatCurrency(balance)} FCFA. Score : ${currentScore}/100.`,
-    };
-  }
+    if (!isCurrentMonth) {
+      return {
+        icon: '📚',
+        text: `Bilan ${metrics?.month_label || 'du mois'} : solde ${balance >= 0 ? '+' : ''}${formatCurrency(balance)} FCFA. Score : ${currentScore}/100.`,
+      };
+    }
 
-  if (currentScore === 0) return { icon: '🎯', text: 'Enregistre tes dépenses et définis tes valeurs pour activer ton Score Yoonu Dal.' };
-  if (currentScore >= 80) return { icon: '🏆', text: `Maître Yoonu ! Tes finances sont parfaitement alignées avec tes valeurs. Score : ${currentScore}/100.` };
-  if (currentScore >= 60) return { icon: '🌳', text: `Aligné ! Tes dépenses reflètent bien tes valeurs. Continue sur cette lancée. Score : ${currentScore}/100.` };
-  if (currentScore >= 40) {
-    const tip = balance < 0
-      ? `Tu as un déficit de ${formatCurrency(Math.abs(balance))} à combler.`
-      : `Tu épargnes ${formatCurrency(balance)} ce mois.`;
-    return { icon: '🌿', text: `En chemin. ${tip} Score : ${currentScore}/100.` };
-  }
-  return { icon: '🌱', text: `Débutant. Commence par enregistrer tes dépenses régulièrement et définis tes valeurs. Score : ${currentScore}/100.` };
-};
+    if (currentScore === 0) return { icon: '🎯', text: 'Enregistre tes dépenses et définis tes valeurs pour activer ton Score Yoonu Dal.' };
+    if (currentScore >= 80) return { icon: '🏆', text: `Maître Yoonu ! Tes finances sont parfaitement alignées avec tes valeurs. Score : ${currentScore}/100.` };
+    if (currentScore >= 60) return { icon: '🌳', text: `Aligné ! Tes dépenses reflètent bien tes valeurs. Continue sur cette lancée. Score : ${currentScore}/100.` };
+    if (currentScore >= 40) {
+      const tip = balance < 0
+        ? `Tu as un déficit de ${formatCurrency(Math.abs(balance))} à combler.`
+        : `Tu épargnes ${formatCurrency(balance)} ce mois.`;
+      return { icon: '🌿', text: `En chemin. ${tip} Score : ${currentScore}/100.` };
+    }
+    return { icon: '🌱', text: `Débutant. Commence par enregistrer tes dépenses régulièrement et définis tes valeurs. Score : ${currentScore}/100.` };
+  };
+
   // ── Générateurs ────────────────────────────────────────────────
 
   const ComparisonBadge = ({ current, previous, inverse = false }) => {
@@ -411,6 +406,9 @@ setScoreHistory(finalScoreHistory);
   const balance = totalIncome - totalExpenses;
   const COLORS = ['#10B981', '#3B82F6', '#F59E0B', '#EF4444', '#8B5CF6'];
 
+  // Circonférence pour r=48 : 2 * PI * 48 ≈ 301.6
+  const DASH_TOTAL = 2 * Math.PI * 48;
+
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 lg:py-10">
@@ -429,7 +427,6 @@ setScoreHistory(finalScoreHistory);
             <MonthSelector selectedMonth={selectedMonth} onMonthChange={handleMonthChange} />
           </div>
 
-          {/* Bannière mode historique */}
           {!isCurrentMonth && (
             <div className="mt-3 flex items-center gap-2 px-4 py-2.5 bg-amber-50 border border-amber-200 rounded-xl">
               <span>📚</span>
@@ -478,14 +475,36 @@ setScoreHistory(finalScoreHistory);
             <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-5 lg:p-6">
               <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-center">
 
-                {/* Score cercle */}
+                {/* ✅ Score cercle — viewBox élargi pour éviter la troncature du stroke */}
                 <div className="lg:col-span-3 flex flex-col items-center lg:items-start">
                   <div className="relative mb-2">
-                    <svg className="w-24 h-24 lg:w-28 lg:h-28 transform -rotate-90">
-                      <circle cx="56" cy="56" r="48" className="stroke-gray-100" strokeWidth="5" fill="none" />
-                      <circle cx="56" cy="56" r="48" className={scoreColor.ring} strokeWidth="5" fill="none"
-                        strokeDasharray={`${displayScore * 3.01} 301`} strokeLinecap="round"
-                        style={{ transition: 'all 500ms cubic-bezier(0.4,0,0.2,1)' }} />
+                    <svg
+                      width="112"
+                      height="112"
+                      viewBox="-4 -4 120 120"
+                      style={{ transform: 'rotate(-90deg)', display: 'block' }}
+                    >
+                      {/* Fond */}
+                      <circle
+                        cx="56"
+                        cy="56"
+                        r="48"
+                        className="stroke-gray-100"
+                        strokeWidth="5"
+                        fill="none"
+                      />
+                      {/* Progression */}
+                      <circle
+                        cx="56"
+                        cy="56"
+                        r="48"
+                        className={scoreColor.ring}
+                        strokeWidth="5"
+                        fill="none"
+                        strokeLinecap="round"
+                        strokeDasharray={`${(displayScore / 100) * DASH_TOTAL} ${DASH_TOTAL}`}
+                        style={{ transition: 'all 500ms cubic-bezier(0.4,0,0.2,1)' }}
+                      />
                     </svg>
                     <div className="absolute inset-0 flex items-center justify-center">
                       <div className={`text-4xl font-bold ${scoreColor.text}`}>{displayScore}</div>
@@ -508,7 +527,6 @@ setScoreHistory(finalScoreHistory);
                     </p>
                   </div>
 
-                  {/* Projection fin de mois — mois courant seulement */}
                   {isCurrentMonth && projectionData && (
                     <div className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs ${
                       projectionData.remainingBudget >= 0
@@ -663,7 +681,6 @@ setScoreHistory(finalScoreHistory);
                         <span className="text-xs font-medium text-gray-900">{item.label}</span>
                       </button>
                     ))}
-                    
                   </div>
                 </div>
               </div>
@@ -806,7 +823,7 @@ setScoreHistory(finalScoreHistory);
         )}
       </div>
 
-      {/* FAB — uniquement mois courant */}
+      {/* FAB */}
       {isCurrentMonth && (
         <button onClick={() => onNavigate('expenses')}
           className="lg:hidden fixed bottom-6 right-6 w-14 h-14 bg-gradient-to-br from-green-500 to-emerald-600 rounded-full shadow-xl flex items-center justify-center hover:scale-110 transition-transform z-40">
