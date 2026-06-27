@@ -175,11 +175,11 @@ const YoonuScorePage = ({ toast, onNavigate }) => {
         <div className={`bg-gradient-to-br ${config.gradient} rounded-2xl p-6 lg:p-10 mb-6 text-white shadow-xl`}>
           <div className="flex flex-col lg:flex-row gap-8 items-center">
 
-            {/* ✅ Cercle score — taille fixe en pixels, pas de classes Tailwind sur SVG */}
+            {/* ✅ Cercle score — viewBox élargi pour éviter la troncature du stroke */}
             <div className="flex-shrink-0 flex justify-center">
               <div style={{ position: 'relative', width: '192px', height: '192px' }}>
                 <svg
-                  viewBox="0 0 200 200"
+                  viewBox="-7 -7 214 214"
                   width="192"
                   height="192"
                   style={{ transform: 'rotate(-90deg)', display: 'block' }}
