@@ -1144,3 +1144,30 @@ class AIMemory(models.Model):
     def __str__(self):
         return f"Mémoire de {self.user.username}"
 
+# ==========================================
+# À AJOUTER À LA FIN DE api/models.py
+# ==========================================
+
+class UserCategoryRule(models.Model):
+    """Règles personnalisées de classement des catégories par enveloppe"""
+    ENVELOPE_CHOICES = [
+        ('essentiels', 'Essentiels'),
+        ('plaisirs', 'Plaisirs'),
+        ('projets', 'Projets'),
+        ('liberation', 'Libération'),
+    ]
+
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='category_rules')
+    category = models.CharField(max_length=50)
+    envelope = models.CharField(max_length=20, choices=ENVELOPE_CHOICES)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        unique_together = ('user', 'category')
+        ordering = ['category']
+
+    def __str__(self):
+        return f"{self.user.username} — {self.category} → {self.envelope}"
+
+
