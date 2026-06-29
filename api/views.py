@@ -4882,4 +4882,181 @@ RÈGLES :
         traceback.print_exc()
         return Response({'error': f'Erreur IA: {str(e)}'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
+
+# ==========================================
+# À AJOUTER DANS api/views.py
+# ==========================================
+
+from .models import UserCategoryRule
+
+# ── RÈGLES PAR DÉFAUT ────────────────────────────────────────
+DEFAULT_CATEGORY_RULES = {
+    'loyer':                'essentiels',
+    'alimentation':         'essentiels',
+    'transport':            'essentiels',
+    'sante_courante':       'essentiels',
+    'eau_electricite':      'essentiels',
+    'telephone_internet':   'essentiels',
+    'aide_menagere':        'essentiels',
+    'solidarite_famille':   'essentiels',
+    'maison_courses':       'essentiels',
+    'restaurant':           'plaisirs',
+    'loisirs':              'plaisirs',
+    'vetements':            'plaisirs',
+    'beaute':               'plaisirs',
+    'voyage':               'plaisirs',
+    'autre':                'plaisirs',
+    'education':            'projets',
+    'epargne':              'projets',
+    'fetes_ceremonies':     'projets',
+    'spiritualite':         'projets',
+    'sante_exceptionnelle': 'projets',
+    'immobilier':           'projets',
+    'tontine_epargne':      'projets',
+    'remboursement_dette':  'liberation',
+}
+
+# Labels lisibles pour l'UI
+CATEGORY_LABELS = {
+    'loyer':                'Loyer / Logement',
+    'alimentation':         'Alimentation / Courses',
+    'transport':            'Transport / Carburant',
+    'sante_courante':       'Santé courante',
+    'eau_electricite':      'Eau / Électricité',
+    'telephone_internet':   'Téléphone / Internet',
+    'aide_menagere':        'Aide ménagère',
+    'solidarite_famille':   'Solidarité / Famille',
+    'maison_courses':       'Maison / Courses',
+    'restaurant':           'Restaurant / Café',
+    'loisirs':              'Loisirs / Sorties',
+    'vetements':            'Vêtements / Mode',
+    'beaute':               'Beauté / Coiffure',
+    'voyage':               'Voyage / Vacances',
+    'autre':                'Autre',
+    'education':            'Éducation / Formation',
+    'epargne':              'Épargne personnelle',
+    'fetes_ceremonies':     'Fêtes & Cérémonies',
+    'spiritualite':         'Aumône / Spiritualité',
+    'sante_exceptionnelle': 'Santé exceptionnelle',
+    'immobilier':           'Immobilier / Construction',
+    'tontine_epargne':      'Tontine / Épargne collective',
+    'remboursement_dette':  'Remboursement dette',
+}
+
+
+def get_user_category_rules(user):
+    """
+    Retourne le mapping catégorie → enveloppe pour un utilisateur.
+    Fusionne les règles par défaut avec les règles personnalisées.
+    """
+    rules = dict(DEFAULT_CATEGORY_RULES)  # copie des défauts
+    user_rules = UserCategoryRule.objects.filter(user=user)
+    for rule in user_rules:
+        rules[rule.category] = rule.envelope
+    return rules
+
+
+def get_categories_for_envelope_user(user, envelope_type):
+    """
+    Version user-aware de get_categories_for_envelope.
+    Respecte les règles personnalisées de l'utilisateur.
+    """
+    rules = get_user_category_rules(user)
+    return [cat for cat, env in rules.items() if env == envelope_type]
+
+
+# ── ENDPOINTS RÈGLES ─────────────────────────────────────────
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def get_category_rules(request):
+    """
+    Retourne toutes les catégories avec leur enveloppe actuelle.
+    Inclut label, enveloppe par défaut, enveloppe utilisateur.
+    """
+    user = request.user
+    user_rules = {r.category: r.envelope for r in UserCategoryRule.objects.filter(user=user)}
+
+    categories = []
+    for category, default_envelope in DEFAULT_CATEGORY_RULES.items():
+        current_envelope = user_rules.get(category, default_envelope)
+        is_customized = category in user_rules and user_rules[category] != default_envelope
+        categories.append({
+            'category': category,
+            'label': CATEGORY_LABELS.get(category, category),
+            'default_envelope': default_envelope,
+            'current_envelope': current_envelope,
+            'is_customized': is_customized,
+        })
+
+    # Tri : catégories modifiées en premier, puis par enveloppe
+    categories.sort(key=lambda x: (not x['is_customized'], x['current_envelope'], x['label']))
+
+    customized_count = sum(1 for c in categories if c['is_customized'])
+
+    return Response({
+        'categories': categories,
+        'customized_count': customized_count,
+        'total_count': len(categories),
+    })
+
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def update_category_rule(request):
+    """
+    Mettre à jour la règle d'une catégorie.
+    Body: { "category": "vetements", "envelope": "essentiels" }
+    """
+    user = request.user
+    category = request.data.get('category')
+    envelope = request.data.get('envelope')
+
+    if not category or not envelope:
+        return Response({'error': 'category et envelope requis'}, status=status.HTTP_400_BAD_REQUEST)
+
+    if category not in DEFAULT_CATEGORY_RULES:
+        return Response({'error': 'Catégorie inconnue'}, status=status.HTTP_400_BAD_REQUEST)
+
+    valid_envelopes = ['essentiels', 'plaisirs', 'projets', 'liberation']
+    if envelope not in valid_envelopes:
+        return Response({'error': 'Enveloppe invalide'}, status=status.HTTP_400_BAD_REQUEST)
+
+    # Si l'utilisateur remet la valeur par défaut, supprimer la règle perso
+    if envelope == DEFAULT_CATEGORY_RULES[category]:
+        UserCategoryRule.objects.filter(user=user, category=category).delete()
+        return Response({
+            'message': f'Règle de "{CATEGORY_LABELS.get(category, category)}" remise par défaut',
+            'category': category,
+            'envelope': envelope,
+            'is_customized': False,
+        })
+
+    rule, created = UserCategoryRule.objects.update_or_create(
+        user=user,
+        category=category,
+        defaults={'envelope': envelope}
+    )
+
+    return Response({
+        'message': f'"{CATEGORY_LABELS.get(category, category)}" déplacé dans {envelope}',
+        'category': category,
+        'envelope': envelope,
+        'is_customized': True,
+        'created': created,
+    })
+
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def reset_category_rules(request):
+    """Restaure toutes les règles par défaut Yoonu Dal"""
+    user = request.user
+    deleted_count, _ = UserCategoryRule.objects.filter(user=user).delete()
+    return Response({
+        'message': f'Règles Yoonu Dal restaurées ({deleted_count} personnalisation(s) supprimée(s))',
+        'deleted_count': deleted_count,
+    })
+
+
         
