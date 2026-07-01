@@ -13,6 +13,9 @@ from .views import (
     ai_conversation_detail,
     ai_memory,
     ai_chat_v2,
+    get_category_rules,      # ← ajouter
+    update_category_rule,    # ← ajouter
+    reset_category_rules,
 )
 
 urlpatterns = [
