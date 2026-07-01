@@ -4,10 +4,12 @@ from django.contrib import admin
 from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
+from api.views_admin import admin_dashboard
 
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/', include('api.urls')),  # Toutes les APIs sont dans api/urls.py
+    path('admin/dashboard/', admin_dashboard, name='admin_dashboard'),
 ]
 
 # Configuration pour servir les fichiers media en développement
