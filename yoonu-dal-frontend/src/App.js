@@ -45,6 +45,8 @@ import GoalsPage from './components/goals/GoalsPage';
 import DebtsPage from './components/debts/DebtsPage';
 import DebtDetailPage from './components/debts/DebtDetailPage';
 
+import CategoryRulesPage from './components/envelopes/CategoryRulesPage';
+
 function App() {
   const [currentPage, setCurrentPage] = useState('home');
   const [pageParams, setPageParams] = useState({});
