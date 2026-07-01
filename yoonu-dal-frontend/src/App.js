@@ -22,6 +22,7 @@ import TontineInvitePage from './components/tontines/TontineInvitePage';
 import IncomesPage from './components/incomes/IncomesPage';
 import TontineAnalysis from './components/tontines/TontineAnalysis';
 import EnvelopeManager from './components/envelopeManager/EnvelopeManager';
+import CategoryRulesPage from './components/envelopes/CategoryRulesPage';
 
 import TransactionsPage from './components/transactions/TransactionsPage';
 
@@ -44,8 +45,6 @@ import {
 import GoalsPage from './components/goals/GoalsPage';
 import DebtsPage from './components/debts/DebtsPage';
 import DebtDetailPage from './components/debts/DebtDetailPage';
-
-import CategoryRulesPage from './components/envelopes/CategoryRulesPage';
 
 function App() {
   const [currentPage, setCurrentPage] = useState('home');
@@ -115,7 +114,7 @@ function App() {
       'dashboard', 'expenses', 'transactions', 'incomes', 'envelopes', 'tontines',
       'tontine-detail', 'tontine-analysis',
       'profile', 'settings', 'score', 'alerts',
-      'diagnostic', 'values'
+      'diagnostic', 'values', 'category-rules'
     ];
     if (protectedPages.includes(page) && !isAuthenticated) {
       setCurrentPage('login');
@@ -234,7 +233,6 @@ function App() {
       case 'home':
         return <Home2 onNavigate={handleNavigate} toast={toastMethods} auth={authMethods} />;
 
-      // ✅ Landing page alternative pour comparaison
       case 'home2':
         return <Home2 onNavigate={handleNavigate} toast={toastMethods} auth={authMethods} />;
 
@@ -466,6 +464,11 @@ function App() {
         if (!isAuthenticated) { handleNavigate('login'); return null; }
         return <EnvelopeManager onNavigate={handleNavigate} toast={toastMethods} auth={authMethods} />;
 
+      // ✅ Catégories personnalisables
+      case 'category-rules':
+        if (!isAuthenticated) { handleNavigate('login'); return null; }
+        return <CategoryRulesPage onNavigate={handleNavigate} toast={toastMethods} />;
+
       case 'debts':
         if (!isAuthenticated) { handleNavigate('login'); return null; }
         return <DebtsPage toast={toastMethods} onNavigate={handleNavigate} />;
@@ -516,10 +519,14 @@ function App() {
                   <p><strong>Statut :</strong> {user?.is_staff ? '👑 Admin' : '⭐ Utilisateur'}</p>
                   <p><strong>Membre depuis :</strong> {user?.date_joined ? new Date(user.date_joined).toLocaleDateString() : 'N/A'}</p>
                 </div>
-                <div className="border-t pt-4 mt-6">
+                <div className="border-t pt-4 mt-6 space-y-3">
                   <button onClick={() => handleNavigate('values')}
-                    className="w-full bg-blue-100 text-blue-700 px-4 py-3 rounded-lg hover:bg-blue-200 transition-colors duration-200 mb-3">
+                    className="w-full bg-blue-100 text-blue-700 px-4 py-3 rounded-lg hover:bg-blue-200 transition-colors duration-200">
                     💎 Gérer mes valeurs personnelles
+                  </button>
+                  <button onClick={() => handleNavigate('category-rules')}
+                    className="w-full bg-green-100 text-green-700 px-4 py-3 rounded-lg hover:bg-green-200 transition-colors duration-200">
+                    🗂️ Personnaliser mes règles de classement
                   </button>
                 </div>
               </div>
@@ -544,6 +551,10 @@ function App() {
             <div className="bg-white rounded-2xl shadow-lg p-8 max-w-md w-full">
               <h2 className="text-2xl font-bold mb-6 text-center">⚙️ Paramètres</h2>
               <div className="space-y-4">
+                <button onClick={() => handleNavigate('category-rules')}
+                  className="w-full text-left p-4 bg-green-50 text-green-700 rounded-lg hover:bg-green-100 transition-colors duration-200">
+                  🗂️ Mes règles de classement des catégories
+                </button>
                 <button className="w-full text-left p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors duration-200">🔔 Notifications</button>
                 <button className="w-full text-left p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors duration-200">🔒 Sécurité et mot de passe</button>
                 <button className="w-full text-left p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors duration-200">🎨 Apparence</button>
@@ -638,4 +649,3 @@ function App() {
 }
 
 export default App;
-
