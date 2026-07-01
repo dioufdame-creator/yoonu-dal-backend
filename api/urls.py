@@ -131,4 +131,8 @@ urlpatterns = [
     path('ai/conversations/<int:conversation_id>/', ai_conversation_detail, name='ai_conversation_detail'),
     path('ai/memory/', ai_memory, name='ai_memory'),
 
+    path('category-rules/', get_category_rules, name='get_category_rules'),
+    path('category-rules/update/', update_category_rule, name='update_category_rule'),
+    path('category-rules/reset/', reset_category_rules, name='reset_category_rules'),
+
 ]
