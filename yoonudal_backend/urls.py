@@ -7,9 +7,9 @@ from django.conf.urls.static import static
 from api.views_admin import admin_dashboard
 
 urlpatterns = [
-    path('admin/', admin.site.urls),
-    path('api/', include('api.urls')),  # Toutes les APIs sont dans api/urls.py
     path('admin/dashboard/', admin_dashboard, name='admin_dashboard'),
+    path('admin/', admin.site.urls),
+    path('api/', include('api.urls')),
 ]
 
 # Configuration pour servir les fichiers media en développement
