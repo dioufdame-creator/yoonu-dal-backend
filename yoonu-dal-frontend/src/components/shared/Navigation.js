@@ -3,7 +3,7 @@ import { SubscriptionBadge } from '../subscription/SubscriptionComponents';
 
 const TUTORIAL_KEY = 'yoonu_tutorial_done';
 
-const NavigationV2 = ({ currentPage, onNavigate, isAuthenticated, user, onLogout, alertsBadge }) => {
+const Navigation = ({ currentPage, onNavigate, isAuthenticated, user, onLogout, alertsBadge }) => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
 
@@ -25,6 +25,8 @@ const NavigationV2 = ({ currentPage, onNavigate, isAuthenticated, user, onLogout
   const getUserDisplayName = () => {
     if (user?.user?.first_name) return user.user.first_name;
     if (user?.user?.username) return user.user.username;
+    if (user?.first_name) return user.first_name;
+    if (user?.username) return user.username;
     return 'Utilisateur';
   };
 
@@ -52,9 +54,9 @@ const NavigationV2 = ({ currentPage, onNavigate, isAuthenticated, user, onLogout
       <header className="bg-gradient-to-r from-green-600 to-emerald-600 shadow-xl relative z-40">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
-            
+
             {/* Logo */}
-            <button 
+            <button
               className="flex items-center gap-3 hover:opacity-90 transition-opacity"
               onClick={() => handleNavigation(isAuthenticated ? 'dashboard' : 'home')}
             >
@@ -73,7 +75,7 @@ const NavigationV2 = ({ currentPage, onNavigate, isAuthenticated, user, onLogout
                 <button
                   key={item.page}
                   onClick={() => handleNavigation(item.page)}
-                  className={`relative px-4 py-2 rounded-xl font-medium transition-all ${
+                  className={`px-4 py-2 rounded-xl font-medium transition-all ${
                     currentPage === item.page
                       ? 'bg-white text-green-600 shadow-lg'
                       : 'text-white hover:bg-white/20'
@@ -85,12 +87,10 @@ const NavigationV2 = ({ currentPage, onNavigate, isAuthenticated, user, onLogout
                   </div>
                 </button>
               ))}
-
               {isAuthenticated && (
                 <button
                   onClick={handleShowTutorial}
                   className="px-4 py-2 rounded-xl font-medium text-white hover:bg-white/20 transition-all flex items-center gap-2"
-                  title="Revoir le tutoriel"
                 >
                   <span className="text-xl">❓</span>
                   <span>Aide</span>
@@ -109,8 +109,7 @@ const NavigationV2 = ({ currentPage, onNavigate, isAuthenticated, user, onLogout
                       onClick={() => handleNavigation('pricing')}
                       className="bg-gradient-to-r from-orange-500 to-red-500 text-white px-4 py-2 rounded-xl font-bold shadow-lg hover:shadow-xl hover:scale-105 transition-all flex items-center gap-2"
                     >
-                      <span>💎</span>
-                      <span>Premium</span>
+                      <span>💎</span><span>Premium</span>
                     </button>
                   )}
 
@@ -132,7 +131,6 @@ const NavigationV2 = ({ currentPage, onNavigate, isAuthenticated, user, onLogout
                     {isUserMenuOpen && (
                       <>
                         <div className="fixed inset-0 z-10" onClick={() => setIsUserMenuOpen(false)} />
-                        
                         <div className="absolute right-0 mt-2 w-72 bg-white rounded-2xl shadow-2xl py-2 z-20">
                           <div className="px-4 py-3 border-b">
                             <SubscriptionBadge user={user} />
@@ -142,26 +140,23 @@ const NavigationV2 = ({ currentPage, onNavigate, isAuthenticated, user, onLogout
 
                           <div className="py-2">
                             {!isPremium && (
-                              <button 
-                                onClick={() => handleNavigation('pricing')} 
+                              <button
+                                onClick={() => handleNavigation('pricing')}
                                 className="w-full text-left px-4 py-3 bg-gradient-to-r from-orange-50 to-red-50 hover:from-orange-100 hover:to-red-100 flex items-center gap-3 text-orange-700 font-semibold"
                               >
                                 <span>💎</span><span>Passer Premium</span>
                               </button>
                             )}
-
                             <button onClick={() => handleNavigation('score')} className="w-full text-left px-4 py-3 hover:bg-gray-50 flex items-center gap-3">
                               <span>🎯</span><span>Mon Score</span>
                             </button>
                             <button onClick={() => handleNavigation('diagnostic')} className="w-full text-left px-4 py-3 hover:bg-gray-50 flex items-center gap-3">
                               <span>🧭</span><span>Diagnostic</span>
                             </button>
-
                             {/* ✅ Règles de classement */}
-                            <button onClick={() => handleNavigation('category-rules')} className="w-full text-left px-4 py-3 hover:bg-green-50 flex items-center gap-3 text-green-700">
+                            <button onClick={() => handleNavigation('category-rules')} className="w-full text-left px-4 py-3 hover:bg-green-50 flex items-center gap-3 text-green-700 font-medium">
                               <span>🗂️</span><span>Mes règles de classement</span>
                             </button>
-
                             <button onClick={() => handleNavigation('settings')} className="w-full text-left px-4 py-3 hover:bg-gray-50 flex items-center gap-3">
                               <span>⚙️</span><span>Paramètres</span>
                             </button>
@@ -188,7 +183,7 @@ const NavigationV2 = ({ currentPage, onNavigate, isAuthenticated, user, onLogout
               )}
             </div>
 
-            {/* Mobile Button */}
+            {/* Mobile burger */}
             <button onClick={() => setIsMenuOpen(!isMenuOpen)} className="lg:hidden w-10 h-10 flex items-center justify-center">
               <div className="w-6 flex flex-col gap-1.5">
                 <span className={`block h-0.5 bg-white transition-all ${isMenuOpen ? 'rotate-45 translate-y-2' : ''}`} />
@@ -204,9 +199,10 @@ const NavigationV2 = ({ currentPage, onNavigate, isAuthenticated, user, onLogout
       {isMenuOpen && (
         <>
           <div className="fixed inset-0 bg-black/50 z-30 lg:hidden" onClick={closeMenus} />
-          
           <div className="fixed top-16 left-0 right-0 bottom-0 bg-white z-30 lg:hidden overflow-y-auto">
             <div className="p-4">
+
+              {/* Profil mobile */}
               {isAuthenticated && (
                 <div className="bg-gradient-to-r from-green-600 to-emerald-600 rounded-2xl p-4 mb-4 text-white">
                   <div className="flex items-center gap-3">
@@ -224,6 +220,7 @@ const NavigationV2 = ({ currentPage, onNavigate, isAuthenticated, user, onLogout
                 </div>
               )}
 
+              {/* Premium CTA mobile */}
               {isAuthenticated && !isPremium && (
                 <button
                   onClick={() => handleNavigation('pricing')}
@@ -234,7 +231,8 @@ const NavigationV2 = ({ currentPage, onNavigate, isAuthenticated, user, onLogout
                 </button>
               )}
 
-              <div className="space-y-2">
+              {/* Navigation principale */}
+              <div className="space-y-2 mb-4">
                 {menuItems.map((item) => (
                   <button
                     key={item.page}
@@ -251,29 +249,28 @@ const NavigationV2 = ({ currentPage, onNavigate, isAuthenticated, user, onLogout
                 ))}
               </div>
 
+              {/* Menu utilisateur mobile */}
               {isAuthenticated && (
                 <>
-                  <div className="mt-6 space-y-2">
-                    <button onClick={() => handleNavigation('score')} className="w-full flex items-center gap-3 p-3 rounded-xl bg-gray-50">
-                      <span>🎯</span><span>Score</span>
+                  <div className="border-t pt-4 space-y-2">
+                    <button onClick={() => handleNavigation('score')} className="w-full flex items-center gap-3 p-3 rounded-xl bg-gray-50 text-gray-700">
+                      <span>🎯</span><span className="font-medium">Mon Score</span>
                     </button>
-
+                    <button onClick={() => handleNavigation('diagnostic')} className="w-full flex items-center gap-3 p-3 rounded-xl bg-gray-50 text-gray-700">
+                      <span>🧭</span><span className="font-medium">Diagnostic</span>
+                    </button>
                     {/* ✅ Règles de classement mobile */}
-                    <button onClick={() => handleNavigation('category-rules')} className="w-full flex items-center gap-3 p-3 rounded-xl bg-green-50 text-green-700 font-semibold">
-                      <span>🗂️</span><span>Mes règles de classement</span>
+                    <button onClick={() => handleNavigation('category-rules')} className="w-full flex items-center gap-3 p-3 rounded-xl bg-green-50 text-green-700">
+                      <span>🗂️</span><span className="font-medium">Mes règles de classement</span>
                     </button>
-
-                    <button onClick={() => handleNavigation('settings')} className="w-full flex items-center gap-3 p-3 rounded-xl bg-gray-50">
-                      <span>⚙️</span><span>Paramètres</span>
+                    <button onClick={() => handleNavigation('settings')} className="w-full flex items-center gap-3 p-3 rounded-xl bg-gray-50 text-gray-700">
+                      <span>⚙️</span><span className="font-medium">Paramètres</span>
                     </button>
-                    <button onClick={() => handleNavigation('subscription')} className="w-full flex items-center gap-3 p-3 rounded-xl bg-gray-50">
-                      <span>💎</span><span>Mon Abonnement</span>
+                    <button onClick={() => handleNavigation('subscription')} className="w-full flex items-center gap-3 p-3 rounded-xl bg-gray-50 text-gray-700">
+                      <span>💎</span><span className="font-medium">Mon Abonnement</span>
                     </button>
-                    <button
-                      onClick={handleShowTutorial}
-                      className="w-full flex items-center gap-3 p-3 rounded-xl bg-blue-50 text-blue-700 font-semibold"
-                    >
-                      <span>❓</span><span>Revoir le tutoriel</span>
+                    <button onClick={handleShowTutorial} className="w-full flex items-center gap-3 p-3 rounded-xl bg-blue-50 text-blue-700">
+                      <span>❓</span><span className="font-medium">Revoir le tutoriel</span>
                     </button>
                   </div>
 
@@ -290,4 +287,4 @@ const NavigationV2 = ({ currentPage, onNavigate, isAuthenticated, user, onLogout
   );
 };
 
-export default NavigationV2;
+export default Navigation;
