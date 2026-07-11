@@ -83,8 +83,20 @@ const ExpenseTrackerPremium = ({ toast, onNavigate, auth, user }) => {
     try {
       const [expensesRes, envelopesRes] = await Promise.all([
         API.get('/expenses/').catch(() => ({ data: [] })),
-        API.get('/meta-envelopes/').catch(() => ({ data: [] }))
+        API.get('/meta-envelopes/').catch(() => ({ data: [] })),
+        API.get('/category-rules/').catch(() => ({ data: { categories: [] } }))
       ]);
+
+      // Construire le mapping depuis les règles utilisateur
+      const rulesMapping = {};
+      (rulesRes.data?.categories || []).forEach(cat => {
+        // Convertir 'essentiels' → 'essentiel' pour le frontend
+        const frontendEnv = cat.current_envelope.replace('essentiels', 'essentiel')
+          .replace('plaisirs', 'plaisir')
+          .replace('projets', 'projet');
+        rulesMapping[cat.category] = frontendEnv;
+      });
+      setCategoryRules(rulesMapping);
 
       const expList = Array.isArray(expensesRes.data) ? expensesRes.data : expensesRes.data.expenses || [];
       setExpenses(expList);
@@ -442,7 +454,7 @@ const ExpenseTrackerPremium = ({ toast, onNavigate, auth, user }) => {
                 </div>
                 {form.category && (
                   <div className="mt-2 text-xs text-gray-500">
-                    Enveloppe : <span className="font-semibold capitalize">{CATEGORY_TO_ENVELOPE[form.category] || 'non définie'}</span>
+                    Enveloppe : <span className="font-semibold capitalize">{categoryRules[form.category] || 'non définie'}</span>
                   </div>
                 )}
               </div>
