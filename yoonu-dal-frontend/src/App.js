@@ -35,11 +35,11 @@ import PricingPage from './pages/PricingPage';
 import CheckoutPage from './pages/CheckoutPage';
 import SubscriptionPage from './pages/SubscriptionPage';
 import PaymentResultPage from './pages/PaymentResultPage';
-import { 
-  SubscriptionBadge, 
-  PremiumGate, 
+import {
+  SubscriptionBadge,
+  PremiumGate,
   PremiumButton,
-  UsageLimitIndicator 
+  UsageLimitIndicator
 } from './components/subscription/SubscriptionComponents';
 
 import GoalsPage from './components/goals/GoalsPage';
@@ -49,12 +49,12 @@ import DebtDetailPage from './components/debts/DebtDetailPage';
 function App() {
   const [currentPage, setCurrentPage] = useState('home');
   const [pageParams, setPageParams] = useState({});
-  
+
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [user, setUser] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [authError, setAuthError] = useState(null);
-  
+
   const { toasts, showSuccess, showError, showWarning, showInfo, removeToast } = useToast();
 
   useEffect(() => {
@@ -114,7 +114,8 @@ function App() {
       'dashboard', 'expenses', 'transactions', 'incomes', 'envelopes', 'tontines',
       'tontine-detail', 'tontine-analysis',
       'profile', 'settings', 'score', 'alerts',
-      'diagnostic', 'values', 'category-rules'
+      'diagnostic', 'values', 'category-rules', 'goals', 'debts', 'debt-detail',
+      'subscription'
     ];
     if (protectedPages.includes(page) && !isAuthenticated) {
       setCurrentPage('login');
@@ -131,19 +132,16 @@ function App() {
   const handleLogin = async (credentials) => {
     try {
       const result = await authService.login(credentials);
-
       if (!result.success) {
         const errorMsg = result.error || 'Nom d\'utilisateur ou mot de passe incorrect.';
         setAuthError(errorMsg);
         showError(errorMsg);
         return;
       }
-
       if (result.user) {
         setIsAuthenticated(true);
         setUser(result.user);
         setAuthError(null);
-
         try {
           const response = await API.get('/onboarding/status/');
           const pendingCode = localStorage.getItem('pending_invite_code');
@@ -231,7 +229,7 @@ function App() {
   const renderPage = () => {
     switch (currentPage) {
       case 'home':
-        return <Home2 onNavigate={handleNavigate} toast={toastMethods} auth={authMethods} />;
+        return <Home onNavigate={handleNavigate} toast={toastMethods} auth={authMethods} />;
 
       case 'home2':
         return <Home2 onNavigate={handleNavigate} toast={toastMethods} auth={authMethods} />;
@@ -246,7 +244,6 @@ function App() {
                 <h2 className="text-3xl font-bold text-gray-900 mb-2">Connexion</h2>
                 <p className="text-gray-600">Bienvenue sur Yoonu Dal</p>
               </div>
-
               {authError && (
                 <div className="mb-4 p-3 bg-red-50 border border-red-200 text-red-700 rounded-lg text-sm flex items-start gap-2">
                   <span className="text-lg flex-shrink-0">⚠️</span>
@@ -257,7 +254,6 @@ function App() {
                   <button onClick={clearAuthError} className="text-red-400 hover:text-red-600 font-bold text-lg leading-none flex-shrink-0">✕</button>
                 </div>
               )}
-
               <form onSubmit={async (e) => {
                 e.preventDefault();
                 setAuthError(null);
@@ -286,7 +282,6 @@ function App() {
                   Se connecter
                 </button>
               </form>
-
               <div className="mt-4 text-center">
                 <a href="https://wa.me/221773569462?text=Bonjour%2C%20j%27ai%20oubli%C3%A9%20mon%20mot%20de%20passe%20Yoonu%20Dal."
                   target="_blank" rel="noopener noreferrer"
@@ -294,7 +289,6 @@ function App() {
                   🔑 Mot de passe oublié ?
                 </a>
               </div>
-
               <div className="mt-4 text-center">
                 <p className="text-gray-600">
                   Pas encore de compte ?{' '}
@@ -322,7 +316,6 @@ function App() {
                 <h2 className="text-3xl font-bold text-gray-900 mb-2">Inscription</h2>
                 <p className="text-gray-600">Rejoignez Yoonu Dal</p>
               </div>
-
               {authError && (
                 <div className="mb-4 p-3 bg-red-50 border border-red-200 text-red-700 rounded-lg text-sm flex items-start gap-2">
                   <span className="text-lg flex-shrink-0">⚠️</span>
@@ -330,7 +323,6 @@ function App() {
                   <button onClick={clearAuthError} className="text-red-400 hover:text-red-600 font-bold text-lg leading-none flex-shrink-0">✕</button>
                 </div>
               )}
-
               <form onSubmit={async (e) => {
                 e.preventDefault();
                 const formData = new FormData(e.target);
@@ -393,7 +385,6 @@ function App() {
                   S'inscrire
                 </button>
               </form>
-
               <div className="mt-6 text-center">
                 <p className="text-gray-600">
                   Déjà un compte ?{' '}
@@ -464,7 +455,6 @@ function App() {
         if (!isAuthenticated) { handleNavigate('login'); return null; }
         return <EnvelopeManager onNavigate={handleNavigate} toast={toastMethods} auth={authMethods} />;
 
-      // ✅ Catégories personnalisables
       case 'category-rules':
         if (!isAuthenticated) { handleNavigate('login'); return null; }
         return <CategoryRulesPage onNavigate={handleNavigate} toast={toastMethods} />;
@@ -521,22 +511,22 @@ function App() {
                 </div>
                 <div className="border-t pt-4 mt-6 space-y-3">
                   <button onClick={() => handleNavigate('values')}
-                    className="w-full bg-blue-100 text-blue-700 px-4 py-3 rounded-lg hover:bg-blue-200 transition-colors duration-200">
+                    className="w-full bg-blue-100 text-blue-700 px-4 py-3 rounded-lg hover:bg-blue-200 transition-colors">
                     💎 Gérer mes valeurs personnelles
                   </button>
                   <button onClick={() => handleNavigate('category-rules')}
-                    className="w-full bg-green-100 text-green-700 px-4 py-3 rounded-lg hover:bg-green-200 transition-colors duration-200">
-                    🗂️ Personnaliser mes règles de classement
+                    className="w-full bg-green-100 text-green-700 px-4 py-3 rounded-lg hover:bg-green-200 transition-colors">
+                    🗂️ Mes règles de classement
                   </button>
                 </div>
               </div>
               <div className="flex space-x-3 mt-6">
                 <button onClick={() => handleNavigate('dashboard')}
-                  className="flex-1 bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors duration-200">
+                  className="flex-1 bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors">
                   ← Dashboard
                 </button>
                 <button onClick={() => handleNavigate('settings')}
-                  className="flex-1 bg-gray-200 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-300 transition-colors duration-200">
+                  className="flex-1 bg-gray-200 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-300 transition-colors">
                   ⚙️ Paramètres
                 </button>
               </div>
@@ -552,20 +542,24 @@ function App() {
               <h2 className="text-2xl font-bold mb-6 text-center">⚙️ Paramètres</h2>
               <div className="space-y-4">
                 <button onClick={() => handleNavigate('category-rules')}
-                  className="w-full text-left p-4 bg-green-50 text-green-700 rounded-lg hover:bg-green-100 transition-colors duration-200">
-                  🗂️ Mes règles de classement des catégories
+                  className="w-full text-left p-4 bg-green-50 text-green-700 rounded-lg hover:bg-green-100 transition-colors font-medium">
+                  🗂️ Mes règles de classement
                 </button>
-                <button className="w-full text-left p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors duration-200">🔔 Notifications</button>
-                <button className="w-full text-left p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors duration-200">🔒 Sécurité et mot de passe</button>
-                <button className="w-full text-left p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors duration-200">🎨 Apparence</button>
-                <button className="w-full text-left p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors duration-200">📱 Préférences</button>
+                <button onClick={() => handleNavigate('values')}
+                  className="w-full text-left p-4 bg-blue-50 text-blue-700 rounded-lg hover:bg-blue-100 transition-colors font-medium">
+                  💎 Mes valeurs personnelles
+                </button>
+                <button onClick={() => handleNavigate('subscription')}
+                  className="w-full text-left p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
+                  💎 Mon Abonnement
+                </button>
                 <button onClick={handleLogout}
-                  className="w-full text-left p-4 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 transition-colors duration-200">
+                  className="w-full text-left p-4 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 transition-colors font-medium">
                   🚪 Déconnexion
                 </button>
               </div>
               <button onClick={() => handleNavigate('dashboard')}
-                className="w-full mt-6 bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors duration-200">
+                className="w-full mt-6 bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors">
                 ← Retour au tableau de bord
               </button>
             </div>
@@ -585,17 +579,13 @@ function App() {
                     <p className="text-blue-600">support@yoonudal.com</p>
                   </div>
                   <div className="p-4 bg-green-50 rounded-lg">
-                    <p className="font-semibold">📞 Téléphone</p>
-                    <p className="text-green-600">+221 XX XXX XX XX</p>
-                  </div>
-                  <div className="p-4 bg-purple-50 rounded-lg">
-                    <p className="font-semibold">💬 Chat en direct</p>
-                    <p className="text-purple-600">Bientôt disponible</p>
+                    <p className="font-semibold">💬 WhatsApp</p>
+                    <p className="text-green-600">+221 77 356 94 62</p>
                   </div>
                 </div>
               </div>
               <button onClick={() => handleNavigate(isAuthenticated ? 'dashboard' : 'home')}
-                className="w-full mt-6 bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors duration-200">
+                className="w-full mt-6 bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors">
                 ← Retour {isAuthenticated ? 'au dashboard' : 'à l\'accueil'}
               </button>
             </div>
@@ -620,7 +610,6 @@ function App() {
         ) : null}
       />
 
-      {/* ✅ Bandeau phase test */}
       {isAuthenticated && (
         <div className="bg-amber-50 border-b border-amber-200 px-4 py-2 text-center">
           <p className="text-xs text-amber-800 font-medium">
