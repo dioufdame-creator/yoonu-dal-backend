@@ -22,7 +22,7 @@ import TontineInvitePage from './components/tontines/TontineInvitePage';
 import IncomesPage from './components/incomes/IncomesPage';
 import TontineAnalysis from './components/tontines/TontineAnalysis';
 import EnvelopeManager from './components/envelopeManager/EnvelopeManager';
-import CategoryRulesPage from './components/envelopes/CategoryRulesPage';
+import CategoryRulesPage from './components/envelopeManager/CategoryRulesPage';
 
 import TransactionsPage from './components/transactions/TransactionsPage';
 
