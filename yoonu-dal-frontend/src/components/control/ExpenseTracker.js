@@ -220,10 +220,17 @@ const ExpenseTrackerPremium = ({ toast, onNavigate, auth, user }) => {
   const getCategoryInfo = (category) =>
     CATEGORIES.find(c => c.value === category) || CATEGORIES[CATEGORIES.length - 1];
 
-  const categoriesByGroup = GROUPS.map(group => ({
-    group,
-    categories: CATEGORIES.filter(c => c.group === group)
-  }));
+  const categoriesByGroup = Object.keys(categoryRules).length > 0
+  ? [
+      { group: 'Essentiels', categories: CATEGORIES.filter(c => categoryRules[c.value] === 'essentiel') },
+      { group: 'Plaisirs',   categories: CATEGORIES.filter(c => categoryRules[c.value] === 'plaisir') },
+      { group: 'Projets',    categories: CATEGORIES.filter(c => categoryRules[c.value] === 'projet') },
+      { group: 'Libération', categories: CATEGORIES.filter(c => categoryRules[c.value] === 'liberation') },
+    ].filter(g => g.categories.length > 0)
+  : GROUPS.map(group => ({
+      group,
+      categories: CATEGORIES.filter(c => c.group === group)
+    }));
 
   if (loading) {
     return (
