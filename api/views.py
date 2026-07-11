@@ -3460,27 +3460,27 @@ def complete_onboarding(request):
 def manage_meta_envelopes(request):
     """Retourne les 4 meta-enveloppes — support ?month=YYYY-MM"""
     user = request.user
- 
+
     if request.method == 'POST':
         try:
             data = request.data
             monthly_income = Decimal(data.get('monthly_income', 0))
             percentages = data.get('percentages', {})
- 
+
             if monthly_income <= 0:
                 return Response({'error': 'Revenu mensuel requis'}, status=status.HTTP_400_BAD_REQUEST)
- 
+
             total = sum(percentages.values())
             if abs(total - 100) > 0.1:
                 return Response({'error': f'Total = {total}%. Doit être 100%'}, status=status.HTTP_400_BAD_REQUEST)
- 
+
             name_mapping = {
                 'essentiel': 'essentiels',
                 'plaisir': 'plaisirs',
                 'projet': 'projets',
                 'liberation': 'liberation'
             }
- 
+
             for frontend_name, db_name in name_mapping.items():
                 if frontend_name in percentages:
                     percentage = Decimal(str(percentages[frontend_name]))
@@ -3492,20 +3492,20 @@ def manage_meta_envelopes(request):
                             'monthly_budget': (percentage / 100) * monthly_income
                         }
                     )
- 
+
             user.profile.monthly_income = monthly_income
             user.profile.save()
- 
+
             return Response({'message': 'Enveloppes mises à jour avec succès'})
- 
+
         except Exception as e:
             return Response({'error': f'Erreur: {str(e)}'}, status=status.HTTP_400_BAD_REQUEST)
- 
+
     # GET
     try:
         start_of_month, end_of_month, is_current_month = get_month_range(request)
- 
-        # ✅ Revenu réel du mois demandé (pas le revenu déclaré)
+
+        # Revenu réel du mois demandé
         monthly_income_real = float(
             Income.objects.filter(
                 user=user,
@@ -3513,11 +3513,11 @@ def manage_meta_envelopes(request):
                 date__lte=end_of_month.date()
             ).aggregate(total=Sum('amount'))['total'] or 0
         )
- 
+
         declared_income = float(user.profile.monthly_income or 0)
         is_estimated = monthly_income_real == 0
         monthly_income = monthly_income_real if not is_estimated else declared_income
- 
+
         # Créer/recalculer enveloppes (mois courant seulement)
         if is_current_month:
             defaults = [('essentiels', 50), ('plaisirs', 30), ('projets', 20), ('liberation', 0)]
@@ -3533,56 +3533,57 @@ def manage_meta_envelopes(request):
                 if not created:
                     env.monthly_budget = (env.allocated_percentage / 100) * Decimal(str(monthly_income))
                     env.save(update_fields=['monthly_budget'])
- 
-        # ✅ Règles personnalisées par utilisateur
-user_rules = get_user_category_rules(user)
 
-    meta_envelopes = {
-        'essentiels': {
-            'frontend_name': 'essentiel',
-            'categories': [cat for cat, env in user_rules.items() if env == 'essentiels'],
-            'color': '#FF6B6B'
-        },
-        'plaisirs': {
-            'frontend_name': 'plaisir',
-        '    categories': [cat for cat, env in user_rules.items() if env == 'plaisirs'],
-            'color': '#4ECDC4'
-        },
-        'projets': {
-            'frontend_name': 'projet',
-            'categories': [cat for cat, env in user_rules.items() if env == 'projets'],
-            'color': '#95E1D3'
-        },
-        'liberation': {
-            'frontend_name': 'liberation',
-            'categories': [cat for cat, env in user_rules.items() if env == 'liberation'],
-            'color': '#FFD93D'
+        # ✅ Règles personnalisées par utilisateur
+        user_rules = get_user_category_rules(user)
+
+        meta_envelopes = {
+            'essentiels': {
+                'frontend_name': 'essentiel',
+                'categories': [cat for cat, env in user_rules.items() if env == 'essentiels'],
+                'color': '#FF6B6B'
+            },
+            'plaisirs': {
+                'frontend_name': 'plaisir',
+                'categories': [cat for cat, env in user_rules.items() if env == 'plaisirs'],
+                'color': '#4ECDC4'
+            },
+            'projets': {
+                'frontend_name': 'projet',
+                'categories': [cat for cat, env in user_rules.items() if env == 'projets'],
+                'color': '#95E1D3'
+            },
+            'liberation': {
+                'frontend_name': 'liberation',
+                'categories': [cat for cat, env in user_rules.items() if env == 'liberation'],
+                'color': '#FFD93D'
+            }
         }
-    }
+
         result = []
- 
+
         for envelope_type, config in meta_envelopes.items():
             try:
                 envelope = Envelope.objects.get(user=user, envelope_type=envelope_type)
                 allocated_percentage = float(envelope.allocated_percentage)
             except Envelope.DoesNotExist:
                 allocated_percentage = 0
- 
+
             # Budget recalculé sur le revenu réel du mois demandé
             budget = (allocated_percentage / 100) * monthly_income
- 
-            # ✅ Dépenses du mois demandé (pas current_spent qui est figé)
+
+            # Dépenses du mois demandé
             spent_value = Expense.objects.filter(
                 user=user,
                 category__in=config['categories'],
                 date__gte=start_of_month.date(),
                 date__lte=end_of_month.date()
             ).aggregate(total=Sum('amount'))['total']
- 
+
             spent = float(spent_value) if spent_value is not None else 0.0
             remaining = max(0, budget - spent)
             percentage = (spent / budget * 100) if budget > 0 else 0
- 
+
             result.append({
                 'envelope_type': config['frontend_name'],
                 'type': config['frontend_name'],
@@ -3597,7 +3598,10 @@ user_rules = get_user_category_rules(user)
                 'categories': config['categories'],
                 'color': config['color']
             })
-        MOIS_FR = ['', 'Janvier', 'Fevrier', 'Mars', 'Avril', 'Mai', 'Juin','Juillet', 'Aout', 'Septembre', 'Octobre', 'Novembre', 'Decembre']
+
+        MOIS_FR = ['', 'Janvier', 'Fevrier', 'Mars', 'Avril', 'Mai', 'Juin',
+                   'Juillet', 'Aout', 'Septembre', 'Octobre', 'Novembre', 'Decembre']
+
         return Response({
             'envelopes': result,
             'monthly_income': monthly_income,
@@ -3606,10 +3610,9 @@ user_rules = get_user_category_rules(user)
             'month': start_of_month.strftime('%Y-%m'),
             'month_label': f"{MOIS_FR[start_of_month.month]} {start_of_month.year}",
         })
- 
+
     except Exception as e:
         return Response({'error': f'Erreur meta-envelopes: {str(e)}'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
 
 # ==========================================
 # FONCTIONS MANQUANTES - À AJOUTER À LA FIN DE api/views.py
