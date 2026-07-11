@@ -9,8 +9,6 @@ import { LineChart, Line, ResponsiveContainer, Tooltip, AreaChart, Area } from '
 // Nouvelles catégories contexte sénégalais
 // ==========================================
 
-const [categoryRules, setCategoryRules] = useState({});
-
 const CATEGORIES = [
   // ESSENTIELS
   { value: 'loyer',               label: 'Loyer',                 icon: '🏠', color: 'from-orange-500 to-red-500',    bgColor: 'bg-orange-50',  borderColor: 'border-orange-200',  textColor: 'text-orange-700',  group: 'Essentiels' },
@@ -21,8 +19,7 @@ const CATEGORIES = [
   { value: 'telephone_internet',  label: 'Téléphone / Internet',  icon: '📱', color: 'from-indigo-500 to-blue-500',   bgColor: 'bg-indigo-50',  borderColor: 'border-indigo-200',  textColor: 'text-indigo-700',  group: 'Essentiels' },
   { value: 'aide_menagere',       label: 'Aide ménagère',         icon: '🧹', color: 'from-cyan-500 to-teal-500',     bgColor: 'bg-cyan-50',    borderColor: 'border-cyan-200',    textColor: 'text-cyan-700',    group: 'Essentiels' },
   { value: 'solidarite_famille',  label: 'Solidarité / Famille',  icon: '👨‍👩‍👧', color: 'from-purple-500 to-pink-500',  bgColor: 'bg-purple-50',  borderColor: 'border-purple-200',  textColor: 'text-purple-700',  group: 'Essentiels' },
-  { value: 'maison_courses',  label: 'Maison / Courses',  icon: '👨‍👩‍👧', color: 'from-purple-500 to-pink-500',  bgColor: 'bg-purple-50',  borderColor: 'border-purple-200',  textColor: 'text-purple-700',  group: 'Essentiels' },
-  
+  { value: 'maison_courses',      label: 'Maison / Courses',      icon: '🛒', color: 'from-purple-500 to-pink-500',   bgColor: 'bg-purple-50',  borderColor: 'border-purple-200',  textColor: 'text-purple-700',  group: 'Essentiels' },
 
   // PLAISIRS
   { value: 'restaurant',          label: 'Restaurant / Café',     icon: '🍜', color: 'from-orange-400 to-amber-500',  bgColor: 'bg-orange-50',  borderColor: 'border-orange-200',  textColor: 'text-orange-700',  group: 'Plaisirs' },
@@ -30,6 +27,7 @@ const CATEGORIES = [
   { value: 'vetements',           label: 'Vêtements / Mode',      icon: '👔', color: 'from-cyan-500 to-blue-500',     bgColor: 'bg-cyan-50',    borderColor: 'border-cyan-200',    textColor: 'text-cyan-700',    group: 'Plaisirs' },
   { value: 'beaute',              label: 'Beauté / Coiffure',     icon: '💅', color: 'from-pink-400 to-rose-500',     bgColor: 'bg-pink-50',    borderColor: 'border-pink-200',    textColor: 'text-pink-700',    group: 'Plaisirs' },
   { value: 'voyage',              label: 'Voyage / Vacances',     icon: '✈️', color: 'from-blue-400 to-indigo-500',   bgColor: 'bg-blue-50',    borderColor: 'border-blue-200',    textColor: 'text-blue-700',    group: 'Plaisirs' },
+
   // PROJETS
   { value: 'education',           label: 'Éducation / Scolarité', icon: '📚', color: 'from-indigo-500 to-blue-500',   bgColor: 'bg-indigo-50',  borderColor: 'border-indigo-200',  textColor: 'text-indigo-700',  group: 'Projets' },
   { value: 'epargne',             label: 'Épargne / Invest.',     icon: '💰', color: 'from-green-500 to-emerald-500', bgColor: 'bg-green-50',   borderColor: 'border-green-200',   textColor: 'text-green-700',   group: 'Projets' },
@@ -38,8 +36,10 @@ const CATEGORIES = [
   { value: 'sante_exceptionnelle',label: 'Santé exceptionnelle',  icon: '🏥', color: 'from-red-500 to-pink-500',      bgColor: 'bg-red-50',     borderColor: 'border-red-200',     textColor: 'text-red-700',     group: 'Projets' },
   { value: 'immobilier',          label: 'Immobilier / Constr.',  icon: '🏗️', color: 'from-stone-500 to-gray-600',    bgColor: 'bg-stone-50',   borderColor: 'border-stone-200',   textColor: 'text-stone-700',   group: 'Projets' },
   { value: 'tontine_epargne',     label: 'Tontine / Épargne coll.',icon: '🤝', color: 'from-green-600 to-teal-600',  bgColor: 'bg-green-50',   borderColor: 'border-green-200',   textColor: 'text-green-700',   group: 'Projets' },
+
   // LIBÉRATION
   { value: 'remboursement_dette', label: 'Remboursement dette',   icon: '💳', color: 'from-amber-500 to-orange-500',  bgColor: 'bg-amber-50',   borderColor: 'border-amber-200',   textColor: 'text-amber-700',   group: 'Libération' },
+
   // AUTRE
   { value: 'autre',               label: 'Autre',                 icon: '📝', color: 'from-gray-500 to-slate-500',    bgColor: 'bg-gray-50',    borderColor: 'border-gray-200',    textColor: 'text-gray-700',    group: 'Autre' },
 ];
@@ -69,6 +69,8 @@ const ExpenseTrackerPremium = ({ toast, onNavigate, auth, user }) => {
   const [envelopes, setEnvelopes] = useState(
     ENVELOPE_CONFIG.map(e => ({ ...e, budget: 0, spent: 0 }))
   );
+  // ✅ State pour les règles personnalisées — à l'intérieur du composant
+  const [categoryRules, setCategoryRules] = useState({});
 
   const emptyForm = () => ({
     amount: '',
@@ -81,17 +83,18 @@ const ExpenseTrackerPremium = ({ toast, onNavigate, auth, user }) => {
   const loadData = useCallback(async () => {
     setLoading(true);
     try {
-      const [expensesRes, envelopesRes] = await Promise.all([
+      // ✅ 3 promesses avec déstructuration correcte
+      const [expensesRes, envelopesRes, rulesRes] = await Promise.all([
         API.get('/expenses/').catch(() => ({ data: [] })),
         API.get('/meta-envelopes/').catch(() => ({ data: [] })),
         API.get('/category-rules/').catch(() => ({ data: { categories: [] } }))
       ]);
 
-      // Construire le mapping depuis les règles utilisateur
+      // ✅ Construire le mapping depuis les règles utilisateur
       const rulesMapping = {};
       (rulesRes.data?.categories || []).forEach(cat => {
-        // Convertir 'essentiels' → 'essentiel' pour le frontend
-        const frontendEnv = cat.current_envelope.replace('essentiels', 'essentiel')
+        const frontendEnv = cat.current_envelope
+          .replace('essentiels', 'essentiel')
           .replace('plaisirs', 'plaisir')
           .replace('projets', 'projet');
         rulesMapping[cat.category] = frontendEnv;
@@ -217,7 +220,6 @@ const ExpenseTrackerPremium = ({ toast, onNavigate, auth, user }) => {
   const getCategoryInfo = (category) =>
     CATEGORIES.find(c => c.value === category) || CATEGORIES[CATEGORIES.length - 1];
 
-  // Catégories groupées pour le formulaire
   const categoriesByGroup = GROUPS.map(group => ({
     group,
     categories: CATEGORIES.filter(c => c.group === group)
@@ -318,7 +320,6 @@ const ExpenseTrackerPremium = ({ toast, onNavigate, auth, user }) => {
               />
               <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xl">🔍</span>
             </div>
-            {/* Filtre par groupe */}
             <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
               <button onClick={() => { setFilterGroup('all'); setFilterCategory('all'); }}
                 className={`px-3 py-2 rounded-xl text-xs font-medium whitespace-nowrap transition-all ${filterGroup === 'all' ? 'bg-gradient-to-r from-green-600 to-emerald-600 text-white shadow-lg' : 'bg-gray-100 text-gray-700'}`}>
@@ -452,6 +453,7 @@ const ExpenseTrackerPremium = ({ toast, onNavigate, auth, user }) => {
                     </div>
                   ))}
                 </div>
+                {/* ✅ Affichage enveloppe depuis les règles utilisateur */}
                 {form.category && (
                   <div className="mt-2 text-xs text-gray-500">
                     Enveloppe : <span className="font-semibold capitalize">{categoryRules[form.category] || 'non définie'}</span>
