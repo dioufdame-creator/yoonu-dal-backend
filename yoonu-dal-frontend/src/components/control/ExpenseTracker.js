@@ -9,35 +9,7 @@ import { LineChart, Line, ResponsiveContainer, Tooltip, AreaChart, Area } from '
 // Nouvelles catégories contexte sénégalais
 // ==========================================
 
-const CATEGORY_TO_ENVELOPE = {
-  // ESSENTIELS
-  'loyer':               'essentiel',
-  'alimentation':        'essentiel',
-  'transport':           'essentiel',
-  'sante_courante':      'essentiel',
-  'eau_electricite':     'essentiel',
-  'telephone_internet':  'essentiel',
-  'aide_menagere':       'essentiel',
-  'solidarite_famille':  'essentiel',
-  'maison_courses':      'essentiel',
-  // PLAISIRS
-  'restaurant':          'plaisir',
-  'loisirs':             'plaisir',
-  'vetements':           'plaisir',
-  'beaute':              'plaisir',
-  'voyage':              'plaisir',
-  'autre':               'plaisir',
-  // PROJETS
-  'education':           'projet',
-  'epargne':             'projet',
-  'fetes_ceremonies':    'projet',
-  'spiritualite':        'projet',
-  'sante_exceptionnelle':'projet',
-  'immobilier':          'projet',
-  'tontine_epargne':     'projet',
-  // LIBÉRATION
-  'remboursement_dette': 'liberation',
-};
+const [categoryRules, setCategoryRules] = useState({});
 
 const CATEGORIES = [
   // ESSENTIELS
