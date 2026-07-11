@@ -4,19 +4,17 @@ import { UsageLimitIndicator } from '../subscription/SubscriptionComponents';
 
 const AIChatWidgetV4 = ({ onNavigate, toast, user }) => {
   const [isOpen, setIsOpen] = useState(false);
-  const [view, setView] = useState('chat'); // 'chat' | 'conversations'
+  const [view, setView] = useState('chat');
 
-  // Conversation courante
   const [conversationId, setConversationId] = useState(null);
   const [conversationTitle, setConversationTitle] = useState('');
 
-  // Liste des conversations
   const [conversations, setConversations] = useState([]);
   const [loadingConversations, setLoadingConversations] = useState(false);
 
   const [messages, setMessages] = useState([{
     role: 'assistant',
-    content: "Salut ! 👋 Je suis Yoonu, ton coach financier. Je me souviens de nos conversations précédentes. Comment puis-je t'aider ?",
+    content: "Salut ! 👋 Je suis Yoonu, ton coach financier. Comment puis-je t'aider ?",
     actions: [],
     timestamp: new Date()
   }]);
@@ -24,7 +22,6 @@ const AIChatWidgetV4 = ({ onNavigate, toast, user }) => {
   const [isTyping, setIsTyping] = useState(false);
   const [executingAction, setExecutingAction] = useState(false);
 
-  // Voice
   const [isListening, setIsListening] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [voiceEnabled, setVoiceEnabled] = useState(false);
@@ -43,7 +40,6 @@ const AIChatWidgetV4 = ({ onNavigate, toast, user }) => {
   useEffect(() => { scrollToBottom(); }, [messages]);
   useEffect(() => { if (isOpen && view === 'chat' && inputRef.current) inputRef.current.focus(); }, [isOpen, view]);
 
-  // Speech Recognition
   useEffect(() => {
     if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
       const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -63,14 +59,12 @@ const AIChatWidgetV4 = ({ onNavigate, toast, user }) => {
     };
   }, []);
 
-  // ESC key
   useEffect(() => {
     const handler = (e) => { if (e.key === 'Escape' && isOpen) setIsOpen(false); };
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
   }, [isOpen]);
 
-  // Click outside
   useEffect(() => {
     const handler = (e) => {
       if (chatRef.current && !chatRef.current.contains(e.target) && window.innerWidth >= 640) setIsOpen(false);
@@ -79,7 +73,6 @@ const AIChatWidgetV4 = ({ onNavigate, toast, user }) => {
     return () => document.removeEventListener('mousedown', handler);
   }, [isOpen]);
 
-  // Charger les conversations
   const loadConversations = async () => {
     setLoadingConversations(true);
     try {
@@ -92,7 +85,6 @@ const AIChatWidgetV4 = ({ onNavigate, toast, user }) => {
     }
   };
 
-  // Ouvrir une conversation existante
   const openConversation = async (conv) => {
     try {
       const res = await API.get(`/ai/conversations/${conv.id}/`);
@@ -119,7 +111,6 @@ const AIChatWidgetV4 = ({ onNavigate, toast, user }) => {
     }
   };
 
-  // Nouvelle conversation
   const startNewConversation = () => {
     setConversationId(null);
     setConversationTitle('');
@@ -131,15 +122,12 @@ const AIChatWidgetV4 = ({ onNavigate, toast, user }) => {
     setView('chat');
   };
 
-  // Supprimer une conversation
   const deleteConversation = async (e, convId) => {
     e.stopPropagation();
     try {
       await API.delete(`/ai/conversations/${convId}/`);
       setConversations(prev => prev.filter(c => c.id !== convId));
-      if (conversationId === convId) {
-        startNewConversation();
-      }
+      if (conversationId === convId) startNewConversation();
     } catch (err) {
       toast?.showError?.('Impossible de supprimer');
     }
@@ -186,22 +174,22 @@ const AIChatWidgetV4 = ({ onNavigate, toast, user }) => {
         conversation_id: conversationId || undefined,
       });
 
+      // ✅ Protection contre message vide ou undefined
       const assistantMsg = {
         role: 'assistant',
-        content: res.data.message,
+        content: res.data.message || res.data.error || "Désolé, je n'ai pas pu répondre. Réessaie.",
         actions: res.data.actions || [],
         timestamp: new Date()
       };
       setMessages([...newMessages, assistantMsg]);
 
-      // Mettre à jour la conversation courante
       if (res.data.conversation_id) {
         setConversationId(res.data.conversation_id);
         setConversationTitle(res.data.conversation_title || '');
       }
 
       await refreshMessageCount();
-      if (autoSpeak) speak(res.data.message);
+      if (autoSpeak) speak(assistantMsg.content);
 
     } catch (error) {
       const isLimit = error.response?.status === 429;
@@ -243,7 +231,6 @@ const AIChatWidgetV4 = ({ onNavigate, toast, user }) => {
     { text: "💡 Conseils pour économiser", icon: "💡" }
   ];
 
-  // ── FAB ──────────────────────────────────────────────────────
   if (!isOpen) {
     return (
       <div className="fixed bottom-6 right-6 z-40">
@@ -258,7 +245,6 @@ const AIChatWidgetV4 = ({ onNavigate, toast, user }) => {
     );
   }
 
-  // ── FENÊTRE CHAT ─────────────────────────────────────────────
   return (
     <>
       <div className="fixed inset-0 bg-black/50 z-40 sm:hidden" onClick={() => setIsOpen(false)} />
@@ -266,7 +252,6 @@ const AIChatWidgetV4 = ({ onNavigate, toast, user }) => {
         ref={chatRef}
         className="fixed bottom-0 right-0 sm:bottom-6 sm:right-6 z-50 w-full sm:w-[420px] h-screen sm:h-[680px] bg-white sm:rounded-2xl shadow-2xl flex flex-col overflow-hidden border-2 border-gray-200"
       >
-
         {/* Header */}
         <div className="bg-gradient-to-r from-green-600 to-emerald-600 text-white p-4 flex items-center justify-between shadow-lg flex-shrink-0">
           <div className="flex items-center gap-3">
@@ -283,7 +268,6 @@ const AIChatWidgetV4 = ({ onNavigate, toast, user }) => {
           </div>
 
           <div className="flex items-center gap-1">
-            {/* Conversations */}
             <button
               onClick={() => { setView(view === 'conversations' ? 'chat' : 'conversations'); if (view !== 'conversations') loadConversations(); }}
               className={`p-2 rounded-lg transition-all ${view === 'conversations' ? 'bg-white/30' : 'bg-white/10 hover:bg-white/20'}`}
@@ -291,7 +275,6 @@ const AIChatWidgetV4 = ({ onNavigate, toast, user }) => {
             >
               <span className="text-lg">📋</span>
             </button>
-            {/* Voice */}
             {voiceEnabled && (
               <button
                 onClick={() => setAutoSpeak(!autoSpeak)}
@@ -300,14 +283,13 @@ const AIChatWidgetV4 = ({ onNavigate, toast, user }) => {
                 <span className="text-lg">{autoSpeak ? '🔊' : '🔇'}</span>
               </button>
             )}
-            {/* Close */}
             <button onClick={() => setIsOpen(false)} className="text-white hover:bg-white/30 rounded-lg p-2 transition-colors">
               <span className="text-xl font-bold">✕</span>
             </button>
           </div>
         </div>
 
-        {/* ── VUE CONVERSATIONS ── */}
+        {/* VUE CONVERSATIONS */}
         {view === 'conversations' && (
           <div className="flex-1 overflow-y-auto bg-gray-50">
             <div className="p-4">
@@ -329,30 +311,28 @@ const AIChatWidgetV4 = ({ onNavigate, toast, user }) => {
                 <div className="space-y-2">
                   {conversations.map(conv => (
                     <div
-  key={conv.id}
-  className={`rounded-xl border flex items-stretch overflow-hidden transition-all ${
-    conversationId === conv.id ? 'border-green-500 bg-green-50' : 'border-gray-200 bg-white'
-  }`}
->
-  {/* Zone clic conversation */}
-  <div
-    onClick={() => openConversation(conv)}
-    className="flex-1 min-w-0 p-3 cursor-pointer hover:bg-green-50 transition-colors"
-  >
-    <p className="text-sm font-semibold text-gray-800 truncate">{conv.title}</p>
-    <p className="text-xs text-gray-500 mt-0.5">
-      {conv.message_count} message{conv.message_count > 1 ? 's' : ''} · {new Date(conv.updated_at).toLocaleDateString('fr-FR')}
-    </p>
-  </div>
-  {/* Bouton supprimer — séparé, toujours visible */}
-  <button
-    onClick={(e) => deleteConversation(e, conv.id)}
-    className="px-3 border-l border-gray-200 text-gray-300 hover:text-red-500 hover:bg-red-50 transition-all flex-shrink-0 flex items-center"
-    title="Supprimer"
-  >
-    🗑️
-  </button>
-</div>
+                      key={conv.id}
+                      className={`rounded-xl border flex items-stretch overflow-hidden transition-all ${
+                        conversationId === conv.id ? 'border-green-500 bg-green-50' : 'border-gray-200 bg-white'
+                      }`}
+                    >
+                      <div
+                        onClick={() => openConversation(conv)}
+                        className="flex-1 min-w-0 p-3 cursor-pointer hover:bg-green-50 transition-colors"
+                      >
+                        <p className="text-sm font-semibold text-gray-800 truncate">{conv.title}</p>
+                        <p className="text-xs text-gray-500 mt-0.5">
+                          {conv.message_count} message{conv.message_count > 1 ? 's' : ''} · {new Date(conv.updated_at).toLocaleDateString('fr-FR')}
+                        </p>
+                      </div>
+                      <button
+                        onClick={(e) => deleteConversation(e, conv.id)}
+                        className="px-3 border-l border-gray-200 text-gray-300 hover:text-red-500 hover:bg-red-50 transition-all flex-shrink-0 flex items-center"
+                        title="Supprimer"
+                      >
+                        🗑️
+                      </button>
+                    </div>
                   ))}
                 </div>
               )}
@@ -360,10 +340,9 @@ const AIChatWidgetV4 = ({ onNavigate, toast, user }) => {
           </div>
         )}
 
-        {/* ── VUE CHAT ── */}
+        {/* VUE CHAT */}
         {view === 'chat' && (
           <>
-            {/* Messages */}
             <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-gradient-to-b from-gray-50 to-white">
               {messages.map((msg, idx) => (
                 <div key={idx}>
@@ -426,7 +405,6 @@ const AIChatWidgetV4 = ({ onNavigate, toast, user }) => {
               <div ref={messagesEndRef} />
             </div>
 
-            {/* Quick Actions */}
             {messages.length <= 2 && (
               <div className="px-4 py-3 bg-white border-t border-gray-200 flex-shrink-0">
                 <p className="text-xs font-semibold text-gray-600 mb-2">💡 Suggestions :</p>
@@ -444,7 +422,6 @@ const AIChatWidgetV4 = ({ onNavigate, toast, user }) => {
               </div>
             )}
 
-            {/* Limite messages */}
             {user?.profile && !user.profile.is_premium && (
               <div className="px-4 py-2 border-t border-gray-200 bg-gray-50 flex-shrink-0">
                 <UsageLimitIndicator
@@ -455,7 +432,6 @@ const AIChatWidgetV4 = ({ onNavigate, toast, user }) => {
               </div>
             )}
 
-            {/* Input */}
             <div className="p-4 bg-white border-t-2 border-gray-200 flex-shrink-0">
               <div className="flex gap-2">
                 {voiceEnabled && (
