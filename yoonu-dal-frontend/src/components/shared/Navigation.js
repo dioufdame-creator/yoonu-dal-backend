@@ -86,7 +86,6 @@ const NavigationV2 = ({ currentPage, onNavigate, isAuthenticated, user, onLogout
                 </button>
               ))}
 
-              {/* Bouton Aide desktop */}
               {isAuthenticated && (
                 <button
                   onClick={handleShowTutorial}
@@ -157,6 +156,12 @@ const NavigationV2 = ({ currentPage, onNavigate, isAuthenticated, user, onLogout
                             <button onClick={() => handleNavigation('diagnostic')} className="w-full text-left px-4 py-3 hover:bg-gray-50 flex items-center gap-3">
                               <span>🧭</span><span>Diagnostic</span>
                             </button>
+
+                            {/* ✅ Règles de classement */}
+                            <button onClick={() => handleNavigation('category-rules')} className="w-full text-left px-4 py-3 hover:bg-green-50 flex items-center gap-3 text-green-700">
+                              <span>🗂️</span><span>Mes règles de classement</span>
+                            </button>
+
                             <button onClick={() => handleNavigation('settings')} className="w-full text-left px-4 py-3 hover:bg-gray-50 flex items-center gap-3">
                               <span>⚙️</span><span>Paramètres</span>
                             </button>
@@ -252,16 +257,21 @@ const NavigationV2 = ({ currentPage, onNavigate, isAuthenticated, user, onLogout
                     <button onClick={() => handleNavigation('score')} className="w-full flex items-center gap-3 p-3 rounded-xl bg-gray-50">
                       <span>🎯</span><span>Score</span>
                     </button>
+
+                    {/* ✅ Règles de classement mobile */}
+                    <button onClick={() => handleNavigation('category-rules')} className="w-full flex items-center gap-3 p-3 rounded-xl bg-green-50 text-green-700 font-semibold">
+                      <span>🗂️</span><span>Mes règles de classement</span>
+                    </button>
+
                     <button onClick={() => handleNavigation('settings')} className="w-full flex items-center gap-3 p-3 rounded-xl bg-gray-50">
                       <span>⚙️</span><span>Paramètres</span>
                     </button>
                     <button onClick={() => handleNavigation('subscription')} className="w-full flex items-center gap-3 p-3 rounded-xl bg-gray-50">
                       <span>💎</span><span>Mon Abonnement</span>
                     </button>
-                    {/* Bouton Aide mobile */}
                     <button
                       onClick={handleShowTutorial}
-                      className="w-full flex items-center gap-3 p-3 rounded-xl bg-green-50 text-green-700 font-semibold"
+                      className="w-full flex items-center gap-3 p-3 rounded-xl bg-blue-50 text-blue-700 font-semibold"
                     >
                       <span>❓</span><span>Revoir le tutoriel</span>
                     </button>
