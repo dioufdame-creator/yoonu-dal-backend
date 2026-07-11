@@ -3534,28 +3534,31 @@ def manage_meta_envelopes(request):
                     env.monthly_budget = (env.allocated_percentage / 100) * Decimal(str(monthly_income))
                     env.save(update_fields=['monthly_budget'])
  
-        meta_envelopes = {
-            'essentiels': {
-                'frontend_name': 'essentiel',
-                'categories': ['loyer', 'alimentation', 'transport', 'sante_courante', 'eau_electricite', 'telephone_internet', 'aide_menagere', 'solidarite_famille','maison_courses'],
-                'color': '#FF6B6B'
-            },
-            'plaisirs': {
-                'frontend_name': 'plaisir',
-                'categories': ['restaurant', 'loisirs', 'vetements', 'beaute', 'voyage', 'autre'],
-                'color': '#4ECDC4'
-            },
-            'projets': {
-                'frontend_name': 'projet',
-                'categories': ['education', 'epargne', 'fetes_ceremonies', 'spiritualite', 'sante_exceptionnelle', 'immobilier', 'tontine_epargne'],
-                'color': '#95E1D3'
-            },
-            'liberation': {
-                'frontend_name': 'liberation',
-                'categories': ['remboursement_dette'],
-                'color': '#FFD93D'
-            }
-        } 
+        # ✅ Règles personnalisées par utilisateur
+user_rules = get_user_category_rules(user)
+
+    meta_envelopes = {
+        'essentiels': {
+            'frontend_name': 'essentiel',
+            'categories': [cat for cat, env in user_rules.items() if env == 'essentiels'],
+            'color': '#FF6B6B'
+        },
+        'plaisirs': {
+            'frontend_name': 'plaisir',
+        '    categories': [cat for cat, env in user_rules.items() if env == 'plaisirs'],
+            'color': '#4ECDC4'
+        },
+        'projets': {
+            'frontend_name': 'projet',
+            'categories': [cat for cat, env in user_rules.items() if env == 'projets'],
+            'color': '#95E1D3'
+        },
+        'liberation': {
+            'frontend_name': 'liberation',
+            'categories': [cat for cat, env in user_rules.items() if env == 'liberation'],
+            'color': '#FFD93D'
+        }
+    }
         result = []
  
         for envelope_type, config in meta_envelopes.items():
