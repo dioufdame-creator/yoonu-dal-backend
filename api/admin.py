@@ -502,3 +502,44 @@ mark_as_processed.short_description = "Marquer comme traité"
 
 TontineContributionAdmin.actions = [mark_as_validated]
 TontinePayoutAdmin.actions = [mark_as_processed]
+
+# ==========================================
+# IA — Conversations & Mémoire
+# ==========================================
+
+from .models import AIConversation, AIMessage, AIMemory
+
+class AIMessageInline(admin.TabularInline):
+    model = AIMessage
+    extra = 0
+    readonly_fields = ('role', 'content', 'created_at')
+    fields = ('role', 'content', 'created_at')
+    can_delete = False
+    max_num = 0  # lecture seule
+
+@admin.register(AIConversation)
+class AIConversationAdmin(admin.ModelAdmin):
+    list_display = ('user', 'title', 'message_count', 'is_active', 'created_at', 'updated_at')
+    list_filter = ('is_active', 'created_at')
+    search_fields = ('user__username', 'title')
+    readonly_fields = ('created_at', 'updated_at', 'message_count')
+    inlines = [AIMessageInline]
+    ordering = ('-updated_at',)
+
+    def get_queryset(self, request):
+        return super().get_queryset(request).select_related('user')
+
+@admin.register(AIMemory)
+class AIMemoryAdmin(admin.ModelAdmin):
+    list_display = ('user', 'facts_summary', 'updated_at')
+    search_fields = ('user__username',)
+    readonly_fields = ('updated_at',)
+
+    def facts_summary(self, obj):
+        facts = obj.facts or {}
+        count = len(facts)
+        return format_html('<span>{} fait(s) mémorisé(s)</span>', count)
+    facts_summary.short_description = 'Mémoire'
+
+    def get_queryset(self, request):
+        return super().get_queryset(request).select_related('user')
