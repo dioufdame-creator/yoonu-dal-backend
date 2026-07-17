@@ -228,3 +228,15 @@ PAYDUNYA_MODE = os.environ.get('PAYDUNYA_MODE', 'test')
 
 FIREBASE_PROJECT_ID = 'yoonu-dal'
 FIREBASE_SERVICE_ACCOUNT_PATH = '/etc/secrets/firebase-service-account.json'
+
+
+# ── EMAIL CONFIG ─────────────────────────────────────────────
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = 'smtp.gmail.com'
+EMAIL_PORT = 587
+EMAIL_USE_TLS = True
+EMAIL_HOST_USER = os.environ.get('EMAIL_HOST_USER')
+EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD')
+DEFAULT_FROM_EMAIL = f'Yoonu Dal <{os.environ.get("EMAIL_HOST_USER")}>'
+FRONTEND_URL = os.environ.get('FRONTEND_URL', 'https://yoonudal.com')
+PASSWORD_RESET_TIMEOUT = 86400  # 24 heures
