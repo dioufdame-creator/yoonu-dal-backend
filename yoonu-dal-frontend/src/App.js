@@ -9,6 +9,7 @@ import authService from './services/authService';
 import API from './services/api';
 
 import Navigation from './components/shared/Navigation';
+import BottomNav from './components/shared/BottomNav';
 import Footer from './components/shared/Footer';
 import { ToastContainer, useToast } from './components/shared/Toast';
 import Home from './components/Home';
@@ -24,6 +25,8 @@ import TontineAnalysis from './components/tontines/TontineAnalysis';
 import EnvelopeManager from './components/envelopeManager/EnvelopeManager';
 import CategoryRulesPage from './components/envelopeManager/CategoryRulesPage';
 import { ForgotPasswordForm, ResetPasswordForm } from './components/auth/AuthForms';
+import ProfileHub from './components/profile/ProfileHub';
+import QuickAdd from './components/quickadd/QuickAdd';
 
 import TransactionsPage from './components/transactions/TransactionsPage';
 
@@ -85,7 +88,7 @@ function App() {
       } finally {
         setIsLoading(false);
 
-        // ✅ Détection des paramètres URL
+        // Détection des paramètres URL
         const path = window.location.pathname;
         const params = new URLSearchParams(window.location.search);
         const page = params.get('page');
@@ -93,7 +96,6 @@ function App() {
         const token = params.get('token');
 
         if (page === 'reset-password' && uid && token) {
-          // Lien de réinitialisation depuis l'email
           setCurrentPage('reset-password');
           setPageParams({ uid, token });
         } else if (path.startsWith('/payment/success')) {
@@ -125,7 +127,7 @@ function App() {
     const protectedPages = [
       'dashboard', 'expenses', 'transactions', 'incomes', 'envelopes', 'tontines',
       'tontine-detail', 'tontine-analysis',
-      'profile', 'settings', 'score', 'alerts',
+      'profile', 'profile-hub', 'quick-add', 'settings', 'score', 'alerts',
       'diagnostic', 'values', 'category-rules', 'goals', 'debts', 'debt-detail',
       'subscription'
     ];
@@ -242,12 +244,11 @@ function App() {
   const renderPage = () => {
     switch (currentPage) {
       case 'home':
-        return <Home2 onNavigate={handleNavigate} toast={toastMethods} auth={authMethods} />;
+        return <Home onNavigate={handleNavigate} toast={toastMethods} auth={authMethods} />;
 
       case 'home2':
         return <Home2 onNavigate={handleNavigate} toast={toastMethods} auth={authMethods} />;
 
-      // ✅ CONNEXION — email ou username
       case 'login':
         if (isAuthenticated) { handleNavigate('dashboard'); return null; }
         return (
@@ -337,7 +338,6 @@ function App() {
           </div>
         );
 
-      // ✅ MOT DE PASSE OUBLIÉ
       case 'forgot-password':
         return (
           <div className="min-h-screen bg-gradient-to-br from-slate-50 to-green-50 flex items-center justify-center p-4">
@@ -359,7 +359,6 @@ function App() {
           </div>
         );
 
-      // ✅ RÉINITIALISATION MOT DE PASSE (lien depuis email)
       case 'reset-password':
         return (
           <div className="min-h-screen bg-gradient-to-br from-slate-50 to-green-50 flex items-center justify-center p-4">
@@ -533,6 +532,16 @@ function App() {
         if (!isAuthenticated) { handleNavigate('login'); return null; }
         return <CategoryRulesPage onNavigate={handleNavigate} toast={toastMethods} />;
 
+      // ✅ Hub profil "Moi"
+      case 'profile-hub':
+        if (!isAuthenticated) { handleNavigate('login'); return null; }
+        return <ProfileHub onNavigate={handleNavigate} user={user} onLogout={handleLogout} />;
+
+      // ✅ Saisie rapide dépense/revenu
+      case 'quick-add':
+        if (!isAuthenticated) { handleNavigate('login'); return null; }
+        return <QuickAdd type={pageParams?.type || 'expense'} onNavigate={handleNavigate} toast={toastMethods} />;
+
       case 'debts':
         if (!isAuthenticated) { handleNavigate('login'); return null; }
         return <DebtsPage toast={toastMethods} onNavigate={handleNavigate} />;
@@ -566,52 +575,13 @@ function App() {
 
       case 'profile':
         if (!isAuthenticated) { handleNavigate('login'); return null; }
-        return (
-          <div className="min-h-screen bg-gray-100 flex items-center justify-center p-4">
-            <div className="bg-white rounded-2xl shadow-lg p-8 max-w-md w-full">
-              <h2 className="text-2xl font-bold mb-6 text-center">👤 Profil Utilisateur</h2>
-              <div className="space-y-4">
-                <div className="text-center">
-                  <div className="w-20 h-20 bg-green-500 rounded-full flex items-center justify-center text-white text-2xl font-bold mx-auto mb-4">
-                    {user?.first_name?.charAt(0) || user?.username?.charAt(0) || '?'}
-                  </div>
-                </div>
-                <div className="space-y-3">
-                  <p><strong>Nom :</strong> {user?.first_name} {user?.last_name}</p>
-                  <p><strong>Nom d'utilisateur :</strong> {user?.username}</p>
-                  <p><strong>Email :</strong> {user?.email}</p>
-                  <p><strong>Statut :</strong> {user?.is_staff ? '👑 Admin' : '⭐ Utilisateur'}</p>
-                  <p><strong>Membre depuis :</strong> {user?.date_joined ? new Date(user.date_joined).toLocaleDateString() : 'N/A'}</p>
-                </div>
-                <div className="border-t pt-4 mt-6 space-y-3">
-                  <button onClick={() => handleNavigate('values')}
-                    className="w-full bg-blue-100 text-blue-700 px-4 py-3 rounded-lg hover:bg-blue-200 transition-colors">
-                    💎 Gérer mes valeurs personnelles
-                  </button>
-                  <button onClick={() => handleNavigate('category-rules')}
-                    className="w-full bg-green-100 text-green-700 px-4 py-3 rounded-lg hover:bg-green-200 transition-colors">
-                    🗂️ Mes règles de classement
-                  </button>
-                </div>
-              </div>
-              <div className="flex space-x-3 mt-6">
-                <button onClick={() => handleNavigate('dashboard')}
-                  className="flex-1 bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors">
-                  ← Dashboard
-                </button>
-                <button onClick={() => handleNavigate('settings')}
-                  className="flex-1 bg-gray-200 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-300 transition-colors">
-                  ⚙️ Paramètres
-                </button>
-              </div>
-            </div>
-          </div>
-        );
+        handleNavigate('profile-hub');
+        return null;
 
       case 'settings':
         if (!isAuthenticated) { handleNavigate('login'); return null; }
         return (
-          <div className="min-h-screen bg-gray-100 flex items-center justify-center p-4">
+          <div className="min-h-screen bg-gray-100 flex items-center justify-center p-4 pb-24">
             <div className="bg-white rounded-2xl shadow-lg p-8 max-w-md w-full">
               <h2 className="text-2xl font-bold mb-6 text-center">⚙️ Paramètres</h2>
               <div className="space-y-4">
@@ -642,7 +612,7 @@ function App() {
 
       case 'help':
         return (
-          <div className="min-h-screen bg-gray-100 flex items-center justify-center p-4">
+          <div className="min-h-screen bg-gray-100 flex items-center justify-center p-4 pb-24">
             <div className="bg-white rounded-2xl shadow-lg p-8 max-w-md w-full">
               <h2 className="text-2xl font-bold mb-6 text-center">❓ Aide & Support</h2>
               <div className="space-y-4 text-center">
@@ -696,6 +666,13 @@ function App() {
         {renderPage()}
       </div>
       <Footer />
+
+      {/* ✅ Bottom navigation mobile */}
+      <BottomNav
+        currentPage={currentPage}
+        onNavigate={handleNavigate}
+        isAuthenticated={isAuthenticated}
+      />
 
       <ToastContainer toasts={toasts} removeToast={removeToast} />
       {isAuthenticated && (
