@@ -18,6 +18,7 @@ from .views import (
     reset_category_rules,
     forgot_password,
     reset_password,
+    login_with_email_or_username,
 )
 
 urlpatterns = [
@@ -143,5 +144,5 @@ urlpatterns = [
     # ── AUTH ─────────────────────────────────────────────────────
     path('auth/forgot-password/', forgot_password, name='forgot_password'),
     path('auth/reset-password/', reset_password, name='reset_password'),
-
+    path('auth/login/', login_with_email_or_username, name='login_with_email'),
 ]
