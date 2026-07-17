@@ -5065,4 +5065,195 @@ def reset_category_rules(request):
     })
 
 
+
+# ==========================================
+# À AJOUTER À LA FIN DE api/views.py
+# ==========================================
+
+from django.contrib.auth.tokens import default_token_generator
+from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
+from django.utils.encoding import force_bytes, force_str
+from django.core.mail import send_mail
+from django.template.loader import render_to_string
+from django.conf import settings as django_settings
+
+
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def forgot_password(request):
+    """
+    Envoie un email de réinitialisation de mot de passe.
+    Accepte email ou username.
+    """
+    identifier = request.data.get('email', '').strip()
+
+    if not identifier:
+        return Response(
+            {'error': 'Email ou nom d\'utilisateur requis'},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+
+    # Chercher par email ou username
+    user = None
+    if '@' in identifier:
+        user = User.objects.filter(email__iexact=identifier).first()
+    else:
+        user = User.objects.filter(username__iexact=identifier).first()
+
+    # Toujours retourner succès pour ne pas révéler si le compte existe
+    success_message = 'Si un compte existe avec cet identifiant, un email de réinitialisation a été envoyé.'
+
+    if not user:
+        return Response({'message': success_message})
+
+    if not user.email:
+        return Response(
+            {'error': 'Ce compte n\'a pas d\'email associé. Contactez le support via WhatsApp.'},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+
+    # Générer le token
+    token = default_token_generator.make_token(user)
+    uid = urlsafe_base64_encode(force_bytes(user.pk))
+
+    # Lien de réinitialisation
+    frontend_url = getattr(django_settings, 'FRONTEND_URL', 'https://yoonudal.com')
+    reset_link = f"{frontend_url}?page=reset-password&uid={uid}&token={token}"
+
+    # Envoyer l'email
+    try:
+        subject = '🔑 Réinitialisation de votre mot de passe Yoonu Dal'
+        message = f"""
+Bonjour {user.first_name or user.username},
+
+Vous avez demandé la réinitialisation de votre mot de passe Yoonu Dal.
+
+Cliquez sur le lien ci-dessous pour créer un nouveau mot de passe :
+{reset_link}
+
+Ce lien est valable 24 heures.
+
+Si vous n'avez pas fait cette demande, ignorez cet email.
+
+L'équipe Yoonu Dal
+        """.strip()
+
+        send_mail(
+            subject=subject,
+            message=message,
+            from_email=django_settings.DEFAULT_FROM_EMAIL,
+            recipient_list=[user.email],
+            fail_silently=False,
+        )
+
+        return Response({'message': success_message})
+
+    except Exception as e:
+        print(f"Erreur envoi email: {e}")
+        return Response(
+            {'error': 'Erreur lors de l\'envoi de l\'email. Contactez le support via WhatsApp.'},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
+
+
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def reset_password(request):
+    """
+    Réinitialise le mot de passe avec le token reçu par email.
+    Body: { uid, token, new_password }
+    """
+    uid = request.data.get('uid', '')
+    token = request.data.get('token', '')
+    new_password = request.data.get('new_password', '')
+
+    if not uid or not token or not new_password:
+        return Response(
+            {'error': 'uid, token et new_password requis'},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+
+    if len(new_password) < 6:
+        return Response(
+            {'error': 'Le mot de passe doit contenir au moins 6 caractères'},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+
+    try:
+        user_id = force_str(urlsafe_base64_decode(uid))
+        user = User.objects.get(pk=user_id)
+    except (TypeError, ValueError, OverflowError, User.DoesNotExist):
+        return Response(
+            {'error': 'Lien invalide ou expiré'},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+
+    if not default_token_generator.check_token(user, token):
+        return Response(
+            {'error': 'Lien expiré ou déjà utilisé. Faites une nouvelle demande.'},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+
+    # Mettre à jour le mot de passe
+    user.set_password(new_password)
+    user.save()
+
+    return Response({'message': 'Mot de passe réinitialisé avec succès. Vous pouvez vous connecter.'})
+
+
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def login_with_email_or_username(request):
+    """
+    Connexion avec email OU username + mot de passe.
+    Remplace ou complète la vue login existante.
+    """
+    identifier = request.data.get('username', '').strip().lower()
+    password = request.data.get('password', '')
+
+    if not identifier or not password:
+        return Response(
+            {'error': 'Identifiant et mot de passe requis'},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+
+    # Chercher par email ou username
+    user = None
+    if '@' in identifier:
+        user_obj = User.objects.filter(email__iexact=identifier).first()
+        if user_obj:
+            user = authenticate(request, username=user_obj.username, password=password)
+    else:
+        user = authenticate(request, username=identifier, password=password)
+
+    if not user:
+        return Response(
+            {'error': 'Identifiant ou mot de passe incorrect'},
+            status=status.HTTP_401_UNAUTHORIZED
+        )
+
+    if not user.is_active:
+        return Response(
+            {'error': 'Ce compte est désactivé'},
+            status=status.HTTP_401_UNAUTHORIZED
+        )
+
+    # Générer les tokens JWT
+    from rest_framework_simplejwt.tokens import RefreshToken
+    refresh = RefreshToken.for_user(user)
+
+    return Response({
+        'access': str(refresh.access_token),
+        'refresh': str(refresh),
+        'user': {
+            'id': user.id,
+            'username': user.username,
+            'email': user.email,
+            'first_name': user.first_name,
+            'last_name': user.last_name,
+            'is_staff': user.is_staff,
+        }
+    })
+
+
         
