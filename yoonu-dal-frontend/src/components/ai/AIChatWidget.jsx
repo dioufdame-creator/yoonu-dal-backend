@@ -233,7 +233,7 @@ const AIChatWidgetV4 = ({ onNavigate, toast, user }) => {
 
   if (!isOpen) {
     return (
-      <div className="fixed bottom-6 right-6 z-40">
+      <div className="fixed bottom-24 right-4 z-40 lg:bottom-6 lg:right-6">
         <button
           onClick={() => setIsOpen(true)}
           className="group relative bg-gradient-to-r from-green-600 to-emerald-600 text-white p-5 rounded-full shadow-2xl hover:shadow-green-500/50 transform hover:scale-110 transition-all duration-300 flex items-center gap-3"
