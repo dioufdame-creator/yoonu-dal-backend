@@ -23,6 +23,7 @@ import IncomesPage from './components/incomes/IncomesPage';
 import TontineAnalysis from './components/tontines/TontineAnalysis';
 import EnvelopeManager from './components/envelopeManager/EnvelopeManager';
 import CategoryRulesPage from './components/envelopeManager/CategoryRulesPage';
+import { ForgotPasswordForm, ResetPasswordForm } from './components/auth/AuthForms';
 
 import TransactionsPage from './components/transactions/TransactionsPage';
 
@@ -83,8 +84,19 @@ function App() {
         setAuthError('Erreur de connexion au serveur');
       } finally {
         setIsLoading(false);
+
+        // ✅ Détection des paramètres URL
         const path = window.location.pathname;
-        if (path.startsWith('/payment/success')) {
+        const params = new URLSearchParams(window.location.search);
+        const page = params.get('page');
+        const uid = params.get('uid');
+        const token = params.get('token');
+
+        if (page === 'reset-password' && uid && token) {
+          // Lien de réinitialisation depuis l'email
+          setCurrentPage('reset-password');
+          setPageParams({ uid, token });
+        } else if (path.startsWith('/payment/success')) {
           if (authService.isAuthenticated()) {
             setCurrentPage('payment-success');
           } else {
@@ -133,7 +145,7 @@ function App() {
     try {
       const result = await authService.login(credentials);
       if (!result.success) {
-        const errorMsg = result.error || 'Nom d\'utilisateur ou mot de passe incorrect.';
+        const errorMsg = result.error || 'Identifiant ou mot de passe incorrect.';
         setAuthError(errorMsg);
         showError(errorMsg);
         return;
@@ -161,10 +173,11 @@ function App() {
       }
     } catch (error) {
       const errorMsg =
+        error.response?.data?.error ||
         error.response?.data?.detail ||
         error.response?.data?.non_field_errors?.[0] ||
         error.message ||
-        'Nom d\'utilisateur ou mot de passe incorrect.';
+        'Identifiant ou mot de passe incorrect.';
       setAuthError(errorMsg);
       showError(errorMsg);
     }
@@ -229,11 +242,12 @@ function App() {
   const renderPage = () => {
     switch (currentPage) {
       case 'home':
-        return <Home2 onNavigate={handleNavigate} toast={toastMethods} auth={authMethods} />;
+        return <Home onNavigate={handleNavigate} toast={toastMethods} auth={authMethods} />;
 
       case 'home2':
         return <Home2 onNavigate={handleNavigate} toast={toastMethods} auth={authMethods} />;
 
+      // ✅ CONNEXION — email ou username
       case 'login':
         if (isAuthenticated) { handleNavigate('dashboard'); return null; }
         return (
@@ -244,6 +258,7 @@ function App() {
                 <h2 className="text-3xl font-bold text-gray-900 mb-2">Connexion</h2>
                 <p className="text-gray-600">Bienvenue sur Yoonu Dal</p>
               </div>
+
               {authError && (
                 <div className="mb-4 p-3 bg-red-50 border border-red-200 text-red-700 rounded-lg text-sm flex items-start gap-2">
                   <span className="text-lg flex-shrink-0">⚠️</span>
@@ -254,6 +269,7 @@ function App() {
                   <button onClick={clearAuthError} className="text-red-400 hover:text-red-600 font-bold text-lg leading-none flex-shrink-0">✕</button>
                 </div>
               )}
+
               <form onSubmit={async (e) => {
                 e.preventDefault();
                 setAuthError(null);
@@ -265,30 +281,45 @@ function App() {
               }}>
                 <div className="space-y-4">
                   <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-2">Nom d'utilisateur</label>
-                    <input type="text" name="username"
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">
+                      Email ou nom d'utilisateur
+                    </label>
+                    <input
+                      type="text"
+                      name="username"
                       className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all"
-                      placeholder="votre nom d'utilisateur" required />
+                      placeholder="email@exemple.com ou votre pseudo"
+                      required
+                    />
                   </div>
                   <div>
                     <label className="block text-sm font-semibold text-gray-700 mb-2">Mot de passe</label>
-                    <input type="password" name="password"
+                    <input
+                      type="password"
+                      name="password"
                       className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all"
-                      placeholder="••••••••" required />
+                      placeholder="••••••••"
+                      required
+                    />
                   </div>
                 </div>
-                <button type="submit"
-                  className="w-full mt-6 bg-gradient-to-r from-green-600 to-emerald-600 text-white py-4 rounded-xl font-bold text-lg hover:shadow-lg transform hover:scale-105 transition-all duration-200">
+                <button
+                  type="submit"
+                  className="w-full mt-6 bg-gradient-to-r from-green-600 to-emerald-600 text-white py-4 rounded-xl font-bold text-lg hover:shadow-lg transform hover:scale-105 transition-all duration-200"
+                >
                   Se connecter
                 </button>
               </form>
+
               <div className="mt-4 text-center">
-                <a href="https://wa.me/221773569462?text=Bonjour%2C%20j%27ai%20oubli%C3%A9%20mon%20mot%20de%20passe%20Yoonu%20Dal."
-                  target="_blank" rel="noopener noreferrer"
-                  className="text-sm text-gray-500 hover:text-green-600 transition-colors">
+                <button
+                  onClick={() => handleNavigate('forgot-password')}
+                  className="text-sm text-green-600 hover:text-green-700 font-medium transition-colors"
+                >
                   🔑 Mot de passe oublié ?
-                </a>
+                </button>
               </div>
+
               <div className="mt-4 text-center">
                 <p className="text-gray-600">
                   Pas encore de compte ?{' '}
@@ -302,6 +333,49 @@ function App() {
                   ← Retour à l'accueil
                 </button>
               </div>
+            </div>
+          </div>
+        );
+
+      // ✅ MOT DE PASSE OUBLIÉ
+      case 'forgot-password':
+        return (
+          <div className="min-h-screen bg-gradient-to-br from-slate-50 to-green-50 flex items-center justify-center p-4">
+            <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-md w-full">
+              <div className="text-center mb-8">
+                <div className="text-6xl mb-4">🔑</div>
+                <h2 className="text-3xl font-bold text-gray-900 mb-2">Mot de passe oublié</h2>
+                <p className="text-gray-600 text-sm leading-relaxed">
+                  Entrez votre email ou nom d'utilisateur. Nous vous enverrons un lien pour créer un nouveau mot de passe.
+                </p>
+              </div>
+              <ForgotPasswordForm onNavigate={handleNavigate} toast={toastMethods} />
+              <div className="mt-6 text-center">
+                <button onClick={() => handleNavigate('login')} className="text-sm text-gray-500 hover:text-gray-700">
+                  ← Retour à la connexion
+                </button>
+              </div>
+            </div>
+          </div>
+        );
+
+      // ✅ RÉINITIALISATION MOT DE PASSE (lien depuis email)
+      case 'reset-password':
+        return (
+          <div className="min-h-screen bg-gradient-to-br from-slate-50 to-green-50 flex items-center justify-center p-4">
+            <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-md w-full">
+              <div className="text-center mb-8">
+                <div className="text-6xl mb-4">🔒</div>
+                <h2 className="text-3xl font-bold text-gray-900 mb-2">Nouveau mot de passe</h2>
+                <p className="text-gray-600 text-sm">Choisissez un nouveau mot de passe pour votre compte.</p>
+              </div>
+              <ResetPasswordForm
+                uid={pageParams?.uid}
+                token={pageParams?.token}
+                onSuccess={() => handleNavigate('login')}
+                onNavigate={handleNavigate}
+                toast={toastMethods}
+              />
             </div>
           </div>
         );
