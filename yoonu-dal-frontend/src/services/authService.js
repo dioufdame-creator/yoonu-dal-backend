@@ -1,7 +1,9 @@
 // src/services/authService.js
 import axios from 'axios';
 
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'https://yoonudal-api.onrender.com/api';
+const API_BASE_URL = process.env.REACT_APP_API_URL 
+  ? `${process.env.REACT_APP_API_URL}/api`
+  : 'https://yoonudal-api.onrender.com/api';
 
 const api = axios.create({
   baseURL: API_BASE_URL,
