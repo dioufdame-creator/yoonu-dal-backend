@@ -242,7 +242,7 @@ function App() {
   const renderPage = () => {
     switch (currentPage) {
       case 'home':
-        return <Home onNavigate={handleNavigate} toast={toastMethods} auth={authMethods} />;
+        return <Home2 onNavigate={handleNavigate} toast={toastMethods} auth={authMethods} />;
 
       case 'home2':
         return <Home2 onNavigate={handleNavigate} toast={toastMethods} auth={authMethods} />;
