@@ -16,6 +16,8 @@ from .views import (
     get_category_rules,      # ← ajouter
     update_category_rule,    # ← ajouter
     reset_category_rules,
+    forgot_password,
+    reset_password,
 )
 
 urlpatterns = [
@@ -137,5 +139,9 @@ urlpatterns = [
     path('category-rules/', get_category_rules, name='get_category_rules'),
     path('category-rules/update/', update_category_rule, name='update_category_rule'),
     path('category-rules/reset/', reset_category_rules, name='reset_category_rules'),
+
+    # ── AUTH ─────────────────────────────────────────────────────
+    path('auth/forgot-password/', forgot_password, name='forgot_password'),
+    path('auth/reset-password/', reset_password, name='reset_password'),
 
 ]
