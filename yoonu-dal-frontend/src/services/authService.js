@@ -1,7 +1,7 @@
 // src/services/authService.js
 import axios from 'axios';
 
-const API_BASE_URL = process.env.REACT_APP_API_URL 
+const API_BASE_URL = process.env.REACT_APP_API_URL
   ? `${process.env.REACT_APP_API_URL}/api`
   : 'https://yoonudal-api.onrender.com/api';
 
@@ -12,7 +12,7 @@ const api = axios.create({
 
 // Intercepteur pour ajouter le token
 api.interceptors.request.use((config) => {
-  const token = localStorage.getItem('access_token');
+  const token = localStorage.getItem('yoonu_dal_token');
   if (token) config.headers.Authorization = `Bearer ${token}`;
   return config;
 });
@@ -25,11 +25,11 @@ api.interceptors.response.use(
     if (error.response?.status === 401 && !originalRequest._retry) {
       originalRequest._retry = true;
       try {
-        const refreshToken = localStorage.getItem('refresh_token');
+        const refreshToken = localStorage.getItem('yoonu_dal_refresh_token');
         if (!refreshToken) throw new Error('No refresh token');
         const response = await axios.post(`${API_BASE_URL}/token/refresh/`, { refresh: refreshToken });
         const { access } = response.data;
-        localStorage.setItem('access_token', access);
+        localStorage.setItem('yoonu_dal_token', access);
         originalRequest.headers.Authorization = `Bearer ${access}`;
         return api(originalRequest);
       } catch (refreshError) {
@@ -50,7 +50,6 @@ const authService = {
       const identifier = (credentials.username || credentials.email || '').trim().toLowerCase();
       const password = credentials.password;
 
-      // Utiliser la nouvelle route qui accepte email ou username
       const response = await api.post('/auth/login/', {
         username: identifier,
         password: password,
@@ -58,8 +57,9 @@ const authService = {
 
       const { access, refresh, user } = response.data;
 
-      localStorage.setItem('access_token', access);
-      localStorage.setItem('refresh_token', refresh);
+      // ✅ Clés cohérentes avec api.js
+      localStorage.setItem('yoonu_dal_token', access);
+      localStorage.setItem('yoonu_dal_refresh_token', refresh);
       localStorage.setItem('user', JSON.stringify(user));
 
       return { success: true, user };
@@ -86,8 +86,8 @@ const authService = {
 
       const { access, refresh, user } = response.data;
 
-      localStorage.setItem('access_token', access);
-      localStorage.setItem('refresh_token', refresh);
+      localStorage.setItem('yoonu_dal_token', access);
+      localStorage.setItem('yoonu_dal_refresh_token', refresh);
       localStorage.setItem('user', JSON.stringify(user));
 
       return { success: true, user };
@@ -142,11 +142,11 @@ const authService = {
   // ── DÉCONNEXION ──────────────────────────────────────────────
   logout: async () => {
     try {
-      const refreshToken = localStorage.getItem('refresh_token');
+      const refreshToken = localStorage.getItem('yoonu_dal_refresh_token');
       if (refreshToken) {
         await api.post('/logout/', { refresh: refreshToken });
       }
-    } catch (error) {
+    } catch {
       // ignore
     } finally {
       authService.clearTokens();
@@ -155,7 +155,7 @@ const authService = {
 
   // ── UTILITAIRES ──────────────────────────────────────────────
   isAuthenticated: () => {
-    const token = localStorage.getItem('access_token');
+    const token = localStorage.getItem('yoonu_dal_token');
     const user = localStorage.getItem('user');
     return !!(token && user);
   },
@@ -181,12 +181,12 @@ const authService = {
   },
 
   clearTokens: () => {
-    localStorage.removeItem('access_token');
-    localStorage.removeItem('refresh_token');
+    localStorage.removeItem('yoonu_dal_token');
+    localStorage.removeItem('yoonu_dal_refresh_token');
     localStorage.removeItem('user');
   },
 
-  getToken: () => localStorage.getItem('access_token'),
+  getToken: () => localStorage.getItem('yoonu_dal_token'),
 };
 
 export default authService;
