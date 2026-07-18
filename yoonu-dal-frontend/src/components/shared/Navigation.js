@@ -82,6 +82,15 @@ const Navigation = ({ currentPage, onNavigate, isAuthenticated, user, onLogout, 
           <div className="flex items-center gap-2 lg:gap-3">
             {isAuthenticated ? (
               <>
+
+                {/* Chat IA — icône header */}
+                <button
+                  onClick={() => window.dispatchEvent(new CustomEvent('open-yoonu-chat'))}
+                  className="w-9 h-9 bg-white/20 hover:bg-white/30 rounded-full flex items-center justify-center transition-all"
+                  title="Yoonu IA"
+                >
+                  <span className="text-lg">🤖</span>
+                </button>
                 {/* Alertes — mobile et desktop */}
                 {alertsBadge && <div>{alertsBadge}</div>}
 
