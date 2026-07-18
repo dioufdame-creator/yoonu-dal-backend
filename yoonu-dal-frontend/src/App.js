@@ -654,13 +654,7 @@ function App() {
         ) : null}
       />
 
-      {isAuthenticated && (
-        <div className="bg-amber-50 border-b border-amber-200 px-4 py-2 text-center">
-          <p className="text-xs text-amber-800 font-medium">
-            🧪 Yoonu Dal est en phase test. Vos retours sont précieux pour construire une application utile et adaptée à nos réalités.
-          </p>
-        </div>
-      )}
+      
 
       <div className="flex-grow">
         {renderPage()}
