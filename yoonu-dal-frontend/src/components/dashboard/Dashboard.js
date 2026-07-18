@@ -1,5 +1,5 @@
 // src/components/dashboard/Dashboard.js
-// Dashboard V5.3 — message score basé sur les composantes réelles
+// Dashboard V5.4 — sélecteur de mois + message coach + score ciblé
 import React, { useState, useEffect, useCallback } from 'react';
 import API from '../../services/api';
 
@@ -23,6 +23,21 @@ const CATEGORY_ICONS = {
   remboursement_dette: '💳', autre: '📝',
 };
 
+// Générer les 6 derniers mois pour le sélecteur
+const getMonthOptions = () => {
+  const options = [];
+  const now = new Date();
+  for (let i = 0; i < 6; i++) {
+    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    options.push({
+      key: `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`,
+      label: `${MONTHS_FR[d.getMonth()]} ${d.getFullYear()}`,
+      isCurrent: i === 0,
+    });
+  }
+  return options;
+};
+
 const Dashboard = ({ toast, auth, onNavigate, user }) => {
   const [loading, setLoading] = useState(true);
   const [envelopes, setEnvelopes] = useState([]);
@@ -34,10 +49,17 @@ const Dashboard = ({ toast, auth, onNavigate, user }) => {
   const [monthlyIncome, setMonthlyIncome] = useState(0);
   const [score, setScore] = useState(null);
 
+  const monthOptions = getMonthOptions();
+  const [selectedMonth, setSelectedMonth] = useState(monthOptions[0].key);
+  const [showMonthPicker, setShowMonthPicker] = useState(false);
+
   const now = new Date();
-  const currentMonthKey = now.toISOString().slice(0, 7);
-  const lastDayOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
-  const daysRemaining = lastDayOfMonth - now.getDate();
+  const isCurrentMonth = selectedMonth === monthOptions[0].key;
+  const selectedOption = monthOptions.find(m => m.key === selectedMonth) || monthOptions[0];
+
+  const [selYear, selMonthNum] = selectedMonth.split('-').map(Number);
+  const lastDayOfSelectedMonth = new Date(selYear, selMonthNum, 0).getDate();
+  const daysRemaining = isCurrentMonth ? lastDayOfSelectedMonth - now.getDate() : 0;
 
   const getUserName = () => {
     if (user?.user?.first_name) return user.user.first_name;
@@ -49,8 +71,9 @@ const Dashboard = ({ toast, auth, onNavigate, user }) => {
   const loadData = useCallback(async () => {
     setLoading(true);
     try {
+      const monthParam = isCurrentMonth ? '' : `?month=${selectedMonth}`;
       const [envelopesRes, expensesRes, incomesRes, scoreRes, goalsRes, debtsRes, tontinesRes] = await Promise.all([
-        API.get('/meta-envelopes/').catch(() => ({ data: { envelopes: [] } })),
+        API.get(`/meta-envelopes/${monthParam}`).catch(() => ({ data: { envelopes: [] } })),
         API.get('/expenses/').catch(() => ({ data: [] })),
         API.get('/incomes/').catch(() => ({ data: [] })),
         API.get('/yoonu-score/').catch(() => null),
@@ -83,7 +106,7 @@ const Dashboard = ({ toast, auth, onNavigate, user }) => {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [selectedMonth, isCurrentMonth]);
 
   useEffect(() => { loadData(); }, [loadData]);
 
@@ -97,26 +120,44 @@ const Dashboard = ({ toast, auth, onNavigate, user }) => {
     return `${Math.round(num)}`;
   };
 
-  // ── CALCULS ──────────────────────────────────────────
+  // ── CALCULS SUR LE MOIS SÉLECTIONNÉ ──────────────────
   const monthlyExpensesTotal = expenses
-    .filter(e => e.date && e.date.startsWith(currentMonthKey))
+    .filter(e => e.date && e.date.startsWith(selectedMonth))
     .reduce((sum, e) => sum + parseFloat(e.amount || 0), 0);
 
   const monthlyIncomesTotal = incomes
-    .filter(i => i.date && i.date.startsWith(currentMonthKey))
+    .filter(i => i.date && i.date.startsWith(selectedMonth))
     .reduce((sum, i) => sum + parseFloat(i.amount || 0), 0);
 
-  const effectiveIncome = monthlyIncomesTotal > 0 ? monthlyIncomesTotal : monthlyIncome;
+  const effectiveIncome = monthlyIncomesTotal > 0 ? monthlyIncomesTotal : (isCurrentMonth ? monthlyIncome : 0);
   const remaining = effectiveIncome - monthlyExpensesTotal;
   const dailyAvailable = daysRemaining > 0 ? remaining / daysRemaining : remaining;
 
   const recentExpenses = expenses
-    .filter(e => e.date && e.date.startsWith(currentMonthKey))
+    .filter(e => e.date && e.date.startsWith(selectedMonth))
     .sort((a, b) => new Date(b.date) - new Date(a.date))
     .slice(0, 4);
 
-  // ── MESSAGE COACH — une seule phrase, par priorité ──
+  // ── MESSAGE COACH ────────────────────────────────────
   const getCoachMessage = () => {
+    // Mois passé → bilan simple, pas de recommandations d'action
+    if (!isCurrentMonth) {
+      if (remaining >= 0) {
+        return {
+          icon: '📊',
+          style: 'bg-gray-50 border-gray-200 text-gray-700',
+          text: `Bilan ${selectedOption.label} : solde positif de ${formatFCFA(remaining)} FCFA.`,
+          action: null,
+        };
+      }
+      return {
+        icon: '📊',
+        style: 'bg-gray-50 border-gray-200 text-gray-700',
+        text: `Bilan ${selectedOption.label} : déficit de ${formatFCFA(Math.abs(remaining))} FCFA.`,
+        action: null,
+      };
+    }
+
     if (remaining < 0) {
       return {
         icon: '⚠️',
@@ -145,7 +186,7 @@ const Dashboard = ({ toast, auth, onNavigate, user }) => {
       if (!isActive || monthlyPayment <= 0) return false;
       const paidThisMonth = expenses.some(e =>
         e.category === 'remboursement_dette' &&
-        e.date && e.date.startsWith(currentMonthKey)
+        e.date && e.date.startsWith(selectedMonth)
       );
       return !paidThisMonth;
     });
@@ -211,11 +252,9 @@ const Dashboard = ({ toast, auth, onNavigate, user }) => {
     };
   };
 
-  // ── ANALYSE DU SCORE — composante la plus faible ────
+  // ── ANALYSE DU SCORE ─────────────────────────────────
   const getScoreInsight = (s) => {
     const total = s.total_score || 0;
-
-    // Label global simple
     const label =
       total >= 85 ? { text: 'Excellent', color: '#10b981' } :
       total >= 70 ? { text: 'Bien', color: '#10b981' } :
@@ -227,46 +266,18 @@ const Dashboard = ({ toast, auth, onNavigate, user }) => {
       return { label, message: 'Ajoutez vos dépenses et revenus pour activer votre score.' };
     }
 
-    // Composantes avec leur max et un conseil ciblé
     const components = [
-      {
-        key: 'alignment',
-        value: s.alignment_score || 0,
-        max: 25,
-        advice: 'Vos dépenses reflètent peu vos valeurs déclarées.',
-      },
-      {
-        key: 'discipline',
-        value: s.discipline_score || 0,
-        max: 25,
-        advice: 'Respectez davantage vos budgets d\'enveloppes.',
-      },
-      {
-        key: 'stability',
-        value: s.stability_score || 0,
-        max: 25,
-        advice: 'Essayez d\'épargner au moins 10% de vos revenus.',
-      },
-      {
-        key: 'improvement',
-        value: s.improvement_score || 0,
-        max: 15,
-        advice: 'Créez un projet ou rejoignez une tontine pour construire votre avenir.',
-      },
-      {
-        key: 'engagement',
-        value: s.engagement_score || 0,
-        max: 10,
-        advice: 'Enregistrez vos dépenses plus régulièrement.',
-      },
+      { value: s.alignment_score || 0, max: 25, advice: 'Vos dépenses reflètent peu vos valeurs déclarées.' },
+      { value: s.discipline_score || 0, max: 25, advice: 'Respectez davantage vos budgets d\'enveloppes.' },
+      { value: s.stability_score || 0, max: 25, advice: 'Essayez d\'épargner au moins 10% de vos revenus.' },
+      { value: s.improvement_score || 0, max: 15, advice: 'Créez un projet ou rejoignez une tontine pour construire votre avenir.' },
+      { value: s.engagement_score || 0, max: 10, advice: 'Enregistrez vos dépenses plus régulièrement.' },
     ];
 
-    // Score excellent → message positif, pas de conseil
     if (total >= 85) {
       return { label, message: 'Votre argent est aligné avec vos valeurs. Bravo !' };
     }
 
-    // Trouver la composante la plus faible (en % de son max)
     const weakest = components.reduce((min, c) =>
       (c.value / c.max) < (min.value / min.max) ? c : min
     );
@@ -291,24 +302,61 @@ const Dashboard = ({ toast, auth, onNavigate, user }) => {
     <div className="min-h-screen bg-gray-50 pb-28">
       <div className="max-w-2xl mx-auto px-4 py-5">
 
-        {/* ── SALUTATION ─────────────────────────────── */}
+        {/* ── SALUTATION + SÉLECTEUR DE MOIS ─────────── */}
         <div className="mb-5">
           <h1 className="text-xl font-bold text-gray-900">
             Bonjour {getUserName()} 👋
           </h1>
-          <p className="text-xs text-gray-400">
-            {MONTHS_FR[now.getMonth()]} {now.getFullYear()} · {daysRemaining} jour{daysRemaining > 1 ? 's' : ''} restant{daysRemaining > 1 ? 's' : ''}
-          </p>
+          <div className="flex items-center gap-2 mt-0.5">
+            <div className="relative">
+              <button
+                onClick={() => setShowMonthPicker(!showMonthPicker)}
+                className="flex items-center gap-1 text-xs font-semibold text-gray-600 hover:text-green-600 transition-colors"
+              >
+                <span>{selectedOption.label}</span>
+                <span className={`transition-transform text-[10px] ${showMonthPicker ? 'rotate-180' : ''}`}>▼</span>
+              </button>
+
+              {showMonthPicker && (
+                <>
+                  <div className="fixed inset-0 z-20" onClick={() => setShowMonthPicker(false)} />
+                  <div className="absolute top-6 left-0 z-30 bg-white rounded-2xl shadow-2xl border border-gray-100 py-2 min-w-[160px]">
+                    {monthOptions.map(m => (
+                      <button
+                        key={m.key}
+                        onClick={() => { setSelectedMonth(m.key); setShowMonthPicker(false); }}
+                        className={`w-full text-left px-4 py-2 text-sm transition-colors ${
+                          m.key === selectedMonth
+                            ? 'bg-green-50 text-green-700 font-bold'
+                            : 'text-gray-700 hover:bg-gray-50'
+                        }`}
+                      >
+                        {m.label}{m.isCurrent ? ' (en cours)' : ''}
+                      </button>
+                    ))}
+                  </div>
+                </>
+              )}
+            </div>
+
+            {isCurrentMonth && (
+              <span className="text-xs text-gray-400">
+                · {daysRemaining} jour{daysRemaining > 1 ? 's' : ''} restant{daysRemaining > 1 ? 's' : ''}
+              </span>
+            )}
+          </div>
         </div>
 
-        {/* ── CARTE SOLDE DU MOIS ────────────────────── */}
+        {/* ── CARTE SOLDE ────────────────────────────── */}
         <div className={`rounded-3xl p-6 mb-3 text-white shadow-xl ${
           remaining >= 0
             ? 'bg-gradient-to-br from-green-600 to-emerald-700'
             : 'bg-gradient-to-br from-red-500 to-rose-600'
         }`}>
           <p className="text-sm opacity-80 mb-1">
-            {remaining >= 0 ? 'Il vous reste ce mois' : 'Dépassement ce mois'}
+            {isCurrentMonth
+              ? (remaining >= 0 ? 'Il vous reste ce mois' : 'Dépassement ce mois')
+              : (remaining >= 0 ? `Solde de ${selectedOption.label}` : `Déficit de ${selectedOption.label}`)}
           </p>
           <p className="text-4xl font-bold mb-4">
             {formatFCFA(Math.abs(remaining))} <span className="text-lg font-normal opacity-70">FCFA</span>
@@ -325,7 +373,7 @@ const Dashboard = ({ toast, auth, onNavigate, user }) => {
             </div>
           </div>
 
-          {remaining > 0 && daysRemaining > 0 && (
+          {isCurrentMonth && remaining > 0 && daysRemaining > 0 && (
             <div className="flex items-center gap-2 text-sm">
               <span>💡</span>
               <span className="opacity-90">
@@ -345,8 +393,8 @@ const Dashboard = ({ toast, auth, onNavigate, user }) => {
           {coach.action && <span className="text-lg opacity-40">›</span>}
         </div>
 
-        {/* ── SCORE — note + signification ciblée ────── */}
-        {score && (() => {
+        {/* ── SCORE (mois courant uniquement) ────────── */}
+        {isCurrentMonth && score && (() => {
           const insight = getScoreInsight(score);
           const s = score.total_score || 0;
           return (
@@ -388,7 +436,9 @@ const Dashboard = ({ toast, auth, onNavigate, user }) => {
         {/* ── DERNIÈRES DÉPENSES ─────────────────────── */}
         <div className="bg-white rounded-2xl border border-gray-200 mb-4 overflow-hidden shadow-sm">
           <div className="flex items-center justify-between px-4 pt-4 pb-2">
-            <h2 className="text-sm font-bold text-gray-900">Dernières dépenses</h2>
+            <h2 className="text-sm font-bold text-gray-900">
+              {isCurrentMonth ? 'Dernières dépenses' : `Dépenses de ${selectedOption.label}`}
+            </h2>
             <button
               onClick={() => onNavigate('transactions')}
               className="text-xs text-green-600 font-semibold hover:text-green-700"
@@ -400,13 +450,17 @@ const Dashboard = ({ toast, auth, onNavigate, user }) => {
           {recentExpenses.length === 0 ? (
             <div className="text-center py-8 px-4">
               <div className="text-3xl mb-2">📝</div>
-              <p className="text-sm text-gray-500 mb-3">Aucune dépense ce mois</p>
-              <button
-                onClick={() => onNavigate('quick-add', { type: 'expense' })}
-                className="text-sm bg-green-600 text-white px-4 py-2 rounded-xl font-semibold"
-              >
-                ➕ Ajouter ma première dépense
-              </button>
+              <p className="text-sm text-gray-500 mb-3">
+                {isCurrentMonth ? 'Aucune dépense ce mois' : 'Aucune dépense sur ce mois'}
+              </p>
+              {isCurrentMonth && (
+                <button
+                  onClick={() => onNavigate('quick-add', { type: 'expense' })}
+                  className="text-sm bg-green-600 text-white px-4 py-2 rounded-xl font-semibold"
+                >
+                  ➕ Ajouter ma première dépense
+                </button>
+              )}
             </div>
           ) : (
             <div className="divide-y divide-gray-50">
