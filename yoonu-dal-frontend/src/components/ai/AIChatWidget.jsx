@@ -38,8 +38,22 @@ const AIChatWidgetV4 = ({ onNavigate, toast, user }) => {
   const scrollToBottom = () => messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
 
   useEffect(() => { scrollToBottom(); }, [messages]);
-  useEffect(() => { if (isOpen && view === 'chat' && inputRef.current) inputRef.current.focus(); }, [isOpen, view]);
+  useEffect(() => {
+      // Focus uniquement sur desktop — sur mobile le clavier masque la fenêtre
+      if (isOpen && view === 'chat' && inputRef.current && window.innerWidth >= 1024) {
+        inputRef.current.focus();
+      }
+    }, [isOpen, view]);
 
+  // Bouton retour Android ferme le chat au lieu de quitter l'app
+  useEffect(() => {
+      if (isOpen) {
+        window.history.pushState({ yoonuChat: true }, '');
+        const handlePopState = () => setIsOpen(false);
+        window.addEventListener('popstate', handlePopState);
+        return () => window.removeEventListener('popstate', handlePopState);
+      }
+    }, [isOpen]);
   useEffect(() => {
     if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
       const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
