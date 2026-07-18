@@ -1,5 +1,5 @@
 // src/components/dashboard/Dashboard.js
-// Dashboard V5 — priorité au solde, style Wave
+// Dashboard V5.1 — solde cumulé + revenus/dépenses + formulation "Disponible"
 import React, { useState, useEffect, useCallback } from 'react';
 import API from '../../services/api';
 
@@ -27,6 +27,7 @@ const Dashboard = ({ toast, auth, onNavigate, user }) => {
   const [loading, setLoading] = useState(true);
   const [envelopes, setEnvelopes] = useState([]);
   const [expenses, setExpenses] = useState([]);
+  const [incomes, setIncomes] = useState([]);
   const [monthlyIncome, setMonthlyIncome] = useState(0);
   const [score, setScore] = useState(null);
 
@@ -45,9 +46,10 @@ const Dashboard = ({ toast, auth, onNavigate, user }) => {
   const loadData = useCallback(async () => {
     setLoading(true);
     try {
-      const [envelopesRes, expensesRes, scoreRes] = await Promise.all([
+      const [envelopesRes, expensesRes, incomesRes, scoreRes] = await Promise.all([
         API.get('/meta-envelopes/').catch(() => ({ data: { envelopes: [] } })),
         API.get('/expenses/').catch(() => ({ data: [] })),
+        API.get('/incomes/').catch(() => ({ data: [] })),
         API.get('/yoonu-score/').catch(() => null),
       ]);
 
@@ -59,6 +61,11 @@ const Dashboard = ({ toast, auth, onNavigate, user }) => {
         ? expensesRes.data
         : expensesRes.data?.expenses || [];
       setExpenses(expList);
+
+      const incList = Array.isArray(incomesRes.data)
+        ? incomesRes.data
+        : incomesRes.data?.incomes || [];
+      setIncomes(incList);
 
       if (scoreRes?.data) setScore(scoreRes.data);
     } catch (error) {
@@ -80,13 +87,23 @@ const Dashboard = ({ toast, auth, onNavigate, user }) => {
     return `${Math.round(num)}`;
   };
 
-  // Calculs
-  const monthlyExpenses = expenses
+  // ── CALCULS MOIS COURANT ─────────────────────────────
+  const monthlyExpensesTotal = expenses
     .filter(e => e.date && e.date.startsWith(currentMonthKey))
     .reduce((sum, e) => sum + parseFloat(e.amount || 0), 0);
 
-  const remaining = monthlyIncome - monthlyExpenses;
-  const dailyBudget = daysRemaining > 0 ? remaining / daysRemaining : remaining;
+  const monthlyIncomesTotal = incomes
+    .filter(i => i.date && i.date.startsWith(currentMonthKey))
+    .reduce((sum, i) => sum + parseFloat(i.amount || 0), 0);
+
+  const effectiveIncome = monthlyIncomesTotal > 0 ? monthlyIncomesTotal : monthlyIncome;
+  const remaining = effectiveIncome - monthlyExpensesTotal;
+  const dailyAvailable = daysRemaining > 0 ? remaining / daysRemaining : remaining;
+
+  // ── SOLDE CUMULÉ (tous revenus - toutes dépenses) ────
+  const allIncomesTotal = incomes.reduce((sum, i) => sum + parseFloat(i.amount || 0), 0);
+  const allExpensesTotal = expenses.reduce((sum, e) => sum + parseFloat(e.amount || 0), 0);
+  const cumulativeBalance = allIncomesTotal - allExpensesTotal;
 
   const recentExpenses = expenses
     .filter(e => e.date && e.date.startsWith(currentMonthKey))
@@ -118,31 +135,58 @@ const Dashboard = ({ toast, auth, onNavigate, user }) => {
           </p>
         </div>
 
-        {/* ── CARTE SOLDE — l'info clé ───────────────── */}
+        {/* ── CARTE SOLDE DU MOIS ────────────────────── */}
         <div className={`rounded-3xl p-6 mb-4 text-white shadow-xl ${
           remaining >= 0
             ? 'bg-gradient-to-br from-green-600 to-emerald-700'
             : 'bg-gradient-to-br from-red-500 to-rose-600'
         }`}>
           <p className="text-sm opacity-80 mb-1">
-            {remaining >= 0 ? 'Il vous reste' : 'Dépassement'}
+            {remaining >= 0 ? 'Il vous reste ce mois' : 'Dépassement ce mois'}
           </p>
           <p className="text-4xl font-bold mb-4">
             {formatFCFA(Math.abs(remaining))} <span className="text-lg font-normal opacity-70">FCFA</span>
           </p>
 
-          {remaining >= 0 && daysRemaining > 0 && (
+          {/* Revenus / Dépenses du mois */}
+          <div className="grid grid-cols-2 gap-3 mb-3">
             <div className="bg-white/15 rounded-2xl px-4 py-3 backdrop-blur-sm">
-              <p className="text-xs opacity-80">À dépenser aujourd'hui</p>
-              <p className="text-xl font-bold">{formatFCFA(dailyBudget)} FCFA</p>
+              <p className="text-[11px] opacity-75">↓ Revenus</p>
+              <p className="text-base font-bold">{formatShort(effectiveIncome)}</p>
+            </div>
+            <div className="bg-white/15 rounded-2xl px-4 py-3 backdrop-blur-sm">
+              <p className="text-[11px] opacity-75">↑ Dépenses</p>
+              <p className="text-base font-bold">{formatShort(monthlyExpensesTotal)}</p>
+            </div>
+          </div>
+
+          {/* Disponible par jour */}
+          {remaining > 0 && daysRemaining > 0 && (
+            <div className="flex items-center gap-2 text-sm">
+              <span>💡</span>
+              <span className="opacity-90">
+                Disponible : <strong>{formatFCFA(dailyAvailable)} FCFA/jour</strong>
+              </span>
             </div>
           )}
 
           {remaining < 0 && (
-            <div className="bg-white/15 rounded-2xl px-4 py-3 backdrop-blur-sm">
-              <p className="text-xs">💡 Consultez vos enveloppes pour ajuster vos dépenses</p>
+            <div className="flex items-center gap-2 text-sm">
+              <span>💡</span>
+              <span className="opacity-90">Consultez vos enveloppes pour ajuster</span>
             </div>
           )}
+        </div>
+
+        {/* ── SOLDE CUMULÉ ───────────────────────────── */}
+        <div className="bg-white rounded-2xl border border-gray-200 p-4 mb-4 flex items-center justify-between shadow-sm">
+          <div>
+            <p className="text-xs text-gray-400 font-semibold">Solde cumulé</p>
+            <p className="text-[10px] text-gray-300">Tous revenus - toutes dépenses</p>
+          </div>
+          <p className={`text-xl font-bold ${cumulativeBalance >= 0 ? 'text-green-600' : 'text-red-500'}`}>
+            {cumulativeBalance >= 0 ? '+' : '-'}{formatFCFA(Math.abs(cumulativeBalance))} FCFA
+          </p>
         </div>
 
         {/* ── SCORE — compact et cliquable ───────────── */}
@@ -271,20 +315,20 @@ const Dashboard = ({ toast, auth, onNavigate, user }) => {
         {/* ── LIENS SECONDAIRES ──────────────────────── */}
         <div className="grid grid-cols-2 gap-3">
           <button
-            onClick={() => onNavigate('tontine-analysis')}
-            className="bg-white rounded-2xl border border-gray-200 p-4 text-left hover:border-green-300 transition-all shadow-sm"
-          >
-            <span className="text-xl">📊</span>
-            <p className="text-xs font-bold text-gray-800 mt-1">Analyse du mois</p>
-            <p className="text-[10px] text-gray-400">Comprendre vos dépenses</p>
-          </button>
-          <button
             onClick={() => onNavigate('transactions')}
             className="bg-white rounded-2xl border border-gray-200 p-4 text-left hover:border-green-300 transition-all shadow-sm"
           >
             <span className="text-xl">🗓️</span>
             <p className="text-xs font-bold text-gray-800 mt-1">Historique</p>
             <p className="text-[10px] text-gray-400">Tous vos mouvements</p>
+          </button>
+          <button
+            onClick={() => onNavigate('debts')}
+            className="bg-white rounded-2xl border border-gray-200 p-4 text-left hover:border-green-300 transition-all shadow-sm"
+          >
+            <span className="text-xl">💳</span>
+            <p className="text-xs font-bold text-gray-800 mt-1">Mes dettes</p>
+            <p className="text-[10px] text-gray-400">Suivi et remboursements</p>
           </button>
         </div>
 
