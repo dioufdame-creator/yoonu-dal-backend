@@ -1,5 +1,5 @@
 // src/components/dashboard/Dashboard.js
-// Dashboard V5.2 — carte solde + message coach intelligent
+// Dashboard V5.3 — message score basé sur les composantes réelles
 import React, { useState, useEffect, useCallback } from 'react';
 import API from '../../services/api';
 
@@ -117,7 +117,6 @@ const Dashboard = ({ toast, auth, onNavigate, user }) => {
 
   // ── MESSAGE COACH — une seule phrase, par priorité ──
   const getCoachMessage = () => {
-    // P1 : dépassement global du budget
     if (remaining < 0) {
       return {
         icon: '⚠️',
@@ -127,7 +126,6 @@ const Dashboard = ({ toast, auth, onNavigate, user }) => {
       };
     }
 
-    // P2 : tontine active avec contribution en retard
     const lateTontine = tontines.find(t =>
       t.status === 'active' &&
       (t.my_contribution_status === 'late' || t.my_contribution_status === 'behind' || t.contribution_status === 'late' || t.contribution_status === 'behind')
@@ -141,12 +139,10 @@ const Dashboard = ({ toast, auth, onNavigate, user }) => {
       };
     }
 
-    // P3 : dette avec paiement mensuel dû (aucun remboursement enregistré ce mois)
     const debtDue = debts.find(d => {
       const isActive = d.is_active !== false;
       const monthlyPayment = parseFloat(d.monthly_payment || 0);
       if (!isActive || monthlyPayment <= 0) return false;
-      // Vérifier si un remboursement a été fait ce mois dans les dépenses
       const paidThisMonth = expenses.some(e =>
         e.category === 'remboursement_dette' &&
         e.date && e.date.startsWith(currentMonthKey)
@@ -162,7 +158,6 @@ const Dashboard = ({ toast, auth, onNavigate, user }) => {
       };
     }
 
-    // P4 : enveloppe dépassée
     const overEnvelope = envelopes.find(env => {
       const spent = env.current_spent ?? env.spent ?? 0;
       const budget = env.monthly_budget ?? env.budget ?? 0;
@@ -179,7 +174,6 @@ const Dashboard = ({ toast, auth, onNavigate, user }) => {
       };
     }
 
-    // P5 : enveloppe presque épuisée (>90%)
     const almostEmpty = envelopes.find(env => {
       const spent = env.current_spent ?? env.spent ?? 0;
       const budget = env.monthly_budget ?? env.budget ?? 0;
@@ -196,10 +190,9 @@ const Dashboard = ({ toast, auth, onNavigate, user }) => {
       };
     }
 
-    // P6 : marge confortable + un projet en cours → suggestion de transfert
     const activeGoal = goals.find(g => !g.is_achieved);
     if (activeGoal && remaining > 0 && daysRemaining <= 7) {
-      const suggested = Math.floor(remaining * 0.5 / 1000) * 1000; // 50% arrondi au millier
+      const suggested = Math.floor(remaining * 0.5 / 1000) * 1000;
       if (suggested >= 5000) {
         return {
           icon: '💡',
@@ -210,13 +203,75 @@ const Dashboard = ({ toast, auth, onNavigate, user }) => {
       }
     }
 
-    // P7 : tout va bien
     return {
       icon: '✅',
       style: 'bg-green-50 border-green-200 text-green-800',
       text: 'Vous êtes dans votre budget. Continuez ainsi.',
       action: null,
     };
+  };
+
+  // ── ANALYSE DU SCORE — composante la plus faible ────
+  const getScoreInsight = (s) => {
+    const total = s.total_score || 0;
+
+    // Label global simple
+    const label =
+      total >= 85 ? { text: 'Excellent', color: '#10b981' } :
+      total >= 70 ? { text: 'Bien', color: '#10b981' } :
+      total >= 50 ? { text: 'Moyen', color: '#f59e0b' } :
+      total >= 30 ? { text: 'À améliorer', color: '#ef4444' } :
+      { text: 'Non évalué', color: '#9ca3af' };
+
+    if (total === 0) {
+      return { label, message: 'Ajoutez vos dépenses et revenus pour activer votre score.' };
+    }
+
+    // Composantes avec leur max et un conseil ciblé
+    const components = [
+      {
+        key: 'alignment',
+        value: s.alignment_score || 0,
+        max: 25,
+        advice: 'Vos dépenses reflètent peu vos valeurs déclarées.',
+      },
+      {
+        key: 'discipline',
+        value: s.discipline_score || 0,
+        max: 25,
+        advice: 'Respectez davantage vos budgets d\'enveloppes.',
+      },
+      {
+        key: 'stability',
+        value: s.stability_score || 0,
+        max: 25,
+        advice: 'Essayez d\'épargner au moins 10% de vos revenus.',
+      },
+      {
+        key: 'improvement',
+        value: s.improvement_score || 0,
+        max: 15,
+        advice: 'Créez un projet ou rejoignez une tontine pour construire votre avenir.',
+      },
+      {
+        key: 'engagement',
+        value: s.engagement_score || 0,
+        max: 10,
+        advice: 'Enregistrez vos dépenses plus régulièrement.',
+      },
+    ];
+
+    // Score excellent → message positif, pas de conseil
+    if (total >= 85) {
+      return { label, message: 'Votre argent est aligné avec vos valeurs. Bravo !' };
+    }
+
+    // Trouver la composante la plus faible (en % de son max)
+    const weakest = components.reduce((min, c) =>
+      (c.value / c.max) < (min.value / min.max) ? c : min
+    );
+
+    return { label, message: weakest.advice };
   };
 
   if (loading) {
@@ -280,7 +335,7 @@ const Dashboard = ({ toast, auth, onNavigate, user }) => {
           )}
         </div>
 
-        {/* ── MESSAGE COACH — une phrase ─────────────── */}
+        {/* ── MESSAGE COACH ──────────────────────────── */}
         <div
           onClick={coach.action || undefined}
           className={`border rounded-2xl p-4 mb-4 flex items-start gap-3 ${coach.style} ${coach.action ? 'cursor-pointer hover:shadow-md transition-all' : ''}`}
@@ -290,38 +345,45 @@ const Dashboard = ({ toast, auth, onNavigate, user }) => {
           {coach.action && <span className="text-lg opacity-40">›</span>}
         </div>
 
-        {/* ── SCORE — compact et cliquable ───────────── */}
-        {score && (
-          <button
-            onClick={() => onNavigate('score')}
-            className="w-full bg-white rounded-2xl border border-gray-200 p-4 mb-4 flex items-center gap-4 hover:border-green-300 transition-all shadow-sm"
-          >
-            <div className="relative w-14 h-14 flex-shrink-0">
-              <svg viewBox="0 0 56 56" width="56" height="56" style={{ transform: 'rotate(-90deg)' }}>
-                <circle cx="28" cy="28" r="24" stroke="#e5e7eb" strokeWidth="5" fill="none" />
-                <circle
-                  cx="28" cy="28" r="24"
-                  stroke={score.total_score >= 70 ? '#10b981' : score.total_score >= 50 ? '#f59e0b' : '#ef4444'}
-                  strokeWidth="5" fill="none" strokeLinecap="round"
-                  strokeDasharray={`${(score.total_score / 100) * 151} 151`}
-                />
-              </svg>
-              <div className="absolute inset-0 flex items-center justify-center">
-                <span className="text-base font-bold text-gray-900">{score.total_score}</span>
+        {/* ── SCORE — note + signification ciblée ────── */}
+        {score && (() => {
+          const insight = getScoreInsight(score);
+          const s = score.total_score || 0;
+          return (
+            <button
+              onClick={() => onNavigate('score')}
+              className="w-full bg-white rounded-2xl border border-gray-200 p-4 mb-4 flex items-center gap-4 hover:border-green-300 transition-all shadow-sm"
+            >
+              <div className="relative w-14 h-14 flex-shrink-0">
+                <svg viewBox="0 0 56 56" width="56" height="56" style={{ transform: 'rotate(-90deg)' }}>
+                  <circle cx="28" cy="28" r="24" stroke="#e5e7eb" strokeWidth="5" fill="none" />
+                  <circle
+                    cx="28" cy="28" r="24"
+                    stroke={insight.label.color}
+                    strokeWidth="5" fill="none" strokeLinecap="round"
+                    strokeDasharray={`${(s / 100) * 151} 151`}
+                  />
+                </svg>
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <span className="text-base font-bold text-gray-900">{s}</span>
+                </div>
               </div>
-            </div>
-            <div className="flex-1 text-left">
-              <p className="text-sm font-bold text-gray-900">Score Yoonu Dal</p>
-              <p className="text-xs text-gray-500">
-                {score.total_score >= 85 ? '🏆 Maître Yoonu' :
-                 score.total_score >= 70 ? '🌳 Aligné' :
-                 score.total_score >= 50 ? '🌿 En chemin' :
-                 score.total_score >= 30 ? '🌱 Débutant' : 'Non évalué'}
-              </p>
-            </div>
-            <span className="text-gray-300 text-xl">›</span>
-          </button>
-        )}
+              <div className="flex-1 text-left">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <p className="text-sm font-bold text-gray-900">Score Yoonu Dal</p>
+                  <span
+                    className="text-[10px] font-bold px-2 py-0.5 rounded-full"
+                    style={{ backgroundColor: insight.label.color + '20', color: insight.label.color }}
+                  >
+                    {insight.label.text}
+                  </span>
+                </div>
+                <p className="text-xs text-gray-500 mt-0.5">{insight.message}</p>
+              </div>
+              <span className="text-gray-300 text-xl flex-shrink-0">›</span>
+            </button>
+          );
+        })()}
 
         {/* ── DERNIÈRES DÉPENSES ─────────────────────── */}
         <div className="bg-white rounded-2xl border border-gray-200 mb-4 overflow-hidden shadow-sm">
