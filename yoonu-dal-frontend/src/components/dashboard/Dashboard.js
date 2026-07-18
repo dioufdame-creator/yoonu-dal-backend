@@ -1,5 +1,5 @@
 // src/components/dashboard/Dashboard.js
-// Dashboard V5.1 — solde cumulé + revenus/dépenses + formulation "Disponible"
+// Dashboard V5.2 — carte solde + message coach intelligent
 import React, { useState, useEffect, useCallback } from 'react';
 import API from '../../services/api';
 
@@ -28,6 +28,9 @@ const Dashboard = ({ toast, auth, onNavigate, user }) => {
   const [envelopes, setEnvelopes] = useState([]);
   const [expenses, setExpenses] = useState([]);
   const [incomes, setIncomes] = useState([]);
+  const [goals, setGoals] = useState([]);
+  const [debts, setDebts] = useState([]);
+  const [tontines, setTontines] = useState([]);
   const [monthlyIncome, setMonthlyIncome] = useState(0);
   const [score, setScore] = useState(null);
 
@@ -46,26 +49,33 @@ const Dashboard = ({ toast, auth, onNavigate, user }) => {
   const loadData = useCallback(async () => {
     setLoading(true);
     try {
-      const [envelopesRes, expensesRes, incomesRes, scoreRes] = await Promise.all([
+      const [envelopesRes, expensesRes, incomesRes, scoreRes, goalsRes, debtsRes, tontinesRes] = await Promise.all([
         API.get('/meta-envelopes/').catch(() => ({ data: { envelopes: [] } })),
         API.get('/expenses/').catch(() => ({ data: [] })),
         API.get('/incomes/').catch(() => ({ data: [] })),
         API.get('/yoonu-score/').catch(() => null),
+        API.get('/goals/').catch(() => ({ data: [] })),
+        API.get('/debts/').catch(() => ({ data: [] })),
+        API.get('/tontines/my/').catch(() => ({ data: [] })),
       ]);
 
-      const envData = envelopesRes.data?.envelopes || [];
-      setEnvelopes(envData);
+      setEnvelopes(envelopesRes.data?.envelopes || []);
       setMonthlyIncome(envelopesRes.data?.monthly_income || 0);
 
-      const expList = Array.isArray(expensesRes.data)
-        ? expensesRes.data
-        : expensesRes.data?.expenses || [];
+      const expList = Array.isArray(expensesRes.data) ? expensesRes.data : expensesRes.data?.expenses || [];
       setExpenses(expList);
 
-      const incList = Array.isArray(incomesRes.data)
-        ? incomesRes.data
-        : incomesRes.data?.incomes || [];
+      const incList = Array.isArray(incomesRes.data) ? incomesRes.data : incomesRes.data?.incomes || [];
       setIncomes(incList);
+
+      const goalList = Array.isArray(goalsRes.data) ? goalsRes.data : goalsRes.data?.goals || [];
+      setGoals(goalList);
+
+      const debtList = Array.isArray(debtsRes.data) ? debtsRes.data : debtsRes.data?.debts || [];
+      setDebts(debtList);
+
+      const tontineList = Array.isArray(tontinesRes.data) ? tontinesRes.data : tontinesRes.data?.tontines || [];
+      setTontines(tontineList);
 
       if (scoreRes?.data) setScore(scoreRes.data);
     } catch (error) {
@@ -87,7 +97,7 @@ const Dashboard = ({ toast, auth, onNavigate, user }) => {
     return `${Math.round(num)}`;
   };
 
-  // ── CALCULS MOIS COURANT ─────────────────────────────
+  // ── CALCULS ──────────────────────────────────────────
   const monthlyExpensesTotal = expenses
     .filter(e => e.date && e.date.startsWith(currentMonthKey))
     .reduce((sum, e) => sum + parseFloat(e.amount || 0), 0);
@@ -100,15 +110,114 @@ const Dashboard = ({ toast, auth, onNavigate, user }) => {
   const remaining = effectiveIncome - monthlyExpensesTotal;
   const dailyAvailable = daysRemaining > 0 ? remaining / daysRemaining : remaining;
 
-  // ── SOLDE CUMULÉ (tous revenus - toutes dépenses) ────
-  const allIncomesTotal = incomes.reduce((sum, i) => sum + parseFloat(i.amount || 0), 0);
-  const allExpensesTotal = expenses.reduce((sum, e) => sum + parseFloat(e.amount || 0), 0);
-  const cumulativeBalance = allIncomesTotal - allExpensesTotal;
-
   const recentExpenses = expenses
     .filter(e => e.date && e.date.startsWith(currentMonthKey))
     .sort((a, b) => new Date(b.date) - new Date(a.date))
     .slice(0, 4);
+
+  // ── MESSAGE COACH — une seule phrase, par priorité ──
+  const getCoachMessage = () => {
+    // P1 : dépassement global du budget
+    if (remaining < 0) {
+      return {
+        icon: '⚠️',
+        style: 'bg-red-50 border-red-200 text-red-800',
+        text: `Vous avez dépassé votre budget de ${formatFCFA(Math.abs(remaining))} FCFA ce mois.`,
+        action: () => onNavigate('envelopes'),
+      };
+    }
+
+    // P2 : tontine active avec contribution en retard
+    const lateTontine = tontines.find(t =>
+      t.status === 'active' &&
+      (t.my_contribution_status === 'late' || t.my_contribution_status === 'behind' || t.contribution_status === 'late' || t.contribution_status === 'behind')
+    );
+    if (lateTontine) {
+      return {
+        icon: '🤝',
+        style: 'bg-orange-50 border-orange-200 text-orange-800',
+        text: `Votre contribution à la tontine ${lateTontine.name} est en retard.`,
+        action: () => onNavigate('tontine-detail', { id: lateTontine.id }),
+      };
+    }
+
+    // P3 : dette avec paiement mensuel dû (aucun remboursement enregistré ce mois)
+    const debtDue = debts.find(d => {
+      const isActive = d.is_active !== false;
+      const monthlyPayment = parseFloat(d.monthly_payment || 0);
+      if (!isActive || monthlyPayment <= 0) return false;
+      // Vérifier si un remboursement a été fait ce mois dans les dépenses
+      const paidThisMonth = expenses.some(e =>
+        e.category === 'remboursement_dette' &&
+        e.date && e.date.startsWith(currentMonthKey)
+      );
+      return !paidThisMonth;
+    });
+    if (debtDue) {
+      return {
+        icon: '💳',
+        style: 'bg-orange-50 border-orange-200 text-orange-800',
+        text: `Pensez au remboursement de ${formatFCFA(debtDue.monthly_payment)} FCFA pour "${debtDue.name}".`,
+        action: () => onNavigate('debts'),
+      };
+    }
+
+    // P4 : enveloppe dépassée
+    const overEnvelope = envelopes.find(env => {
+      const spent = env.current_spent ?? env.spent ?? 0;
+      const budget = env.monthly_budget ?? env.budget ?? 0;
+      return budget > 0 && spent > budget;
+    });
+    if (overEnvelope) {
+      const config = ENVELOPE_CONFIG[overEnvelope.envelope_type] || ENVELOPE_CONFIG[overEnvelope.type] || {};
+      const overspent = (overEnvelope.current_spent ?? overEnvelope.spent ?? 0) - (overEnvelope.monthly_budget ?? overEnvelope.budget ?? 0);
+      return {
+        icon: '💡',
+        style: 'bg-amber-50 border-amber-200 text-amber-800',
+        text: `Attention, vos dépenses ${config.label} dépassent votre budget de ${formatFCFA(overspent)} FCFA.`,
+        action: () => onNavigate('envelopes'),
+      };
+    }
+
+    // P5 : enveloppe presque épuisée (>90%)
+    const almostEmpty = envelopes.find(env => {
+      const spent = env.current_spent ?? env.spent ?? 0;
+      const budget = env.monthly_budget ?? env.budget ?? 0;
+      return budget > 0 && spent / budget >= 0.9 && spent <= budget;
+    });
+    if (almostEmpty) {
+      const config = ENVELOPE_CONFIG[almostEmpty.envelope_type] || ENVELOPE_CONFIG[almostEmpty.type] || {};
+      const left = (almostEmpty.monthly_budget ?? almostEmpty.budget ?? 0) - (almostEmpty.current_spent ?? almostEmpty.spent ?? 0);
+      return {
+        icon: '💡',
+        style: 'bg-amber-50 border-amber-200 text-amber-800',
+        text: `Votre enveloppe ${config.label} est presque épuisée (${formatFCFA(left)} FCFA restants).`,
+        action: () => onNavigate('envelopes'),
+      };
+    }
+
+    // P6 : marge confortable + un projet en cours → suggestion de transfert
+    const activeGoal = goals.find(g => !g.is_achieved);
+    if (activeGoal && remaining > 0 && daysRemaining <= 7) {
+      const suggested = Math.floor(remaining * 0.5 / 1000) * 1000; // 50% arrondi au millier
+      if (suggested >= 5000) {
+        return {
+          icon: '💡',
+          style: 'bg-blue-50 border-blue-200 text-blue-800',
+          text: `Vous pouvez transférer ${formatFCFA(suggested)} FCFA vers votre projet "${activeGoal.title}".`,
+          action: () => onNavigate('goals'),
+        };
+      }
+    }
+
+    // P7 : tout va bien
+    return {
+      icon: '✅',
+      style: 'bg-green-50 border-green-200 text-green-800',
+      text: 'Vous êtes dans votre budget. Continuez ainsi.',
+      action: null,
+    };
+  };
 
   if (loading) {
     return (
@@ -120,6 +229,8 @@ const Dashboard = ({ toast, auth, onNavigate, user }) => {
       </div>
     );
   }
+
+  const coach = getCoachMessage();
 
   return (
     <div className="min-h-screen bg-gray-50 pb-28">
@@ -136,7 +247,7 @@ const Dashboard = ({ toast, auth, onNavigate, user }) => {
         </div>
 
         {/* ── CARTE SOLDE DU MOIS ────────────────────── */}
-        <div className={`rounded-3xl p-6 mb-4 text-white shadow-xl ${
+        <div className={`rounded-3xl p-6 mb-3 text-white shadow-xl ${
           remaining >= 0
             ? 'bg-gradient-to-br from-green-600 to-emerald-700'
             : 'bg-gradient-to-br from-red-500 to-rose-600'
@@ -148,7 +259,6 @@ const Dashboard = ({ toast, auth, onNavigate, user }) => {
             {formatFCFA(Math.abs(remaining))} <span className="text-lg font-normal opacity-70">FCFA</span>
           </p>
 
-          {/* Revenus / Dépenses du mois */}
           <div className="grid grid-cols-2 gap-3 mb-3">
             <div className="bg-white/15 rounded-2xl px-4 py-3 backdrop-blur-sm">
               <p className="text-[11px] opacity-75">↓ Revenus</p>
@@ -160,7 +270,6 @@ const Dashboard = ({ toast, auth, onNavigate, user }) => {
             </div>
           </div>
 
-          {/* Disponible par jour */}
           {remaining > 0 && daysRemaining > 0 && (
             <div className="flex items-center gap-2 text-sm">
               <span>💡</span>
@@ -169,24 +278,16 @@ const Dashboard = ({ toast, auth, onNavigate, user }) => {
               </span>
             </div>
           )}
-
-          {remaining < 0 && (
-            <div className="flex items-center gap-2 text-sm">
-              <span>💡</span>
-              <span className="opacity-90">Consultez vos enveloppes pour ajuster</span>
-            </div>
-          )}
         </div>
 
-        {/* ── SOLDE CUMULÉ ───────────────────────────── */}
-        <div className="bg-white rounded-2xl border border-gray-200 p-4 mb-4 flex items-center justify-between shadow-sm">
-          <div>
-            <p className="text-xs text-gray-400 font-semibold">Solde cumulé</p>
-            <p className="text-[10px] text-gray-300">Tous revenus - toutes dépenses</p>
-          </div>
-          <p className={`text-xl font-bold ${cumulativeBalance >= 0 ? 'text-green-600' : 'text-red-500'}`}>
-            {cumulativeBalance >= 0 ? '+' : '-'}{formatFCFA(Math.abs(cumulativeBalance))} FCFA
-          </p>
+        {/* ── MESSAGE COACH — une phrase ─────────────── */}
+        <div
+          onClick={coach.action || undefined}
+          className={`border rounded-2xl p-4 mb-4 flex items-start gap-3 ${coach.style} ${coach.action ? 'cursor-pointer hover:shadow-md transition-all' : ''}`}
+        >
+          <span className="text-lg flex-shrink-0">{coach.icon}</span>
+          <p className="text-sm font-medium flex-1">{coach.text}</p>
+          {coach.action && <span className="text-lg opacity-40">›</span>}
         </div>
 
         {/* ── SCORE — compact et cliquable ───────────── */}
@@ -267,7 +368,7 @@ const Dashboard = ({ toast, auth, onNavigate, user }) => {
           )}
         </div>
 
-        {/* ── ENVELOPPES — barres simples ────────────── */}
+        {/* ── ENVELOPPES ─────────────────────────────── */}
         <div className="bg-white rounded-2xl border border-gray-200 p-4 mb-4 shadow-sm">
           <div className="flex items-center justify-between mb-3">
             <h2 className="text-sm font-bold text-gray-900">Mes enveloppes</h2>
