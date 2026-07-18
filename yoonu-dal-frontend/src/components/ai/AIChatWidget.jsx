@@ -231,19 +231,16 @@ const AIChatWidgetV4 = ({ onNavigate, toast, user }) => {
     { text: "💡 Conseils pour économiser", icon: "💡" }
   ];
 
-  if (!isOpen) {
-    return (
-      <div className="fixed bottom-24 right-4 z-40 lg:bottom-6 lg:right-6">
-        <button
-          onClick={() => setIsOpen(true)}
-          className="group relative bg-gradient-to-r from-green-600 to-emerald-600 text-white p-5 rounded-full shadow-2xl hover:shadow-green-500/50 transform hover:scale-110 transition-all duration-300 flex items-center gap-3"
-        >
-          <span className="text-3xl">💬</span>
-          <span className="font-bold hidden md:inline">Yoonu IA</span>
-        </button>
-      </div>
-    );
-  }
+  // Écouter l'événement d'ouverture depuis le header
+useEffect(() => {
+  const handler = () => setIsOpen(true);
+  window.addEventListener('open-yoonu-chat', handler);
+  return () => window.removeEventListener('open-yoonu-chat', handler);
+}, []);
+
+if (!isOpen) {
+  return null; // Plus de bouton flottant — ouverture via l'icône header
+}
 
   return (
     <>
