@@ -42,6 +42,27 @@ const IncomesPageV2 = ({ toast, onNavigate }) => {
   });
   const [form, setForm] = useState(emptyForm);
 
+  // ✅ Sélecteur de mois — 6 derniers mois
+  const MONTHS_FR_SEL = ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin',
+    'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'];
+  const monthOptions = (() => {
+    const options = [];
+    const nowD = new Date();
+    for (let i = 0; i < 6; i++) {
+      const d = new Date(nowD.getFullYear(), nowD.getMonth() - i, 1);
+      options.push({
+        key: `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`,
+        label: `${MONTHS_FR_SEL[d.getMonth()]} ${d.getFullYear()}`,
+        isCurrent: i === 0,
+      });
+    }
+    return options;
+  })();
+  const [selectedMonth, setSelectedMonth] = useState(monthOptions[0].key);
+  const [showMonthPicker, setShowMonthPicker] = useState(false);
+  const isCurrentMonth = selectedMonth === monthOptions[0].key;
+  const selectedOption = monthOptions.find(m => m.key === selectedMonth) || monthOptions[0];
+
   // ✅ Formatter FCFA CORRIGÉ
   const formatCurrency = (value) => {
     const num = Math.abs(value || 0);
@@ -66,7 +87,8 @@ const IncomesPageV2 = ({ toast, onNavigate }) => {
   const loadIncomes = useCallback(async () => {
     setLoading(true);
     try {
-      const response = await API.get('/incomes/');
+      const monthParam = isCurrentMonth ? '' : `?month=${selectedMonth}`;
+      const response = await API.get(`/incomes/${monthParam}`);
       const incomesList = response.data?.incomes || [];
       setIncomes(incomesList);
     } catch (error) {
@@ -75,7 +97,7 @@ const IncomesPageV2 = ({ toast, onNavigate }) => {
     } finally {
       setLoading(false);
     }
-  }, [toast]);
+  }, [toast, selectedMonth, isCurrentMonth]);
 
   useEffect(() => {
     loadIncomes();
@@ -146,10 +168,8 @@ const handleSubmit = async (e) => {
     setShowModal(true);
   };
 
-  // Calculs
-  const now = new Date();
-  const monthStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
-  const monthlyIncomes = incomes.filter(inc => inc.date && inc.date.startsWith(monthStr));
+  // Calculs — sur le mois sélectionné
+  const monthlyIncomes = incomes.filter(inc => inc.date && inc.date.startsWith(selectedMonth));
   
   const totalIncomes = monthlyIncomes.reduce((sum, inc) => sum + parseFloat(inc.amount || 0), 0);
   
@@ -199,9 +219,35 @@ const handleSubmit = async (e) => {
               <h1 className="text-2xl lg:text-3xl font-bold text-gray-900">
                 💰 Mes Revenus
               </h1>
-              <p className="text-sm text-gray-500 mt-1">
-                {new Date().toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' })}
-              </p>
+              <div className="relative mt-1">
+                <button
+                  onClick={() => setShowMonthPicker(!showMonthPicker)}
+                  className="flex items-center gap-1 text-sm font-semibold text-gray-600 hover:text-green-600 transition-colors"
+                >
+                  <span>{selectedOption.label}</span>
+                  <span className={`transition-transform text-[10px] ${showMonthPicker ? 'rotate-180' : ''}`}>▼</span>
+                </button>
+                {showMonthPicker && (
+                  <>
+                    <div className="fixed inset-0 z-20" onClick={() => setShowMonthPicker(false)} />
+                    <div className="absolute top-6 left-0 z-30 bg-white rounded-2xl shadow-2xl border border-gray-100 py-2 min-w-[170px]">
+                      {monthOptions.map(m => (
+                        <button
+                          key={m.key}
+                          onClick={() => { setSelectedMonth(m.key); setShowMonthPicker(false); }}
+                          className={`w-full text-left px-4 py-2 text-sm transition-colors ${
+                            m.key === selectedMonth
+                              ? 'bg-green-50 text-green-700 font-bold'
+                              : 'text-gray-700 hover:bg-gray-50'
+                          }`}
+                        >
+                          {m.label}{m.isCurrent ? ' (en cours)' : ''}
+                        </button>
+                      ))}
+                    </div>
+                  </>
+                )}
+              </div>
             </div>
           </div>
 
