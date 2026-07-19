@@ -65,6 +65,27 @@ const ExpenseTrackerPremium = ({ toast, onNavigate, auth, user }) => {
   const [filterGroup, setFilterGroup] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
 
+  // ✅ Sélecteur de mois — 6 derniers mois
+  const MONTHS_FR_SHORT = ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin',
+    'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'];
+  const monthOptions = (() => {
+    const options = [];
+    const nowD = new Date();
+    for (let i = 0; i < 6; i++) {
+      const d = new Date(nowD.getFullYear(), nowD.getMonth() - i, 1);
+      options.push({
+        key: `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`,
+        label: `${MONTHS_FR_SHORT[d.getMonth()]} ${d.getFullYear()}`,
+        isCurrent: i === 0,
+      });
+    }
+    return options;
+  })();
+  const [selectedMonth, setSelectedMonth] = useState(monthOptions[0].key);
+  const [showMonthPicker, setShowMonthPicker] = useState(false);
+  const isCurrentMonth = selectedMonth === monthOptions[0].key;
+  const selectedOption = monthOptions.find(m => m.key === selectedMonth) || monthOptions[0];
+
   const [expenses, setExpenses] = useState([]);
   const [envelopes, setEnvelopes] = useState(
     ENVELOPE_CONFIG.map(e => ({ ...e, budget: 0, spent: 0 }))
@@ -84,9 +105,10 @@ const ExpenseTrackerPremium = ({ toast, onNavigate, auth, user }) => {
     setLoading(true);
     try {
       // ✅ 3 promesses avec déstructuration correcte
+      const monthParam = isCurrentMonth ? '' : `?month=${selectedMonth}`;
       const [expensesRes, envelopesRes, rulesRes] = await Promise.all([
-        API.get('/expenses/').catch(() => ({ data: [] })),
-        API.get('/meta-envelopes/').catch(() => ({ data: [] })),
+        API.get(`/expenses/${monthParam}`).catch(() => ({ data: [] })),
+        API.get(`/meta-envelopes/${monthParam}`).catch(() => ({ data: [] })),
         API.get('/category-rules/').catch(() => ({ data: { categories: [] } }))
       ]);
 
@@ -118,7 +140,7 @@ const ExpenseTrackerPremium = ({ toast, onNavigate, auth, user }) => {
     } finally {
       setLoading(false);
     }
-  }, [toast]);
+  }, [toast, selectedMonth, isCurrentMonth]);
 
   useEffect(() => {
     loadData();
@@ -195,8 +217,7 @@ const ExpenseTrackerPremium = ({ toast, onNavigate, auth, user }) => {
     }
   };
 
-  const currentMonth = new Date().toISOString().slice(0, 7);
-  const monthlyExpenses = expenses.filter(exp => exp.date && exp.date.startsWith(currentMonth));
+  const monthlyExpenses = expenses.filter(exp => exp.date && exp.date.startsWith(selectedMonth));
   const totalExpenses = monthlyExpenses.reduce((sum, exp) => sum + parseFloat(exp.amount || 0), 0);
 
   const envelopeStats = envelopes.map(env => {
@@ -254,9 +275,35 @@ const ExpenseTrackerPremium = ({ toast, onNavigate, auth, user }) => {
               <h1 className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-gray-900 via-red-900 to-pink-900 bg-clip-text text-transparent flex items-center gap-2">
                 <span>💳</span> Mes Dépenses
               </h1>
-              <p className="text-xs sm:text-sm text-gray-600 mt-1">
-                {new Date().toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' })}
-              </p>
+              <div className="relative mt-1">
+                <button
+                  onClick={() => setShowMonthPicker(!showMonthPicker)}
+                  className="flex items-center gap-1 text-xs sm:text-sm font-semibold text-gray-600 hover:text-green-600 transition-colors"
+                >
+                  <span>{selectedOption.label}</span>
+                  <span className={`transition-transform text-[10px] ${showMonthPicker ? 'rotate-180' : ''}`}>▼</span>
+                </button>
+                {showMonthPicker && (
+                  <>
+                    <div className="fixed inset-0 z-20" onClick={() => setShowMonthPicker(false)} />
+                    <div className="absolute top-6 left-0 z-30 bg-white rounded-2xl shadow-2xl border border-gray-100 py-2 min-w-[170px]">
+                      {monthOptions.map(m => (
+                        <button
+                          key={m.key}
+                          onClick={() => { setSelectedMonth(m.key); setShowMonthPicker(false); }}
+                          className={`w-full text-left px-4 py-2 text-sm transition-colors ${
+                            m.key === selectedMonth
+                              ? 'bg-green-50 text-green-700 font-bold'
+                              : 'text-gray-700 hover:bg-gray-50'
+                          }`}
+                        >
+                          {m.label}{m.isCurrent ? ' (en cours)' : ''}
+                        </button>
+                      ))}
+                    </div>
+                  </>
+                )}
+              </div>
             </div>
             <div className="flex items-center gap-2">
               <div className={`w-2 h-2 rounded-full ${isOnline ? 'bg-green-500 animate-pulse' : 'bg-gray-400'}`}></div>
