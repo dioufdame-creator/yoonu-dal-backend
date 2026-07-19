@@ -74,12 +74,12 @@ const Dashboard = ({ toast, auth, onNavigate, user }) => {
       const monthParam = isCurrentMonth ? '' : `?month=${selectedMonth}`;
       const [envelopesRes, expensesRes, incomesRes, scoreRes, goalsRes, debtsRes, tontinesRes] = await Promise.all([
         API.get(`/meta-envelopes/${monthParam}`).catch(() => ({ data: { envelopes: [] } })),
-        API.get('/expenses/').catch(() => ({ data: [] })),
-        API.get('/incomes/').catch(() => ({ data: [] })),
+        API.get(`/expenses/${monthParam}`).catch(() => ({ data: [] })),
+        API.get(`/incomes/${monthParam}`).catch(() => ({ data: [] })),
         API.get('/yoonu-score/').catch(() => null),
         API.get('/goals/').catch(() => ({ data: [] })),
         API.get('/debts/').catch(() => ({ data: [] })),
-        API.get('/tontines/my/').catch(() => ({ data: [] })),
+        API.get('/tontines/').catch(() => ({ data: [] })),
       ]);
 
       setEnvelopes(envelopesRes.data?.envelopes || []);
