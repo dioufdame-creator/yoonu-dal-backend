@@ -170,8 +170,9 @@ const Navigation = ({ currentPage, onNavigate, isAuthenticated, user, onLogout, 
               </>
             ) : (
               <>
-                <button onClick={() => handleNavigation('login')} className="text-white font-semibold text-sm lg:text-base">🔑 Connexion</button>
-                <button onClick={() => handleNavigation('register')} className="bg-white text-green-600 px-3 lg:px-6 py-2 rounded-xl font-bold shadow-lg text-sm lg:text-base">📝 Inscription</button>
+                {/* Cachés sur mobile — la page d'accueil a déjà Connexion + Commencer */}
+                <button onClick={() => handleNavigation('login')} className="hidden lg:block text-white font-semibold text-base">🔑 Connexion</button>
+                <button onClick={() => handleNavigation('register')} className="hidden lg:block bg-white text-green-600 px-6 py-2 rounded-xl font-bold shadow-lg text-base">📝 Inscription</button>
               </>
             )}
           </div>
