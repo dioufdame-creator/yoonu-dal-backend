@@ -504,6 +504,10 @@ const Dashboard = ({ toast, auth, onNavigate, user }) => {
               const pct = budget > 0 ? (spent / budget) * 100 : 0;
               const isOver = pct > 100;
 
+              // Couleur selon l'état : vert OK, orange alerte (>=80%), rouge danger (>100%)
+              const stateColor = pct > 100 ? 'bg-red-500' : pct >= 80 ? 'bg-amber-500' : 'bg-green-500';
+              const stateText = pct > 100 ? 'text-red-500' : pct >= 80 ? 'text-amber-600' : 'text-gray-500';
+
               return (
                 <div key={env.envelope_type || env.type}>
                   <div className="flex items-center justify-between mb-1">
@@ -511,7 +515,7 @@ const Dashboard = ({ toast, auth, onNavigate, user }) => {
                       <span className="text-sm">{config.icon}</span>
                       <span className="text-xs font-semibold text-gray-700">{config.label}</span>
                     </div>
-                    <span className={`text-xs font-bold ${isOver ? 'text-red-500' : 'text-gray-500'}`}>
+                    <span className={`text-xs font-bold ${stateText}`}>
                       {isOver
                         ? `+${formatShort(spent - budget)} dépassé`
                         : `${formatShort(budget - spent)} restant`}
@@ -519,7 +523,7 @@ const Dashboard = ({ toast, auth, onNavigate, user }) => {
                   </div>
                   <div className="w-full bg-gray-100 rounded-full h-2 overflow-hidden">
                     <div
-                      className={`h-full rounded-full transition-all duration-700 ${isOver ? 'bg-red-500' : config.color || 'bg-gray-400'}`}
+                      className={`h-full rounded-full transition-all duration-700 ${stateColor}`}
                       style={{ width: `${Math.min(pct, 100)}%` }}
                     />
                   </div>
