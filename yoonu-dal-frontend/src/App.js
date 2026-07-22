@@ -661,12 +661,14 @@ function App() {
       </div>
       <Footer />
 
-      {/* ✅ Bottom navigation mobile */}
-      <BottomNav
-        currentPage={currentPage}
-        onNavigate={handleNavigate}
-        isAuthenticated={isAuthenticated}
-      />
+      {/* ✅ Bottom navigation mobile — masqué sur la saisie rapide */}
+      {currentPage !== 'quick-add' && (
+        <BottomNav
+          currentPage={currentPage}
+          onNavigate={handleNavigate}
+          isAuthenticated={isAuthenticated}
+        />
+      )}
 
       <ToastContainer toasts={toasts} removeToast={removeToast} />
       {isAuthenticated && (
