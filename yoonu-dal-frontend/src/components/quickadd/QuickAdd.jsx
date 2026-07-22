@@ -1,9 +1,8 @@
 // src/components/quickadd/QuickAdd.jsx
-// Saisie rapide dépense/revenu — formulaire simplifié
-import React, { useState, useEffect } from 'react';
+// Saisie rapide dépense/revenu — bouton Enregistrer sticky en bas
+import React, { useState } from 'react';
 import API from '../../services/api';
 
-// Catégories les plus fréquentes en premier
 const TOP_EXPENSE_CATEGORIES = [
   { value: 'alimentation',       label: 'Alimentation',   icon: '🍽️' },
   { value: 'transport',          label: 'Transport',      icon: '🚗' },
@@ -48,12 +47,16 @@ const QuickAdd = ({ type = 'expense', onNavigate, toast }) => {
   const [amount, setAmount] = useState('');
   const [category, setCategory] = useState('');
   const [description, setDescription] = useState('');
+  const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
   const [showAllCategories, setShowAllCategories] = useState(false);
+  const [showDate, setShowDate] = useState(false);
   const [saving, setSaving] = useState(false);
 
   const categories = isExpense
     ? (showAllCategories ? ALL_EXPENSE_CATEGORIES : TOP_EXPENSE_CATEGORIES)
     : INCOME_SOURCES;
+
+  const canSave = amount && category && !saving;
 
   const handleSubmit = async () => {
     if (!amount || !category) {
@@ -63,14 +66,12 @@ const QuickAdd = ({ type = 'expense', onNavigate, toast }) => {
 
     setSaving(true);
     try {
-      const today = new Date().toISOString().split('T')[0];
-
       if (isExpense) {
         await API.post('/expenses/', {
           amount: parseFloat(amount),
           category,
           description: description || categories.find(c => c.value === category)?.label || category,
-          date: today,
+          date,
         });
         toast?.showSuccess('✅ Dépense enregistrée !');
       } else {
@@ -78,11 +79,10 @@ const QuickAdd = ({ type = 'expense', onNavigate, toast }) => {
           amount: parseFloat(amount),
           source: category,
           description: description || category,
-          date: today,
+          date,
         });
         toast?.showSuccess('✅ Revenu enregistré !');
       }
-
       onNavigate('dashboard');
     } catch (error) {
       toast?.showError('Erreur lors de l\'enregistrement');
@@ -92,26 +92,27 @@ const QuickAdd = ({ type = 'expense', onNavigate, toast }) => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-24">
-      <div className="max-w-md mx-auto px-4 py-6">
+    <div className="min-h-screen bg-gray-50 flex flex-col">
+      {/* Contenu défilable */}
+      <div className="flex-1 overflow-y-auto pb-32">
+        <div className="max-w-md mx-auto px-4 py-5">
 
-        {/* Header */}
-        <div className="flex items-center gap-3 mb-6">
-          <button
-            onClick={() => onNavigate('dashboard')}
-            className="w-10 h-10 rounded-full bg-white border border-gray-200 flex items-center justify-center text-gray-600 hover:bg-gray-50"
-          >
-            ←
-          </button>
-          <h1 className="text-xl font-bold text-gray-900">
-            {isExpense ? '💸 Nouvelle dépense' : '💵 Nouveau revenu'}
-          </h1>
-        </div>
+          {/* Header */}
+          <div className="flex items-center gap-3 mb-5">
+            <button
+              onClick={() => onNavigate('dashboard')}
+              className="w-10 h-10 rounded-full bg-white border border-gray-200 flex items-center justify-center text-gray-600 hover:bg-gray-50"
+            >
+              ←
+            </button>
+            <h1 className="text-lg font-bold text-gray-900">
+              {isExpense ? '💸 Nouvelle dépense' : '💵 Nouveau revenu'}
+            </h1>
+          </div>
 
-        {/* Montant — gros champ central */}
-        <div className="bg-white rounded-3xl border-2 border-gray-200 p-6 mb-4 text-center shadow-sm">
-          <p className="text-xs text-gray-400 font-semibold uppercase tracking-wide mb-2">Montant</p>
-          <div className="flex items-center justify-center gap-2">
+          {/* 1. MONTANT — priorité visuelle */}
+          <div className="bg-white rounded-3xl border-2 border-gray-200 p-6 mb-4 text-center shadow-sm">
+            <p className="text-xs text-gray-400 font-semibold uppercase tracking-wide mb-2">Montant</p>
             <input
               type="number"
               inputMode="numeric"
@@ -121,73 +122,101 @@ const QuickAdd = ({ type = 'expense', onNavigate, toast }) => {
               autoFocus
               className="text-4xl font-bold text-gray-900 text-center w-full outline-none placeholder-gray-300"
             />
+            <p className="text-sm text-gray-400 mt-1">FCFA</p>
           </div>
-          <p className="text-sm text-gray-400 mt-1">FCFA</p>
-        </div>
 
-        {/* Catégories — grille simple */}
-        <div className="bg-white rounded-3xl border border-gray-200 p-4 mb-4 shadow-sm">
-          <p className="text-xs text-gray-400 font-semibold uppercase tracking-wide mb-3">
-            {isExpense ? 'Catégorie' : 'Source'}
-          </p>
-          <div className="grid grid-cols-3 gap-2">
-            {categories.map(cat => (
+          {/* 2. CATÉGORIE */}
+          <div className="bg-white rounded-3xl border border-gray-200 p-4 mb-4 shadow-sm">
+            <p className="text-xs text-gray-400 font-semibold uppercase tracking-wide mb-3">
+              {isExpense ? 'Catégorie' : 'Source'}
+            </p>
+            <div className="grid grid-cols-3 gap-2">
+              {categories.map(cat => (
+                <button
+                  key={cat.value}
+                  onClick={() => setCategory(cat.value)}
+                  className={`p-3 rounded-2xl border-2 transition-all text-center ${
+                    category === cat.value
+                      ? 'border-green-500 bg-green-50 scale-105'
+                      : 'border-gray-100 bg-gray-50 hover:border-gray-300'
+                  }`}
+                >
+                  <div className="text-2xl mb-1">{cat.icon}</div>
+                  <div className={`text-[11px] font-semibold leading-tight ${
+                    category === cat.value ? 'text-green-700' : 'text-gray-600'
+                  }`}>
+                    {cat.label}
+                  </div>
+                </button>
+              ))}
+            </div>
+
+            {isExpense && !showAllCategories && (
               <button
-                key={cat.value}
-                onClick={() => setCategory(cat.value)}
-                className={`p-3 rounded-2xl border-2 transition-all text-center ${
-                  category === cat.value
-                    ? 'border-green-500 bg-green-50 scale-105'
-                    : 'border-gray-100 bg-gray-50 hover:border-gray-300'
-                }`}
+                onClick={() => setShowAllCategories(true)}
+                className="w-full mt-3 py-2 text-sm text-green-600 font-semibold hover:text-green-700"
               >
-                <div className="text-2xl mb-1">{cat.icon}</div>
-                <div className={`text-[11px] font-semibold leading-tight ${
-                  category === cat.value ? 'text-green-700' : 'text-gray-600'
-                }`}>
-                  {cat.label}
-                </div>
+                Voir toutes les catégories ↓
               </button>
-            ))}
+            )}
           </div>
 
-          {isExpense && !showAllCategories && (
-            <button
-              onClick={() => setShowAllCategories(true)}
-              className="w-full mt-3 py-2 text-sm text-green-600 font-semibold hover:text-green-700"
-            >
-              Voir toutes les catégories ↓
-            </button>
-          )}
+          {/* 3. NOTE + DATE — repliés, optionnels */}
+          <div className="bg-white rounded-3xl border border-gray-200 p-4 mb-4 shadow-sm space-y-3">
+            <div>
+              <p className="text-xs text-gray-400 font-semibold uppercase tracking-wide mb-2">
+                Note (optionnel)
+              </p>
+              <input
+                type="text"
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                placeholder={isExpense ? 'Ex: Marché Sandaga' : 'Ex: Salaire juin'}
+                className="w-full text-sm outline-none placeholder-gray-300"
+              />
+            </div>
+
+            {/* Date repliée par défaut (aujourd'hui) */}
+            {!showDate ? (
+              <button
+                onClick={() => setShowDate(true)}
+                className="text-xs text-gray-400 hover:text-green-600 flex items-center gap-1"
+              >
+                📅 Aujourd'hui · Modifier la date
+              </button>
+            ) : (
+              <div>
+                <p className="text-xs text-gray-400 font-semibold uppercase tracking-wide mb-2">Date</p>
+                <input
+                  type="date"
+                  value={date}
+                  onChange={(e) => setDate(e.target.value)}
+                  className="w-full text-sm outline-none"
+                />
+              </div>
+            )}
+          </div>
+
         </div>
+      </div>
 
-        {/* Description — optionnelle */}
-        <div className="bg-white rounded-3xl border border-gray-200 p-4 mb-6 shadow-sm">
-          <p className="text-xs text-gray-400 font-semibold uppercase tracking-wide mb-2">
-            Note (optionnel)
-          </p>
-          <input
-            type="text"
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-            placeholder={isExpense ? 'Ex: Marché Sandaga' : 'Ex: Salaire juin'}
-            className="w-full text-sm outline-none placeholder-gray-300"
-          />
+      {/* BOUTON STICKY — toujours visible en bas */}
+      <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-4 pb-6 shadow-lg z-30">
+        <div className="max-w-md mx-auto">
+          <button
+            onClick={handleSubmit}
+            disabled={!canSave}
+            className={`w-full py-4 rounded-2xl font-bold text-lg transition-all ${
+              canSave
+                ? isExpense
+                  ? 'bg-gradient-to-r from-red-500 to-rose-600 text-white shadow-xl'
+                  : 'bg-gradient-to-r from-green-600 to-emerald-600 text-white shadow-xl'
+                : 'bg-gray-200 text-gray-400'
+            }`}
+          >
+            {saving ? 'Enregistrement...' : (isExpense ? 'Enregistrer la dépense' : 'Enregistrer le revenu')}
+          </button>
         </div>
-
-        {/* Bouton enregistrer */}
-        <button
-          onClick={handleSubmit}
-          disabled={!amount || !category || saving}
-          className={`w-full py-4 rounded-2xl font-bold text-lg transition-all ${
-            amount && category && !saving
-              ? 'bg-gradient-to-r from-green-600 to-emerald-600 text-white shadow-xl hover:shadow-2xl'
-              : 'bg-gray-200 text-gray-400'
-          }`}
-        >
-          {saving ? 'Enregistrement...' : 'Enregistrer'}
-        </button>
-
       </div>
     </div>
   );
