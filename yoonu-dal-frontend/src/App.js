@@ -10,6 +10,7 @@ import API from './services/api';
 
 import Navigation from './components/shared/Navigation';
 import BottomNav from './components/shared/BottomNav';
+import InstallPrompt from './components/shared/InstallPrompt';
 import Footer from './components/shared/Footer';
 import { ToastContainer, useToast } from './components/shared/Toast';
 import Home from './components/Home';
@@ -676,6 +677,9 @@ function App() {
       )}
 
       <ToastContainer toasts={toasts} removeToast={removeToast} />
+
+      {/* ✅ Bannière d'installation PWA */}
+      {isAuthenticated && <InstallPrompt />}
       {isAuthenticated && (
         <AIChatWidget onNavigate={handleNavigate} toast={toastMethods} user={user} />
       )}
