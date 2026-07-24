@@ -86,11 +86,11 @@ const Navigation = ({ currentPage, onNavigate, isAuthenticated, user, onLogout, 
                 {/* Chat IA — icône header */}
                 <button
                   onClick={() => window.dispatchEvent(new CustomEvent('open-yoonu-chat'))}
-                  className="flex items-center gap-1.5 bg-white/20 hover:bg-white/30 rounded-full px-3 py-1.5 transition-all"
+                  className="flex items-center gap-1.5 bg-white text-green-700 rounded-full px-3 py-1.5 hover:bg-green-50 transition-colors"
                   title="Discuter avec Yoonu IA"
                 >
-                  <span className="text-base">🤖</span>
-                  <span className="text-white text-xs font-semibold">Coach IA</span>
+                  <span className="text-sm">💬</span>
+                  <span className="text-xs font-bold">Coach IA</span>
                 </button>
                 {/* Alertes — mobile et desktop */}
                 {alertsBadge && <div>{alertsBadge}</div>}
