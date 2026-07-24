@@ -1,13 +1,7 @@
 {
   "short_name": "Yoonu Dal",
   "name": "Yoonu Dal - Finance Consciente",
-  "description": "Gérez votre argent selon vos valeurs. Budgets, tontines, projets et coach IA.",
   "icons": [
-    {
-      "src": "favicon.ico",
-      "sizes": "64x64 32x32 24x24 16x16",
-      "type": "image/x-icon"
-    },
     {
       "src": "logo192.png",
       "type": "image/png",
@@ -34,35 +28,52 @@
     }
   ],
   "start_url": "/",
-  "scope": "/",
   "display": "standalone",
-  "orientation": "portrait",
   "theme_color": "#16a34a",
   "background_color": "#ffffff",
+  "description": "Gérez votre argent selon vos valeurs. Budgets, tontines, projets et coach IA.",
+  "scope": "/",
+  "orientation": "portrait",
   "lang": "fr",
   "dir": "ltr",
-  "categories": ["finance", "productivity", "lifestyle"],
+  "categories": [
+    "finance",
+    "productivity",
+    "lifestyle"
+  ],
   "shortcuts": [
     {
       "name": "Ajouter une dépense",
       "short_name": "Dépense",
-      "description": "Enregistrer rapidement une dépense",
       "url": "/?shortcut=expense",
-      "icons": [{ "src": "logo192.png", "sizes": "192x192" }]
+      "icons": [
+        {
+          "src": "logo192.png",
+          "sizes": "192x192"
+        }
+      ]
     },
     {
       "name": "Ajouter un revenu",
       "short_name": "Revenu",
-      "description": "Enregistrer rapidement un revenu",
       "url": "/?shortcut=income",
-      "icons": [{ "src": "logo192.png", "sizes": "192x192" }]
+      "icons": [
+        {
+          "src": "logo192.png",
+          "sizes": "192x192"
+        }
+      ]
     },
     {
       "name": "Mes tontines",
       "short_name": "Tontines",
-      "description": "Voir mes tontines",
       "url": "/?shortcut=tontines",
-      "icons": [{ "src": "logo192.png", "sizes": "192x192" }]
+      "icons": [
+        {
+          "src": "logo192.png",
+          "sizes": "192x192"
+        }
+      ]
     }
   ]
 }
