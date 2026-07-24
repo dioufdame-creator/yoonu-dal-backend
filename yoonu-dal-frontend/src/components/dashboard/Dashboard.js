@@ -61,10 +61,13 @@ const Dashboard = ({ toast, auth, onNavigate, user }) => {
   const lastDayOfSelectedMonth = new Date(selYear, selMonthNum, 0).getDate();
   const daysRemaining = isCurrentMonth ? lastDayOfSelectedMonth - now.getDate() : 0;
 
+  const capitalize = (str) =>
+    str ? str.charAt(0).toUpperCase() + str.slice(1).toLowerCase() : '';
+
   const getUserName = () => {
-    if (user?.user?.first_name) return user.user.first_name;
-    if (user?.first_name) return user.first_name;
-    if (user?.username) return user.username;
+    if (user?.user?.first_name) return capitalize(user.user.first_name);
+    if (user?.first_name) return capitalize(user.first_name);
+    if (user?.username) return capitalize(user.username);
     return '';
   };
 
@@ -113,12 +116,9 @@ const Dashboard = ({ toast, auth, onNavigate, user }) => {
   const formatFCFA = (value) =>
     new Intl.NumberFormat('fr-FR').format(Math.round(value || 0));
 
-  const formatShort = (value) => {
-    const num = Math.abs(value || 0);
-    if (num >= 1000000) return `${(num / 1000000).toFixed(1)}M`;
-    if (num >= 1000) return `${Math.round(num / 1000)}k`;
-    return `${Math.round(num)}`;
-  };
+  // Montants complets avec séparateurs — cohérent partout dans l'app
+  const formatShort = (value) =>
+    new Intl.NumberFormat('fr-FR').format(Math.round(Math.abs(value || 0)));
 
   // ── CALCULS SUR LE MOIS SÉLECTIONNÉ ──────────────────
   const monthlyExpensesTotal = expenses
@@ -307,7 +307,7 @@ const Dashboard = ({ toast, auth, onNavigate, user }) => {
           <h1 className="text-xl font-bold text-gray-900">
             Bonjour {getUserName()} 👋
           </h1>
-          <div className="flex items-center gap-2 mt-0.5">
+          <div className="flex items-center gap-2 mt-1.5">
             <div className="relative">
               <button
                 onClick={() => setShowMonthPicker(!showMonthPicker)}
@@ -363,11 +363,11 @@ const Dashboard = ({ toast, auth, onNavigate, user }) => {
           </p>
 
           <div className="grid grid-cols-2 gap-3 mb-3">
-            <div className="bg-white/15 rounded-2xl px-4 py-3 backdrop-blur-sm">
+            <div className="bg-black/20 rounded-2xl px-4 py-3">
               <p className="text-[11px] opacity-75">↓ Revenus</p>
               <p className="text-base font-bold">{formatShort(effectiveIncome)}</p>
             </div>
-            <div className="bg-white/15 rounded-2xl px-4 py-3 backdrop-blur-sm">
+            <div className="bg-black/20 rounded-2xl px-4 py-3">
               <p className="text-[11px] opacity-75">↑ Dépenses</p>
               <p className="text-base font-bold">{formatShort(monthlyExpensesTotal)}</p>
             </div>
@@ -418,7 +418,7 @@ const Dashboard = ({ toast, auth, onNavigate, user }) => {
               </div>
               <div className="flex-1 text-left">
                 <div className="flex items-center gap-2 flex-wrap">
-                  <p className="text-sm font-bold text-gray-900">Score Yoonu Dal</p>
+                  <p className="text-sm font-bold text-gray-900">Score Yoonu Dal ⓘ</p>
                   <span
                     className="text-[10px] font-bold px-2 py-0.5 rounded-full"
                     style={{ backgroundColor: insight.label.color + '20', color: insight.label.color }}
@@ -426,7 +426,9 @@ const Dashboard = ({ toast, auth, onNavigate, user }) => {
                     {insight.label.text}
                   </span>
                 </div>
-                <p className="text-xs text-gray-500 mt-0.5">{insight.message}</p>
+                <p className="text-xs text-gray-500 mt-1 leading-snug">
+                  {s >= 85 ? insight.message : `💡 ${insight.message}`}
+                </p>
               </div>
               <span className="text-gray-300 text-xl flex-shrink-0">›</span>
             </button>
