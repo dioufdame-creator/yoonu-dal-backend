@@ -27,6 +27,7 @@ import CategoryRulesPage from './components/envelopeManager/CategoryRulesPage';
 import { ForgotPasswordForm, ResetPasswordForm } from './components/auth/AuthForms';
 import ProfileHub from './components/profile/ProfileHub';
 import QuickAdd from './components/quickadd/QuickAdd';
+import ExportPage from './components/exports/ExportPage';
 
 import TransactionsPage from './components/transactions/TransactionsPage';
 
@@ -127,7 +128,7 @@ function App() {
     const protectedPages = [
       'dashboard', 'expenses', 'transactions', 'incomes', 'envelopes', 'tontines',
       'tontine-detail', 'tontine-analysis',
-      'profile', 'profile-hub', 'quick-add', 'settings', 'score', 'alerts',
+      'profile', 'profile-hub', 'quick-add', 'exports', 'settings', 'score', 'alerts',
       'diagnostic', 'values', 'category-rules', 'goals', 'debts', 'debt-detail',
       'subscription'
     ];
@@ -538,6 +539,10 @@ function App() {
         return <ProfileHub onNavigate={handleNavigate} user={user} onLogout={handleLogout} />;
 
       // ✅ Saisie rapide dépense/revenu
+      case 'exports':
+        if (!isAuthenticated) { handleNavigate('login'); return null; }
+        return <ExportPage onNavigate={handleNavigate} toast={toastMethods} user={user} />;
+
       case 'quick-add':
         if (!isAuthenticated) { handleNavigate('login'); return null; }
         return <QuickAdd type={pageParams?.type || 'expense'} onNavigate={handleNavigate} toast={toastMethods} />;
