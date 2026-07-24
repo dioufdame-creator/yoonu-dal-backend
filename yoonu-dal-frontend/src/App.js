@@ -1,563 +1,687 @@
-// src/components/dashboard/Dashboard.js
-// Dashboard V5.4 — sélecteur de mois + message coach + score ciblé
-import React, { useState, useEffect, useCallback } from 'react';
-import API from '../../services/api';
+import React, { useState, useEffect } from 'react';
+import './App.css';
+import YoonuScorePage from './components/score/YoonuScorePage';
+import AlertsPage from './components/alerts/AlertsPage';
+import AlertsBadge from './components/alerts/AlertsBadge';
+import SimpleDiagnostic from './components/diagnostic/SimpleDiagnostic';
 
-const MONTHS_FR = ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin',
-  'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'];
+import authService from './services/authService';
+import API from './services/api';
 
-const ENVELOPE_CONFIG = {
-  essentiel:  { label: 'Essentiels', icon: '🏠', color: 'bg-red-500' },
-  plaisir:    { label: 'Plaisirs',   icon: '🎉', color: 'bg-blue-500' },
-  projet:     { label: 'Projets',    icon: '🎯', color: 'bg-green-500' },
-  liberation: { label: 'Libération', icon: '🕊️', color: 'bg-amber-500' },
-};
+import Navigation from './components/shared/Navigation';
+import BottomNav from './components/shared/BottomNav';
+import Footer from './components/shared/Footer';
+import { ToastContainer, useToast } from './components/shared/Toast';
+import Home from './components/Home';
+import Home2 from './components/Home2';
+import Dashboard from './components/dashboard/Dashboard';
+import ValueSelector from './components/consciousness/ValueSelector';
+import ExpenseTracker from './components/control/ExpenseTracker';
+import TontinesList from './components/tontines/TontinesList';
+import TontineDetail from './components/tontines/TontineDetail';
+import TontineInvitePage from './components/tontines/TontineInvitePage';
+import IncomesPage from './components/incomes/IncomesPage';
+import TontineAnalysis from './components/tontines/TontineAnalysis';
+import EnvelopeManager from './components/envelopeManager/EnvelopeManager';
+import CategoryRulesPage from './components/envelopeManager/CategoryRulesPage';
+import { ForgotPasswordForm, ResetPasswordForm } from './components/auth/AuthForms';
+import ProfileHub from './components/profile/ProfileHub';
+import QuickAdd from './components/quickadd/QuickAdd';
 
-const CATEGORY_ICONS = {
-  loyer: '🏠', alimentation: '🍽️', transport: '🚗', sante_courante: '💊',
-  eau_electricite: '💡', telephone_internet: '📱', aide_menagere: '🧹',
-  solidarite_famille: '👨‍👩‍👧', maison_courses: '🛒', restaurant: '🍜',
-  loisirs: '🎬', vetements: '👔', beaute: '💅', voyage: '✈️',
-  education: '📚', epargne: '💰', fetes_ceremonies: '🎊', spiritualite: '🕌',
-  sante_exceptionnelle: '🏥', immobilier: '🏗️', tontine_epargne: '🤝',
-  remboursement_dette: '💳', autre: '📝',
-};
+import TransactionsPage from './components/transactions/TransactionsPage';
 
-// Générer les 6 derniers mois pour le sélecteur
-const getMonthOptions = () => {
-  const options = [];
-  const now = new Date();
-  for (let i = 0; i < 6; i++) {
-    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
-    options.push({
-      key: `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`,
-      label: `${MONTHS_FR[d.getMonth()]} ${d.getFullYear()}`,
-      isCurrent: i === 0,
-    });
-  }
-  return options;
-};
+import AIChatWidget from './components/ai/AIChatWidget';
+import NotificationManager from './components/notifications/NotificationManager';
+import OnboardingTutorial from './components/onboarding/OnboardingTutorial';
+import Onboarding from './components/onboarding/Onboarding';
 
-const Dashboard = ({ toast, auth, onNavigate, user }) => {
-  const [loading, setLoading] = useState(true);
-  const [envelopes, setEnvelopes] = useState([]);
-  const [expenses, setExpenses] = useState([]);
-  const [incomes, setIncomes] = useState([]);
-  const [goals, setGoals] = useState([]);
-  const [debts, setDebts] = useState([]);
-  const [tontines, setTontines] = useState([]);
-  const [monthlyIncome, setMonthlyIncome] = useState(0);
-  const [score, setScore] = useState(null);
+import PricingPage from './pages/PricingPage';
+import CheckoutPage from './pages/CheckoutPage';
+import SubscriptionPage from './pages/SubscriptionPage';
+import PaymentResultPage from './pages/PaymentResultPage';
+import {
+  SubscriptionBadge,
+  PremiumGate,
+  PremiumButton,
+  UsageLimitIndicator
+} from './components/subscription/SubscriptionComponents';
 
-  const monthOptions = getMonthOptions();
-  const [selectedMonth, setSelectedMonth] = useState(monthOptions[0].key);
-  const [showMonthPicker, setShowMonthPicker] = useState(false);
+import GoalsPage from './components/goals/GoalsPage';
+import DebtsPage from './components/debts/DebtsPage';
+import DebtDetailPage from './components/debts/DebtDetailPage';
 
-  const now = new Date();
-  const isCurrentMonth = selectedMonth === monthOptions[0].key;
-  const selectedOption = monthOptions.find(m => m.key === selectedMonth) || monthOptions[0];
+function App() {
+  const [currentPage, setCurrentPage] = useState('home');
+  const [pageParams, setPageParams] = useState({});
 
-  const [selYear, selMonthNum] = selectedMonth.split('-').map(Number);
-  const lastDayOfSelectedMonth = new Date(selYear, selMonthNum, 0).getDate();
-  const daysRemaining = isCurrentMonth ? lastDayOfSelectedMonth - now.getDate() : 0;
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [user, setUser] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [authError, setAuthError] = useState(null);
 
-  const capitalize = (str) =>
-    str ? str.charAt(0).toUpperCase() + str.slice(1).toLowerCase() : '';
+  const { toasts, showSuccess, showError, showWarning, showInfo, removeToast } = useToast();
 
-  const getUserName = () => {
-    if (user?.user?.first_name) return capitalize(user.user.first_name);
-    if (user?.first_name) return capitalize(user.first_name);
-    if (user?.username) return capitalize(user.username);
-    return '';
-  };
+  useEffect(() => {
+    const initializeAuth = async () => {
+      setIsLoading(true);
+      try {
+        if (authService.isAuthenticated()) {
+          const currentUser = authService.getCurrentUser();
+          if (currentUser) {
+            setIsAuthenticated(true);
+            setUser(currentUser);
+          } else {
+            authService.clearTokens();
+            setIsAuthenticated(false);
+            setUser(null);
+          }
+        } else {
+          authService.clearTokens();
+          setIsAuthenticated(false);
+          setUser(null);
+        }
+      } catch (error) {
+        authService.clearTokens();
+        setIsAuthenticated(false);
+        setUser(null);
+        setAuthError('Erreur de connexion au serveur');
+      } finally {
+        setIsLoading(false);
 
-  const loadData = useCallback(async () => {
-    setLoading(true);
-    try {
-      const monthParam = isCurrentMonth ? '' : `?month=${selectedMonth}`;
-      const [envelopesRes, expensesRes, incomesRes, scoreRes, goalsRes, debtsRes, tontinesRes] = await Promise.all([
-        API.get(`/meta-envelopes/${monthParam}`).catch(() => ({ data: { envelopes: [] } })),
-        API.get(`/expenses/${monthParam}`).catch(() => ({ data: [] })),
-        API.get(`/incomes/${monthParam}`).catch(() => ({ data: [] })),
-        API.get('/yoonu-score/').catch(() => null),
-        API.get('/goals/').catch(() => ({ data: [] })),
-        API.get('/debts/').catch(() => ({ data: [] })),
-        API.get('/tontines/').catch(() => ({ data: [] })),
-      ]);
+        // Détection des paramètres URL
+        const path = window.location.pathname;
+        const params = new URLSearchParams(window.location.search);
+        const page = params.get('page');
+        const uid = params.get('uid');
+        const token = params.get('token');
 
-      setEnvelopes(envelopesRes.data?.envelopes || []);
-      setMonthlyIncome(envelopesRes.data?.monthly_income || 0);
-
-      const expList = Array.isArray(expensesRes.data) ? expensesRes.data : expensesRes.data?.expenses || [];
-      setExpenses(expList);
-
-      const incList = Array.isArray(incomesRes.data) ? incomesRes.data : incomesRes.data?.incomes || [];
-      setIncomes(incList);
-
-      const goalList = Array.isArray(goalsRes.data) ? goalsRes.data : goalsRes.data?.goals || [];
-      setGoals(goalList);
-
-      const debtList = Array.isArray(debtsRes.data) ? debtsRes.data : debtsRes.data?.debts || [];
-      setDebts(debtList);
-
-      const tontineList = Array.isArray(tontinesRes.data) ? tontinesRes.data : tontinesRes.data?.tontines || [];
-      setTontines(tontineList);
-
-      if (scoreRes?.data) setScore(scoreRes.data);
-    } catch (error) {
-      console.error('Erreur dashboard:', error);
-    } finally {
-      setLoading(false);
-    }
-  }, [selectedMonth, isCurrentMonth]);
-
-  useEffect(() => { loadData(); }, [loadData]);
-
-  const formatFCFA = (value) =>
-    new Intl.NumberFormat('fr-FR').format(Math.round(value || 0));
-
-  // Montants complets avec séparateurs — cohérent partout dans l'app
-  const formatShort = (value) =>
-    new Intl.NumberFormat('fr-FR').format(Math.round(Math.abs(value || 0)));
-
-  // ── CALCULS SUR LE MOIS SÉLECTIONNÉ ──────────────────
-  const monthlyExpensesTotal = expenses
-    .filter(e => e.date && e.date.startsWith(selectedMonth))
-    .reduce((sum, e) => sum + parseFloat(e.amount || 0), 0);
-
-  const monthlyIncomesTotal = incomes
-    .filter(i => i.date && i.date.startsWith(selectedMonth))
-    .reduce((sum, i) => sum + parseFloat(i.amount || 0), 0);
-
-  const effectiveIncome = monthlyIncomesTotal > 0 ? monthlyIncomesTotal : (isCurrentMonth ? monthlyIncome : 0);
-  const remaining = effectiveIncome - monthlyExpensesTotal;
-  const dailyAvailable = daysRemaining > 0 ? remaining / daysRemaining : remaining;
-
-  const recentExpenses = expenses
-    .filter(e => e.date && e.date.startsWith(selectedMonth))
-    .sort((a, b) => new Date(b.date) - new Date(a.date))
-    .slice(0, 4);
-
-  // ── MESSAGE COACH ────────────────────────────────────
-  const getCoachMessage = () => {
-    // Mois passé → bilan simple, pas de recommandations d'action
-    if (!isCurrentMonth) {
-      if (remaining >= 0) {
-        return {
-          icon: '📊',
-          style: 'bg-gray-50 border-gray-200 text-gray-700',
-          text: `Bilan ${selectedOption.label} : solde positif de ${formatFCFA(remaining)} FCFA.`,
-          action: null,
-        };
+        if (page === 'reset-password' && uid && token) {
+          setCurrentPage('reset-password');
+          setPageParams({ uid, token });
+        } else if (path.startsWith('/payment/success')) {
+          if (authService.isAuthenticated()) {
+            setCurrentPage('payment-success');
+          } else {
+            setCurrentPage('login');
+          }
+        } else if (path.startsWith('/payment/cancel')) {
+          setCurrentPage('pricing');
+        } else if (path.startsWith('/join/')) {
+          const code = path.replace('/join/', '').trim();
+          if (code) {
+            setCurrentPage('tontine-invite');
+            setPageParams({ code });
+          }
+        }
       }
-      return {
-        icon: '📊',
-        style: 'bg-gray-50 border-gray-200 text-gray-700',
-        text: `Bilan ${selectedOption.label} : déficit de ${formatFCFA(Math.abs(remaining))} FCFA.`,
-        action: null,
-      };
-    }
-
-    if (remaining < 0) {
-      return {
-        icon: '⚠️',
-        style: 'bg-red-50 border-red-200 text-red-800',
-        text: `Vous avez dépassé votre budget de ${formatFCFA(Math.abs(remaining))} FCFA ce mois.`,
-        action: () => onNavigate('envelopes'),
-      };
-    }
-
-    const lateTontine = tontines.find(t =>
-      t.status === 'active' &&
-      (t.my_contribution_status === 'late' || t.my_contribution_status === 'behind' || t.contribution_status === 'late' || t.contribution_status === 'behind')
-    );
-    if (lateTontine) {
-      return {
-        icon: '🤝',
-        style: 'bg-orange-50 border-orange-200 text-orange-800',
-        text: `Votre contribution à la tontine ${lateTontine.name} est en retard.`,
-        action: () => onNavigate('tontine-detail', { id: lateTontine.id }),
-      };
-    }
-
-    const debtDue = debts.find(d => {
-      const isActive = d.is_active !== false;
-      const monthlyPayment = parseFloat(d.monthly_payment || 0);
-      if (!isActive || monthlyPayment <= 0) return false;
-      const paidThisMonth = expenses.some(e =>
-        e.category === 'remboursement_dette' &&
-        e.date && e.date.startsWith(selectedMonth)
-      );
-      return !paidThisMonth;
-    });
-    if (debtDue) {
-      return {
-        icon: '💳',
-        style: 'bg-orange-50 border-orange-200 text-orange-800',
-        text: `Pensez au remboursement de ${formatFCFA(debtDue.monthly_payment)} FCFA pour "${debtDue.name}".`,
-        action: () => onNavigate('debts'),
-      };
-    }
-
-    const overEnvelope = envelopes.find(env => {
-      const spent = env.current_spent ?? env.spent ?? 0;
-      const budget = env.monthly_budget ?? env.budget ?? 0;
-      return budget > 0 && spent > budget;
-    });
-    if (overEnvelope) {
-      const config = ENVELOPE_CONFIG[overEnvelope.envelope_type] || ENVELOPE_CONFIG[overEnvelope.type] || {};
-      const overspent = (overEnvelope.current_spent ?? overEnvelope.spent ?? 0) - (overEnvelope.monthly_budget ?? overEnvelope.budget ?? 0);
-      return {
-        icon: '💡',
-        style: 'bg-amber-50 border-amber-200 text-amber-800',
-        text: `Attention, vos dépenses ${config.label} dépassent votre budget de ${formatFCFA(overspent)} FCFA.`,
-        action: () => onNavigate('envelopes'),
-      };
-    }
-
-    const almostEmpty = envelopes.find(env => {
-      const spent = env.current_spent ?? env.spent ?? 0;
-      const budget = env.monthly_budget ?? env.budget ?? 0;
-      return budget > 0 && spent / budget >= 0.9 && spent <= budget;
-    });
-    if (almostEmpty) {
-      const config = ENVELOPE_CONFIG[almostEmpty.envelope_type] || ENVELOPE_CONFIG[almostEmpty.type] || {};
-      const left = (almostEmpty.monthly_budget ?? almostEmpty.budget ?? 0) - (almostEmpty.current_spent ?? almostEmpty.spent ?? 0);
-      return {
-        icon: '💡',
-        style: 'bg-amber-50 border-amber-200 text-amber-800',
-        text: `Votre enveloppe ${config.label} est presque épuisée (${formatFCFA(left)} FCFA restants).`,
-        action: () => onNavigate('envelopes'),
-      };
-    }
-
-    const activeGoal = goals.find(g => !g.is_achieved);
-    if (activeGoal && remaining > 0 && daysRemaining <= 7) {
-      const suggested = Math.floor(remaining * 0.5 / 1000) * 1000;
-      if (suggested >= 5000) {
-        return {
-          icon: '💡',
-          style: 'bg-blue-50 border-blue-200 text-blue-800',
-          text: `Vous pouvez transférer ${formatFCFA(suggested)} FCFA vers votre projet "${activeGoal.title}".`,
-          action: () => onNavigate('goals'),
-        };
-      }
-    }
-
-    return {
-      icon: '✅',
-      style: 'bg-green-50 border-green-200 text-green-800',
-      text: 'Vous êtes dans votre budget. Continuez ainsi.',
-      action: null,
     };
+    initializeAuth();
+  }, []);
+
+  const handlePaymentSuccess = async () => {
+    const updatedUser = await authService.getUserProfile();
+    if (updatedUser) setUser(updatedUser);
   };
 
-  // ── ANALYSE DU SCORE ─────────────────────────────────
-  const getScoreInsight = (s) => {
-    const total = s.total_score || 0;
-    const label =
-      total >= 85 ? { text: 'Excellent', color: '#10b981' } :
-      total >= 70 ? { text: 'Bien', color: '#10b981' } :
-      total >= 50 ? { text: 'Moyen', color: '#f59e0b' } :
-      total >= 30 ? { text: 'À améliorer', color: '#ef4444' } :
-      { text: 'Non évalué', color: '#9ca3af' };
-
-    if (total === 0) {
-      return { label, message: 'Ajoutez vos dépenses et revenus pour activer votre score.' };
-    }
-
-    const components = [
-      { value: s.alignment_score || 0, max: 25, advice: 'Vos dépenses reflètent peu vos valeurs déclarées.' },
-      { value: s.discipline_score || 0, max: 25, advice: 'Respectez davantage vos budgets d\'enveloppes.' },
-      { value: s.stability_score || 0, max: 25, advice: 'Essayez d\'épargner au moins 10% de vos revenus.' },
-      { value: s.improvement_score || 0, max: 15, advice: 'Créez un projet ou rejoignez une tontine pour construire votre avenir.' },
-      { value: s.engagement_score || 0, max: 10, advice: 'Enregistrez vos dépenses plus régulièrement.' },
+  const handleNavigate = (page, params = {}) => {
+    const protectedPages = [
+      'dashboard', 'expenses', 'transactions', 'incomes', 'envelopes', 'tontines',
+      'tontine-detail', 'tontine-analysis',
+      'profile', 'profile-hub', 'quick-add', 'settings', 'score', 'alerts',
+      'diagnostic', 'values', 'category-rules', 'goals', 'debts', 'debt-detail',
+      'subscription'
     ];
-
-    if (total >= 85) {
-      return { label, message: 'Votre argent est aligné avec vos valeurs. Bravo !' };
+    if (protectedPages.includes(page) && !isAuthenticated) {
+      setCurrentPage('login');
+      return;
     }
-
-    const weakest = components.reduce((min, c) =>
-      (c.value / c.max) < (min.value / min.max) ? c : min
-    );
-
-    return { label, message: weakest.advice };
+    if ((page === 'login' || page === 'register') && isAuthenticated) {
+      setCurrentPage('dashboard');
+      return;
+    }
+    setCurrentPage(page);
+    setPageParams(params);
   };
 
-  if (loading) {
+  const handleLogin = async (credentials) => {
+    try {
+      const result = await authService.login(credentials);
+      if (!result.success) {
+        const errorMsg = result.error || 'Identifiant ou mot de passe incorrect.';
+        setAuthError(errorMsg);
+        showError(errorMsg);
+        return;
+      }
+      if (result.user) {
+        setIsAuthenticated(true);
+        setUser(result.user);
+        setAuthError(null);
+        try {
+          const response = await API.get('/onboarding/status/');
+          const pendingCode = localStorage.getItem('pending_invite_code');
+          if (response.data.onboarding_complete) {
+            if (pendingCode) {
+              localStorage.removeItem('pending_invite_code');
+              handleNavigate('tontine-invite', { code: pendingCode });
+            } else {
+              handleNavigate('dashboard');
+            }
+          } else {
+            handleNavigate('onboarding');
+          }
+        } catch (error) {
+          handleNavigate('dashboard');
+        }
+      }
+    } catch (error) {
+      const errorMsg =
+        error.response?.data?.error ||
+        error.response?.data?.detail ||
+        error.response?.data?.non_field_errors?.[0] ||
+        error.message ||
+        'Identifiant ou mot de passe incorrect.';
+      setAuthError(errorMsg);
+      showError(errorMsg);
+    }
+  };
+
+  const handleRegister = async (userData) => {
+    setAuthError(null);
+    try {
+      const result = await authService.register(userData);
+      if (result.success) {
+        setIsAuthenticated(true);
+        setUser(result.user);
+        handleNavigate('onboarding');
+        return { success: true };
+      } else {
+        setAuthError(result.error);
+        showError(result.error || 'Erreur lors de l\'inscription');
+        return { success: false, error: result.error };
+      }
+    } catch (error) {
+      const errorMsg = 'Erreur de connexion au serveur lors de l\'inscription.';
+      setAuthError(errorMsg);
+      showError(errorMsg);
+      return { success: false, error: errorMsg };
+    }
+  };
+
+  const handleLogout = async () => {
+    try {
+      await authService.logout();
+    } catch (error) {
+      // ignore
+    } finally {
+      setIsAuthenticated(false);
+      setUser(null);
+      setAuthError(null);
+      setCurrentPage('home');
+    }
+  };
+
+  const clearAuthError = () => setAuthError(null);
+
+  const toastMethods = { showSuccess, showError, showWarning, showInfo };
+  const authMethods = { onLogout: handleLogout, isAuthenticated, user, authError, clearAuthError };
+
+  if (isLoading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="w-12 h-12 border-4 border-green-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-gray-500 text-sm">Chargement...</p>
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 flex items-center justify-center">
+        <div className="text-center animate-fade-in">
+          <div className="mb-8">
+            <div className="inline-block animate-bounce">
+              <span className="text-6xl">🌱</span>
+            </div>
+          </div>
+          <h2 className="text-2xl font-bold text-gray-900 mb-2">Yoonu Dal</h2>
+          <p className="text-gray-600">Chargement...</p>
         </div>
       </div>
     );
   }
 
-  const coach = getCoachMessage();
+  const renderPage = () => {
+    switch (currentPage) {
+      case 'home':
+        return <Home2 onNavigate={handleNavigate} toast={toastMethods} auth={authMethods} />;
 
-  return (
-    <div className="min-h-screen bg-gray-50 pb-28">
-      <div className="max-w-2xl mx-auto px-4 py-5">
+      case 'home2':
+        return <Home2 onNavigate={handleNavigate} toast={toastMethods} auth={authMethods} />;
 
-        {/* ── SALUTATION + SÉLECTEUR DE MOIS ─────────── */}
-        <div className="mb-5">
-          <h1 className="text-xl font-bold text-gray-900">
-            Bonjour {getUserName()} 👋
-          </h1>
-          <div className="flex items-center gap-2 mt-1.5">
-            <div className="relative">
-              <button
-                onClick={() => setShowMonthPicker(!showMonthPicker)}
-                className="flex items-center gap-1 text-xs font-semibold text-gray-600 hover:text-green-600 transition-colors"
-              >
-                <span>{selectedOption.label}</span>
-                <span className={`transition-transform text-[10px] ${showMonthPicker ? 'rotate-180' : ''}`}>▼</span>
-              </button>
-
-              {showMonthPicker && (
-                <>
-                  <div className="fixed inset-0 z-20" onClick={() => setShowMonthPicker(false)} />
-                  <div className="absolute top-6 left-0 z-30 bg-white rounded-2xl shadow-2xl border border-gray-100 py-2 min-w-[160px]">
-                    {monthOptions.map(m => (
-                      <button
-                        key={m.key}
-                        onClick={() => { setSelectedMonth(m.key); setShowMonthPicker(false); }}
-                        className={`w-full text-left px-4 py-2 text-sm transition-colors ${
-                          m.key === selectedMonth
-                            ? 'bg-green-50 text-green-700 font-bold'
-                            : 'text-gray-700 hover:bg-gray-50'
-                        }`}
-                      >
-                        {m.label}{m.isCurrent ? ' (en cours)' : ''}
-                      </button>
-                    ))}
-                  </div>
-                </>
-              )}
-            </div>
-
-            {isCurrentMonth && (
-              <span className="text-xs text-gray-400">
-                · {daysRemaining} jour{daysRemaining > 1 ? 's' : ''} restant{daysRemaining > 1 ? 's' : ''}
-              </span>
-            )}
-          </div>
-        </div>
-
-        {/* ── CARTE SOLDE ────────────────────────────── */}
-        <div className={`rounded-3xl p-6 mb-3 text-white shadow-xl ${
-          remaining >= 0
-            ? 'bg-gradient-to-br from-green-600 to-emerald-700'
-            : 'bg-gradient-to-br from-red-500 to-rose-600'
-        }`}>
-          <p className="text-sm opacity-80 mb-1">
-            {isCurrentMonth
-              ? (remaining >= 0 ? 'Il vous reste ce mois' : 'Dépassement ce mois')
-              : (remaining >= 0 ? `Solde de ${selectedOption.label}` : `Déficit de ${selectedOption.label}`)}
-          </p>
-          <p className="text-4xl font-bold mb-4">
-            {formatFCFA(Math.abs(remaining))} <span className="text-lg font-normal opacity-70">FCFA</span>
-          </p>
-
-          <div className="grid grid-cols-2 gap-3 mb-3">
-            <div className="bg-black/20 rounded-2xl px-4 py-3">
-              <p className="text-[11px] opacity-75">↓ Revenus</p>
-              <p className="text-base font-bold">{formatShort(effectiveIncome)}</p>
-            </div>
-            <div className="bg-black/20 rounded-2xl px-4 py-3">
-              <p className="text-[11px] opacity-75">↑ Dépenses</p>
-              <p className="text-base font-bold">{formatShort(monthlyExpensesTotal)}</p>
-            </div>
-          </div>
-
-          {isCurrentMonth && remaining > 0 && daysRemaining > 0 && (
-            <div className="flex items-center gap-2 text-sm">
-              <span>💡</span>
-              <span className="opacity-90">
-                Disponible : <strong>{formatFCFA(dailyAvailable)} FCFA/jour</strong>
-              </span>
-            </div>
-          )}
-        </div>
-
-        {/* ── MESSAGE COACH ──────────────────────────── */}
-        <div
-          onClick={coach.action || undefined}
-          className={`border rounded-2xl p-4 mb-4 flex items-start gap-3 ${coach.style} ${coach.action ? 'cursor-pointer hover:shadow-md transition-all' : ''}`}
-        >
-          <span className="text-lg flex-shrink-0">{coach.icon}</span>
-          <p className="text-sm font-medium flex-1">{coach.text}</p>
-          {coach.action && <span className="text-lg opacity-40">›</span>}
-        </div>
-
-        {/* ── SCORE (mois courant uniquement) ────────── */}
-        {isCurrentMonth && score && (() => {
-          const insight = getScoreInsight(score);
-          const s = score.total_score || 0;
-          return (
-            <button
-              onClick={() => onNavigate('score')}
-              className="w-full bg-white rounded-2xl border border-gray-200 p-4 mb-4 flex items-center gap-4 hover:border-green-300 transition-all shadow-sm"
-            >
-              <div className="relative w-14 h-14 flex-shrink-0">
-                <svg viewBox="0 0 56 56" width="56" height="56" style={{ transform: 'rotate(-90deg)' }}>
-                  <circle cx="28" cy="28" r="24" stroke="#e5e7eb" strokeWidth="5" fill="none" />
-                  <circle
-                    cx="28" cy="28" r="24"
-                    stroke={insight.label.color}
-                    strokeWidth="5" fill="none" strokeLinecap="round"
-                    strokeDasharray={`${(s / 100) * 151} 151`}
-                  />
-                </svg>
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <span className="text-base font-bold text-gray-900">{s}</span>
-                </div>
+      case 'login':
+        if (isAuthenticated) { handleNavigate('dashboard'); return null; }
+        return (
+          <div className="min-h-screen bg-gradient-to-br from-slate-50 to-green-50 flex items-center justify-center p-4">
+            <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-md w-full">
+              <div className="text-center mb-8">
+                <div className="text-6xl mb-4 animate-bounce-slow">🌱</div>
+                <h2 className="text-3xl font-bold text-gray-900 mb-2">Connexion</h2>
+                <p className="text-gray-600">Bienvenue sur Yoonu Dal</p>
               </div>
-              <div className="flex-1 text-left">
-                <div className="flex items-center gap-2 flex-wrap">
-                  <p className="text-sm font-bold text-gray-900">Score Yoonu Dal ⓘ</p>
-                  <span
-                    className="text-[10px] font-bold px-2 py-0.5 rounded-full"
-                    style={{ backgroundColor: insight.label.color + '20', color: insight.label.color }}
-                  >
-                    {insight.label.text}
-                  </span>
+
+              {authError && (
+                <div className="mb-4 p-3 bg-red-50 border border-red-200 text-red-700 rounded-lg text-sm flex items-start gap-2">
+                  <span className="text-lg flex-shrink-0">⚠️</span>
+                  <div className="flex-1">
+                    <p className="font-semibold mb-0.5">Connexion impossible</p>
+                    <p>{authError}</p>
+                  </div>
+                  <button onClick={clearAuthError} className="text-red-400 hover:text-red-600 font-bold text-lg leading-none flex-shrink-0">✕</button>
                 </div>
-                <p className="text-xs text-gray-500 mt-1 leading-snug">
-                  {s >= 85 ? insight.message : `💡 ${insight.message}`}
-                </p>
-              </div>
-              <span className="text-gray-300 text-xl flex-shrink-0">›</span>
-            </button>
-          );
-        })()}
-
-        {/* ── DERNIÈRES DÉPENSES ─────────────────────── */}
-        <div className="bg-white rounded-2xl border border-gray-200 mb-4 overflow-hidden shadow-sm">
-          <div className="flex items-center justify-between px-4 pt-4 pb-2">
-            <h2 className="text-sm font-bold text-gray-900">
-              {isCurrentMonth ? 'Dernières dépenses' : `Dépenses de ${selectedOption.label}`}
-            </h2>
-            <button
-              onClick={() => onNavigate('transactions')}
-              className="text-xs text-green-600 font-semibold hover:text-green-700"
-            >
-              Voir tout ›
-            </button>
-          </div>
-
-          {recentExpenses.length === 0 ? (
-            <div className="text-center py-8 px-4">
-              <div className="text-3xl mb-2">📝</div>
-              <p className="text-sm text-gray-500 mb-3">
-                {isCurrentMonth ? 'Aucune dépense ce mois' : 'Aucune dépense sur ce mois'}
-              </p>
-              {isCurrentMonth && (
-                <button
-                  onClick={() => onNavigate('quick-add', { type: 'expense' })}
-                  className="text-sm bg-green-600 text-white px-4 py-2 rounded-xl font-semibold"
-                >
-                  ➕ Ajouter ma première dépense
-                </button>
               )}
-            </div>
-          ) : (
-            <div className="divide-y divide-gray-50">
-              {recentExpenses.map((exp) => (
-                <div key={exp.id} className="flex items-center gap-3 px-4 py-3">
-                  <div className="w-9 h-9 bg-gray-50 rounded-xl flex items-center justify-center text-lg flex-shrink-0">
-                    {CATEGORY_ICONS[exp.category] || '📝'}
+
+              <form onSubmit={async (e) => {
+                e.preventDefault();
+                setAuthError(null);
+                const formData = new FormData(e.target);
+                await handleLogin({
+                  username: formData.get('username'),
+                  password: formData.get('password')
+                });
+              }}>
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">
+                      Email ou nom d'utilisateur
+                    </label>
+                    <input
+                      type="text"
+                      name="username"
+                      className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all"
+                      placeholder="email@exemple.com ou votre pseudo"
+                      required
+                    />
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-semibold text-gray-800 truncate">{exp.description}</p>
-                    <p className="text-[11px] text-gray-400">
-                      {new Date(exp.date).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })}
-                    </p>
-                  </div>
-                  <p className="text-sm font-bold text-red-500 flex-shrink-0">
-                    -{formatShort(exp.amount)}
-                  </p>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-
-        {/* ── ENVELOPPES ─────────────────────────────── */}
-        <div className="bg-white rounded-2xl border border-gray-200 p-4 mb-4 shadow-sm">
-          <div className="flex items-center justify-between mb-3">
-            <h2 className="text-sm font-bold text-gray-900">Mes enveloppes</h2>
-            <button
-              onClick={() => onNavigate('envelopes')}
-              className="text-xs text-green-600 font-semibold hover:text-green-700"
-            >
-              Gérer ›
-            </button>
-          </div>
-
-          <div className="space-y-3">
-            {envelopes.map((env) => {
-              const config = ENVELOPE_CONFIG[env.envelope_type] || ENVELOPE_CONFIG[env.type] || {};
-              const spent = env.current_spent ?? env.spent ?? 0;
-              const budget = env.monthly_budget ?? env.budget ?? 0;
-              const pct = budget > 0 ? (spent / budget) * 100 : 0;
-              const isOver = pct > 100;
-
-              // Couleur selon l'état : vert OK, orange alerte (>=80%), rouge danger (>100%)
-              const stateColor = pct > 100 ? 'bg-red-500' : pct >= 80 ? 'bg-amber-500' : 'bg-green-500';
-              const stateText = pct > 100 ? 'text-red-500' : pct >= 80 ? 'text-amber-600' : 'text-gray-500';
-
-              return (
-                <div key={env.envelope_type || env.type}>
-                  <div className="flex items-center justify-between mb-1">
-                    <div className="flex items-center gap-1.5">
-                      <span className="text-sm">{config.icon}</span>
-                      <span className="text-xs font-semibold text-gray-700">{config.label}</span>
-                    </div>
-                    <span className={`text-xs font-bold ${stateText}`}>
-                      {isOver
-                        ? `+${formatShort(spent - budget)} dépassé`
-                        : `${formatShort(budget - spent)} restant`}
-                    </span>
-                  </div>
-                  <div className="w-full bg-gray-100 rounded-full h-2 overflow-hidden">
-                    <div
-                      className={`h-full rounded-full transition-all duration-700 ${stateColor}`}
-                      style={{ width: `${Math.min(pct, 100)}%` }}
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">Mot de passe</label>
+                    <input
+                      type="password"
+                      name="password"
+                      className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all"
+                      placeholder="••••••••"
+                      required
                     />
                   </div>
                 </div>
-              );
-            })}
+                <button
+                  type="submit"
+                  className="w-full mt-6 bg-gradient-to-r from-green-600 to-emerald-600 text-white py-4 rounded-xl font-bold text-lg hover:shadow-lg transform hover:scale-105 transition-all duration-200"
+                >
+                  Se connecter
+                </button>
+              </form>
+
+              <div className="mt-4 text-center">
+                <button
+                  onClick={() => handleNavigate('forgot-password')}
+                  className="text-sm text-green-600 hover:text-green-700 font-medium transition-colors"
+                >
+                  🔑 Mot de passe oublié ?
+                </button>
+              </div>
+
+              <div className="mt-4 text-center">
+                <p className="text-gray-600">
+                  Pas encore de compte ?{' '}
+                  <button onClick={() => handleNavigate('register')} className="text-green-600 font-semibold hover:text-green-700">
+                    S'inscrire
+                  </button>
+                </p>
+              </div>
+              <div className="mt-4 text-center">
+                <button onClick={() => handleNavigate('home')} className="text-sm text-gray-500 hover:text-gray-700">
+                  ← Retour à l'accueil
+                </button>
+              </div>
+            </div>
           </div>
-        </div>
+        );
 
-        {/* ── LIENS SECONDAIRES ──────────────────────── */}
-        <div className="grid grid-cols-2 gap-3">
-          <button
-            onClick={() => onNavigate('transactions')}
-            className="bg-white rounded-2xl border border-gray-200 p-4 text-left hover:border-green-300 transition-all shadow-sm"
-          >
-            <span className="text-xl">🗓️</span>
-            <p className="text-xs font-bold text-gray-800 mt-1">Historique</p>
-            <p className="text-[10px] text-gray-400">Tous vos mouvements</p>
-          </button>
-          <button
-            onClick={() => onNavigate('debts')}
-            className="bg-white rounded-2xl border border-gray-200 p-4 text-left hover:border-green-300 transition-all shadow-sm"
-          >
-            <span className="text-xl">💳</span>
-            <p className="text-xs font-bold text-gray-800 mt-1">Mes dettes</p>
-            <p className="text-[10px] text-gray-400">Suivi et remboursements</p>
-          </button>
-        </div>
+      case 'forgot-password':
+        return (
+          <div className="min-h-screen bg-gradient-to-br from-slate-50 to-green-50 flex items-center justify-center p-4">
+            <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-md w-full">
+              <div className="text-center mb-8">
+                <div className="text-6xl mb-4">🔑</div>
+                <h2 className="text-3xl font-bold text-gray-900 mb-2">Mot de passe oublié</h2>
+                <p className="text-gray-600 text-sm leading-relaxed">
+                  Entrez votre email ou nom d'utilisateur. Nous vous enverrons un lien pour créer un nouveau mot de passe.
+                </p>
+              </div>
+              <ForgotPasswordForm onNavigate={handleNavigate} toast={toastMethods} />
+              <div className="mt-6 text-center">
+                <button onClick={() => handleNavigate('login')} className="text-sm text-gray-500 hover:text-gray-700">
+                  ← Retour à la connexion
+                </button>
+              </div>
+            </div>
+          </div>
+        );
 
+      case 'reset-password':
+        return (
+          <div className="min-h-screen bg-gradient-to-br from-slate-50 to-green-50 flex items-center justify-center p-4">
+            <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-md w-full">
+              <div className="text-center mb-8">
+                <div className="text-6xl mb-4">🔒</div>
+                <h2 className="text-3xl font-bold text-gray-900 mb-2">Nouveau mot de passe</h2>
+                <p className="text-gray-600 text-sm">Choisissez un nouveau mot de passe pour votre compte.</p>
+              </div>
+              <ResetPasswordForm
+                uid={pageParams?.uid}
+                token={pageParams?.token}
+                onSuccess={() => handleNavigate('login')}
+                onNavigate={handleNavigate}
+                toast={toastMethods}
+              />
+            </div>
+          </div>
+        );
+
+      case 'register':
+        if (isAuthenticated) { handleNavigate('dashboard'); return null; }
+        return (
+          <div className="min-h-screen bg-gradient-to-br from-slate-50 to-green-50 flex items-center justify-center p-4">
+            <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-md w-full">
+              <div className="text-center mb-8">
+                <div className="text-6xl mb-4 animate-bounce-slow">🌱</div>
+                <h2 className="text-3xl font-bold text-gray-900 mb-2">Inscription</h2>
+                <p className="text-gray-600">Rejoignez Yoonu Dal</p>
+              </div>
+              {authError && (
+                <div className="mb-4 p-3 bg-red-50 border border-red-200 text-red-700 rounded-lg text-sm flex items-start gap-2">
+                  <span className="text-lg flex-shrink-0">⚠️</span>
+                  <div className="flex-1">{authError}</div>
+                  <button onClick={clearAuthError} className="text-red-400 hover:text-red-600 font-bold text-lg leading-none flex-shrink-0">✕</button>
+                </div>
+              )}
+              <form onSubmit={async (e) => {
+                e.preventDefault();
+                const formData = new FormData(e.target);
+                const password = formData.get('password');
+                const confirmPassword = formData.get('confirmPassword');
+                if (password !== confirmPassword) {
+                  showError('Les mots de passe ne correspondent pas');
+                  return;
+                }
+                await handleRegister({
+                  username: formData.get('username'),
+                  email: formData.get('email'),
+                  password: password,
+                  first_name: formData.get('firstName'),
+                  last_name: formData.get('lastName')
+                });
+              }}>
+                <div className="space-y-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-700 mb-2">Prénom</label>
+                      <input type="text" name="firstName"
+                        className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all"
+                        required />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-700 mb-2">Nom</label>
+                      <input type="text" name="lastName"
+                        className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all"
+                        required />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">Nom d'utilisateur</label>
+                    <input type="text" name="username"
+                      className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all"
+                      required />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">Email</label>
+                    <input type="email" name="email"
+                      className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all"
+                      required />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">Mot de passe</label>
+                    <input type="password" name="password"
+                      className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all"
+                      required />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">Confirmer le mot de passe</label>
+                    <input type="password" name="confirmPassword"
+                      className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all"
+                      required />
+                  </div>
+                </div>
+                <button type="submit"
+                  className="w-full mt-6 bg-gradient-to-r from-green-600 to-emerald-600 text-white py-4 rounded-xl font-bold text-lg hover:shadow-lg transform hover:scale-105 transition-all duration-200">
+                  S'inscrire
+                </button>
+              </form>
+              <div className="mt-6 text-center">
+                <p className="text-gray-600">
+                  Déjà un compte ?{' '}
+                  <button onClick={() => handleNavigate('login')} className="text-green-600 font-semibold hover:text-green-700">
+                    Se connecter
+                  </button>
+                </p>
+              </div>
+              <div className="mt-4 text-center">
+                <button onClick={() => handleNavigate('home')} className="text-sm text-gray-500 hover:text-gray-700">
+                  ← Retour à l'accueil
+                </button>
+              </div>
+            </div>
+          </div>
+        );
+
+      case 'onboarding':
+        return <Onboarding toast={toastMethods} onNavigate={handleNavigate} setAuth={setUser} />;
+
+      case 'goals':
+        if (!isAuthenticated) { handleNavigate('login'); return null; }
+        return <GoalsPage toast={toastMethods} onNavigate={handleNavigate} />;
+
+      case 'score':
+        if (!isAuthenticated) { handleNavigate('login'); return null; }
+        return <YoonuScorePage toast={toastMethods} onNavigate={handleNavigate} />;
+
+      case 'transactions':
+        if (!isAuthenticated) { handleNavigate('login'); return null; }
+        return <TransactionsPage onNavigate={handleNavigate} toast={toastMethods} user={user} />;
+
+      case 'expenses':
+        if (!isAuthenticated) { handleNavigate('login'); return null; }
+        handleNavigate('transactions');
+        return null;
+
+      case 'incomes':
+        if (!isAuthenticated) { handleNavigate('login'); return null; }
+        handleNavigate('transactions');
+        return null;
+
+      case 'alerts':
+        if (!isAuthenticated) { handleNavigate('login'); return null; }
+        return <AlertsPage />;
+
+      case 'pricing':
+        return <PricingPage onNavigate={handleNavigate} user={user} toast={toastMethods} />;
+
+      case 'checkout':
+        return <CheckoutPage onNavigate={handleNavigate} toast={toastMethods} plan={pageParams?.plan || 'monthly'} />;
+
+      case 'payment-success':
+        return <PaymentResultPage onNavigate={handleNavigate} toast={toastMethods} status="success" onPaymentSuccess={handlePaymentSuccess} />;
+
+      case 'payment-cancel':
+        return <PaymentResultPage onNavigate={handleNavigate} toast={toastMethods} status="cancel" />;
+
+      case 'subscription':
+        if (!isAuthenticated) { handleNavigate('login'); return null; }
+        return <SubscriptionPage onNavigate={handleNavigate} user={user} toast={toastMethods} />;
+
+      case 'dashboard':
+        if (!isAuthenticated) { handleNavigate('login'); return null; }
+        return <Dashboard toast={toastMethods} auth={authMethods} onNavigate={handleNavigate} user={user} />;
+
+      case 'envelopes':
+        if (!isAuthenticated) { handleNavigate('login'); return null; }
+        return <EnvelopeManager onNavigate={handleNavigate} toast={toastMethods} auth={authMethods} />;
+
+      case 'category-rules':
+        if (!isAuthenticated) { handleNavigate('login'); return null; }
+        return <CategoryRulesPage onNavigate={handleNavigate} toast={toastMethods} />;
+
+      // ✅ Hub profil "Moi"
+      case 'profile-hub':
+        if (!isAuthenticated) { handleNavigate('login'); return null; }
+        return <ProfileHub onNavigate={handleNavigate} user={user} onLogout={handleLogout} />;
+
+      // ✅ Saisie rapide dépense/revenu
+      case 'quick-add':
+        if (!isAuthenticated) { handleNavigate('login'); return null; }
+        return <QuickAdd type={pageParams?.type || 'expense'} onNavigate={handleNavigate} toast={toastMethods} />;
+
+      case 'debts':
+        if (!isAuthenticated) { handleNavigate('login'); return null; }
+        return <DebtsPage toast={toastMethods} onNavigate={handleNavigate} />;
+
+      case 'debt-detail':
+        if (!isAuthenticated) { handleNavigate('login'); return null; }
+        return <DebtDetailPage debtId={pageParams?.debtId} toast={toastMethods} onNavigate={handleNavigate} />;
+
+      case 'tontines':
+        if (!isAuthenticated) { handleNavigate('login'); return null; }
+        return <TontinesList onNavigate={handleNavigate} toast={toastMethods} auth={authMethods} />;
+
+      case 'tontine-invite':
+        return <TontineInvitePage inviteCode={pageParams?.code} onNavigate={handleNavigate} toast={toastMethods} isAuthenticated={isAuthenticated} />;
+
+      case 'diagnostic':
+        if (!isAuthenticated) { handleNavigate('login'); return null; }
+        return <SimpleDiagnostic onNavigate={handleNavigate} toast={toastMethods} />;
+
+      case 'values':
+        if (!isAuthenticated) { handleNavigate('login'); return null; }
+        return <ValueSelector onNavigate={handleNavigate} toast={toastMethods} auth={authMethods} />;
+
+      case 'tontine-detail':
+        if (!isAuthenticated) { handleNavigate('login'); return null; }
+        return <TontineDetail onNavigate={handleNavigate} tontineId={pageParams?.id} toast={toastMethods} user={user} />;
+
+      case 'tontine-analysis':
+        if (!isAuthenticated) { handleNavigate('login'); return null; }
+        return <TontineAnalysis onNavigate={handleNavigate} toast={toastMethods} auth={authMethods} />;
+
+      case 'profile':
+        if (!isAuthenticated) { handleNavigate('login'); return null; }
+        handleNavigate('profile-hub');
+        return null;
+
+      case 'settings':
+        if (!isAuthenticated) { handleNavigate('login'); return null; }
+        return (
+          <div className="min-h-screen bg-gray-100 flex items-center justify-center p-4 pb-24">
+            <div className="bg-white rounded-2xl shadow-lg p-8 max-w-md w-full">
+              <h2 className="text-2xl font-bold mb-6 text-center">⚙️ Paramètres</h2>
+              <div className="space-y-4">
+                <button onClick={() => handleNavigate('category-rules')}
+                  className="w-full text-left p-4 bg-green-50 text-green-700 rounded-lg hover:bg-green-100 transition-colors font-medium">
+                  🗂️ Mes règles de classement
+                </button>
+                <button onClick={() => handleNavigate('values')}
+                  className="w-full text-left p-4 bg-blue-50 text-blue-700 rounded-lg hover:bg-blue-100 transition-colors font-medium">
+                  💎 Mes valeurs personnelles
+                </button>
+                <button onClick={() => handleNavigate('subscription')}
+                  className="w-full text-left p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
+                  💎 Mon Abonnement
+                </button>
+                <button onClick={handleLogout}
+                  className="w-full text-left p-4 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 transition-colors font-medium">
+                  🚪 Déconnexion
+                </button>
+              </div>
+              <button onClick={() => handleNavigate('dashboard')}
+                className="w-full mt-6 bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors">
+                ← Retour au tableau de bord
+              </button>
+            </div>
+          </div>
+        );
+
+      case 'help':
+        return (
+          <div className="min-h-screen bg-gray-100 flex items-center justify-center p-4 pb-24">
+            <div className="bg-white rounded-2xl shadow-lg p-8 max-w-md w-full">
+              <h2 className="text-2xl font-bold mb-6 text-center">❓ Aide & Support</h2>
+              <div className="space-y-4 text-center">
+                <p>Besoin d'aide ? Notre équipe est là pour vous !</p>
+                <div className="space-y-3">
+                  <div className="p-4 bg-blue-50 rounded-lg">
+                    <p className="font-semibold">📧 Email</p>
+                    <p className="text-blue-600">support@yoonudal.com</p>
+                  </div>
+                  <div className="p-4 bg-green-50 rounded-lg">
+                    <p className="font-semibold">💬 WhatsApp</p>
+                    <p className="text-green-600">+221 77 356 94 62</p>
+                  </div>
+                </div>
+              </div>
+              <button onClick={() => handleNavigate(isAuthenticated ? 'dashboard' : 'home')}
+                className="w-full mt-6 bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors">
+                ← Retour {isAuthenticated ? 'au dashboard' : 'à l\'accueil'}
+              </button>
+            </div>
+          </div>
+        );
+
+      default:
+        return <Home onNavigate={handleNavigate} toast={toastMethods} auth={authMethods} />;
+    }
+  };
+
+  return (
+    <div className="App min-h-screen flex flex-col">
+      <Navigation
+        currentPage={currentPage}
+        onNavigate={handleNavigate}
+        isAuthenticated={isAuthenticated}
+        user={user}
+        onLogout={handleLogout}
+        alertsBadge={isAuthenticated ? (
+          <AlertsBadge onClick={() => handleNavigate('alerts')} />
+        ) : null}
+      />
+
+      
+
+      <div className="flex-grow">
+        {renderPage()}
       </div>
+      <Footer />
+
+      {/* ✅ Bottom navigation mobile — masqué sur la saisie rapide */}
+      {currentPage !== 'quick-add' && (
+        <BottomNav
+          currentPage={currentPage}
+          onNavigate={handleNavigate}
+          isAuthenticated={isAuthenticated}
+        />
+      )}
+
+      <ToastContainer toasts={toasts} removeToast={removeToast} />
+      {isAuthenticated && (
+        <AIChatWidget onNavigate={handleNavigate} toast={toastMethods} user={user} />
+      )}
+      {isAuthenticated && (
+        <NotificationManager user={user} toast={toastMethods} />
+      )}
+      {isAuthenticated && (
+        <OnboardingTutorial onNavigate={handleNavigate} onClose={() => {}} />
+      )}
     </div>
   );
-};
+}
 
-export default Dashboard;
+export default App;
