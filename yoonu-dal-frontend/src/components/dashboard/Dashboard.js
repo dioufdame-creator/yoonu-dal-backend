@@ -305,7 +305,7 @@ const Dashboard = ({ toast, auth, onNavigate, user }) => {
         {/* ── SALUTATION + SÉLECTEUR DE MOIS ─────────── */}
         <div className="mb-5">
           <h1 className="text-xl font-bold text-gray-900">
-            Bonjour {getUserName()} 👋
+            Dalal jamm {getUserName()} 🤝🏿
           </h1>
           <div className="flex items-center gap-2 mt-1.5">
             <div className="relative">
