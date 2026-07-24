@@ -26,6 +26,14 @@ const TransactionsPage = ({ onNavigate, toast, user }) => {
                 Gérez vos dépenses et revenus en toute simplicité
               </p>
             </div>
+            {/* Export — accès rapide */}
+            <button
+              onClick={() => onNavigate('exports')}
+              className="w-10 h-10 rounded-full bg-gray-50 border border-gray-200 flex items-center justify-center hover:bg-gray-100 transition-colors flex-shrink-0"
+              title="Exporter mes données"
+            >
+              <span className="text-lg">📄</span>
+            </button>
           </div>
         </div>
 
