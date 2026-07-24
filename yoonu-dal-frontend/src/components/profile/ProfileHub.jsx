@@ -1,9 +1,23 @@
 // src/components/profile/ProfileHub.jsx
 // Page "Moi" — hub central du profil
-import React from 'react';
+import React, { useState } from 'react';
 import { SubscriptionBadge } from '../subscription/SubscriptionComponents';
+import { useInstall, InstallGuide, isAppInstalled } from '../shared/InstallPrompt';
 
 const ProfileHub = ({ onNavigate, user, onLogout }) => {
+  const { canPromptNatively, triggerInstall } = useInstall();
+  const [showGuide, setShowGuide] = useState(false);
+  const alreadyInstalled = isAppInstalled();
+
+  const handleInstallClick = async () => {
+    if (canPromptNatively) {
+      const outcome = await triggerInstall();
+      if (outcome === 'unavailable') setShowGuide(true);
+    } else {
+      setShowGuide(true);
+    }
+  };
+
   const getUserDisplayName = () => {
     if (user?.user?.first_name) return user.user.first_name;
     if (user?.user?.username) return user.user.username;
@@ -73,6 +87,23 @@ const ProfileHub = ({ onNavigate, user, onLogout }) => {
           </button>
         )}
 
+        {/* ✅ Installer l'application */}
+        {!alreadyInstalled && (
+          <button
+            onClick={handleInstallClick}
+            className="w-full mb-6 flex items-center gap-3 p-4 rounded-2xl bg-white border-2 border-green-200 hover:border-green-400 transition-all shadow-sm"
+          >
+            <div className="w-11 h-11 bg-gradient-to-br from-green-500 to-emerald-600 rounded-2xl flex items-center justify-center text-xl flex-shrink-0 shadow-md">
+              📱
+            </div>
+            <div className="flex-1 text-left">
+              <p className="text-sm font-bold text-gray-900">Installer l'application</p>
+              <p className="text-xs text-gray-500">Accès direct depuis votre écran d'accueil</p>
+            </div>
+            <span className="text-green-500 text-xl">›</span>
+          </button>
+        )}
+
         {/* Sections */}
         {sections.map((section) => (
           <div key={section.title} className="mb-6">
@@ -98,6 +129,9 @@ const ProfileHub = ({ onNavigate, user, onLogout }) => {
             </div>
           </div>
         ))}
+
+        {/* Guide d'installation */}
+        {showGuide && <InstallGuide onClose={() => setShowGuide(false)} />}
 
         {/* Déconnexion */}
         <button
