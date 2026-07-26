@@ -131,7 +131,22 @@ const Dashboard = ({ toast, auth, onNavigate, user }) => {
     .reduce((sum, i) => sum + parseFloat(i.amount || 0), 0);
 
   const effectiveIncome = monthlyIncomesTotal > 0 ? monthlyIncomesTotal : (isCurrentMonth ? monthlyIncome : 0);
-  const remaining = effectiveIncome - monthlyExpensesTotal;
+
+  // ✅ Montant reporté du mois précédent — déduit en comparant le budget
+  // réel de chaque enveloppe (monthly_budget, qui inclut le report) au
+  // budget théorique (pourcentage × revenu), sans appel API supplémentaire.
+  const carryoverTotal = isCurrentMonth
+    ? envelopes.reduce((sum, env) => {
+        const budget = env.monthly_budget ?? env.budget ?? 0;
+        const pct = env.allocated_percentage ?? 0;
+        const theoretical = (pct / 100) * effectiveIncome;
+        const diff = budget - theoretical;
+        return sum + (diff > 1 ? diff : 0); // tolérance d'arrondi
+      }, 0)
+    : 0;
+
+  // Le solde disponible inclut désormais le report — cohérent avec les enveloppes
+  const remaining = effectiveIncome + carryoverTotal - monthlyExpensesTotal;
   const dailyAvailable = daysRemaining > 0 ? remaining / daysRemaining : remaining;
 
   const recentExpenses = expenses
@@ -368,16 +383,28 @@ const Dashboard = ({ toast, auth, onNavigate, user }) => {
             {formatFCFA(Math.abs(remaining))} <span className="text-lg font-normal opacity-70">FCFA</span>
           </p>
 
-          <div className="grid grid-cols-2 gap-3 mb-3">
-            <div className="bg-black/20 rounded-2xl px-4 py-3">
+          <div className={`grid ${carryoverTotal > 0 ? 'grid-cols-3' : 'grid-cols-2'} gap-2 mb-3`}>
+            <div className="bg-black/20 rounded-2xl px-3 py-3">
               <p className="text-[11px] opacity-75">↓ Revenus</p>
               <p className="text-base font-bold">{formatShort(effectiveIncome)}</p>
             </div>
-            <div className="bg-black/20 rounded-2xl px-4 py-3">
+            <div className="bg-black/20 rounded-2xl px-3 py-3">
               <p className="text-[11px] opacity-75">↑ Dépenses</p>
               <p className="text-base font-bold">{formatShort(monthlyExpensesTotal)}</p>
             </div>
+            {carryoverTotal > 0 && (
+              <div className="bg-black/20 rounded-2xl px-3 py-3">
+                <p className="text-[11px] opacity-75">↩️ Reporté</p>
+                <p className="text-base font-bold">{formatShort(carryoverTotal)}</p>
+              </div>
+            )}
           </div>
+
+          {carryoverTotal > 0 && (
+            <p className="text-[11px] opacity-70 mb-3 -mt-1">
+              Comprend {formatFCFA(carryoverTotal)} FCFA reportés du mois dernier
+            </p>
+          )}
 
           {isCurrentMonth && remaining > 0 && daysRemaining > 0 && (
             <div className="flex items-center gap-2 text-sm">
