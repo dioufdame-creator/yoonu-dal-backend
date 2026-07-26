@@ -399,6 +399,7 @@ const Dashboard = ({ toast, auth, onNavigate, user }) => {
           const s = score.total_score || 0;
           return (
             <button
+              data-tutorial-target="score-card"
               onClick={() => onNavigate('score')}
               className="w-full bg-white rounded-2xl border border-gray-200 p-4 mb-4 flex items-center gap-4 hover:border-green-300 transition-all shadow-sm"
             >
