@@ -19,6 +19,8 @@ from .views import (
     forgot_password,
     reset_password,
     login_with_email_or_username,
+    check_monthly_carryover,
+    allocate_monthly_carryover,
 )
 
 urlpatterns = [
@@ -145,4 +147,8 @@ urlpatterns = [
     path('auth/forgot-password/', forgot_password, name='forgot_password'),
     path('auth/reset-password/', reset_password, name='reset_password'),
     path('auth/login/', login_with_email_or_username, name='login_with_email'),
+
+    
+    path('carryover/check/', check_monthly_carryover, name='check_monthly_carryover'),
+    path('carryover/allocate/', allocate_monthly_carryover, name='allocate_monthly_carryover'),
 ]
