@@ -3584,11 +3584,12 @@ def manage_meta_envelopes(request):
             try:
                 envelope = Envelope.objects.get(user=user, envelope_type=envelope_type)
                 allocated_percentage = float(envelope.allocated_percentage)
+                # ✅ Lire le budget déjà calculé en base (inclut le carryover
+                # affecté plus haut), au lieu de recalculer et perdre le report.
+                budget = float(envelope.monthly_budget)
             except Envelope.DoesNotExist:
                 allocated_percentage = 0
-
-            # Budget recalculé sur le revenu réel du mois demandé
-            budget = (allocated_percentage / 100) * monthly_income
+                budget = 0
 
             # Dépenses du mois demandé
             spent_value = Expense.objects.filter(
