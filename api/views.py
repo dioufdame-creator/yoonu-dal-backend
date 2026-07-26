@@ -5256,4 +5256,240 @@ def login_with_email_or_username(request):
     })
 
 
+# ==========================================
+# À AJOUTER À LA FIN DE api/views.py
+# Système de report du solde mensuel (MonthlyCarryover)
+# ==========================================
+
+from .models import MonthlyCarryover
+from dateutil.relativedelta import relativedelta
+
+
+def get_previous_month_range(current_month_start):
+    """Retourne (start, end) du mois précédent un mois donné (1er jour, datetime.date)"""
+    prev_start = current_month_start - relativedelta(months=1)
+    prev_end = current_month_start - relativedelta(days=1)
+    return prev_start, prev_end
+
+
+def calculate_month_balance_by_envelope(user, month_start, month_end):
+    """
+    Calcule le solde (revenus - dépenses) du mois, réparti par enveloppe
+    selon la répartition habituelle des dépenses. Retourne aussi le total global.
+    """
+    user_rules = get_user_category_rules(user)
+
+    total_income = float(
+        Income.objects.filter(user=user, date__gte=month_start, date__lte=month_end)
+        .aggregate(total=Sum('amount'))['total'] or 0
+    )
+    total_expenses = float(
+        Expense.objects.filter(user=user, date__gte=month_start, date__lte=month_end)
+        .aggregate(total=Sum('amount'))['total'] or 0
+    )
+    total_balance = total_income - total_expenses
+
+    # Répartition des dépenses par enveloppe (pour la proposition "selon mes enveloppes")
+    envelope_spent = {'essentiels': 0, 'plaisirs': 0, 'projets': 0, 'liberation': 0}
+    expenses_qs = Expense.objects.filter(user=user, date__gte=month_start, date__lte=month_end)
+    for exp in expenses_qs:
+        env = user_rules.get(exp.category, 'plaisirs')
+        if env in envelope_spent:
+            envelope_spent[env] += float(exp.amount)
+
+    return {
+        'total_income': total_income,
+        'total_expenses': total_expenses,
+        'total_balance': total_balance,
+        'envelope_spent': envelope_spent,
+    }
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def check_monthly_carryover(request):
+    """
+    Vérifie s'il existe un report en attente de décision pour l'utilisateur.
+    Appelé au chargement du Dashboard. Crée automatiquement le carryover
+    du mois précédent s'il n'existe pas encore et que le mois a changé.
+    """
+    user = request.user
+    now = timezone.now()
+    current_month_start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0).date()
+
+    prev_start, prev_end = get_previous_month_range(current_month_start)
+
+    # Le carryover existe-t-il déjà pour cette transition de mois ?
+    existing = MonthlyCarryover.objects.filter(user=user, from_month=prev_start).first()
+
+    if existing:
+        if existing.status == 'pending':
+            return Response({
+                'has_pending': True,
+                'carryover': {
+                    'id': existing.id,
+                    'amount': float(existing.amount),
+                    'from_month': existing.from_month.isoformat(),
+                    'to_month': existing.to_month.isoformat(),
+                    'from_month_label': existing.from_month.strftime('%B %Y'),
+                }
+            })
+        return Response({'has_pending': False, 'deficit': None})
+
+    # Pas encore de carryover créé — on calcule le solde du mois précédent
+    balance_data = calculate_month_balance_by_envelope(user, prev_start, prev_end)
+    balance = balance_data['total_balance']
+
+    # Aucune donnée réelle sur le mois précédent (nouvel utilisateur) → rien à faire
+    if balance_data['total_income'] == 0 and balance_data['total_expenses'] == 0:
+        return Response({'has_pending': False, 'deficit': None})
+
+    if balance > 0:
+        # Créer le carryover en attente de décision
+        carryover = MonthlyCarryover.objects.create(
+            user=user,
+            from_month=prev_start,
+            to_month=current_month_start,
+            amount=Decimal(str(round(balance, 2))),
+            status='pending'
+        )
+        return Response({
+            'has_pending': True,
+            'carryover': {
+                'id': carryover.id,
+                'amount': float(carryover.amount),
+                'from_month': carryover.from_month.isoformat(),
+                'to_month': carryover.to_month.isoformat(),
+                'from_month_label': carryover.from_month.strftime('%B %Y'),
+            }
+        })
+    elif balance < 0:
+        # Déficit — on informe seulement, pas de carryover créé (rien à affecter)
+        return Response({
+            'has_pending': False,
+            'deficit': {
+                'amount': float(abs(balance)),
+                'from_month_label': prev_start.strftime('%B %Y'),
+            }
+        })
+    else:
+        return Response({'has_pending': False, 'deficit': None})
+
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def allocate_monthly_carryover(request):
+    """
+    Affecte un report en attente selon le choix de l'utilisateur.
+
+    Body:
+    {
+        "carryover_id": 12,
+        "allocation_type": "envelopes" | "goal" | "emergency" | "manual",
+        "goal_id": 3,                          // requis si allocation_type == "goal"
+        "manual_amounts": {                    // requis si allocation_type == "manual"
+            "essentiels": 20000,
+            "plaisirs": 0,
+            "projets": 22000,
+            "liberation": 0
+        }
+    }
+    """
+    user = request.user
+    data = request.data
+
+    carryover_id = data.get('carryover_id')
+    allocation_type = data.get('allocation_type')
+
+    if not carryover_id or not allocation_type:
+        return Response({'error': 'carryover_id et allocation_type requis'}, status=status.HTTP_400_BAD_REQUEST)
+
+    if allocation_type not in ['envelopes', 'goal', 'emergency', 'manual']:
+        return Response({'error': 'allocation_type invalide'}, status=status.HTTP_400_BAD_REQUEST)
+
+    try:
+        carryover = MonthlyCarryover.objects.get(id=carryover_id, user=user, status='pending')
+    except MonthlyCarryover.DoesNotExist:
+        return Response({'error': 'Report introuvable ou déjà affecté'}, status=status.HTTP_404_NOT_FOUND)
+
+    amount = float(carryover.amount)
+    to_month_str = carryover.to_month.strftime('%Y-%m')
+
+    try:
+        if allocation_type == 'envelopes':
+            # Répartition proportionnelle selon les pourcentages actuels des enveloppes
+            envelopes = Envelope.objects.filter(user=user, envelope_type__in=['essentiels', 'plaisirs', 'projets', 'liberation'])
+            total_pct = sum(float(e.allocated_percentage) for e in envelopes) or 100
+            detail = {}
+            for env in envelopes:
+                share = (float(env.allocated_percentage) / total_pct) * amount
+                detail[env.envelope_type] = round(share, 2)
+                # Ajouter au budget mensuel de l'enveloppe pour ce mois
+                env.monthly_budget = env.monthly_budget + Decimal(str(round(share, 2)))
+                env.save(update_fields=['monthly_budget'])
+
+            carryover.mark_allocated('envelopes', detail)
+
+        elif allocation_type == 'goal':
+            goal_id = data.get('goal_id')
+            if not goal_id:
+                return Response({'error': 'goal_id requis'}, status=status.HTTP_400_BAD_REQUEST)
+            try:
+                goal = Goal.objects.get(id=goal_id, user=user)
+            except Goal.DoesNotExist:
+                return Response({'error': 'Objectif introuvable'}, status=status.HTTP_404_NOT_FOUND)
+
+            GoalContribution.objects.create(
+                goal=goal, amount=Decimal(str(amount)),
+                contribution_type='auto', source='Report mensuel',
+                note=f"Report de {carryover.from_month.strftime('%B %Y')}"
+            )
+            goal.current_amount = Decimal(str(goal.current_amount)) + Decimal(str(amount))
+            goal.save()
+
+            carryover.mark_allocated('goal', {'goal_id': goal.id, 'goal_title': goal.title})
+
+        elif allocation_type == 'emergency':
+            Saving.objects.create(
+                user=user, amount=Decimal(str(amount)), goal='urgence',
+                description=f"Report de {carryover.from_month.strftime('%B %Y')}",
+                date=timezone.now().date()
+            )
+            carryover.mark_allocated('emergency', {})
+
+        elif allocation_type == 'manual':
+            manual_amounts = data.get('manual_amounts', {})
+            valid_envelopes = ['essentiels', 'plaisirs', 'projets', 'liberation']
+
+            total_manual = sum(float(manual_amounts.get(e, 0)) for e in valid_envelopes)
+            if abs(total_manual - amount) > 1:  # tolérance d'arrondi 1 FCFA
+                return Response({
+                    'error': f'Le total ({total_manual:,.0f}) doit égaler le montant à répartir ({amount:,.0f})'
+                }, status=status.HTTP_400_BAD_REQUEST)
+
+            detail = {}
+            for env_type in valid_envelopes:
+                env_amount = float(manual_amounts.get(env_type, 0))
+                detail[env_type] = env_amount
+                if env_amount > 0:
+                    env = Envelope.objects.filter(user=user, envelope_type=env_type).first()
+                    if env:
+                        env.monthly_budget = env.monthly_budget + Decimal(str(env_amount))
+                        env.save(update_fields=['monthly_budget'])
+
+            carryover.mark_allocated('manual', detail)
+
+        return Response({
+            'message': 'Report affecté avec succès',
+            'carryover': {
+                'id': carryover.id,
+                'status': carryover.status,
+                'allocation_type': carryover.allocation_type,
+                'allocation_detail': carryover.allocation_detail,
+            }
+        })
+
+    except Exception as e:
+        return Response({'error': f'Erreur affectation: {str(e)}'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
         
