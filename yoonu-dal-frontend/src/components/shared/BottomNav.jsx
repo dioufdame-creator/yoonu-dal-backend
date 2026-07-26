@@ -78,6 +78,7 @@ const BottomNav = ({ currentPage, onNavigate, isAuthenticated }) => {
               return (
                 <button
                   key="add"
+                  data-tutorial-target="add-button"
                   onClick={() => setShowAddSheet(!showAddSheet)}
                   className="relative -mt-6 flex flex-col items-center"
                 >
@@ -95,6 +96,7 @@ const BottomNav = ({ currentPage, onNavigate, isAuthenticated }) => {
             return (
               <button
                 key={item.page}
+                data-tutorial-target={item.page === 'profile-hub' ? 'nav-profile' : undefined}
                 onClick={() => { setShowAddSheet(false); onNavigate(item.page); }}
                 className="flex flex-col items-center gap-0.5 px-2 py-1 min-w-[60px]"
               >
