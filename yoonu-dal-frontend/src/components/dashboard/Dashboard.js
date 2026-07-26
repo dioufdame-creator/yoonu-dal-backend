@@ -2,6 +2,7 @@
 // Dashboard V5.4 — sélecteur de mois + message coach + score ciblé
 import React, { useState, useEffect, useCallback } from 'react';
 import API from '../../services/api';
+import CarryoverCard from './CarryoverCard';
 
 const MONTHS_FR = ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin',
   'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'];
@@ -346,6 +347,11 @@ const Dashboard = ({ toast, auth, onNavigate, user }) => {
             )}
           </div>
         </div>
+
+        {/* ── REPORT DU MOIS PRÉCÉDENT ───────────────── */}
+        {isCurrentMonth && (
+          <CarryoverCard onNavigate={onNavigate} toast={toast} onAllocated={loadData} />
+        )}
 
         {/* ── CARTE SOLDE ────────────────────────────── */}
         <div className={`rounded-3xl p-6 mb-3 text-white shadow-xl ${
