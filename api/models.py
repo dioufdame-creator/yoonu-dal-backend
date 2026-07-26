@@ -1171,3 +1171,67 @@ class UserCategoryRule(models.Model):
         return f"{self.user.username} — {self.category} → {self.envelope}"
 
 
+# ==========================================
+# À AJOUTER À LA FIN DE api/models.py
+# ==========================================
+
+class MonthlyCarryover(models.Model):
+    """
+    Report du solde mensuel d'un mois vers le suivant.
+    Créé automatiquement à la détection d'un nouveau mois si le solde
+    du mois précédent est positif. L'utilisateur choisit ensuite comment
+    l'affecter (répartition, objectif, épargne, ou manuel).
+    """
+
+    ALLOCATION_TYPES = [
+        ('envelopes', 'Réparti selon mes enveloppes'),
+        ('goal', 'Envoyé vers un objectif'),
+        ('emergency', 'Fonds d\'urgence / épargne'),
+        ('manual', 'Réparti manuellement'),
+    ]
+
+    STATUS_CHOICES = [
+        ('pending', 'En attente de décision'),
+        ('allocated', 'Affecté'),
+    ]
+
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='monthly_carryovers')
+
+    from_month = models.DateField(help_text="1er jour du mois d'origine, ex: 2026-05-01")
+    to_month = models.DateField(help_text="1er jour du mois de destination, ex: 2026-06-01")
+
+    amount = models.DecimalField(
+        max_digits=15, decimal_places=2,
+        help_text="Montant reporté (toujours positif — les mois négatifs ne génèrent pas de carryover)"
+    )
+
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
+    allocation_type = models.CharField(max_length=20, choices=ALLOCATION_TYPES, null=True, blank=True)
+
+    # Détail de l'affectation choisie, structure variable selon allocation_type :
+    #   'envelopes' → {"essentiels": 21000, "plaisirs": 12600, "projets": 8400, "liberation": 0}
+    #   'goal'      → {"goal_id": 3, "goal_title": "Fondation"}
+    #   'emergency' → {} (tout part en catégorie épargne, rien à préciser)
+    #   'manual'    → {"essentiels": 20000, "plaisirs": 0, "projets": 22000, "liberation": 0}
+    allocation_detail = models.JSONField(default=dict, blank=True)
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    allocated_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        unique_together = ('user', 'from_month')
+        ordering = ['-from_month']
+
+    def __str__(self):
+        status_label = self.get_status_display()
+        return f"{self.user.username} — {self.from_month.strftime('%B %Y')} → {self.to_month.strftime('%B %Y')} : {self.amount} FCFA ({status_label})"
+
+    def mark_allocated(self, allocation_type, detail=None):
+        self.status = 'allocated'
+        self.allocation_type = allocation_type
+        self.allocation_detail = detail or {}
+        self.allocated_at = timezone.now()
+        self.save()
+
+
+
