@@ -34,7 +34,7 @@ import TransactionsPage from './components/transactions/TransactionsPage';
 
 import AIChatWidget from './components/ai/AIChatWidget';
 import NotificationManager from './components/notifications/NotificationManager';
-import OnboardingTutorial from './components/onboarding/OnboardingTutorial';
+import ContextualTutorial from './components/onboarding/ContextualTutorial';
 import Onboarding from './components/onboarding/Onboarding';
 
 import PricingPage from './pages/PricingPage';
@@ -686,8 +686,8 @@ function App() {
       {isAuthenticated && (
         <NotificationManager user={user} toast={toastMethods} />
       )}
-      {isAuthenticated && (
-        <OnboardingTutorial onNavigate={handleNavigate} onClose={() => {}} />
+      {isAuthenticated && currentPage === 'dashboard' && (
+        <ContextualTutorial onFinish={() => {}} />
       )}
     </div>
   );
