@@ -26,7 +26,7 @@ from .models import (
     UserProfile, UserValue, IncomeSource, Income, Expense, Budget,
     Goal, Saving, Tontine, TontineParticipant, TontineContribution,
     TontinePayout, TontineActivity, DiagnosticResult, Envelope, FinancialLeak, PredictiveAlert,
-    Debt, DebtPayment, GoalContribution, ScoreHistory
+    Debt, DebtPayment, GoalContribution, ScoreHistory, MonthlyCarryover
 )
 from .utils.decorators import require_premium, check_usage_limit
 # APRÈS les autres imports de .models et .utils
