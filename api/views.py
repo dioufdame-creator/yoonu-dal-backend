@@ -3521,17 +3521,35 @@ def manage_meta_envelopes(request):
         # Créer/recalculer enveloppes (mois courant seulement)
         if is_current_month:
             defaults = [('essentiels', 50), ('plaisirs', 30), ('projets', 20), ('liberation', 0)]
+
+            # Récupérer les carryovers déjà affectés vers ce mois
+            carryover_by_envelope = {}
+            allocated_carryovers = MonthlyCarryover.objects.filter(
+                user=user,
+                to_month=start_of_month.date(),
+                status='allocated'
+            )
+            for c in allocated_carryovers:
+                detail = c.allocation_detail or {}
+                if c.allocation_type in ('envelopes', 'manual'):
+                    for env_type, amount in detail.items():
+                        if env_type in ['essentiels', 'plaisirs', 'projets', 'liberation']:
+                            carryover_by_envelope[env_type] = carryover_by_envelope.get(env_type, 0) + float(amount)
+
             for envelope_type, percentage in defaults:
+                base_budget = (Decimal(percentage) / 100) * Decimal(str(declared_income))
+                carryover_extra = Decimal(str(carryover_by_envelope.get(envelope_type, 0)))
                 env, created = Envelope.objects.get_or_create(
                     user=user,
                     envelope_type=envelope_type,
                     defaults={
                         'allocated_percentage': percentage,
-                        'monthly_budget': (Decimal(percentage) / 100) * Decimal(str(declared_income))
+                        'monthly_budget': base_budget + carryover_extra
                     }
                 )
                 if not created:
-                    env.monthly_budget = (env.allocated_percentage / 100) * Decimal(str(monthly_income))
+                    recalculated = (env.allocated_percentage / 100) * Decimal(str(monthly_income))
+                    env.monthly_budget = recalculated + carryover_extra
                     env.save(update_fields=['monthly_budget'])
 
         # ✅ Règles personnalisées par utilisateur
@@ -3613,7 +3631,6 @@ def manage_meta_envelopes(request):
 
     except Exception as e:
         return Response({'error': f'Erreur meta-envelopes: {str(e)}'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
 # ==========================================
 # FONCTIONS MANQUANTES - À AJOUTER À LA FIN DE api/views.py
 # ==========================================
