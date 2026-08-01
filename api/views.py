@@ -2940,7 +2940,6 @@ def execute_prediction_action(request, alert_id):
 
         # Exécuter l'action selon le type
         if action_type == 'contribute_tontine':
-            # Créer la contribution
             tontine_id = action.get('tontine_id')
             amount = action.get('amount')
 
@@ -2958,7 +2957,20 @@ def execute_prediction_action(request, alert_id):
             return Response({
                 'success': True,
                 'message': f'Contribution de {amount:,.0f} FCFA enregistrée !',
-                'contribution_id': contribution.id
+                'contribution_id': contribution.id,
+                'redirect': None
+            })
+
+        elif action_type in ('freeze_category', 'reduce_spending'):
+            # Pas d'action automatique exécutable — on oriente l'utilisateur
+            # vers l'écran des enveloppes pour qu'il ajuste lui-même.
+            alert.mark_action_taken()
+            envelope_label = action.get('envelope', '')
+
+            return Response({
+                'success': True,
+                'message': f"Direction vos enveloppes pour ajuster {envelope_label}.",
+                'redirect': 'envelopes'
             })
 
         else:
@@ -2970,7 +2982,6 @@ def execute_prediction_action(request, alert_id):
         return Response({
             'error': f'Erreur: {str(e)}'
         }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
 
 # api/views.py - AJOUTER cette fonction
 
