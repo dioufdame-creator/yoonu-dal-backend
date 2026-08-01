@@ -37,7 +37,7 @@ const AlertsPageV2 = ({ toast, onNavigate }) => {
       await API.post(`/predictions/${alertId}/dismiss/`);
       setAlerts(alerts.filter(a => a.id !== alertId));
       toast?.showSuccess('Alerte ignorée');
-      
+
       // Émettre événement pour mettre à jour le badge
       window.dispatchEvent(new Event('alerts-updated'));
     } catch (error) {
@@ -54,12 +54,17 @@ const AlertsPageV2 = ({ toast, onNavigate }) => {
       const response = await API.post(`/predictions/${alert.id}/execute/`);
       setAlerts(alerts.filter(a => a.id !== alert.id));
       toast?.showSuccess(response.data.message || 'Action exécutée avec succès');
-      
+
       // Émettre événement
       window.dispatchEvent(new Event('alerts-updated'));
-      
-      // Recharger
-      setTimeout(() => loadAlerts(), 1000);
+
+      // ✅ Si le backend indique une redirection (ex: freeze_category, reduce_spending)
+      if (response.data.redirect && onNavigate) {
+        setTimeout(() => onNavigate(response.data.redirect), 600);
+      } else {
+        // Recharger
+        setTimeout(() => loadAlerts(), 1000);
+      }
     } catch (error) {
       console.error('Erreur action:', error);
       toast?.showError(error.response?.data?.error || 'Action impossible');
@@ -148,7 +153,7 @@ const AlertsPageV2 = ({ toast, onNavigate }) => {
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 lg:py-10">
-        
+
         {/* Header */}
         <div className="mb-6">
           <div className="flex items-center justify-between mb-4">
@@ -158,7 +163,7 @@ const AlertsPageV2 = ({ toast, onNavigate }) => {
                 <span>Alertes Intelligentes</span>
               </h1>
               <p className="text-sm text-gray-500 mt-1">
-                {alerts.length === 0 
+                {alerts.length === 0
                   ? 'Aucune alerte active. Tout va bien !'
                   : `${alerts.length} alerte${alerts.length > 1 ? 's' : ''} à traiter`
                 }
@@ -237,7 +242,7 @@ const AlertsPageV2 = ({ toast, onNavigate }) => {
               Ta situation financière est sous contrôle. Continue comme ça ! 💪
             </p>
             <button
-              onClick={() => onNavigate('dashboard')}
+              onClick={() => onNavigate && onNavigate('dashboard')}
               className="bg-gradient-to-r from-green-600 to-emerald-600 text-white px-8 py-3 rounded-xl font-semibold hover:shadow-lg transition-all"
             >
               Retour au Dashboard
@@ -253,7 +258,7 @@ const AlertsPageV2 = ({ toast, onNavigate }) => {
               const typeConfig = getAlertTypeConfig(alert.alert_type);
               const isDismissing = dismissingId === alert.id;
               const isExecuting = executingId === alert.id;
-              
+
               return (
                 <div
                   key={alert.id}
@@ -268,7 +273,7 @@ const AlertsPageV2 = ({ toast, onNavigate }) => {
                           <div className={`w-12 h-12 ${severityConfig.iconBg} rounded-xl flex items-center justify-center text-2xl`}>
                             {severityConfig.icon}
                           </div>
-                          
+
                           <div className="flex-1">
                             <div className="flex items-center gap-2 mb-1">
                               <h3 className="text-xl font-bold text-gray-900">{alert.title}</h3>
@@ -399,7 +404,7 @@ const AlertsPageV2 = ({ toast, onNavigate }) => {
             opacity: 1;
           }
         }
-        
+
         .animate-slideIn {
           animation: slideIn 0.3s ease-out;
         }
