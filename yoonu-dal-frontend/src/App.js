@@ -504,7 +504,7 @@ function App() {
 
       case 'alerts':
         if (!isAuthenticated) { handleNavigate('login'); return null; }
-        return <AlertsPage />;
+        return <AlertsPage onNavigate={handleNavigate} toast={toastMethods} />;
 
       case 'pricing':
         return <PricingPage onNavigate={handleNavigate} user={user} toast={toastMethods} />;
