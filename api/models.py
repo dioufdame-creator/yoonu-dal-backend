@@ -1234,4 +1234,95 @@ class MonthlyCarryover(models.Model):
         self.save()
 
 
+# ==========================================
+# À AJOUTER À LA FIN DE api/models.py
+# ==========================================
+
+class RecurringTransaction(models.Model):
+    """
+    Patron de transaction récurrente (revenu ou dépense).
+    Génère automatiquement de vraies Expense/Income chaque mois,
+    avec confirmation de l'utilisateur avant application.
+    """
+
+    TYPE_CHOICES = [
+        ('expense', 'Dépense'),
+        ('income', 'Revenu'),
+    ]
+
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='recurring_transactions')
+    type = models.CharField(max_length=10, choices=TYPE_CHOICES)
+
+    # Pour une dépense : category (parmi Expense.CATEGORY_CHOICES)
+    # Pour un revenu : source (texte libre, ex: "Salaire", "Business")
+    category_or_source = models.CharField(max_length=50)
+
+    description = models.CharField(max_length=200)
+    amount = models.DecimalField(max_digits=15, decimal_places=2)
+
+    day_of_month = models.IntegerField(
+        default=1,
+        help_text="Jour du mois où la transaction doit apparaître (1-28)"
+    )
+
+    is_active = models.BooleanField(default=True)
+
+    # Pour un revenu : distingue un vrai revenu (salaire) d'une entrée
+    # non-revenu récurrente (ex: retrait mensuel d'épargne programmé).
+    # Sans effet pour type='expense'.
+    is_real_income = models.BooleanField(default=True)
+
+    start_date = models.DateField(default=timezone.now)
+    end_date = models.DateField(null=True, blank=True, help_text="Optionnel — arrêt automatique après cette date")
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['-is_active', 'day_of_month']
+
+    def __str__(self):
+        return f"{self.user.username} — {self.description} ({self.amount} FCFA, le {self.day_of_month})"
+
+    def is_due_for_month(self, month_start):
+        """L'abonnement est-il actif pour ce mois donné (1er jour du mois) ?"""
+        if not self.is_active:
+            return False
+        if self.start_date > month_start:
+            return False
+        if self.end_date and self.end_date < month_start:
+            return False
+        return True
+
+
+class RecurringGeneration(models.Model):
+    """
+    Trace qu'un RecurringTransaction a déjà été proposé/généré pour un mois
+    donné — empêche les doublons si l'utilisateur ouvre l'app plusieurs fois.
+    """
+    STATUS_CHOICES = [
+        ('pending', 'En attente de confirmation'),
+        ('confirmed', 'Confirmée'),
+        ('modified', 'Modifiée puis confirmée'),
+        ('skipped', 'Ignorée ce mois'),
+    ]
+
+    recurring = models.ForeignKey(RecurringTransaction, on_delete=models.CASCADE, related_name='generations')
+    month = models.DateField(help_text="1er jour du mois concerné")
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
+
+    # Lien vers la transaction réelle créée une fois confirmée
+    expense = models.ForeignKey(Expense, on_delete=models.SET_NULL, null=True, blank=True)
+    income = models.ForeignKey(Income, on_delete=models.SET_NULL, null=True, blank=True)
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    resolved_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        unique_together = ('recurring', 'month')
+        ordering = ['-month']
+
+    def __str__(self):
+        return f"{self.recurring.description} — {self.month.strftime('%B %Y')} ({self.status})"
+
 
