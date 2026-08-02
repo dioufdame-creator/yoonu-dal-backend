@@ -37,6 +37,7 @@ const ProfileHub = ({ onNavigate, user, onLogout }) => {
         { icon: '💳', label: 'Mes dettes', page: 'debts', color: 'bg-amber-50 text-amber-700' },
         { icon: '💰', label: 'Historique transactions', page: 'transactions', color: 'bg-purple-50 text-purple-700' },
         { icon: '📄', label: 'Exporter mes données', page: 'exports', color: 'bg-slate-50 text-slate-700' },
+        { icon: '🔁', label: 'Transactions récurrentes', page: 'recurring', color: 'bg-purple-50 text-purple-700' },
       ]
     },
     {
