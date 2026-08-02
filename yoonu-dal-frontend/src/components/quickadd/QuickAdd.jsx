@@ -58,6 +58,8 @@ const QuickAdd = ({ type = 'expense', onNavigate, toast }) => {
   const [showAllCategories, setShowAllCategories] = useState(false);
   const [showDate, setShowDate] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [makeRecurring, setMakeRecurring] = useState(false);
+  const [recurringDay, setRecurringDay] = useState(new Date().getDate());
 
   const categories = isExpense
     ? (showAllCategories ? ALL_EXPENSE_CATEGORIES : TOP_EXPENSE_CATEGORIES)
@@ -73,11 +75,13 @@ const QuickAdd = ({ type = 'expense', onNavigate, toast }) => {
 
     setSaving(true);
     try {
+      const finalDescription = description || categories.find(c => c.value === category)?.label || category;
+
       if (isExpense) {
         await API.post('/expenses/', {
           amount: parseFloat(amount),
           category,
-          description: description || categories.find(c => c.value === category)?.label || category,
+          description: finalDescription,
           date,
         });
         toast?.showSuccess('✅ Dépense enregistrée !');
@@ -85,11 +89,28 @@ const QuickAdd = ({ type = 'expense', onNavigate, toast }) => {
         await API.post('/incomes/', {
           amount: parseFloat(amount),
           source: category,
-          description: description || category,
+          description: finalDescription,
           date,
         });
         toast?.showSuccess('✅ Revenu enregistré !');
       }
+
+      // ✅ Créer le patron récurrent si demandé
+      if (makeRecurring) {
+        try {
+          await API.post('/recurring/', {
+            type: isExpense ? 'expense' : 'income',
+            category_or_source: category,
+            description: finalDescription,
+            amount: parseFloat(amount),
+            day_of_month: recurringDay,
+          });
+          toast?.showSuccess('🔁 Transaction récurrente activée !');
+        } catch {
+          // silencieux — la transaction principale est déjà enregistrée
+        }
+      }
+
       onNavigate('dashboard');
     } catch (error) {
       toast?.showError('Erreur lors de l\'enregistrement');
@@ -206,6 +227,40 @@ const QuickAdd = ({ type = 'expense', onNavigate, toast }) => {
                   value={date}
                   onChange={(e) => setDate(e.target.value)}
                   className="w-full text-sm outline-none"
+                />
+              </div>
+            )}
+          </div>
+
+          {/* 4. RENDRE RÉCURRENT */}
+          <div className="bg-white rounded-3xl border border-gray-200 p-4 mb-4 shadow-sm">
+            <button
+              onClick={() => setMakeRecurring(!makeRecurring)}
+              className="w-full flex items-center gap-3"
+            >
+              <div className={`w-11 h-6 rounded-full transition-colors flex-shrink-0 relative ${
+                makeRecurring ? 'bg-green-500' : 'bg-gray-200'
+              }`}>
+                <div className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow-sm transition-transform ${
+                  makeRecurring ? 'translate-x-5' : 'translate-x-0.5'
+                }`} />
+              </div>
+              <div className="flex-1 text-left">
+                <p className="text-sm font-bold text-gray-800">🔁 Rendre récurrent</p>
+                <p className="text-xs text-gray-400">Se répète automatiquement chaque mois</p>
+              </div>
+            </button>
+
+            {makeRecurring && (
+              <div className="mt-3 pt-3 border-t border-gray-100 flex items-center gap-3">
+                <span className="text-xs text-gray-500">Chaque mois le</span>
+                <input
+                  type="number"
+                  min="1"
+                  max="28"
+                  value={recurringDay}
+                  onChange={(e) => setRecurringDay(Math.min(28, Math.max(1, parseInt(e.target.value) || 1)))}
+                  className="w-16 px-2 py-1.5 border border-gray-200 rounded-lg text-sm text-center outline-none focus:border-green-500"
                 />
               </div>
             )}
