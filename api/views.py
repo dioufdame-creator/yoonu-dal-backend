@@ -5521,4 +5521,235 @@ def allocate_monthly_carryover(request):
     except Exception as e:
         return Response({'error': f'Erreur affectation: {str(e)}'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-        
+
+
+
+
+# ==========================================
+# À AJOUTER À LA FIN DE api/views.py
+# Système de transactions récurrentes
+# ==========================================
+
+from .models import RecurringTransaction, RecurringGeneration
+
+
+# ── GESTION DES PATRONS RÉCURRENTS ──────────────────────────
+
+@api_view(['GET', 'POST'])
+@permission_classes([IsAuthenticated])
+def manage_recurring_transactions(request):
+    """
+    GET  : liste les transactions récurrentes de l'utilisateur
+    POST : crée une nouvelle transaction récurrente
+    """
+    user = request.user
+
+    if request.method == 'GET':
+        recurring = RecurringTransaction.objects.filter(user=user).order_by('-is_active', 'day_of_month')
+        data = [{
+            'id': r.id,
+            'type': r.type,
+            'category_or_source': r.category_or_source,
+            'description': r.description,
+            'amount': float(r.amount),
+            'day_of_month': r.day_of_month,
+            'is_active': r.is_active,
+            'is_real_income': r.is_real_income,
+            'start_date': r.start_date.isoformat(),
+            'end_date': r.end_date.isoformat() if r.end_date else None,
+        } for r in recurring]
+        return Response({'recurring_transactions': data})
+
+    else:  # POST
+        data = request.data
+        required = ['type', 'category_or_source', 'description', 'amount']
+        for field in required:
+            if not data.get(field):
+                return Response({'error': f'Le champ {field} est obligatoire'}, status=status.HTTP_400_BAD_REQUEST)
+
+        if data['type'] not in ['expense', 'income']:
+            return Response({'error': 'type doit être "expense" ou "income"'}, status=status.HTTP_400_BAD_REQUEST)
+
+        day = int(data.get('day_of_month', 1))
+        if day < 1 or day > 28:
+            day = min(max(day, 1), 28)
+
+        recurring = RecurringTransaction.objects.create(
+            user=user,
+            type=data['type'],
+            category_or_source=data['category_or_source'],
+            description=data['description'],
+            amount=Decimal(str(data['amount'])),
+            day_of_month=day,
+            is_real_income=data.get('is_real_income', True),
+            start_date=data.get('start_date', timezone.now().date()),
+        )
+
+        return Response({
+            'id': recurring.id,
+            'message': 'Transaction récurrente créée avec succès'
+        }, status=status.HTTP_201_CREATED)
+
+
+@api_view(['PATCH', 'DELETE'])
+@permission_classes([IsAuthenticated])
+def recurring_transaction_detail(request, recurring_id):
+    """
+    PATCH  : modifier (montant, jour, actif/inactif...)
+    DELETE : supprimer définitivement
+    """
+    user = request.user
+    try:
+        recurring = RecurringTransaction.objects.get(id=recurring_id, user=user)
+    except RecurringTransaction.DoesNotExist:
+        return Response({'error': 'Transaction récurrente introuvable'}, status=status.HTTP_404_NOT_FOUND)
+
+    if request.method == 'PATCH':
+        data = request.data
+        if 'amount' in data:
+            recurring.amount = Decimal(str(data['amount']))
+        if 'description' in data:
+            recurring.description = data['description']
+        if 'day_of_month' in data:
+            recurring.day_of_month = min(max(int(data['day_of_month']), 1), 28)
+        if 'is_active' in data:
+            recurring.is_active = data['is_active']
+        if 'end_date' in data:
+            recurring.end_date = data['end_date']
+        recurring.save()
+        return Response({'message': 'Transaction récurrente mise à jour'})
+
+    else:  # DELETE
+        recurring.delete()
+        return Response({'message': 'Transaction récurrente supprimée'})
+
+
+# ── VÉRIFICATION ET CONFIRMATION MENSUELLE ──────────────────
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def check_recurring_pending(request):
+    """
+    Vérifie s'il y a des transactions récurrentes à confirmer pour le mois
+    courant. Crée les RecurringGeneration en 'pending' si elles n'existent
+    pas encore. Appelé au chargement du Dashboard.
+    """
+    user = request.user
+    now = timezone.now()
+    month_start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0).date()
+
+    active_recurring = RecurringTransaction.objects.filter(user=user, is_active=True)
+    pending_items = []
+
+    for r in active_recurring:
+        if not r.is_due_for_month(month_start):
+            continue
+
+        generation, created = RecurringGeneration.objects.get_or_create(
+            recurring=r,
+            month=month_start,
+            defaults={'status': 'pending'}
+        )
+
+        if generation.status == 'pending':
+            pending_items.append({
+                'generation_id': generation.id,
+                'recurring_id': r.id,
+                'type': r.type,
+                'category_or_source': r.category_or_source,
+                'description': r.description,
+                'amount': float(r.amount),
+                'day_of_month': r.day_of_month,
+            })
+
+    return Response({
+        'has_pending': len(pending_items) > 0,
+        'items': pending_items,
+        'month_label': month_start.strftime('%B %Y'),
+    })
+
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def confirm_recurring_batch(request):
+    """
+    Confirme un lot de transactions récurrentes en attente.
+    Chaque item peut être confirmé tel quel, modifié, ou ignoré.
+
+    Body:
+    {
+        "decisions": [
+            {"generation_id": 5, "action": "confirm"},
+            {"generation_id": 6, "action": "modify", "amount": 155000, "date": "2026-07-05"},
+            {"generation_id": 7, "action": "skip"}
+        ]
+    }
+    """
+    user = request.user
+    decisions = request.data.get('decisions', [])
+
+    if not decisions:
+        return Response({'error': 'decisions requis'}, status=status.HTTP_400_BAD_REQUEST)
+
+    results = []
+
+    for decision in decisions:
+        generation_id = decision.get('generation_id')
+        action = decision.get('action')
+
+        try:
+            generation = RecurringGeneration.objects.get(id=generation_id, recurring__user=user, status='pending')
+        except RecurringGeneration.DoesNotExist:
+            results.append({'generation_id': generation_id, 'error': 'Introuvable ou déjà traitée'})
+            continue
+
+        recurring = generation.recurring
+
+        if action == 'skip':
+            generation.status = 'skipped'
+            generation.resolved_at = timezone.now()
+            generation.save()
+            results.append({'generation_id': generation_id, 'status': 'skipped'})
+            continue
+
+        # confirm ou modify — dans les deux cas on crée la vraie transaction
+        final_amount = Decimal(str(decision.get('amount', recurring.amount)))
+        final_date = decision.get('date')
+        if final_date:
+            from datetime import datetime as dt
+            final_date = dt.fromisoformat(final_date).date()
+        else:
+            final_date = generation.month.replace(day=min(recurring.day_of_month, 28))
+
+        if recurring.type == 'expense':
+            expense = Expense.objects.create(
+                user=user,
+                category=recurring.category_or_source,
+                description=recurring.description,
+                amount=final_amount,
+                date=final_date,
+                is_necessary=True,
+            )
+            update_envelope_spending(user, expense)
+            generation.expense = expense
+        else:
+            income = Income.objects.create(
+                user=user,
+                source=recurring.category_or_source,
+                description=recurring.description,
+                amount=final_amount,
+                date=final_date,
+                is_validated=True,
+            )
+            generation.income = income
+
+        generation.status = 'modified' if action == 'modify' else 'confirmed'
+        generation.resolved_at = timezone.now()
+        generation.save()
+
+        results.append({'generation_id': generation_id, 'status': generation.status, 'amount': float(final_amount)})
+
+    return Response({
+        'message': f'{len(results)} transaction(s) traitée(s)',
+        'results': results,
+    })
