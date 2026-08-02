@@ -3,7 +3,7 @@ import './App.css';
 import YoonuScorePage from './components/score/YoonuScorePage';
 import AlertsPage from './components/alerts/AlertsPage';
 import AlertsBadge from './components/alerts/AlertsBadge';
-import SimpleDiagnostic from './components/diagnostic/SimpleDiagnostic';
+import MyValues from './components/diagnostic/MyValues';
 
 import authService from './services/authService';
 import API from './services/api';
@@ -16,7 +16,6 @@ import { ToastContainer, useToast } from './components/shared/Toast';
 import Home from './components/Home';
 import Home2 from './components/Home2';
 import Dashboard from './components/dashboard/Dashboard';
-import ValueSelector from './components/consciousness/ValueSelector';
 import ExpenseTracker from './components/control/ExpenseTracker';
 import TontinesList from './components/tontines/TontinesList';
 import TontineDetail from './components/tontines/TontineDetail';
@@ -568,13 +567,12 @@ function App() {
       case 'tontine-invite':
         return <TontineInvitePage inviteCode={pageParams?.code} onNavigate={handleNavigate} toast={toastMethods} isAuthenticated={isAuthenticated} />;
 
+      // ✅ 'diagnostic' et 'values' pointent vers le même écran unifié —
+      // évite de casser les liens existants tout en supprimant la confusion
       case 'diagnostic':
-        if (!isAuthenticated) { handleNavigate('login'); return null; }
-        return <SimpleDiagnostic onNavigate={handleNavigate} toast={toastMethods} />;
-
       case 'values':
         if (!isAuthenticated) { handleNavigate('login'); return null; }
-        return <ValueSelector onNavigate={handleNavigate} toast={toastMethods} auth={authMethods} />;
+        return <MyValues onNavigate={handleNavigate} toast={toastMethods} />;
 
       case 'tontine-detail':
         if (!isAuthenticated) { handleNavigate('login'); return null; }
