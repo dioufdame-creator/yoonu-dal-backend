@@ -142,8 +142,8 @@ const Navigation = ({ currentPage, onNavigate, isAuthenticated, user, onLogout, 
                           <button onClick={() => handleNavigation('score')} className="w-full text-left px-4 py-3 hover:bg-gray-50 flex items-center gap-3">
                             <span>🎯</span><span>Mon Score</span>
                           </button>
-                          <button onClick={() => handleNavigation('diagnostic')} className="w-full text-left px-4 py-3 hover:bg-gray-50 flex items-center gap-3">
-                            <span>🧭</span><span>Diagnostic</span>
+                          <button onClick={() => handleNavigation('values')} className="w-full text-left px-4 py-3 hover:bg-gray-50 flex items-center gap-3">
+                            <span>💎</span><span>Mes valeurs</span>
                           </button>
                           <button onClick={() => handleNavigation('category-rules')} className="w-full text-left px-4 py-3 hover:bg-green-50 flex items-center gap-3 text-green-700 font-medium">
                             <span>🗂️</span><span>Mes règles de classement</span>
