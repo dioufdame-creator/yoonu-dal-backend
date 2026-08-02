@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import API from '../../services/api';
 import CarryoverCard from './CarryoverCard';
+import RecurringConfirmCard from './RecurringConfirmCard';
 
 const MONTHS_FR = ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin',
   'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'];
@@ -366,6 +367,11 @@ const Dashboard = ({ toast, auth, onNavigate, user }) => {
         {/* ── REPORT DU MOIS PRÉCÉDENT ───────────────── */}
         {isCurrentMonth && (
           <CarryoverCard onNavigate={onNavigate} toast={toast} onAllocated={loadData} />
+        )}
+
+        {/* ── TRANSACTIONS RÉCURRENTES À CONFIRMER ───── */}
+        {isCurrentMonth && (
+          <RecurringConfirmCard toast={toast} onProcessed={loadData} />
         )}
 
         {/* ── CARTE SOLDE ────────────────────────────── */}
