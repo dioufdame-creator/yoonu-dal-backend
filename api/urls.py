@@ -21,6 +21,10 @@ from .views import (
     login_with_email_or_username,
     check_monthly_carryover,
     allocate_monthly_carryover,
+    manage_recurring_transactions,
+    recurring_transaction_detail,
+    check_recurring_pending,
+    confirm_recurring_batch,
 )
 
 urlpatterns = [
@@ -151,4 +155,9 @@ urlpatterns = [
     
     path('carryover/check/', check_monthly_carryover, name='check_monthly_carryover'),
     path('carryover/allocate/', allocate_monthly_carryover, name='allocate_monthly_carryover'),
+
+    path('recurring/', manage_recurring_transactions, name='manage_recurring_transactions'),
+    path('recurring/<int:recurring_id>/', recurring_transaction_detail, name='recurring_transaction_detail'),
+    path('recurring/check/', check_recurring_pending, name='check_recurring_pending'),
+    path('recurring/confirm/', confirm_recurring_batch, name='confirm_recurring_batch'),
 ]
