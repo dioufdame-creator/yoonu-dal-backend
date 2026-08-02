@@ -29,6 +29,7 @@ import { ForgotPasswordForm, ResetPasswordForm } from './components/auth/AuthFor
 import ProfileHub from './components/profile/ProfileHub';
 import QuickAdd from './components/quickadd/QuickAdd';
 import ExportPage from './components/exports/ExportPage';
+import RecurringTransactionsPage from './components/recurring/RecurringTransactionsPage';
 
 import TransactionsPage from './components/transactions/TransactionsPage';
 
@@ -129,7 +130,7 @@ function App() {
     const protectedPages = [
       'dashboard', 'expenses', 'transactions', 'incomes', 'envelopes', 'tontines',
       'tontine-detail', 'tontine-analysis',
-      'profile', 'profile-hub', 'quick-add', 'exports', 'settings', 'score', 'alerts',
+      'profile', 'profile-hub', 'quick-add', 'exports', 'recurring', 'settings', 'score', 'alerts',
       'diagnostic', 'values', 'category-rules', 'goals', 'debts', 'debt-detail',
       'subscription'
     ];
@@ -543,6 +544,10 @@ function App() {
       case 'exports':
         if (!isAuthenticated) { handleNavigate('login'); return null; }
         return <ExportPage onNavigate={handleNavigate} toast={toastMethods} user={user} />;
+
+      case 'recurring':
+        if (!isAuthenticated) { handleNavigate('login'); return null; }
+        return <RecurringTransactionsPage onNavigate={handleNavigate} toast={toastMethods} />;
 
       case 'quick-add':
         if (!isAuthenticated) { handleNavigate('login'); return null; }
