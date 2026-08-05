@@ -129,7 +129,7 @@ function App() {
     const protectedPages = [
       'dashboard', 'expenses', 'transactions', 'incomes', 'envelopes', 'tontines',
       'tontine-detail', 'tontine-analysis',
-      'profile', 'profile-hub', 'quick-add', 'exports', 'recurring', 'settings', 'score', 'alerts',
+      'profile', 'profile-hub', 'quick-add', 'exports', 'recurring', 'score', 'alerts',
       'diagnostic', 'values', 'category-rules', 'goals', 'debts', 'debt-detail',
       'subscription'
     ];
@@ -587,37 +587,8 @@ function App() {
         handleNavigate('profile-hub');
         return null;
 
-      case 'settings':
-        if (!isAuthenticated) { handleNavigate('login'); return null; }
-        return (
-          <div className="min-h-screen bg-gray-100 flex items-center justify-center p-4 pb-24">
-            <div className="bg-white rounded-2xl shadow-lg p-8 max-w-md w-full">
-              <h2 className="text-2xl font-bold mb-6 text-center">⚙️ Paramètres</h2>
-              <div className="space-y-4">
-                <button onClick={() => handleNavigate('category-rules')}
-                  className="w-full text-left p-4 bg-green-50 text-green-700 rounded-lg hover:bg-green-100 transition-colors font-medium">
-                  🗂️ Mes règles de classement
-                </button>
-                <button onClick={() => handleNavigate('values')}
-                  className="w-full text-left p-4 bg-blue-50 text-blue-700 rounded-lg hover:bg-blue-100 transition-colors font-medium">
-                  💎 Mes valeurs personnelles
-                </button>
-                <button onClick={() => handleNavigate('subscription')}
-                  className="w-full text-left p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
-                  💎 Mon Abonnement
-                </button>
-                <button onClick={handleLogout}
-                  className="w-full text-left p-4 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 transition-colors font-medium">
-                  🚪 Déconnexion
-                </button>
-              </div>
-              <button onClick={() => handleNavigate('dashboard')}
-                className="w-full mt-6 bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors">
-                ← Retour au tableau de bord
-              </button>
-            </div>
-          </div>
-        );
+      // ✅ 'settings' retiré — doublonnait avec ProfileHub ('Moi'),
+      // Navigation.js pointe maintenant directement vers 'profile-hub'
 
       case 'help':
         return (
