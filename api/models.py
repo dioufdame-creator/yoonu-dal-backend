@@ -599,8 +599,15 @@ class Transaction(models.Model):
 # DETTES (ENVELOPPE LIBÉRATION)
 # ==========================================
 
+# ==========================================
+# MODIFICATION dans api/models.py — modèle Debt existant
+# ==========================================
+#
+# Remplacer la classe Debt existante (et ne toucher à rien d'autre) par
+# cette version enrichie. DebtPayment reste identique (voir note en bas).
+
 class Debt(models.Model):
-    """Tracker les dettes et remboursements"""
+    """Tracker les dettes et créances — bidirectionnel"""
     DEBT_TYPES = [
         ('credit_bancaire', 'Crédit bancaire'),
         ('pret_personnel', 'Prêt personnel'),
@@ -610,11 +617,24 @@ class Debt(models.Model):
         ('tontine', 'Tontine'),
         ('autre', 'Autre')
     ]
-    
+
+    # ✅ NOUVEAU : sens de la dette
+    DIRECTION_CHOICES = [
+        ('owed_by_me', 'Je dois'),
+        ('owed_to_me', 'On me doit'),
+    ]
+
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='debts')
     name = models.CharField(max_length=200)
     debt_type = models.CharField(max_length=50, choices=DEBT_TYPES, default='autre')
-    creditor = models.CharField(max_length=200, blank=True)
+
+    # ✅ Renommé depuis 'creditor' — représente l'autre partie,
+    # quel que soit le sens (celui à qui je dois, OU celui qui me doit)
+    counterparty = models.CharField(max_length=200, blank=True)
+
+    # ✅ NOUVEAU — défaut 'owed_by_me' pour compatibilité avec les données existantes
+    direction = models.CharField(max_length=20, choices=DIRECTION_CHOICES, default='owed_by_me')
+
     total_amount = models.DecimalField(max_digits=12, decimal_places=2)
     amount_paid = models.DecimalField(max_digits=12, decimal_places=2, default=0)
     monthly_payment = models.DecimalField(max_digits=12, decimal_places=2)
@@ -627,23 +647,23 @@ class Debt(models.Model):
     notes = models.TextField(blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
-    
+
     @property
     def remaining_amount(self):
         return self.total_amount - self.amount_paid
-    
+
     @property
     def progress_percentage(self):
         if self.total_amount > 0:
             return (self.amount_paid / self.total_amount) * 100
         return 0
-    
+
     @property
     def months_remaining(self):
         if self.monthly_payment > 0 and self.remaining_amount > 0:
             return int(self.remaining_amount / self.monthly_payment) + 1
         return 0
-    
+
     @property
     def status(self):
         if self.is_fully_paid:
@@ -656,16 +676,31 @@ class Debt(models.Model):
             return 'in_progress'
         else:
             return 'started'
-    
+
     def __str__(self):
-        return f"{self.user.username} - {self.name} ({self.remaining_amount} FCFA restants)"
-    
+        verb = "doit à" if self.direction == 'owed_by_me' else "est dû par"
+        return f"{self.user.username} {verb} {self.counterparty} ({self.remaining_amount} FCFA restants)"
+
     class Meta:
         ordering = ['-is_active', '-created_at']
 
 
+# ──────────────────────────────────────────────────────────
+# DebtPayment ne change PAS structurellement, mais son comportement
+# `save()` doit être adapté pour créer soit une Expense (owed_by_me,
+# comme avant) soit une Income (owed_to_me — on reçoit un remboursement).
+# Voir le fichier debt_payment_save_patch.py fourni séparément.
+# ──────────────────────────────────────────────────────────
+
+# ==========================================
+# MODIFICATION dans api/models.py — méthode save() de DebtPayment
+# ==========================================
+#
+# Remplacer la méthode save() existante de DebtPayment par celle-ci.
+# Le reste de la classe (champs, __str__, Meta) ne change pas.
+
 class DebtPayment(models.Model):
-    """Historique des remboursements de dette"""
+    """Historique des remboursements — dans les deux sens"""
     PAYMENT_METHODS = [
         ('cash', 'Espèces'),
         ('virement', 'Virement'),
@@ -673,48 +708,58 @@ class DebtPayment(models.Model):
         ('cheque', 'Chèque'),
         ('autre', 'Autre')
     ]
-    
+
     debt = models.ForeignKey(Debt, on_delete=models.CASCADE, related_name='payments')
     amount = models.DecimalField(max_digits=12, decimal_places=2)
     payment_date = models.DateField()
     payment_method = models.CharField(max_length=50, choices=PAYMENT_METHODS, default='cash')
     notes = models.TextField(blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
-    
+
     def save(self, *args, **kwargs):
-        is_new = self.pk is None  # ← NOUVELLE LIGNE
+        is_new = self.pk is None
         super().save(*args, **kwargs)
-        
-        # ✅ CRÉER AUTOMATIQUEMENT UNE DÉPENSE  ← NOUVEAU BLOC
+
         if is_new:
-            Expense.objects.create(
-                user=self.debt.user,
-                category='remboursement_dette',
-                description=f"Paiement dette: {self.debt.name}",
-                amount=self.amount,
-                date=self.payment_date
-            )
-        
-        # Recalculer le montant payé
+            if self.debt.direction == 'owed_by_me':
+                # Je rembourse ma dette → c'est une dépense
+                Expense.objects.create(
+                    user=self.debt.user,
+                    category='remboursement_dette',
+                    description=f"Paiement dette: {self.debt.name}",
+                    amount=self.amount,
+                    date=self.payment_date
+                )
+            else:
+                # On me rembourse une créance → c'est un revenu
+                Income.objects.create(
+                    user=self.debt.user,
+                    source='remboursement_recu',
+                    description=f"Remboursement reçu: {self.debt.name}",
+                    amount=self.amount,
+                    date=self.payment_date
+                )
+
+        # Recalculer le montant payé/remboursé
         from django.db.models import Sum
         total_paid = self.debt.payments.aggregate(
             total=Sum('amount')
         )['total'] or Decimal('0')
-        
+
         self.debt.amount_paid = total_paid
-        
+
         if self.debt.amount_paid >= self.debt.total_amount:
             self.debt.is_fully_paid = True
             self.debt.is_active = False
             self.debt.actual_end_date = self.payment_date
-        
-        self.debt.save()    
+
+        self.debt.save()
+
     def __str__(self):
         return f"{self.debt.name} - {self.amount} FCFA le {self.payment_date}"
-    
+
     class Meta:
         ordering = ['-payment_date']
-
 
 # ==========================================
 # DIAGNOSTIC
