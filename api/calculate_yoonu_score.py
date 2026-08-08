@@ -351,22 +351,31 @@ def calculate_yoonu_score(user):
         pass
 
     # — Dettes (4pts max) —
+# Remplacer ce bloc existant :
+#
+#     try:
+#         active_debts = Debt.objects.filter(user=user, is_active=True)
+#         if active_debts.exists():
+#
+# Par CE bloc corrigé (une seule ligne change) :
+ 
     try:
-        active_debts = Debt.objects.filter(user=user, is_active=True)
+        # ✅ Ne compter que les dettes que JE dois — une créance (on me doit)
+        # n'est pas une charge et ne doit jamais pénaliser le score.
+        active_debts = Debt.objects.filter(user=user, is_active=True, direction='owed_by_me')
         if active_debts.exists():
             # Remboursement ce mois
             debt_payment_this_month = DebtPayment.objects.filter(
                 debt__user=user,
+                debt__direction='owed_by_me',
                 payment_date__gte=start_of_month.date()
             ).exists()
-
+ 
             if debt_payment_this_month:
                 construction_total += 4
             else:
-                # A des dettes mais pas de remboursement ce mois → pénalité
                 construction_total -= 3
         else:
-            # Pas de dettes = bonne situation
             construction_total += 3
     except Exception:
         pass
