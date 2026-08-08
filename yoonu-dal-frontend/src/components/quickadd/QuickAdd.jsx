@@ -46,6 +46,7 @@ const INCOME_SOURCES = [
   { value: 'Freelance',      label: 'Freelance',      icon: '💻' },
   { value: 'Location',       label: 'Location',       icon: '🏠' },
   { value: 'Investissement', label: 'Investissement', icon: '📈' },
+  { value: 'remboursement_recu', label: 'Remboursement reçu', icon: '🤝' },
   { value: 'Autre',          label: 'Autre',          icon: '💵' },
 ];
 
