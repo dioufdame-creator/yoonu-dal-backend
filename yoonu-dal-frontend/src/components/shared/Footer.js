@@ -2,7 +2,9 @@ import React from 'react';
 
 const Footer = () => {
   return (
-    <footer className="bg-gray-800 text-white p-6 mt-10">
+    // ✅ Masqué sur mobile (app mobile-first, le footer n'a pas sa place
+    // dans une expérience type app) — visible à partir de desktop (lg)
+    <footer className="hidden lg:block bg-gray-800 text-white p-6 mt-10">
       <div className="container mx-auto">
         <div className="flex flex-col md:flex-row justify-between">
           <div className="mb-4 md:mb-0">
