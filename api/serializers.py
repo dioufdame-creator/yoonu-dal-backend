@@ -543,39 +543,42 @@ class DebtPaymentSerializer(serializers.ModelSerializer):
         read_only_fields = ['id', 'created_at']
 
 
+# ==========================================
+# CORRECTION dans api/serializers.py — DebtSerializer
+# ==========================================
+#
+# Remplacer 'creditor' par 'counterparty' et ajouter 'direction'
+# dans la liste des fields. Voici la classe complète mise à jour :
+
 class DebtSerializer(serializers.ModelSerializer):
-    """Serializer pour les dettes"""
-    
-    # Champs calculés
+    """Serializer pour les dettes — bidirectionnel"""
+
     remaining_amount = serializers.DecimalField(
         max_digits=12, decimal_places=2, read_only=True
     )
     progress_percentage = serializers.FloatField(read_only=True)
     months_remaining = serializers.IntegerField(read_only=True)
     status = serializers.CharField(read_only=True)
-    
-    # Historique des paiements (optionnel)
+
     payments = DebtPaymentSerializer(many=True, read_only=True)
     payment_count = serializers.SerializerMethodField()
-    
+
     class Meta:
         model = Debt
         fields = [
-            'id', 'name', 'debt_type', 'creditor',
+            'id', 'name', 'debt_type', 'counterparty', 'direction',
             'total_amount', 'amount_paid', 'monthly_payment',
             'start_date', 'target_end_date', 'actual_end_date',
             'interest_rate', 'is_active', 'is_fully_paid',
             'notes', 'created_at', 'updated_at',
-            # Calculés
-            'remaining_amount', 'progress_percentage', 
+            'remaining_amount', 'progress_percentage',
             'months_remaining', 'status',
-            # Relations
             'payments', 'payment_count'
         ]
         read_only_fields = [
-            'id', 'created_at', 'updated_at', 
+            'id', 'created_at', 'updated_at',
             'amount_paid', 'is_fully_paid'
         ]
-    
+
     def get_payment_count(self, obj):
         return obj.payments.count()
