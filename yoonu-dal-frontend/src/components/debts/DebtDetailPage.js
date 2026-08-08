@@ -7,7 +7,7 @@ const DebtDetailPage = ({ debtId, onNavigate, toast }) => {
   const [loading, setLoading] = useState(true);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  const [sortBy, setSortBy] = useState('date_desc'); // date_desc, date_asc, amount_desc, amount_asc
+  const [sortBy, setSortBy] = useState('date_desc');
   const [confirmDeleteId, setConfirmDeleteId] = useState(null);
 
   const [paymentForm, setPaymentForm] = useState({
@@ -26,18 +26,11 @@ const DebtDetailPage = ({ debtId, onNavigate, toast }) => {
   ];
 
   const DEBT_TYPE_EMOJI = {
-    'credit_bancaire': '🏦',
-    'pret_personnel': '💰',
-    'dette_famille': '👨‍👩‍👧',
-    'dette_ami': '🤝',
-    'credit_commerce': '🏪',
-    'tontine': '🦁',
-    'autre': '📋'
+    'credit_bancaire': '🏦', 'pret_personnel': '💰', 'dette_famille': '👨‍👩‍👧',
+    'dette_ami': '🤝', 'credit_commerce': '🏪', 'tontine': '🦁', 'autre': '📋'
   };
 
-  useEffect(() => {
-    loadData();
-  }, [debtId]);
+  useEffect(() => { loadData(); }, [debtId]);
 
   const loadData = async () => {
     setLoading(true);
@@ -46,7 +39,6 @@ const DebtDetailPage = ({ debtId, onNavigate, toast }) => {
         API.get(`/debts/${debtId}/`),
         API.get(`/debts/${debtId}/payments/`)
       ]);
-      
       setDebt(debtRes.data);
       setPayments(paymentsRes.data);
     } catch (error) {
@@ -60,16 +52,13 @@ const DebtDetailPage = ({ debtId, onNavigate, toast }) => {
 
   const handleAddPayment = async (e) => {
     e.preventDefault();
-    
     try {
       await API.post(`/debts/${debtId}/payments/`, paymentForm);
-      toast?.showSuccess('Paiement enregistré !');
+      toast?.showSuccess(isOwedByMe ? 'Paiement enregistré !' : 'Remboursement reçu enregistré !');
       setShowPaymentModal(false);
       setPaymentForm({
-        amount: '',
-        payment_date: new Date().toISOString().split('T')[0],
-        payment_method: 'cash',
-        notes: ''
+        amount: '', payment_date: new Date().toISOString().split('T')[0],
+        payment_method: 'cash', notes: ''
       });
       loadData();
     } catch (error) {
@@ -81,7 +70,7 @@ const DebtDetailPage = ({ debtId, onNavigate, toast }) => {
   const handleDeletePayment = async (paymentId) => {
     try {
       await API.delete(`/debts/payments/${paymentId}/`);
-      toast?.showSuccess('Paiement supprimé');
+      toast?.showSuccess('Supprimé');
       setConfirmDeleteId(null);
       loadData();
     } catch (error) {
@@ -90,17 +79,11 @@ const DebtDetailPage = ({ debtId, onNavigate, toast }) => {
     }
   };
 
-  const formatCurrency = (amount) => {
-    return new Intl.NumberFormat('fr-FR').format(amount || 0) + ' FCFA';
-  };
+  const formatCurrency = (amount) => new Intl.NumberFormat('fr-FR').format(amount || 0) + ' FCFA';
 
   const formatDate = (dateString) => {
     const date = new Date(dateString);
-    return date.toLocaleDateString('fr-FR', { 
-      day: '2-digit', 
-      month: 'short', 
-      year: 'numeric' 
-    });
+    return date.toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' });
   };
 
   const getStatusColor = (status) => {
@@ -114,11 +97,8 @@ const DebtDetailPage = ({ debtId, onNavigate, toast }) => {
     return colors[status] || 'from-gray-500 to-gray-600';
   };
 
-  const getMethodEmoji = (method) => {
-    return PAYMENT_METHODS.find(m => m.value === method)?.emoji || '📋';
-  };
+  const getMethodEmoji = (method) => PAYMENT_METHODS.find(m => m.value === method)?.emoji || '📋';
 
-  // Filtrer et trier les paiements
   const filteredPayments = payments
     .filter(payment => {
       if (!searchQuery) return true;
@@ -132,26 +112,18 @@ const DebtDetailPage = ({ debtId, onNavigate, toast }) => {
     })
     .sort((a, b) => {
       switch (sortBy) {
-        case 'date_desc':
-          return new Date(b.payment_date) - new Date(a.payment_date);
-        case 'date_asc':
-          return new Date(a.payment_date) - new Date(b.payment_date);
-        case 'amount_desc':
-          return b.amount - a.amount;
-        case 'amount_asc':
-          return a.amount - b.amount;
-        default:
-          return 0;
+        case 'date_desc': return new Date(b.payment_date) - new Date(a.payment_date);
+        case 'date_asc': return new Date(a.payment_date) - new Date(b.payment_date);
+        case 'amount_desc': return b.amount - a.amount;
+        case 'amount_asc': return a.amount - b.amount;
+        default: return 0;
       }
     });
 
-  // Calculer stats paiements
   const totalPaid = payments.reduce((sum, p) => sum + parseFloat(p.amount), 0);
   const avgPayment = payments.length > 0 ? totalPaid / payments.length : 0;
-  const lastPayment = payments.length > 0 
-    ? payments.reduce((latest, p) => 
-        new Date(p.payment_date) > new Date(latest.payment_date) ? p : latest
-      ) 
+  const lastPayment = payments.length > 0
+    ? payments.reduce((latest, p) => new Date(p.payment_date) > new Date(latest.payment_date) ? p : latest)
     : null;
 
   if (loading) {
@@ -168,10 +140,14 @@ const DebtDetailPage = ({ debtId, onNavigate, toast }) => {
   if (!debt) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <p className="text-gray-600">Dette introuvable</p>
+        <p className="text-gray-600">Introuvable</p>
       </div>
     );
   }
+
+  // ✅ Sens de la dette — adapte tous les libellés
+  const isOwedByMe = debt.direction === 'owed_by_me';
+  const counterpartyLabel = isOwedByMe ? 'Créancier' : 'Débiteur';
 
   return (
     <div className="min-h-screen bg-gray-50 pb-20">
@@ -180,18 +156,20 @@ const DebtDetailPage = ({ debtId, onNavigate, toast }) => {
         <div className="max-w-6xl mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <button
-                onClick={() => onNavigate?.('debts')}
-                className="text-gray-600 hover:text-gray-900 text-2xl"
-              >
-                ←
-              </button>
+              <button onClick={() => onNavigate?.('debts')} className="text-gray-600 hover:text-gray-900 text-2xl">←</button>
               <div className="flex items-center gap-2">
                 <span className="text-3xl">{DEBT_TYPE_EMOJI[debt.debt_type] || '📋'}</span>
                 <div>
-                  <h1 className="text-xl font-bold text-gray-900">{debt.name}</h1>
-                  {debt.creditor && (
-                    <p className="text-sm text-gray-600">Créancier: {debt.creditor}</p>
+                  <div className="flex items-center gap-2">
+                    <h1 className="text-xl font-bold text-gray-900">{debt.name}</h1>
+                    <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${
+                      isOwedByMe ? 'bg-red-50 text-red-600' : 'bg-green-50 text-green-600'
+                    }`}>
+                      {isOwedByMe ? 'Je dois' : 'On me doit'}
+                    </span>
+                  </div>
+                  {debt.counterparty && (
+                    <p className="text-sm text-gray-600">{counterpartyLabel}: {debt.counterparty}</p>
                   )}
                 </div>
               </div>
@@ -200,7 +178,7 @@ const DebtDetailPage = ({ debtId, onNavigate, toast }) => {
               onClick={() => setShowPaymentModal(true)}
               className="px-4 py-2 bg-green-600 text-white rounded-lg font-semibold hover:bg-green-700 transition-all"
             >
-              + Paiement
+              + {isOwedByMe ? 'Paiement' : 'Remboursement'}
             </button>
           </div>
         </div>
@@ -209,7 +187,6 @@ const DebtDetailPage = ({ debtId, onNavigate, toast }) => {
       <div className="max-w-6xl mx-auto px-4 py-6 space-y-6">
         {/* Carte résumé */}
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-          {/* Barre de progression */}
           <div className="mb-6">
             <div className="flex items-center justify-between mb-2">
               <span className="text-sm text-gray-600">Progression</span>
@@ -223,27 +200,25 @@ const DebtDetailPage = ({ debtId, onNavigate, toast }) => {
             </div>
           </div>
 
-          {/* Stats financières */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <div className="bg-gray-50 rounded-lg p-4">
               <p className="text-xs text-gray-600 mb-1">Montant total</p>
               <p className="text-lg font-bold text-gray-900">{formatCurrency(debt.total_amount)}</p>
             </div>
             <div className="bg-green-50 rounded-lg p-4">
-              <p className="text-xs text-gray-600 mb-1">Déjà payé</p>
+              <p className="text-xs text-gray-600 mb-1">{isOwedByMe ? 'Déjà payé' : 'Déjà reçu'}</p>
               <p className="text-lg font-bold text-green-700">{formatCurrency(debt.amount_paid)}</p>
             </div>
             <div className="bg-orange-50 rounded-lg p-4">
-              <p className="text-xs text-gray-600 mb-1">Reste à payer</p>
+              <p className="text-xs text-gray-600 mb-1">{isOwedByMe ? 'Reste à payer' : 'Reste à recevoir'}</p>
               <p className="text-lg font-bold text-orange-700">{formatCurrency(debt.remaining_amount)}</p>
             </div>
             <div className="bg-blue-50 rounded-lg p-4">
-              <p className="text-xs text-gray-600 mb-1">Paiement mensuel</p>
+              <p className="text-xs text-gray-600 mb-1">Mensualité</p>
               <p className="text-lg font-bold text-blue-700">{formatCurrency(debt.monthly_payment)}</p>
             </div>
           </div>
 
-          {/* Info supplémentaire */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4 pt-4 border-t border-gray-200">
             <div>
               <p className="text-xs text-gray-500">Mois restants</p>
@@ -278,31 +253,30 @@ const DebtDetailPage = ({ debtId, onNavigate, toast }) => {
         {/* Stats paiements */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
-            <p className="text-sm text-gray-600 mb-1">Total paiements</p>
+            <p className="text-sm text-gray-600 mb-1">{isOwedByMe ? 'Total paiements' : 'Total remboursements'}</p>
             <p className="text-2xl font-bold text-gray-900">{payments.length}</p>
           </div>
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
-            <p className="text-sm text-gray-600 mb-1">Paiement moyen</p>
+            <p className="text-sm text-gray-600 mb-1">Montant moyen</p>
             <p className="text-2xl font-bold text-blue-600">{formatCurrency(avgPayment)}</p>
           </div>
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
-            <p className="text-sm text-gray-600 mb-1">Dernier paiement</p>
+            <p className="text-sm text-gray-600 mb-1">{isOwedByMe ? 'Dernier paiement' : 'Dernier remboursement'}</p>
             <p className="text-lg font-bold text-green-600">
               {lastPayment ? formatDate(lastPayment.payment_date) : 'Aucun'}
             </p>
           </div>
         </div>
 
-        {/* Historique paiements */}
+        {/* Historique */}
         <div className="bg-white rounded-xl shadow-sm border border-gray-200">
           <div className="p-6 border-b border-gray-200">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-xl font-bold text-gray-900">
-                📅 Historique des paiements ({filteredPayments.length})
+                📅 Historique {isOwedByMe ? 'des paiements' : 'des remboursements'} ({filteredPayments.length})
               </h2>
             </div>
 
-            {/* Recherche et tri */}
             <div className="flex flex-col md:flex-row gap-3">
               <div className="flex-1">
                 <input
@@ -326,26 +300,22 @@ const DebtDetailPage = ({ debtId, onNavigate, toast }) => {
             </div>
           </div>
 
-          {/* Liste paiements */}
           <div className="divide-y divide-gray-200">
             {filteredPayments.length === 0 ? (
               <div className="p-12 text-center">
                 <div className="text-6xl mb-4">💸</div>
                 <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                  {searchQuery ? 'Aucun paiement trouvé' : 'Aucun paiement'}
+                  {searchQuery ? 'Aucun résultat' : isOwedByMe ? 'Aucun paiement' : 'Aucun remboursement'}
                 </h3>
                 <p className="text-gray-600 mb-6">
-                  {searchQuery 
-                    ? 'Essayez avec d\'autres mots-clés'
-                    : 'Commencez par ajouter un paiement'
-                  }
+                  {searchQuery ? 'Essayez avec d\'autres mots-clés' : `Commencez par ajouter ${isOwedByMe ? 'un paiement' : 'un remboursement'}`}
                 </p>
                 {!searchQuery && (
                   <button
                     onClick={() => setShowPaymentModal(true)}
                     className="px-6 py-3 bg-green-600 text-white rounded-lg font-semibold hover:bg-green-700 transition-all"
                   >
-                    + Ajouter un paiement
+                    + Ajouter {isOwedByMe ? 'un paiement' : 'un remboursement'}
                   </button>
                 )}
               </div>
@@ -357,45 +327,23 @@ const DebtDetailPage = ({ debtId, onNavigate, toast }) => {
                       <div className="text-2xl">{getMethodEmoji(payment.payment_method)}</div>
                       <div className="flex-1">
                         <div className="flex items-center gap-2 mb-1">
-                          <span className="font-bold text-lg text-gray-900">
-                            {formatCurrency(payment.amount)}
-                          </span>
+                          <span className="font-bold text-lg text-gray-900">{formatCurrency(payment.amount)}</span>
                           <span className="text-sm px-2 py-0.5 bg-blue-100 text-blue-700 rounded-full">
                             {PAYMENT_METHODS.find(m => m.value === payment.payment_method)?.label}
                           </span>
                         </div>
-                        <p className="text-sm text-gray-600">
-                          📅 {formatDate(payment.payment_date)}
-                        </p>
-                        {payment.notes && (
-                          <p className="text-sm text-gray-500 mt-1">💬 {payment.notes}</p>
-                        )}
+                        <p className="text-sm text-gray-600">📅 {formatDate(payment.payment_date)}</p>
+                        {payment.notes && <p className="text-sm text-gray-500 mt-1">💬 {payment.notes}</p>}
                       </div>
                     </div>
-                    
-                    {/* Bouton suppression */}
+
                     {confirmDeleteId === payment.id ? (
                       <div className="flex gap-2">
-                        <button
-                          onClick={() => handleDeletePayment(payment.id)}
-                          className="px-3 py-1 bg-red-600 text-white text-sm rounded-lg hover:bg-red-700 transition-all"
-                        >
-                          Confirmer
-                        </button>
-                        <button
-                          onClick={() => setConfirmDeleteId(null)}
-                          className="px-3 py-1 bg-gray-300 text-gray-700 text-sm rounded-lg hover:bg-gray-400 transition-all"
-                        >
-                          Annuler
-                        </button>
+                        <button onClick={() => handleDeletePayment(payment.id)} className="px-3 py-1 bg-red-600 text-white text-sm rounded-lg hover:bg-red-700 transition-all">Confirmer</button>
+                        <button onClick={() => setConfirmDeleteId(null)} className="px-3 py-1 bg-gray-300 text-gray-700 text-sm rounded-lg hover:bg-gray-400 transition-all">Annuler</button>
                       </div>
                     ) : (
-                      <button
-                        onClick={() => setConfirmDeleteId(payment.id)}
-                        className="px-3 py-1 bg-red-50 text-red-700 text-sm rounded-lg border-2 border-red-200 hover:bg-red-100 transition-all"
-                      >
-                        🗑️
-                      </button>
+                      <button onClick={() => setConfirmDeleteId(payment.id)} className="px-3 py-1 bg-red-50 text-red-700 text-sm rounded-lg border-2 border-red-200 hover:bg-red-100 transition-all">🗑️</button>
                     )}
                   </div>
                 </div>
@@ -409,9 +357,11 @@ const DebtDetailPage = ({ debtId, onNavigate, toast }) => {
       {showPaymentModal && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6">
-            <h3 className="text-2xl font-bold text-gray-900 mb-2">💰 Ajouter un paiement</h3>
+            <h3 className="text-2xl font-bold text-gray-900 mb-2">
+              {isOwedByMe ? '💰 Ajouter un paiement' : '💰 Enregistrer un remboursement reçu'}
+            </h3>
             <p className="text-gray-600 mb-6">{debt.name}</p>
-            
+
             <form onSubmit={handleAddPayment} className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">Montant (FCFA) *</label>
@@ -426,7 +376,7 @@ const DebtDetailPage = ({ debtId, onNavigate, toast }) => {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Date du paiement *</label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Date *</label>
                 <input
                   type="date"
                   value={paymentForm.payment_date}
@@ -437,16 +387,14 @@ const DebtDetailPage = ({ debtId, onNavigate, toast }) => {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Méthode de paiement *</label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Méthode *</label>
                 <select
                   value={paymentForm.payment_method}
                   onChange={(e) => setPaymentForm({...paymentForm, payment_method: e.target.value})}
                   className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent"
                 >
                   {PAYMENT_METHODS.map(method => (
-                    <option key={method.value} value={method.value}>
-                      {method.emoji} {method.label}
-                    </option>
+                    <option key={method.value} value={method.value}>{method.emoji} {method.label}</option>
                   ))}
                 </select>
               </div>
@@ -467,12 +415,7 @@ const DebtDetailPage = ({ debtId, onNavigate, toast }) => {
                   type="button"
                   onClick={() => {
                     setShowPaymentModal(false);
-                    setPaymentForm({
-                      amount: '',
-                      payment_date: new Date().toISOString().split('T')[0],
-                      payment_method: 'cash',
-                      notes: ''
-                    });
+                    setPaymentForm({ amount: '', payment_date: new Date().toISOString().split('T')[0], payment_method: 'cash', notes: '' });
                   }}
                   className="flex-1 px-6 py-3 border-2 border-gray-300 text-gray-700 rounded-xl font-semibold hover:bg-gray-50 transition-all"
                 >
