@@ -30,7 +30,7 @@ const CarryoverNotice = ({ onNavigate }) => {
       >
         <span className="text-lg flex-shrink-0">💰</span>
         <p className="text-sm text-blue-800 font-medium flex-1">
-          +{formatFCFA(notice.amount)} FCFA de {notice.from_month_label} ajoutés à votre Disponible.
+          +{formatFCFA(notice.amount)} FCFA de {notice.from_month_label} ajoutés à votre trésorerie.
         </p>
         <span
           onClick={(e) => { e.stopPropagation(); setDismissed(true); }}
