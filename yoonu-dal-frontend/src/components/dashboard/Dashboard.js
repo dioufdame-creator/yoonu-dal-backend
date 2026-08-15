@@ -2,7 +2,7 @@
 // Dashboard V5.4 — sélecteur de mois + message coach + score ciblé
 import React, { useState, useEffect, useCallback } from 'react';
 import API from '../../services/api';
-import CarryoverCard from './CarryoverCard';
+import CarryoverNotice from './CarryoverNotice';
 import RecurringConfirmCard from './RecurringConfirmCard';
 
 const MONTHS_FR = ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin',
@@ -50,6 +50,7 @@ const Dashboard = ({ toast, auth, onNavigate, user }) => {
   const [tontines, setTontines] = useState([]);
   const [monthlyIncome, setMonthlyIncome] = useState(0);
   const [score, setScore] = useState(null);
+  const [disponible, setDisponible] = useState(null);
 
   const monthOptions = getMonthOptions();
   const [selectedMonth, setSelectedMonth] = useState(monthOptions[0].key);
@@ -106,6 +107,12 @@ const Dashboard = ({ toast, auth, onNavigate, user }) => {
       setTontines(tontineList);
 
       if (scoreRes?.data) setScore(scoreRes.data);
+
+      // Disponible — chargement silencieux, non bloquant
+      API.get('/pockets/').then(r => {
+        const dispo = r.data?.accounts?.find(a => a.account_type === 'disponible');
+        if (dispo) setDisponible(dispo.balance);
+      }).catch(() => {});
     } catch (error) {
       console.error('Erreur dashboard:', error);
     } finally {
@@ -364,9 +371,9 @@ const Dashboard = ({ toast, auth, onNavigate, user }) => {
           </div>
         </div>
 
-        {/* ── REPORT DU MOIS PRÉCÉDENT ───────────────── */}
+        {/* ── NOTIFICATION REPORT (ajouté automatiquement au Disponible) ── */}
         {isCurrentMonth && (
-          <CarryoverCard onNavigate={onNavigate} toast={toast} onAllocated={loadData} />
+          <CarryoverNotice onNavigate={onNavigate} />
         )}
 
         {/* ── TRANSACTIONS RÉCURRENTES À CONFIRMER ───── */}
@@ -421,6 +428,23 @@ const Dashboard = ({ toast, auth, onNavigate, user }) => {
             </div>
           )}
         </div>
+
+        {/* ── LIEN DISCRET VERS MES POCHES (trésorerie permanente) ── */}
+        {disponible !== null && (
+          <button
+            onClick={() => onNavigate('pockets')}
+            className="w-full flex items-center justify-between bg-white rounded-2xl border border-gray-200 px-4 py-3 mb-4 shadow-sm hover:border-indigo-300 transition-all"
+          >
+            <div className="flex items-center gap-2">
+              <span className="text-base">💼</span>
+              <span className="text-xs text-gray-500">Mes poches</span>
+            </div>
+            <div className="flex items-center gap-1">
+              <span className="text-sm font-bold text-gray-800">{formatFCFA(disponible)} FCFA</span>
+              <span className="text-gray-300 text-sm">›</span>
+            </div>
+          </button>
+        )}
 
         {/* ── MESSAGE COACH ──────────────────────────── */}
         <div
