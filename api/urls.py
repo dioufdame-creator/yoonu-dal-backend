@@ -25,6 +25,11 @@ from .views import (
     recurring_transaction_detail,
     check_recurring_pending,
     confirm_recurring_batch,
+    my_pockets,
+    create_pocket,
+    create_transfer, 
+    transfer_history,
+    allocate_disponible_to_budget,
 )
 
 urlpatterns = [
@@ -160,4 +165,9 @@ urlpatterns = [
     path('recurring/<int:recurring_id>/', recurring_transaction_detail, name='recurring_transaction_detail'),
     path('recurring/check/', check_recurring_pending, name='check_recurring_pending'),
     path('recurring/confirm/', confirm_recurring_batch, name='confirm_recurring_batch'),
+    path('pockets/', my_pockets, name='my_pockets'),
+    path('pockets/create/', create_pocket, name='create_pocket'),
+    path('pockets/transfer/', create_transfer, name='create_transfer'),
+    path('pockets/transfers/history/', transfer_history, name='transfer_history'),
+    path('pockets/allocate-to-budget/', allocate_disponible_to_budget, name='allocate_disponible_to_budget'),
 ]
