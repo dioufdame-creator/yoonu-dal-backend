@@ -1,9 +1,8 @@
 // src/components/quickadd/QuickAdd.jsx
-// Saisie rapide — bouton sticky + catégories alignées sur ExpenseTracker
-import React, { useState } from 'react';
+// Saisie rapide — Dépense / Revenu / Épargner (vers une poche ou un objectif)
+import React, { useState, useEffect } from 'react';
 import API from '../../services/api';
 
-// Catégories fréquentes affichées en premier
 const TOP_EXPENSE_CATEGORIES = [
   { value: 'alimentation',       label: 'Alimentation',        icon: '🍽️' },
   { value: 'transport',          label: 'Transport',           icon: '🚗' },
@@ -13,7 +12,6 @@ const TOP_EXPENSE_CATEGORIES = [
   { value: 'loyer',              label: 'Loyer',               icon: '🏠' },
 ];
 
-// Liste complète — mêmes value/label/icon que ExpenseTracker
 const ALL_EXPENSE_CATEGORIES = [
   { value: 'loyer',               label: 'Loyer',                  icon: '🏠' },
   { value: 'alimentation',        label: 'Alimentation',           icon: '🍽️' },
@@ -52,8 +50,10 @@ const INCOME_SOURCES = [
 
 const QuickAdd = ({ type = 'expense', onNavigate, toast }) => {
   const isExpense = type === 'expense';
+  const isSavings = type === 'savings';
+
   const [amount, setAmount] = useState('');
-  const [category, setCategory] = useState('');
+  const [category, setCategory] = useState(isSavings ? 'epargne' : '');
   const [description, setDescription] = useState('');
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
   const [showAllCategories, setShowAllCategories] = useState(false);
@@ -62,13 +62,84 @@ const QuickAdd = ({ type = 'expense', onNavigate, toast }) => {
   const [makeRecurring, setMakeRecurring] = useState(false);
   const [recurringDay, setRecurringDay] = useState(new Date().getDate());
 
-  const categories = isExpense
-    ? (showAllCategories ? ALL_EXPENSE_CATEGORIES : TOP_EXPENSE_CATEGORIES)
-    : INCOME_SOURCES;
+  // ── Mode Épargner — choix de la poche destination ──────────
+  const [pockets, setPockets] = useState([]); // accounts + goals fusionnés
+  const [destination, setDestination] = useState(''); // "account:3" ou "goal:7"
+  const [loadingPockets, setLoadingPockets] = useState(isSavings);
 
-  const canSave = amount && category && !saving;
+  useEffect(() => {
+    if (!isSavings) return;
+    API.get('/pockets/')
+      .then(res => {
+        const accounts = (res.data?.accounts || []).map(a => ({
+          type: 'account', id: a.id,
+          name: a.account_type === 'disponible' ? 'Trésorerie' : a.name,
+          icon: a.icon,
+        }));
+        const goals = (res.data?.goals || []).map(g => ({
+          type: 'goal', id: g.id, name: g.title, icon: '🎯',
+        }));
+        // Trésorerie exclue — on épargne VERS une réserve/objectif, pas
+        // vers la trésorerie elle-même (ça n'aurait pas de sens ici)
+        const filtered = accounts.filter(a => a.name !== 'Trésorerie').concat(goals);
+        setPockets(filtered);
+        if (filtered.length > 0) setDestination(`${filtered[0].type}:${filtered[0].id}`);
+      })
+      .catch(() => {})
+      .finally(() => setLoadingPockets(false));
+  }, [isSavings]);
+
+  const categories = isSavings ? [] : (isExpense
+    ? (showAllCategories ? ALL_EXPENSE_CATEGORIES : TOP_EXPENSE_CATEGORIES)
+    : INCOME_SOURCES);
+
+  const canSave = isSavings
+    ? amount && destination && !saving
+    : amount && category && !saving;
 
   const handleSubmit = async () => {
+    if (isSavings) {
+      if (!amount || !destination) {
+        toast?.showError('Montant et destination requis');
+        return;
+      }
+      setSaving(true);
+      try {
+        const [destType, destId] = destination.split(':');
+        const payload = {
+          amount: parseFloat(amount),
+          category: 'epargne',
+          description: description || 'Épargne',
+          date,
+        };
+        if (destType === 'account') payload.destination_account_id = destId;
+        if (destType === 'goal') payload.destination_goal_id = destId;
+
+        await API.post('/expenses/', payload);
+        toast?.showSuccess('🎯 Épargne enregistrée !');
+
+        if (makeRecurring) {
+          try {
+            await API.post('/recurring/', {
+              type: 'expense',
+              category_or_source: 'epargne',
+              description: description || 'Épargne',
+              amount: parseFloat(amount),
+              day_of_month: recurringDay,
+            });
+            toast?.showSuccess('🔁 Épargne récurrente activée !');
+          } catch {}
+        }
+
+        onNavigate('dashboard');
+      } catch (error) {
+        toast?.showError(error.response?.data?.error || 'Erreur lors de l\'enregistrement');
+      } finally {
+        setSaving(false);
+      }
+      return;
+    }
+
     if (!amount || !category) {
       toast?.showError('Montant et catégorie requis');
       return;
@@ -96,7 +167,6 @@ const QuickAdd = ({ type = 'expense', onNavigate, toast }) => {
         toast?.showSuccess('✅ Revenu enregistré !');
       }
 
-      // ✅ Créer le patron récurrent si demandé
       if (makeRecurring) {
         try {
           await API.post('/recurring/', {
@@ -107,9 +177,7 @@ const QuickAdd = ({ type = 'expense', onNavigate, toast }) => {
             day_of_month: recurringDay,
           });
           toast?.showSuccess('🔁 Transaction récurrente activée !');
-        } catch {
-          // silencieux — la transaction principale est déjà enregistrée
-        }
+        } catch {}
       }
 
       onNavigate('dashboard');
@@ -120,9 +188,24 @@ const QuickAdd = ({ type = 'expense', onNavigate, toast }) => {
     }
   };
 
+  const titles = {
+    expense: '💸 Nouvelle dépense',
+    income: '💵 Nouveau revenu',
+    savings: '🎯 Épargner',
+  };
+
+  const buttonColor = isSavings
+    ? 'bg-gradient-to-r from-indigo-600 to-purple-700'
+    : isExpense
+      ? 'bg-gradient-to-r from-red-500 to-rose-600'
+      : 'bg-gradient-to-r from-green-600 to-emerald-600';
+
+  const buttonLabel = saving
+    ? 'Enregistrement...'
+    : isSavings ? 'Confirmer l\'épargne' : (isExpense ? 'Enregistrer la dépense' : 'Enregistrer le revenu');
+
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
-      {/* Contenu défilable */}
       <div className="flex-1 overflow-y-auto pb-32">
         <div className="max-w-md mx-auto px-4 py-5">
 
@@ -134,9 +217,7 @@ const QuickAdd = ({ type = 'expense', onNavigate, toast }) => {
             >
               ←
             </button>
-            <h1 className="text-lg font-bold text-gray-900">
-              {isExpense ? '💸 Nouvelle dépense' : '💵 Nouveau revenu'}
-            </h1>
+            <h1 className="text-lg font-bold text-gray-900">{titles[type] || titles.expense}</h1>
           </div>
 
           {/* 1. MONTANT */}
@@ -154,49 +235,101 @@ const QuickAdd = ({ type = 'expense', onNavigate, toast }) => {
             <p className="text-sm text-gray-400 mt-1">FCFA</p>
           </div>
 
-          {/* 2. CATÉGORIE */}
-          <div className="bg-white rounded-3xl border border-gray-200 p-4 mb-4 shadow-sm">
-            <p className="text-xs text-gray-400 font-semibold uppercase tracking-wide mb-3">
-              {isExpense ? 'Catégorie' : 'Source'}
-            </p>
-            <div className="grid grid-cols-3 gap-2">
-              {categories.map(cat => (
-                <button
-                  key={cat.value}
-                  onClick={() => setCategory(cat.value)}
-                  className={`p-3 rounded-2xl border-2 transition-all text-center ${
-                    category === cat.value
-                      ? 'border-green-500 bg-green-50 scale-105'
-                      : 'border-gray-100 bg-gray-50 hover:border-gray-300'
-                  }`}
-                >
-                  <div className="text-2xl mb-1">{cat.icon}</div>
-                  <div className={`text-[11px] font-semibold leading-tight ${
-                    category === cat.value ? 'text-green-700' : 'text-gray-600'
-                  }`}>
-                    {cat.label}
-                  </div>
-                </button>
-              ))}
-            </div>
+          {/* 2a. CATÉGORIE (dépense/revenu) — masqué en mode Épargner */}
+          {!isSavings && (
+            <div className="bg-white rounded-3xl border border-gray-200 p-4 mb-4 shadow-sm">
+              <p className="text-xs text-gray-400 font-semibold uppercase tracking-wide mb-3">
+                {isExpense ? 'Catégorie' : 'Source'}
+              </p>
+              <div className="grid grid-cols-3 gap-2">
+                {categories.map(cat => (
+                  <button
+                    key={cat.value}
+                    onClick={() => setCategory(cat.value)}
+                    className={`p-3 rounded-2xl border-2 transition-all text-center ${
+                      category === cat.value
+                        ? 'border-green-500 bg-green-50 scale-105'
+                        : 'border-gray-100 bg-gray-50 hover:border-gray-300'
+                    }`}
+                  >
+                    <div className="text-2xl mb-1">{cat.icon}</div>
+                    <div className={`text-[11px] font-semibold leading-tight ${
+                      category === cat.value ? 'text-green-700' : 'text-gray-600'
+                    }`}>
+                      {cat.label}
+                    </div>
+                  </button>
+                ))}
+              </div>
 
-            {isExpense && !showAllCategories && (
-              <button
-                onClick={() => setShowAllCategories(true)}
-                className="w-full mt-3 py-2 text-sm text-green-600 font-semibold hover:text-green-700"
-              >
-                Voir toutes les catégories ↓
-              </button>
-            )}
-            {isExpense && showAllCategories && (
-              <button
-                onClick={() => setShowAllCategories(false)}
-                className="w-full mt-3 py-2 text-sm text-gray-400 font-semibold hover:text-gray-600"
-              >
-                Réduire ↑
-              </button>
-            )}
-          </div>
+              {isExpense && !showAllCategories && (
+                <button
+                  onClick={() => setShowAllCategories(true)}
+                  className="w-full mt-3 py-2 text-sm text-green-600 font-semibold hover:text-green-700"
+                >
+                  Voir toutes les catégories ↓
+                </button>
+              )}
+              {isExpense && showAllCategories && (
+                <button
+                  onClick={() => setShowAllCategories(false)}
+                  className="w-full mt-3 py-2 text-sm text-gray-400 font-semibold hover:text-gray-600"
+                >
+                  Réduire ↑
+                </button>
+              )}
+            </div>
+          )}
+
+          {/* 2b. DESTINATION — uniquement en mode Épargner */}
+          {isSavings && (
+            <div className="bg-white rounded-3xl border border-gray-200 p-4 mb-4 shadow-sm">
+              <p className="text-xs text-gray-400 font-semibold uppercase tracking-wide mb-3">
+                Vers quelle poche ?
+              </p>
+
+              {loadingPockets ? (
+                <p className="text-sm text-gray-400 text-center py-4">Chargement...</p>
+              ) : pockets.length === 0 ? (
+                <div className="text-center py-4">
+                  <p className="text-sm text-gray-500 mb-3">Aucune poche disponible.</p>
+                  <button
+                    onClick={() => onNavigate('pockets')}
+                    className="text-sm bg-indigo-600 text-white px-4 py-2 rounded-xl font-semibold"
+                  >
+                    Créer une poche
+                  </button>
+                </div>
+              ) : (
+                <div className="grid grid-cols-2 gap-2">
+                  {pockets.map(p => {
+                    const key = `${p.type}:${p.id}`;
+                    return (
+                      <button
+                        key={key}
+                        onClick={() => setDestination(key)}
+                        className={`p-3 rounded-2xl border-2 transition-all text-center ${
+                          destination === key
+                            ? 'border-indigo-500 bg-indigo-50 scale-105'
+                            : 'border-gray-100 bg-gray-50 hover:border-gray-300'
+                        }`}
+                      >
+                        <div className="text-2xl mb-1">{p.icon}</div>
+                        <div className={`text-[11px] font-semibold leading-tight ${
+                          destination === key ? 'text-indigo-700' : 'text-gray-600'
+                        }`}>
+                          {p.name}
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+              <p className="text-[11px] text-gray-400 mt-3">
+                💡 Cette somme sort de votre budget du mois et rejoint la poche choisie.
+              </p>
+            </div>
+          )}
 
           {/* 3. NOTE + DATE */}
           <div className="bg-white rounded-3xl border border-gray-200 p-4 mb-4 shadow-sm space-y-3">
@@ -208,7 +341,7 @@ const QuickAdd = ({ type = 'expense', onNavigate, toast }) => {
                 type="text"
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
-                placeholder={isExpense ? 'Ex: Marché Sandaga' : 'Ex: Salaire juin'}
+                placeholder={isSavings ? 'Ex: Épargne mensuelle' : isExpense ? 'Ex: Marché Sandaga' : 'Ex: Salaire juin'}
                 className="w-full text-sm outline-none placeholder-gray-300"
               />
             </div>
@@ -248,7 +381,9 @@ const QuickAdd = ({ type = 'expense', onNavigate, toast }) => {
               </div>
               <div className="flex-1 text-left">
                 <p className="text-sm font-bold text-gray-800">🔁 Rendre récurrent</p>
-                <p className="text-xs text-gray-400">Se répète automatiquement chaque mois</p>
+                <p className="text-xs text-gray-400">
+                  {isSavings ? 'Épargner automatiquement chaque mois' : 'Se répète automatiquement chaque mois'}
+                </p>
               </div>
             </button>
 
@@ -276,15 +411,11 @@ const QuickAdd = ({ type = 'expense', onNavigate, toast }) => {
           <button
             onClick={handleSubmit}
             disabled={!canSave}
-            className={`w-full py-4 rounded-2xl font-bold text-lg transition-all ${
-              canSave
-                ? isExpense
-                  ? 'bg-gradient-to-r from-red-500 to-rose-600 text-white shadow-xl'
-                  : 'bg-gradient-to-r from-green-600 to-emerald-600 text-white shadow-xl'
-                : 'bg-gray-200 text-gray-400'
+            className={`w-full py-4 rounded-2xl font-bold text-lg transition-all text-white shadow-xl ${
+              canSave ? buttonColor : 'bg-gray-200 text-gray-400 shadow-none'
             }`}
           >
-            {saving ? 'Enregistrement...' : (isExpense ? 'Enregistrer la dépense' : 'Enregistrer le revenu')}
+            {buttonLabel}
           </button>
         </div>
       </div>
