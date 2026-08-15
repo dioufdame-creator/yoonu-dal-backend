@@ -1429,4 +1429,139 @@ class RecurringGeneration(models.Model):
     def __str__(self):
         return f"{self.recurring.description} — {self.month.strftime('%B %Y')} ({self.status})"
 
+# ==========================================
+# À AJOUTER À LA FIN DE api/models.py
+# Fondation Patrimoine — Mes poches
+# ==========================================
 
+class Account(models.Model):
+    """
+    Une poche d'argent — trésorerie réelle et permanente, distincte du
+    budget mensuel. 'Disponible' est créé automatiquement pour chaque
+    utilisateur ; 'Épargne de sécurité' peut être créé à la demande ;
+    'personnalise' permet à l'utilisateur d'ajouter ses propres poches
+    (Cash maison, Compte secondaire...).
+    """
+
+    ACCOUNT_TYPES = [
+        ('disponible', 'Disponible'),
+        ('epargne_securite', 'Épargne de sécurité'),
+        ('personnalise', 'Poche personnalisée'),
+    ]
+
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='accounts')
+    account_type = models.CharField(max_length=20, choices=ACCOUNT_TYPES)
+
+    # Nom affiché — auto-rempli pour disponible/epargne_securite,
+    # libre pour une poche personnalisée (ex: "Cash maison")
+    name = models.CharField(max_length=100)
+
+    balance = models.DecimalField(max_digits=15, decimal_places=2, default=0)
+
+    icon = models.CharField(max_length=10, default='💰')
+    is_active = models.BooleanField(default=True)
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['account_type', '-created_at']
+
+    def __str__(self):
+        return f"{self.user.username} — {self.name}: {self.balance} FCFA"
+
+    def credit(self, amount):
+        """Créditer la poche (transfert entrant, revenu affecté...)"""
+        self.balance += Decimal(str(amount))
+        self.save(update_fields=['balance', 'updated_at'])
+
+    def debit(self, amount):
+        """Débiter la poche — lève une erreur si le solde devient négatif"""
+        amount = Decimal(str(amount))
+        if self.balance < amount:
+            raise ValueError(f"Solde insuffisant dans {self.name} ({self.balance} FCFA disponibles)")
+        self.balance -= amount
+        self.save(update_fields=['balance', 'updated_at'])
+
+    @classmethod
+    def get_or_create_disponible(cls, user):
+        """Le compte Disponible existe toujours — création automatique si absent"""
+        account, _ = cls.objects.get_or_create(
+            user=user, account_type='disponible',
+            defaults={'name': 'Disponible', 'icon': '💰'}
+        )
+        return account
+
+
+class AccountTransfer(models.Model):
+    """
+    Mouvement d'argent entre deux poches (ou entre une poche et un objectif).
+    N'impacte JAMAIS le Score, les Revenus/Dépenses, ni le budget mensuel —
+    c'est un déplacement d'argent qui t'appartient déjà, pas un flux.
+    """
+
+    SOURCE_TYPE_CHOICES = [
+        ('account', 'Poche'),
+        ('goal', 'Objectif'),
+    ]
+
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='account_transfers')
+
+    # Source — soit une Account, soit un Goal
+    source_type = models.CharField(max_length=10, choices=SOURCE_TYPE_CHOICES)
+    source_account = models.ForeignKey(
+        Account, on_delete=models.CASCADE, null=True, blank=True, related_name='transfers_out'
+    )
+    source_goal = models.ForeignKey(
+        Goal, on_delete=models.CASCADE, null=True, blank=True, related_name='transfers_out'
+    )
+
+    # Destination — soit une Account, soit un Goal
+    destination_type = models.CharField(max_length=10, choices=SOURCE_TYPE_CHOICES)
+    destination_account = models.ForeignKey(
+        Account, on_delete=models.CASCADE, null=True, blank=True, related_name='transfers_in'
+    )
+    destination_goal = models.ForeignKey(
+        Goal, on_delete=models.CASCADE, null=True, blank=True, related_name='transfers_in'
+    )
+
+    amount = models.DecimalField(max_digits=15, decimal_places=2)
+    note = models.CharField(max_length=200, blank=True)
+
+    # Traçabilité — d'où vient ce transfert (pour l'historique / le débogage)
+    REASON_CHOICES = [
+        ('manual', 'Transfert manuel'),
+        ('carryover', 'Report de fin de mois'),
+        ('exceptional_income', 'Affectation revenu exceptionnel'),
+        ('budget_allocation', 'Affectation au budget du mois'),
+    ]
+    reason = models.CharField(max_length=30, choices=REASON_CHOICES, default='manual')
+
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def __str__(self):
+        src = self.source_account.name if self.source_account else (self.source_goal.title if self.source_goal else '?')
+        dst = self.destination_account.name if self.destination_account else (self.destination_goal.title if self.destination_goal else '?')
+        return f"{self.user.username} — {src} → {dst} : {self.amount} FCFA"
+
+    def execute(self):
+        """
+        Applique réellement le mouvement — débite la source, crédite la
+        destination. À appeler une seule fois, à la création du transfert.
+        """
+        amount = self.amount
+
+        if self.source_account:
+            self.source_account.debit(amount)
+        elif self.source_goal:
+            self.source_goal.current_amount = Decimal(str(self.source_goal.current_amount)) - amount
+            self.source_goal.save()
+
+        if self.destination_account:
+            self.destination_account.credit(amount)
+        elif self.destination_goal:
+            self.destination_goal.current_amount = Decimal(str(self.destination_goal.current_amount)) + amount
+            self.destination_goal.save()
