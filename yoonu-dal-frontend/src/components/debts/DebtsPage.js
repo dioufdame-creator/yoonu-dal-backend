@@ -1,62 +1,51 @@
 import React, { useState, useEffect } from 'react';
 import API from '../../services/api';
 
+const DEBT_TYPES = [
+  { value: 'credit_bancaire', label: 'Crédit bancaire', emoji: '🏦' },
+  { value: 'pret_personnel', label: 'Prêt personnel', emoji: '💰' },
+  { value: 'dette_famille', label: 'Dette familiale', emoji: '👨‍👩‍👧' },
+  { value: 'dette_ami', label: 'Dette à un ami', emoji: '🤝' },
+  { value: 'credit_commerce', label: 'Crédit commerce', emoji: '🏪' },
+  { value: 'tontine', label: 'Tontine', emoji: '🦁' },
+  { value: 'autre', label: 'Autre', emoji: '📋' }
+];
+
+const PAYMENT_METHODS = [
+  { value: 'cash', label: 'Espèces' },
+  { value: 'virement', label: 'Virement' },
+  { value: 'mobile_money', label: 'Mobile Money' },
+  { value: 'cheque', label: 'Chèque' },
+  { value: 'autre', label: 'Autre' }
+];
+
+const emptyDebtForm = {
+  name: '', debt_type: 'autre', counterparty: '', direction: 'owed_by_me',
+  total_amount: '', monthly_payment: '',
+  start_date: new Date().toISOString().split('T')[0],
+  target_end_date: '', interest_rate: '0', notes: ''
+};
+
+const emptyPaymentForm = {
+  amount: '', payment_date: new Date().toISOString().split('T')[0],
+  payment_method: 'cash', notes: ''
+};
+
 const DebtsPage = ({ toast, onNavigate }) => {
   const [debts, setDebts] = useState([]);
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [showCreateModal, setShowCreateModal] = useState(false);
-  const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [showCreateSheet, setShowCreateSheet] = useState(false);
+  const [showPaymentSheet, setShowPaymentSheet] = useState(false);
   const [selectedDebt, setSelectedDebt] = useState(null);
-  const [filter, setFilter] = useState('active'); // active, all, paid
+  const [filter, setFilter] = useState('active');
+  const [direction, setDirection] = useState('owed_by_me');
+  const [debtForm, setDebtForm] = useState(emptyDebtForm);
+  const [paymentForm, setPaymentForm] = useState(emptyPaymentForm);
 
-  // ✅ Onglet principal — le sens de la dette
-  const [direction, setDirection] = useState('owed_by_me'); // owed_by_me | owed_to_me
+  const formatFCFA = (v) => new Intl.NumberFormat('fr-FR').format(Math.round(v || 0));
 
-  const [searchQuery, setSearchQuery] = useState('');
-  const [sortBy, setSortBy] = useState('date_desc');
-
-  const [debtForm, setDebtForm] = useState({
-    name: '',
-    debt_type: 'autre',
-    counterparty: '',
-    direction: 'owed_by_me',
-    total_amount: '',
-    monthly_payment: '',
-    start_date: new Date().toISOString().split('T')[0],
-    target_end_date: '',
-    interest_rate: '0',
-    notes: ''
-  });
-
-  const [paymentForm, setPaymentForm] = useState({
-    amount: '',
-    payment_date: new Date().toISOString().split('T')[0],
-    payment_method: 'cash',
-    notes: ''
-  });
-
-  const DEBT_TYPES = [
-    { value: 'credit_bancaire', label: 'Crédit bancaire', emoji: '🏦' },
-    { value: 'pret_personnel', label: 'Prêt personnel', emoji: '💰' },
-    { value: 'dette_famille', label: 'Dette familiale', emoji: '👨‍👩‍👧' },
-    { value: 'dette_ami', label: 'Dette à un ami', emoji: '🤝' },
-    { value: 'credit_commerce', label: 'Crédit commerce', emoji: '🏪' },
-    { value: 'tontine', label: 'Tontine', emoji: '🦁' },
-    { value: 'autre', label: 'Autre', emoji: '📋' }
-  ];
-
-  const PAYMENT_METHODS = [
-    { value: 'cash', label: 'Espèces' },
-    { value: 'virement', label: 'Virement' },
-    { value: 'mobile_money', label: 'Mobile Money' },
-    { value: 'cheque', label: 'Chèque' },
-    { value: 'autre', label: 'Autre' }
-  ];
-
-  useEffect(() => {
-    loadData();
-  }, [filter, direction]);
+  useEffect(() => { loadData(); }, [filter, direction]);
 
   const loadData = async () => {
     setLoading(true);
@@ -65,25 +54,22 @@ const DebtsPage = ({ toast, onNavigate }) => {
         API.get(`/debts/?is_active=${filter === 'active'}`),
         API.get('/debts/stats/')
       ]);
-
-      let debtsList = debtsRes.data.filter(d => d.direction === direction);
-
-      if (filter === 'paid') {
-        debtsList = debtsList.filter(d => d.is_fully_paid);
-      }
-
-      setDebts(debtsList);
+      let list = debtsRes.data.filter(d => d.direction === direction);
+      if (filter === 'paid') list = list.filter(d => d.is_fully_paid);
+      setDebts(list);
       setStats(statsRes.data);
-    } catch (error) {
-      console.error('Erreur chargement:', error);
-      toast?.showError('Erreur lors du chargement des dettes');
+    } catch {
+      toast?.showError?.('Erreur lors du chargement');
     } finally {
       setLoading(false);
     }
   };
 
-  const handleCreateDebt = async (e) => {
-    e.preventDefault();
+  const handleCreateDebt = async () => {
+    if (!debtForm.name || !debtForm.total_amount) {
+      toast?.showError?.('Nom et montant total requis');
+      return;
+    }
     try {
       const payload = {
         ...debtForm,
@@ -91,361 +77,229 @@ const DebtsPage = ({ toast, onNavigate }) => {
         monthly_payment: debtForm.monthly_payment ? debtForm.monthly_payment : null,
       };
       await API.post('/debts/', payload);
-      toast?.showSuccess(direction === 'owed_by_me' ? 'Dette créée avec succès !' : 'Créance enregistrée avec succès !');
-      setShowCreateModal(false);
-      setDebtForm({
-        name: '', debt_type: 'autre', counterparty: '', direction: 'owed_by_me',
-        total_amount: '', monthly_payment: '',
-        start_date: new Date().toISOString().split('T')[0],
-        target_end_date: '', interest_rate: '0', notes: ''
-      });
+      toast?.showSuccess?.(direction === 'owed_by_me' ? 'Dette créée !' : 'Créance enregistrée !');
+      setShowCreateSheet(false);
+      setDebtForm(emptyDebtForm);
       loadData();
-    } catch (error) {
-      console.error('Erreur:', error);
-      toast?.showError('Erreur lors de la création');
+    } catch {
+      toast?.showError?.('Erreur lors de la création');
     }
   };
 
-  const handleAddPayment = async (e) => {
-    e.preventDefault();
+  const handleAddPayment = async () => {
+    if (!paymentForm.amount) {
+      toast?.showError?.('Montant requis');
+      return;
+    }
     try {
       await API.post(`/debts/${selectedDebt.id}/payments/`, paymentForm);
-      toast?.showSuccess(direction === 'owed_by_me' ? 'Paiement enregistré !' : 'Remboursement reçu enregistré !');
-      setShowPaymentModal(false);
+      toast?.showSuccess?.(direction === 'owed_by_me' ? 'Paiement enregistré !' : 'Remboursement reçu enregistré !');
+      setShowPaymentSheet(false);
       setSelectedDebt(null);
-      setPaymentForm({
-        amount: '', payment_date: new Date().toISOString().split('T')[0],
-        payment_method: 'cash', notes: ''
-      });
+      setPaymentForm(emptyPaymentForm);
       loadData();
-    } catch (error) {
-      console.error('Erreur:', error);
-      toast?.showError('Erreur lors de l\'enregistrement');
+    } catch {
+      toast?.showError?.('Erreur lors de l\'enregistrement');
     }
   };
 
-  const handleDeleteDebt = async (debtId, debtName) => {
+  const handleDelete = async (debtId, debtName) => {
     const label = direction === 'owed_by_me' ? 'la dette' : 'la créance';
-    if (!window.confirm(`Supprimer ${label} "${debtName}" ?\n\nCette action est irréversible.`)) return;
+    if (!window.confirm(`Supprimer ${label} "${debtName}" ?`)) return;
     try {
       await API.delete(`/debts/${debtId}/`);
-      toast?.showSuccess('Supprimée');
+      toast?.showSuccess?.('Supprimée');
       loadData();
-    } catch (error) {
-      console.error('Erreur:', error);
-      toast?.showError('Erreur lors de la suppression');
+    } catch {
+      toast?.showError?.('Erreur lors de la suppression');
     }
   };
 
-  const formatCurrency = (amount) => new Intl.NumberFormat('fr-FR').format(amount || 0) + ' FCFA';
+  const getStateColor = (pct) => pct >= 100 ? 'bg-green-500' : pct >= 50 ? 'bg-blue-500' : 'bg-amber-500';
 
-  const getStatusColor = (status) => {
-    const colors = {
-      paid: 'from-green-500 to-emerald-500',
-      almost_done: 'from-blue-500 to-indigo-500',
-      halfway: 'from-yellow-500 to-orange-500',
-      in_progress: 'from-orange-500 to-red-500',
-      started: 'from-red-500 to-pink-500'
-    };
-    return colors[status] || 'from-gray-500 to-gray-600';
-  };
-
-  const getStatusLabel = (status) => {
-    const labels = {
-      paid: direction === 'owed_by_me' ? '✅ Payée' : '✅ Remboursée',
-      almost_done: '🎯 Presque terminée',
-      halfway: '⏳ À mi-chemin',
-      in_progress: '📊 En cours',
-      started: '🚀 Démarrée'
-    };
-    return labels[status] || status;
-  };
-
-  // Stats à afficher selon l'onglet actif
   const currentStats = stats ? (direction === 'owed_by_me' ? stats.owed_by_me : stats.owed_to_me) : null;
-
-  const filteredAndSortedDebts = debts
-    .filter(debt => {
-      if (!searchQuery) return true;
-      const query = searchQuery.toLowerCase();
-      return (
-        debt.name.toLowerCase().includes(query) ||
-        debt.counterparty?.toLowerCase().includes(query) ||
-        debt.debt_type.toLowerCase().includes(query) ||
-        DEBT_TYPES.find(t => t.value === debt.debt_type)?.label.toLowerCase().includes(query) ||
-        formatCurrency(debt.total_amount).toLowerCase().includes(query) ||
-        formatCurrency(debt.remaining_amount).toLowerCase().includes(query)
-      );
-    })
-    .sort((a, b) => {
-      switch (sortBy) {
-        case 'date_desc': return new Date(b.created_at) - new Date(a.created_at);
-        case 'date_asc': return new Date(a.created_at) - new Date(b.created_at);
-        case 'amount_desc': return b.total_amount - a.total_amount;
-        case 'amount_asc': return a.total_amount - b.total_amount;
-        case 'progress_desc': return b.progress_percentage - a.progress_percentage;
-        case 'progress_asc': return a.progress_percentage - b.progress_percentage;
-        default: return 0;
-      }
-    });
+  const counterpartyLabel = direction === 'owed_by_me' ? 'Créancier' : 'Débiteur';
 
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="w-16 h-16 border-4 border-green-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-gray-600">Chargement...</p>
-        </div>
+        <div className="w-10 h-10 border-4 border-green-500 border-t-transparent rounded-full animate-spin" />
       </div>
     );
   }
 
-  const counterpartyLabel = direction === 'owed_by_me' ? 'Créancier' : 'Débiteur';
-  const counterpartyPlaceholder = direction === 'owed_by_me' ? 'Ex: BICIS' : 'Ex: Moussa Diop';
-
   return (
-    <div className="min-h-screen bg-gray-50 pb-20">
-      {/* Header */}
-      <div className="bg-white border-b border-gray-200 sticky top-0 z-10 shadow-sm">
-        <div className="max-w-6xl mx-auto px-4 py-4">
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-3">
-              <button onClick={() => onNavigate?.('dashboard')} className="text-gray-600 hover:text-gray-900">←</button>
-              <h1 className="text-2xl font-bold text-gray-900">💳 Mes Dettes</h1>
-            </div>
-            <button
-              onClick={() => { setDebtForm(f => ({ ...f, direction })); setShowCreateModal(true); }}
-              className="px-4 py-2 bg-green-600 text-white rounded-lg font-semibold hover:bg-green-700 transition-all"
-            >
-              + {direction === 'owed_by_me' ? 'Nouvelle dette' : 'Nouvelle créance'}
-            </button>
-          </div>
+    <div className="min-h-screen bg-gray-50 pb-28">
+      <div className="max-w-2xl mx-auto px-4 py-5">
 
-          {/* ✅ Onglets Je dois / On me doit */}
-          <div className="flex gap-2 bg-gray-100 rounded-xl p-1">
-            <button
-              onClick={() => setDirection('owed_by_me')}
-              className={`flex-1 py-2.5 rounded-lg text-sm font-bold transition-all ${
-                direction === 'owed_by_me' ? 'bg-white text-red-600 shadow-sm' : 'text-gray-500'
-              }`}
-            >
-              💳 Je dois
-            </button>
-            <button
-              onClick={() => setDirection('owed_to_me')}
-              className={`flex-1 py-2.5 rounded-lg text-sm font-bold transition-all ${
-                direction === 'owed_to_me' ? 'bg-white text-green-600 shadow-sm' : 'text-gray-500'
-              }`}
-            >
-              🤝 On me doit
-            </button>
+        {/* Header */}
+        <div className="flex items-center gap-3 mb-5">
+          <button
+            onClick={() => onNavigate?.('dashboard')}
+            className="w-10 h-10 rounded-full bg-white border border-gray-200 flex items-center justify-center text-gray-600 hover:bg-gray-50 flex-shrink-0"
+          >
+            ←
+          </button>
+          <div className="flex-1">
+            <h1 className="text-lg font-bold text-gray-900">💳 Mes dettes</h1>
+            <p className="text-xs text-gray-400">Suivi et remboursements</p>
           </div>
+          <button
+            onClick={() => { setDebtForm(f => ({ ...f, direction })); setShowCreateSheet(true); }}
+            className="w-10 h-10 rounded-full bg-green-600 text-white flex items-center justify-center text-xl font-bold flex-shrink-0 shadow-md"
+          >
+            +
+          </button>
         </div>
-      </div>
 
-      <div className="max-w-6xl mx-auto px-4 py-6 space-y-6">
-        {/* Stats globales — de l'onglet actif */}
+        {/* Onglets Je dois / On me doit */}
+        <div className="flex gap-2 bg-white rounded-2xl p-1 mb-4 border border-gray-200 shadow-sm">
+          <button
+            onClick={() => setDirection('owed_by_me')}
+            className={`flex-1 py-2.5 rounded-xl text-sm font-bold transition-all ${
+              direction === 'owed_by_me' ? 'bg-red-50 text-red-600' : 'text-gray-400'
+            }`}
+          >
+            💳 Je dois
+          </button>
+          <button
+            onClick={() => setDirection('owed_to_me')}
+            className={`flex-1 py-2.5 rounded-xl text-sm font-bold transition-all ${
+              direction === 'owed_to_me' ? 'bg-green-50 text-green-600' : 'text-gray-400'
+            }`}
+          >
+            🤝 On me doit
+          </button>
+        </div>
+
+        {/* Résumé */}
         {currentStats && (
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
-              <p className="text-sm text-gray-600 mb-1">
-                {direction === 'owed_by_me' ? '💰 Total dû' : '💰 Total à recevoir'}
-              </p>
-              <p className="text-2xl font-bold text-gray-900">{formatCurrency(currentStats.total)}</p>
-            </div>
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
-              <p className="text-sm text-gray-600 mb-1">
-                {direction === 'owed_by_me' ? '✅ Déjà payé' : '✅ Déjà reçu'}
-              </p>
-              <p className="text-2xl font-bold text-green-600">{formatCurrency(currentStats.paid)}</p>
-              <p className="text-xs text-gray-500">{currentStats.progress_percentage}%</p>
-            </div>
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
-              <p className="text-sm text-gray-600 mb-1">
-                {direction === 'owed_by_me' ? '⏳ Reste à payer' : '⏳ Reste à recevoir'}
-              </p>
-              <p className="text-2xl font-bold text-orange-600">{formatCurrency(currentStats.remaining)}</p>
-            </div>
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
-              <p className="text-sm text-gray-600 mb-1">📅 Mensualité</p>
-              <p className="text-2xl font-bold text-blue-600">{formatCurrency(currentStats.monthly_payments)}</p>
+          <div className={`rounded-3xl p-5 mb-4 text-white shadow-xl ${
+            direction === 'owed_by_me'
+              ? 'bg-gradient-to-br from-red-500 to-rose-600'
+              : 'bg-gradient-to-br from-green-600 to-emerald-700'
+          }`}>
+            <p className="text-sm opacity-80 mb-1">
+              {direction === 'owed_by_me' ? 'Reste à payer' : 'Reste à recevoir'}
+            </p>
+            <p className="text-3xl font-bold mb-3">{formatFCFA(currentStats.remaining)} FCFA</p>
+            <div className="grid grid-cols-2 gap-2">
+              <div className="bg-black/20 rounded-2xl px-3 py-2.5">
+                <p className="text-[11px] opacity-75">{direction === 'owed_by_me' ? 'Déjà payé' : 'Déjà reçu'}</p>
+                <p className="text-sm font-bold">{formatFCFA(currentStats.paid)} ({currentStats.progress_percentage}%)</p>
+              </div>
+              <div className="bg-black/20 rounded-2xl px-3 py-2.5">
+                <p className="text-[11px] opacity-75">Mensualité</p>
+                <p className="text-sm font-bold">{formatFCFA(currentStats.monthly_payments)}</p>
+              </div>
             </div>
           </div>
         )}
 
         {/* Filtres */}
-        <div className="flex gap-2">
-          <button
-            onClick={() => setFilter('active')}
-            className={`px-4 py-2 rounded-lg font-medium transition-all ${
-              filter === 'active' ? 'bg-green-600 text-white' : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
-            }`}
-          >
-            Actives ({currentStats?.active_count || 0})
-          </button>
-          <button
-            onClick={() => setFilter('paid')}
-            className={`px-4 py-2 rounded-lg font-medium transition-all ${
-              filter === 'paid' ? 'bg-green-600 text-white' : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
-            }`}
-          >
-            {direction === 'owed_by_me' ? 'Payées' : 'Remboursées'} ({currentStats?.fully_paid_count || 0})
-          </button>
-          <button
-            onClick={() => setFilter('all')}
-            className={`px-4 py-2 rounded-lg font-medium transition-all ${
-              filter === 'all' ? 'bg-green-600 text-white' : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
-            }`}
-          >
-            Toutes
-          </button>
-        </div>
-
-        {/* Recherche et Tri */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
-          <div className="flex flex-col md:flex-row gap-3">
-            <div className="flex-1">
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder={`🔍 Rechercher par nom, ${direction === 'owed_by_me' ? 'créancier' : 'débiteur'}, type, montant...`}
-                className="w-full px-4 py-2 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-              />
-            </div>
-            <select
-              value={sortBy}
-              onChange={(e) => setSortBy(e.target.value)}
-              className="px-4 py-2 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+        <div className="flex gap-2 mb-4 overflow-x-auto">
+          {[
+            { id: 'active', label: `Actives (${currentStats?.active_count || 0})` },
+            { id: 'paid', label: `${direction === 'owed_by_me' ? 'Payées' : 'Remboursées'} (${currentStats?.fully_paid_count || 0})` },
+            { id: 'all', label: 'Toutes' },
+          ].map(f => (
+            <button
+              key={f.id}
+              onClick={() => setFilter(f.id)}
+              className={`px-4 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-all ${
+                filter === f.id ? 'bg-green-600 text-white shadow-sm' : 'bg-white text-gray-500 border border-gray-200'
+              }`}
             >
-              <option value="date_desc">📅 Plus récent</option>
-              <option value="date_asc">📅 Plus ancien</option>
-              <option value="amount_desc">💰 Montant décroissant</option>
-              <option value="amount_asc">💰 Montant croissant</option>
-              <option value="progress_desc">📊 Progression décroissante</option>
-              <option value="progress_asc">📊 Progression croissante</option>
-            </select>
-          </div>
-          {searchQuery && (
-            <p className="text-sm text-gray-600 mt-2">
-              {filteredAndSortedDebts.length} résultat{filteredAndSortedDebts.length > 1 ? 's' : ''} trouvé{filteredAndSortedDebts.length > 1 ? 's' : ''}
-            </p>
-          )}
+              {f.label}
+            </button>
+          ))}
         </div>
 
         {/* Liste */}
-        {filteredAndSortedDebts.length === 0 ? (
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-12 text-center">
-            <div className="text-6xl mb-4">{direction === 'owed_by_me' ? '💳' : '🤝'}</div>
-            <h3 className="text-xl font-semibold text-gray-900 mb-2">
-              {searchQuery ? 'Aucun résultat' : direction === 'owed_by_me' ? 'Aucune dette' : 'Aucune créance'}
-            </h3>
-            <p className="text-gray-600 mb-6">
-              {searchQuery
-                ? 'Essayez avec d\'autres mots-clés'
-                : filter === 'active'
-                ? direction === 'owed_by_me'
-                  ? 'Tu n\'as aucune dette active. Bravo !'
-                  : 'Personne ne te doit d\'argent actuellement.'
-                : filter === 'paid'
-                ? 'Rien pour le moment'
-                : direction === 'owed_by_me'
-                  ? 'Commence par ajouter une dette'
-                  : 'Enregistre un prêt que tu as accordé'}
+        {debts.length === 0 ? (
+          <div className="bg-white rounded-2xl border border-gray-200 p-8 text-center shadow-sm">
+            <div className="text-4xl mb-3">{direction === 'owed_by_me' ? '💳' : '🤝'}</div>
+            <p className="text-sm text-gray-500 mb-4">
+              {filter === 'active'
+                ? direction === 'owed_by_me' ? 'Aucune dette active. Bravo !' : 'Personne ne te doit d\'argent.'
+                : 'Rien pour le moment'}
             </p>
-            {!searchQuery && filter === 'active' && (
+            {filter === 'active' && (
               <button
-                onClick={() => { setDebtForm(f => ({ ...f, direction })); setShowCreateModal(true); }}
-                className="px-6 py-3 bg-green-600 text-white rounded-lg font-semibold hover:bg-green-700 transition-all"
+                onClick={() => { setDebtForm(f => ({ ...f, direction })); setShowCreateSheet(true); }}
+                className="text-sm bg-green-600 text-white px-4 py-2 rounded-xl font-semibold"
               >
                 + {direction === 'owed_by_me' ? 'Ajouter une dette' : 'Ajouter une créance'}
               </button>
             )}
           </div>
         ) : (
-          <div className="space-y-4">
-            {filteredAndSortedDebts.map(debt => {
-              const debtType = DEBT_TYPES.find(t => t.value === debt.debt_type);
+          <div className="space-y-3">
+            {debts.map(debt => {
+              const type = DEBT_TYPES.find(t => t.value === debt.debt_type);
+              const pct = debt.progress_percentage || 0;
 
               return (
-                <div key={debt.id} className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-md transition-all">
-                  <div className="flex items-start justify-between mb-4">
-                    <div className="flex items-center gap-3">
-                      <div className="text-3xl">{debtType?.emoji || '📋'}</div>
-                      <div>
-                        <h3 className="text-lg font-bold text-gray-900">{debt.name}</h3>
-                        <p className="text-sm text-gray-600">
-                          {debt.counterparty && `${counterpartyLabel}: ${debt.counterparty} • `}
-                          {debtType?.label || debt.debt_type}
+                <div key={debt.id} className="bg-white rounded-2xl border border-gray-200 p-4 shadow-sm">
+                  <div className="flex items-start justify-between gap-3 mb-3">
+                    <div className="flex items-center gap-3 flex-1 min-w-0">
+                      <div className="w-10 h-10 bg-gray-50 rounded-xl flex items-center justify-center text-lg flex-shrink-0">
+                        {type?.emoji || '📋'}
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-sm font-bold text-gray-900 truncate">{debt.name}</p>
+                        <p className="text-xs text-gray-400 truncate">
+                          {debt.counterparty && `${counterpartyLabel}: ${debt.counterparty}`}
                         </p>
                       </div>
                     </div>
-                    <span className={`px-3 py-1 rounded-full text-xs font-semibold text-white bg-gradient-to-r ${getStatusColor(debt.status)}`}>
-                      {getStatusLabel(debt.status)}
-                    </span>
+                    {debt.is_fully_paid && (
+                      <span className="text-[10px] font-bold px-2 py-1 rounded-full bg-green-50 text-green-600 flex-shrink-0">
+                        ✅ Soldée
+                      </span>
+                    )}
                   </div>
 
-                  <div className="mb-4">
-                    <div className="flex items-center justify-between text-sm mb-2">
-                      <span className="text-gray-600">Progression</span>
-                      <span className="font-bold text-gray-900">{debt.progress_percentage?.toFixed(1)}%</span>
+                  <div className="mb-3">
+                    <div className="flex items-center justify-between text-xs mb-1">
+                      <span className="text-gray-400">{pct.toFixed(0)}%</span>
+                      <span className="font-bold text-gray-700">
+                        {formatFCFA(debt.remaining_amount)} FCFA restants
+                      </span>
                     </div>
-                    <div className="w-full bg-gray-200 rounded-full h-3 overflow-hidden">
+                    <div className="w-full bg-gray-100 rounded-full h-2 overflow-hidden">
                       <div
-                        className={`h-3 rounded-full bg-gradient-to-r ${getStatusColor(debt.status)} transition-all duration-500`}
-                        style={{ width: `${Math.min(debt.progress_percentage, 100)}%` }}
-                      ></div>
+                        className={`h-full rounded-full transition-all duration-700 ${getStateColor(pct)}`}
+                        style={{ width: `${Math.min(pct, 100)}%` }}
+                      />
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
-                    <div>
-                      <p className="text-xs text-gray-500">Montant total</p>
-                      <p className="font-semibold text-gray-900">{formatCurrency(debt.total_amount)}</p>
-                    </div>
-                    <div>
-                      <p className="text-xs text-gray-500">{direction === 'owed_by_me' ? 'Déjà payé' : 'Déjà reçu'}</p>
-                      <p className="font-semibold text-green-600">{formatCurrency(debt.amount_paid)}</p>
-                    </div>
-                    <div>
-                      <p className="text-xs text-gray-500">{direction === 'owed_by_me' ? 'Reste à payer' : 'Reste à recevoir'}</p>
-                      <p className="font-semibold text-orange-600">{formatCurrency(debt.remaining_amount)}</p>
-                    </div>
-                    <div>
-                      <p className="text-xs text-gray-500">Mensualité</p>
-                      <p className="font-semibold text-blue-600">
-                        {debt.monthly_payment ? formatCurrency(debt.monthly_payment) : '—'}
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center justify-between text-sm text-gray-600 mb-4">
+                  <div className="flex items-center justify-between text-xs text-gray-400 mb-3">
                     <span>
-                      {debt.months_remaining !== null
-                        ? `⏱️ ${debt.months_remaining} mois restants`
-                        : '⏱️ Pas d\'échéance définie'}
+                      {debt.months_remaining !== null ? `⏱️ ${debt.months_remaining} mois restants` : '⏱️ Pas d\'échéance'}
                     </span>
-                    {debt.interest_rate > 0 && <span>📊 Taux: {debt.interest_rate}%</span>}
+                    {debt.interest_rate > 0 && <span>📊 {debt.interest_rate}%</span>}
                   </div>
 
                   <div className="flex gap-2">
                     <button
                       onClick={() => onNavigate('debt-detail', { debtId: debt.id })}
-                      className="flex-1 px-4 py-2 bg-blue-50 text-blue-700 rounded-lg font-semibold border-2 border-blue-200 hover:bg-blue-100 transition-all"
+                      className="flex-1 text-xs font-bold py-2.5 rounded-xl bg-blue-50 text-blue-600"
                     >
-                      📊 Voir détails
+                      Détails
                     </button>
                     {debt.is_active && !debt.is_fully_paid && (
                       <button
-                        onClick={() => { setSelectedDebt(debt); setShowPaymentModal(true); }}
-                        className="flex-1 px-4 py-2 bg-green-50 text-green-700 rounded-lg font-semibold border-2 border-green-200 hover:bg-green-100 transition-all"
+                        onClick={() => { setSelectedDebt(debt); setShowPaymentSheet(true); }}
+                        className="flex-1 text-xs font-bold py-2.5 rounded-xl bg-green-50 text-green-600"
                       >
-                        {direction === 'owed_by_me' ? '💰 Paiement' : '💰 Remboursement reçu'}
+                        {direction === 'owed_by_me' ? 'Payer' : 'Remboursement reçu'}
                       </button>
                     )}
                     <button
-                      onClick={() => handleDeleteDebt(debt.id, debt.name)}
-                      className="px-4 py-2 bg-red-50 text-red-700 rounded-lg font-semibold border-2 border-red-200 hover:bg-red-100 transition-all"
+                      onClick={() => handleDelete(debt.id, debt.name)}
+                      className="px-3 py-2.5 rounded-xl bg-red-50 text-red-500 text-xs"
                     >
                       🗑️
                     </button>
@@ -457,244 +311,225 @@ const DebtsPage = ({ toast, onNavigate }) => {
         )}
       </div>
 
-      {/* Modal Création */}
-      {showCreateModal && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full p-6 max-h-[90vh] overflow-y-auto">
-            <h3 className="text-2xl font-bold text-gray-900 mb-2">
-              {direction === 'owed_by_me' ? '💳 Nouvelle dette' : '🤝 Nouvelle créance'}
-            </h3>
-
-            {/* Choix du sens — modifiable même dans le modal */}
-            <div className="flex gap-2 bg-gray-100 rounded-xl p-1 mb-6">
-              <button
-                type="button"
-                onClick={() => { setDirection('owed_by_me'); setDebtForm(f => ({ ...f, direction: 'owed_by_me' })); }}
-                className={`flex-1 py-2 rounded-lg text-sm font-bold transition-all ${
-                  direction === 'owed_by_me' ? 'bg-white text-red-600 shadow-sm' : 'text-gray-500'
-                }`}
-              >
-                💳 Je dois
-              </button>
-              <button
-                type="button"
-                onClick={() => { setDirection('owed_to_me'); setDebtForm(f => ({ ...f, direction: 'owed_to_me' })); }}
-                className={`flex-1 py-2 rounded-lg text-sm font-bold transition-all ${
-                  direction === 'owed_to_me' ? 'bg-white text-green-600 shadow-sm' : 'text-gray-500'
-                }`}
-              >
-                🤝 On me doit
-              </button>
+      {/* ── BOTTOM SHEET — Créer une dette/créance ── */}
+      {showCreateSheet && (
+        <>
+          <div className="fixed inset-0 bg-black/50 z-40" onClick={() => setShowCreateSheet(false)} />
+          <div className="fixed bottom-0 left-0 right-0 z-50 bg-white rounded-t-3xl shadow-2xl max-h-[88vh] overflow-y-auto animate-slide-up">
+            <div className="sticky top-0 bg-white pt-3 pb-2 px-5 border-b border-gray-100">
+              <div className="w-10 h-1 bg-gray-200 rounded-full mx-auto mb-3" />
+              <div className="flex items-center justify-between">
+                <h2 className="text-base font-bold text-gray-900">
+                  {direction === 'owed_by_me' ? '💳 Nouvelle dette' : '🤝 Nouvelle créance'}
+                </h2>
+                <button onClick={() => setShowCreateSheet(false)} className="text-gray-400 text-xl">✕</button>
+              </div>
             </div>
 
-            <form onSubmit={handleCreateDebt} className="space-y-4">
+            <div className="p-5 space-y-4">
+              {/* Sens */}
+              <div className="flex gap-2 bg-gray-50 rounded-2xl p-1">
+                <button
+                  onClick={() => { setDirection('owed_by_me'); setDebtForm(f => ({ ...f, direction: 'owed_by_me' })); }}
+                  className={`flex-1 py-2 rounded-xl text-xs font-bold ${direction === 'owed_by_me' ? 'bg-white text-red-600 shadow-sm' : 'text-gray-400'}`}
+                >
+                  💳 Je dois
+                </button>
+                <button
+                  onClick={() => { setDirection('owed_to_me'); setDebtForm(f => ({ ...f, direction: 'owed_to_me' })); }}
+                  className={`flex-1 py-2 rounded-xl text-xs font-bold ${direction === 'owed_to_me' ? 'bg-white text-green-600 shadow-sm' : 'text-gray-400'}`}
+                >
+                  🤝 On me doit
+                </button>
+              </div>
+
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Nom *</label>
+                <label className="text-xs text-gray-400 font-semibold uppercase tracking-wide">Nom</label>
                 <input
                   type="text"
                   value={debtForm.name}
-                  onChange={(e) => setDebtForm({...debtForm, name: e.target.value})}
+                  onChange={(e) => setDebtForm({ ...debtForm, name: e.target.value })}
                   placeholder={direction === 'owed_by_me' ? 'Ex: Crédit voiture' : 'Ex: Prêt à Moussa'}
-                  className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                  required
+                  className="w-full mt-1 px-4 py-3 bg-gray-50 rounded-2xl text-sm outline-none focus:ring-2 focus:ring-green-500"
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Type *</label>
+                  <label className="text-xs text-gray-400 font-semibold uppercase tracking-wide">Type</label>
                   <select
                     value={debtForm.debt_type}
-                    onChange={(e) => setDebtForm({...debtForm, debt_type: e.target.value})}
-                    className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                    onChange={(e) => setDebtForm({ ...debtForm, debt_type: e.target.value })}
+                    className="w-full mt-1 px-3 py-3 bg-gray-50 rounded-2xl text-sm outline-none"
                   >
-                    {DEBT_TYPES.map(type => (
-                      <option key={type.value} value={type.value}>{type.emoji} {type.label}</option>
-                    ))}
+                    {DEBT_TYPES.map(t => <option key={t.value} value={t.value}>{t.emoji} {t.label}</option>)}
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">{counterpartyLabel}</label>
+                  <label className="text-xs text-gray-400 font-semibold uppercase tracking-wide">{counterpartyLabel}</label>
                   <input
                     type="text"
                     value={debtForm.counterparty}
-                    onChange={(e) => setDebtForm({...debtForm, counterparty: e.target.value})}
-                    placeholder={counterpartyPlaceholder}
-                    className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                    onChange={(e) => setDebtForm({ ...debtForm, counterparty: e.target.value })}
+                    placeholder={direction === 'owed_by_me' ? 'BICIS' : 'Moussa Diop'}
+                    className="w-full mt-1 px-4 py-3 bg-gray-50 rounded-2xl text-sm outline-none focus:ring-2 focus:ring-green-500"
                   />
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Montant total (FCFA) *</label>
-                  <input
-                    type="number"
-                    value={debtForm.total_amount}
-                    onChange={(e) => setDebtForm({...debtForm, total_amount: e.target.value})}
-                    placeholder="Ex: 1000000"
-                    className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                    required
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Mensualité (FCFA) <span className="text-gray-400 font-normal">(optionnel)</span>
-                  </label>
-                  <input
-                    type="number"
-                    value={debtForm.monthly_payment}
-                    onChange={(e) => setDebtForm({...debtForm, monthly_payment: e.target.value})}
-                    placeholder="Ex: 50000 — laisser vide si pas d'échéancier fixe"
-                    className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                  />
-                  <p className="text-xs text-gray-400 mt-1">
-                    Sans mensualité, renseigne plutôt une date de fin prévue ci-dessous.
-                  </p>
-                </div>
+              <div>
+                <label className="text-xs text-gray-400 font-semibold uppercase tracking-wide">Montant total</label>
+                <input
+                  type="number"
+                  inputMode="numeric"
+                  value={debtForm.total_amount}
+                  onChange={(e) => setDebtForm({ ...debtForm, total_amount: e.target.value })}
+                  placeholder="0"
+                  className="w-full mt-1 px-4 py-3 bg-gray-50 rounded-2xl text-lg font-bold outline-none focus:ring-2 focus:ring-green-500"
+                />
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="text-xs text-gray-400 font-semibold uppercase tracking-wide">
+                  Mensualité <span className="font-normal normal-case">(optionnel)</span>
+                </label>
+                <input
+                  type="number"
+                  inputMode="numeric"
+                  value={debtForm.monthly_payment}
+                  onChange={(e) => setDebtForm({ ...debtForm, monthly_payment: e.target.value })}
+                  placeholder="Laisser vide si pas d'échéancier fixe"
+                  className="w-full mt-1 px-4 py-3 bg-gray-50 rounded-2xl text-sm outline-none focus:ring-2 focus:ring-green-500"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Date début *</label>
+                  <label className="text-xs text-gray-400 font-semibold uppercase tracking-wide">Début</label>
                   <input
                     type="date"
                     value={debtForm.start_date}
-                    onChange={(e) => setDebtForm({...debtForm, start_date: e.target.value})}
-                    className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                    required
+                    onChange={(e) => setDebtForm({ ...debtForm, start_date: e.target.value })}
+                    className="w-full mt-1 px-3 py-3 bg-gray-50 rounded-2xl text-sm outline-none"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Date fin prévue</label>
+                  <label className="text-xs text-gray-400 font-semibold uppercase tracking-wide">Fin prévue</label>
                   <input
                     type="date"
                     value={debtForm.target_end_date}
-                    onChange={(e) => setDebtForm({...debtForm, target_end_date: e.target.value})}
-                    className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                    onChange={(e) => setDebtForm({ ...debtForm, target_end_date: e.target.value })}
+                    className="w-full mt-1 px-3 py-3 bg-gray-50 rounded-2xl text-sm outline-none"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Taux d'intérêt (%)</label>
-                <input
-                  type="number"
-                  step="0.1"
-                  value={debtForm.interest_rate}
-                  onChange={(e) => setDebtForm({...debtForm, interest_rate: e.target.value})}
-                  placeholder="Ex: 5.5"
-                  className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Notes</label>
+                <label className="text-xs text-gray-400 font-semibold uppercase tracking-wide">Note</label>
                 <textarea
                   value={debtForm.notes}
-                  onChange={(e) => setDebtForm({...debtForm, notes: e.target.value})}
-                  rows={3}
-                  placeholder="Informations supplémentaires..."
-                  className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent resize-none"
+                  onChange={(e) => setDebtForm({ ...debtForm, notes: e.target.value })}
+                  rows={2}
+                  placeholder="Informations supplémentaires"
+                  className="w-full mt-1 px-4 py-3 bg-gray-50 rounded-2xl text-sm outline-none resize-none"
                 />
               </div>
+            </div>
 
-              <div className="flex gap-3 pt-4">
-                <button
-                  type="button"
-                  onClick={() => setShowCreateModal(false)}
-                  className="flex-1 px-6 py-3 border-2 border-gray-300 text-gray-700 rounded-xl font-semibold hover:bg-gray-50 transition-all"
-                >
-                  Annuler
-                </button>
-                <button
-                  type="submit"
-                  className="flex-1 px-6 py-3 bg-green-600 text-white rounded-xl font-semibold hover:bg-green-700 transition-all"
-                >
-                  {direction === 'owed_by_me' ? 'Créer la dette' : 'Créer la créance'}
-                </button>
-              </div>
-            </form>
+            <div className="sticky bottom-0 bg-white border-t border-gray-100 p-4">
+              <button
+                onClick={handleCreateDebt}
+                className="w-full py-4 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-2xl font-bold shadow-lg"
+              >
+                {direction === 'owed_by_me' ? 'Créer la dette' : 'Créer la créance'}
+              </button>
+            </div>
           </div>
-        </div>
+        </>
       )}
 
-      {/* Modal Paiement */}
-      {showPaymentModal && selectedDebt && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6">
-            <h3 className="text-2xl font-bold text-gray-900 mb-2">
-              {direction === 'owed_by_me' ? '💰 Ajouter un paiement' : '💰 Enregistrer un remboursement reçu'}
-            </h3>
-            <p className="text-gray-600 mb-6">{selectedDebt.name}</p>
+      {/* ── BOTTOM SHEET — Paiement ── */}
+      {showPaymentSheet && selectedDebt && (
+        <>
+          <div className="fixed inset-0 bg-black/50 z-40" onClick={() => setShowPaymentSheet(false)} />
+          <div className="fixed bottom-0 left-0 right-0 z-50 bg-white rounded-t-3xl shadow-2xl animate-slide-up">
+            <div className="pt-3 pb-2 px-5 border-b border-gray-100">
+              <div className="w-10 h-1 bg-gray-200 rounded-full mx-auto mb-3" />
+              <div className="flex items-center justify-between">
+                <div>
+                  <h2 className="text-base font-bold text-gray-900">
+                    {direction === 'owed_by_me' ? '💰 Ajouter un paiement' : '💰 Remboursement reçu'}
+                  </h2>
+                  <p className="text-xs text-gray-400">{selectedDebt.name}</p>
+                </div>
+                <button onClick={() => setShowPaymentSheet(false)} className="text-gray-400 text-xl">✕</button>
+              </div>
+            </div>
 
-            <form onSubmit={handleAddPayment} className="space-y-4">
+            <div className="p-5 space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Montant (FCFA) *</label>
+                <label className="text-xs text-gray-400 font-semibold uppercase tracking-wide">Montant</label>
                 <input
                   type="number"
+                  inputMode="numeric"
                   value={paymentForm.amount}
-                  onChange={(e) => setPaymentForm({...paymentForm, amount: e.target.value})}
-                  placeholder={`Ex: ${selectedDebt.monthly_payment}`}
-                  className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                  required
+                  onChange={(e) => setPaymentForm({ ...paymentForm, amount: e.target.value })}
+                  placeholder={selectedDebt.monthly_payment ? `Ex: ${selectedDebt.monthly_payment}` : '0'}
+                  autoFocus
+                  className="w-full mt-1 px-4 py-3 bg-gray-50 rounded-2xl text-lg font-bold outline-none focus:ring-2 focus:ring-green-500"
                 />
               </div>
 
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-xs text-gray-400 font-semibold uppercase tracking-wide">Date</label>
+                  <input
+                    type="date"
+                    value={paymentForm.payment_date}
+                    onChange={(e) => setPaymentForm({ ...paymentForm, payment_date: e.target.value })}
+                    className="w-full mt-1 px-3 py-3 bg-gray-50 rounded-2xl text-sm outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="text-xs text-gray-400 font-semibold uppercase tracking-wide">Méthode</label>
+                  <select
+                    value={paymentForm.payment_method}
+                    onChange={(e) => setPaymentForm({ ...paymentForm, payment_method: e.target.value })}
+                    className="w-full mt-1 px-3 py-3 bg-gray-50 rounded-2xl text-sm outline-none"
+                  >
+                    {PAYMENT_METHODS.map(m => <option key={m.value} value={m.value}>{m.label}</option>)}
+                  </select>
+                </div>
+              </div>
+
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Date *</label>
+                <label className="text-xs text-gray-400 font-semibold uppercase tracking-wide">Note</label>
                 <input
-                  type="date"
-                  value={paymentForm.payment_date}
-                  onChange={(e) => setPaymentForm({...paymentForm, payment_date: e.target.value})}
-                  className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                  required
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Méthode *</label>
-                <select
-                  value={paymentForm.payment_method}
-                  onChange={(e) => setPaymentForm({...paymentForm, payment_method: e.target.value})}
-                  className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                >
-                  {PAYMENT_METHODS.map(method => (
-                    <option key={method.value} value={method.value}>{method.label}</option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Note (optionnelle)</label>
-                <textarea
+                  type="text"
                   value={paymentForm.notes}
-                  onChange={(e) => setPaymentForm({...paymentForm, notes: e.target.value})}
-                  rows={2}
-                  placeholder="Ex: Paiement mars 2026"
-                  className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent resize-none"
+                  onChange={(e) => setPaymentForm({ ...paymentForm, notes: e.target.value })}
+                  placeholder="Optionnel"
+                  className="w-full mt-1 px-4 py-3 bg-gray-50 rounded-2xl text-sm outline-none"
                 />
               </div>
+            </div>
 
-              <div className="flex gap-3 pt-2">
-                <button
-                  type="button"
-                  onClick={() => { setShowPaymentModal(false); setSelectedDebt(null); }}
-                  className="flex-1 px-6 py-3 border-2 border-gray-300 text-gray-700 rounded-xl font-semibold hover:bg-gray-50 transition-all"
-                >
-                  Annuler
-                </button>
-                <button
-                  type="submit"
-                  className="flex-1 px-6 py-3 bg-green-600 text-white rounded-xl font-semibold hover:bg-green-700 transition-all"
-                >
-                  Enregistrer
-                </button>
-              </div>
-            </form>
+            <div className="p-4 pb-6">
+              <button
+                onClick={handleAddPayment}
+                className="w-full py-4 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-2xl font-bold shadow-lg"
+              >
+                Enregistrer
+              </button>
+            </div>
           </div>
-        </div>
+        </>
       )}
+
+      <style>{`
+        @keyframes slide-up { from { transform: translateY(100%); } to { transform: translateY(0); } }
+        .animate-slide-up { animation: slide-up 0.25s ease-out; }
+      `}</style>
     </div>
   );
 };
