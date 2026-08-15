@@ -85,7 +85,12 @@ const DebtsPage = ({ toast, onNavigate }) => {
   const handleCreateDebt = async (e) => {
     e.preventDefault();
     try {
-      await API.post('/debts/', { ...debtForm, direction });
+      const payload = {
+        ...debtForm,
+        direction,
+        monthly_payment: debtForm.monthly_payment ? debtForm.monthly_payment : null,
+      };
+      await API.post('/debts/', payload);
       toast?.showSuccess(direction === 'owed_by_me' ? 'Dette créée avec succès !' : 'Créance enregistrée avec succès !');
       setShowCreateModal(false);
       setDebtForm({
@@ -408,12 +413,18 @@ const DebtsPage = ({ toast, onNavigate }) => {
                     </div>
                     <div>
                       <p className="text-xs text-gray-500">Mensualité</p>
-                      <p className="font-semibold text-blue-600">{formatCurrency(debt.monthly_payment)}</p>
+                      <p className="font-semibold text-blue-600">
+                        {debt.monthly_payment ? formatCurrency(debt.monthly_payment) : '—'}
+                      </p>
                     </div>
                   </div>
 
                   <div className="flex items-center justify-between text-sm text-gray-600 mb-4">
-                    <span>⏱️ {debt.months_remaining} mois restants</span>
+                    <span>
+                      {debt.months_remaining !== null
+                        ? `⏱️ ${debt.months_remaining} mois restants`
+                        : '⏱️ Pas d\'échéance définie'}
+                    </span>
                     {debt.interest_rate > 0 && <span>📊 Taux: {debt.interest_rate}%</span>}
                   </div>
 
@@ -527,15 +538,19 @@ const DebtsPage = ({ toast, onNavigate }) => {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Mensualité (FCFA) *</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Mensualité (FCFA) <span className="text-gray-400 font-normal">(optionnel)</span>
+                  </label>
                   <input
                     type="number"
                     value={debtForm.monthly_payment}
                     onChange={(e) => setDebtForm({...debtForm, monthly_payment: e.target.value})}
-                    placeholder="Ex: 50000"
+                    placeholder="Ex: 50000 — laisser vide si pas d'échéancier fixe"
                     className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                    required
                   />
+                  <p className="text-xs text-gray-400 mt-1">
+                    Sans mensualité, renseigne plutôt une date de fin prévue ci-dessous.
+                  </p>
                 </div>
               </div>
 
