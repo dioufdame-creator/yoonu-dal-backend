@@ -553,31 +553,34 @@ def manage_incomes(request):
             
 
 # ==========================================
-# GESTION DES DÉPENSES
+# REMPLACER dans api/views.py — fonction manage_expenses
 # ==========================================
+#
+# Deux changements : le GET retourne les infos de destination, le POST
+# les accepte et crédite réellement la poche/objectif visé.
 
 @api_view(['GET', 'POST'])
 @permission_classes([IsAuthenticated])
 def manage_expenses(request):
-    """Gestion complète des dépenses — support ?month=YYYY-MM"""
+    """Gestion complète des dépenses — support ?month=YYYY-MM et épargne vers poche"""
     user = request.user
- 
+
     if request.method == 'GET':
         try:
             start_of_month, end_of_month, is_current_month = get_month_range(request)
             category = request.GET.get('category')
- 
+
             expenses = Expense.objects.filter(
                 user=user,
                 date__gte=start_of_month.date(),
                 date__lte=end_of_month.date()
             )
- 
+
             if category:
                 expenses = expenses.filter(category=category)
- 
+
             expenses = expenses.order_by('-date')
- 
+
             expenses_data = [{
                 'id': e.id,
                 'category': e.category,
@@ -585,9 +588,12 @@ def manage_expenses(request):
                 'amount': float(e.amount),
                 'date': e.date.isoformat(),
                 'is_necessary': e.is_necessary,
-                'created_at': e.created_at.isoformat()
+                'created_at': e.created_at.isoformat(),
+                # ✅ Info de destination — pour le badge "🎯 → Épargne de sécurité"
+                'destination_account_name': e.destination_account.name if e.destination_account else None,
+                'destination_goal_title': e.destination_goal.title if e.destination_goal else None,
             } for e in expenses]
- 
+
             return Response({
                 'expenses': expenses_data,
                 'total_count': len(expenses_data),
@@ -595,43 +601,74 @@ def manage_expenses(request):
                 'is_current_month': is_current_month,
                 'month': start_of_month.strftime('%Y-%m'),
             })
- 
+
         except Exception as e:
             return Response({'error': f'Erreur dépenses: {str(e)}'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
- 
-    else:  # POST inchangé
+
+    else:  # POST
         try:
             data = request.data
- 
+
             if not data.get('category'):
                 return Response({'error': 'La catégorie est obligatoire'}, status=status.HTTP_400_BAD_REQUEST)
             if not data.get('amount'):
                 return Response({'error': 'Le montant est obligatoire'}, status=status.HTTP_400_BAD_REQUEST)
- 
+
+            amount = Decimal(str(data.get('amount')))
+
+            # ✅ Résoudre la destination d'épargne, si fournie
+            destination_account = None
+            destination_goal = None
+
+            if data.get('destination_account_id'):
+                destination_account = Account.objects.filter(
+                    id=data['destination_account_id'], user=user
+                ).first()
+                if not destination_account:
+                    return Response({'error': 'Poche destination introuvable'}, status=status.HTTP_404_NOT_FOUND)
+
+            elif data.get('destination_goal_id'):
+                destination_goal = Goal.objects.filter(
+                    id=data['destination_goal_id'], user=user
+                ).first()
+                if not destination_goal:
+                    return Response({'error': 'Objectif destination introuvable'}, status=status.HTTP_404_NOT_FOUND)
+
             expense = Expense.objects.create(
                 user=user,
                 category=data.get('category'),
                 description=data.get('description', ''),
-                amount=Decimal(data.get('amount')),
+                amount=amount,
                 date=data.get('date') if data.get('date') else timezone.now().date(),
-                is_necessary=data.get('is_necessary', True)
+                is_necessary=data.get('is_necessary', True),
+                destination_account=destination_account,
+                destination_goal=destination_goal,
             )
- 
+
+            # ✅ Créditer réellement la poche/objectif — l'argent part du
+            # budget du mois (dépense normale) ET rejoint la poche visée
+            if destination_account:
+                destination_account.credit(amount)
+            elif destination_goal:
+                destination_goal.current_amount = Decimal(str(destination_goal.current_amount)) + amount
+                destination_goal.save()
+
             update_envelope_spending(user, expense)
             expense.refresh_from_db()
- 
+
             return Response({
                 'id': expense.id,
                 'category': expense.category,
                 'description': expense.description,
                 'amount': float(expense.amount),
                 'date': expense.date.isoformat(),
+                'destination_account_name': destination_account.name if destination_account else None,
+                'destination_goal_title': destination_goal.title if destination_goal else None,
                 'message': 'Dépense créée avec succès'
             }, status=status.HTTP_201_CREATED)
- 
+
         except Exception as e:
             return Response({'error': f'Erreur création dépense: {str(e)}'}, status=status.HTTP_400_BAD_REQUEST)
-
 
 @api_view(['GET', 'PUT', 'DELETE'])
 @permission_classes([IsAuthenticated])
