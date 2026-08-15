@@ -429,7 +429,8 @@ const Dashboard = ({ toast, auth, onNavigate, user }) => {
           )}
         </div>
 
-        {/* ── LIEN DISCRET VERS MES POCHES (trésorerie permanente) ── */}
+        {/* ── LIEN DISCRET VERS MES POCHES (trésorerie permanente,
+             distincte du budget du mois ci-dessus) ── */}
         {disponible !== null && (
           <button
             onClick={() => onNavigate('pockets')}
@@ -437,7 +438,10 @@ const Dashboard = ({ toast, auth, onNavigate, user }) => {
           >
             <div className="flex items-center gap-2">
               <span className="text-base">💼</span>
-              <span className="text-xs text-gray-500">Mes poches</span>
+              <div className="text-left">
+                <span className="text-xs text-gray-500 block">Ma trésorerie</span>
+                <span className="text-[10px] text-gray-400">Hors budget du mois</span>
+              </div>
             </div>
             <div className="flex items-center gap-1">
               <span className="text-sm font-bold text-gray-800">{formatFCFA(disponible)} FCFA</span>
