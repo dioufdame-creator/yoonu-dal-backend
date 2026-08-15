@@ -777,6 +777,48 @@ class DebtPayment(models.Model):
 
     class Meta:
         ordering = ['-payment_date']
+# ==========================================
+# AJOUTER dans api/models.py — méthode delete() de DebtPayment
+# ==========================================
+#
+# Ajouter cette méthode dans la classe DebtPayment, à côté de save() :
+
+    def delete(self, *args, **kwargs):
+        """
+        Supprime la transaction financière liée ET recalcule amount_paid
+        après suppression - sinon le total affiche reste gonfle de
+        l'ancien montant du paiement supprime.
+        """
+        debt = self.debt
+
+        if debt.direction == 'owed_by_me':
+            linked = Expense.objects.filter(
+                user=debt.user, category='remboursement_dette',
+                amount=self.amount, date=self.payment_date,
+                description=f"Paiement dette: {debt.name}"
+            ).first()
+        else:
+            linked = Income.objects.filter(
+                user=debt.user, source='remboursement_recu',
+                amount=self.amount, date=self.payment_date,
+                description=f"Remboursement recu: {debt.name}"
+            ).first()
+
+        if linked:
+            linked.delete()
+
+        super().delete(*args, **kwargs)
+
+        from django.db.models import Sum
+        total_paid = debt.payments.aggregate(total=Sum('amount'))['total'] or Decimal('0')
+        debt.amount_paid = total_paid
+
+        if debt.is_fully_paid and debt.amount_paid < debt.total_amount:
+            debt.is_fully_paid = False
+            debt.is_active = True
+            debt.actual_end_date = None
+
+        debt.save()
 
 # ==========================================
 # DIAGNOSTIC
