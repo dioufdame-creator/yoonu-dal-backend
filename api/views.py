@@ -5334,13 +5334,27 @@ def calculate_month_balance_by_envelope(user, month_start, month_end):
     }
 
 
+# ==========================================
+# REMPLACER dans api/views.py la fonction check_monthly_carryover
+# ==========================================
+#
+# Ancienne logique : créait un MonthlyCarryover en 'pending', attendait
+# une décision de l'utilisateur (4 choix).
+#
+# Nouvelle logique : le solde positif du mois précédent rejoint
+# AUTOMATIQUEMENT le compte Disponible — aucune décision requise à cette
+# étape, c'est de la trésorerie qui appartient déjà à l'utilisateur.
+# La décision "qu'est-ce que j'en fais" se fait plus tard, au niveau
+# du Disponible lui-même (via allocate_disponible_to_budget ou un
+# transfert manuel vers une poche/objectif).
+
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def check_monthly_carryover(request):
     """
-    Vérifie s'il existe un report en attente de décision pour l'utilisateur.
-    Appelé au chargement du Dashboard. Crée automatiquement le carryover
-    du mois précédent s'il n'existe pas encore et que le mois a changé.
+    Vérifie le solde du mois précédent. S'il est positif et n'a pas encore
+    été traité, l'ajoute automatiquement au compte Disponible et retourne
+    l'info pour affichage (une simple notification, pas une décision).
     """
     user = request.user
     now = timezone.now()
@@ -5348,62 +5362,63 @@ def check_monthly_carryover(request):
 
     prev_start, prev_end = get_previous_month_range(current_month_start)
 
-    # Le carryover existe-t-il déjà pour cette transition de mois ?
     existing = MonthlyCarryover.objects.filter(user=user, from_month=prev_start).first()
 
     if existing:
-        if existing.status == 'pending':
-            return Response({
-                'has_pending': True,
-                'carryover': {
-                    'id': existing.id,
-                    'amount': float(existing.amount),
-                    'from_month': existing.from_month.isoformat(),
-                    'to_month': existing.to_month.isoformat(),
-                    'from_month_label': existing.from_month.strftime('%B %Y'),
-                }
-            })
-        return Response({'has_pending': False, 'deficit': None})
+        # Déjà traité — rien à notifier de nouveau
+        return Response({'has_pending': False, 'just_added': None, 'deficit': None})
 
-    # Pas encore de carryover créé — on calcule le solde du mois précédent
     balance_data = calculate_month_balance_by_envelope(user, prev_start, prev_end)
     balance = balance_data['total_balance']
 
-    # Aucune donnée réelle sur le mois précédent (nouvel utilisateur) → rien à faire
     if balance_data['total_income'] == 0 and balance_data['total_expenses'] == 0:
-        return Response({'has_pending': False, 'deficit': None})
+        return Response({'has_pending': False, 'just_added': None, 'deficit': None})
 
     if balance > 0:
-        # Créer le carryover en attente de décision
+        # ✅ Ajout automatique au Disponible — aucune décision requise
+        disponible = Account.get_or_create_disponible(user)
+        disponible.credit(balance)
+
         carryover = MonthlyCarryover.objects.create(
             user=user,
             from_month=prev_start,
             to_month=current_month_start,
             amount=Decimal(str(round(balance, 2))),
-            status='pending'
+            status='allocated',
+            allocation_type='disponible',
+            allocation_detail={'destination': 'disponible'},
+            allocated_at=timezone.now(),
         )
-        return Response({
-            'has_pending': True,
-            'carryover': {
-                'id': carryover.id,
-                'amount': float(carryover.amount),
-                'from_month': carryover.from_month.isoformat(),
-                'to_month': carryover.to_month.isoformat(),
-                'from_month_label': carryover.from_month.strftime('%B %Y'),
-            }
-        })
-    elif balance < 0:
-        # Déficit — on informe seulement, pas de carryover créé (rien à affecter)
+
         return Response({
             'has_pending': False,
+            'just_added': {
+                'amount': float(carryover.amount),
+                'from_month_label': carryover.from_month.strftime('%B %Y'),
+                'disponible_balance': float(disponible.balance),
+            },
+            'deficit': None,
+        })
+
+    elif balance < 0:
+        return Response({
+            'has_pending': False,
+            'just_added': None,
             'deficit': {
                 'amount': float(abs(balance)),
                 'from_month_label': prev_start.strftime('%B %Y'),
             }
         })
-    else:
-        return Response({'has_pending': False, 'deficit': None})
 
+    return Response({'has_pending': False, 'just_added': None, 'deficit': None})
+
+
+# ──────────────────────────────────────────────────────────
+# NOTE : allocate_monthly_carryover (l'ancien endpoint de décision à
+# 4 choix) n'est plus appelé par ce nouveau flux, mais peut rester en
+# place sans risque — simplement mort si le frontend ne l'utilise plus.
+# À retirer plus tard si confirmé inutile.
+# ──────────────────────────────────────────────────────────
 
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
