@@ -223,6 +223,9 @@ class Budget(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
+    destination_account = models.ForeignKey('Account', on_delete=models.SET_NULL, null=True, blank=True, related_name='funded_expenses')
+    destination_goal = models.ForeignKey('Goal', on_delete=models.SET_NULL, null=True, blank=True, related_name='funded_expenses')    
+
     class Meta:
         unique_together = ('user', 'category')
         ordering = ['category']
