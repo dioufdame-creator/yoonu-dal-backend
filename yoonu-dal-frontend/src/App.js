@@ -29,6 +29,7 @@ import ProfileHub from './components/profile/ProfileHub';
 import QuickAdd from './components/quickadd/QuickAdd';
 import ExportPage from './components/exports/ExportPage';
 import RecurringTransactionsPage from './components/recurring/RecurringTransactionsPage';
+import PocketsPage from './components/pockets/PocketsPage';
 
 import TransactionsPage from './components/transactions/TransactionsPage';
 
@@ -129,7 +130,7 @@ function App() {
     const protectedPages = [
       'dashboard', 'expenses', 'transactions', 'incomes', 'envelopes', 'tontines',
       'tontine-detail', 'tontine-analysis',
-      'profile', 'profile-hub', 'quick-add', 'exports', 'recurring', 'score', 'alerts',
+      'profile', 'profile-hub', 'quick-add', 'exports', 'recurring', 'pockets', 'score', 'alerts',
       'diagnostic', 'values', 'category-rules', 'goals', 'debts', 'debt-detail',
       'subscription'
     ];
@@ -547,6 +548,10 @@ function App() {
       case 'recurring':
         if (!isAuthenticated) { handleNavigate('login'); return null; }
         return <RecurringTransactionsPage onNavigate={handleNavigate} toast={toastMethods} />;
+
+      case 'pockets':
+        if (!isAuthenticated) { handleNavigate('login'); return null; }
+        return <PocketsPage onNavigate={handleNavigate} toast={toastMethods} />;
 
       case 'quick-add':
         if (!isAuthenticated) { handleNavigate('login'); return null; }
