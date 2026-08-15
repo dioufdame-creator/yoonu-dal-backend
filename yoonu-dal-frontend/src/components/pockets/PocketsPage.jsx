@@ -9,6 +9,11 @@ const ACCOUNT_ICONS = {
   personnalise: '💼',
 };
 
+// ✅ Le backend nomme le compte "Disponible" — on l'affiche "Trésorerie"
+// pour ne pas entrer en collision avec le "Disponible/jour" du budget mensuel
+const displayName = (account) =>
+  account.account_type === 'disponible' ? 'Trésorerie' : account.name;
+
 const PocketsPage = ({ onNavigate, toast }) => {
   const [accounts, setAccounts] = useState([]);
   const [goals, setGoals] = useState([]);
@@ -48,7 +53,7 @@ const PocketsPage = ({ onNavigate, toast }) => {
 
   // Toutes les entités transférables (poches + objectifs), pour les sélecteurs
   const allEntities = [
-    ...accounts.map(a => ({ type: 'account', id: a.id, name: a.name, icon: a.icon, balance: a.balance })),
+    ...accounts.map(a => ({ type: 'account', id: a.id, name: displayName(a), icon: a.icon, balance: a.balance })),
     ...goals.map(g => ({ type: 'goal', id: g.id, name: g.title, icon: '🎯', balance: g.current_amount })),
   ];
 
@@ -165,9 +170,9 @@ const PocketsPage = ({ onNavigate, toast }) => {
                   {acc.icon}
                 </div>
                 <div className="flex-1 text-left min-w-0">
-                  <p className="text-sm font-bold text-gray-900 truncate">{acc.name}</p>
+                  <p className="text-sm font-bold text-gray-900 truncate">{displayName(acc)}</p>
                   <p className="text-xs text-gray-400">
-                    {acc.account_type === 'disponible' ? 'Argent mobilisable' :
+                    {acc.account_type === 'disponible' ? 'Argent que vous détenez, hors budget du mois' :
                      acc.account_type === 'epargne_securite' ? 'Réserve de sécurité' : 'Poche personnalisée'}
                   </p>
                 </div>
@@ -219,8 +224,11 @@ const PocketsPage = ({ onNavigate, toast }) => {
 
         <div className="bg-blue-50 border border-blue-200 rounded-2xl p-4">
           <p className="text-xs text-blue-800 leading-relaxed">
-            💡 Déplacer de l'argent entre vos poches (ou vers un objectif) ne
-            change pas votre budget du mois — c'est juste votre argent qui change de place.
+            💡 <strong>Vos poches ≠ votre budget du mois.</strong> Vos poches montrent
+            tout l'argent que vous possédez, en permanence. Le "reste du mois" sur
+            l'accueil montre uniquement ce que vous pouvez encore dépenser dans le
+            cadre du budget de ce mois. Déplacer de l'argent entre vos poches ne
+            change jamais ce budget — c'est juste votre argent qui change de place.
           </p>
         </div>
 
