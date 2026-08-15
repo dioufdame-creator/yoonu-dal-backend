@@ -29,7 +29,6 @@ class UserProfile(models.Model):
 
     fcm_token = models.CharField(max_length=500, null=True, blank=True)
 
-    # ✅ CHAMPS SUBSCRIPTION
     subscription_tier = models.CharField(
         max_length=20,
         choices=[('free', 'Freemium'), ('premium', 'Premium')],
@@ -52,7 +51,6 @@ class UserProfile(models.Model):
         return f"Profil de {self.user.username}"
 
     def is_premium_active(self):
-        """Vérifie si user a accès Premium"""
         if self.subscription_tier == 'premium':
             if self.subscription_expires_at and self.subscription_expires_at > timezone.now():
                 return True
@@ -67,7 +65,6 @@ class UserProfile(models.Model):
         return False
 
     def start_trial(self):
-        """Démarre l'essai gratuit 30 jours"""
         if self.trial_used:
             return False
 
@@ -79,14 +76,12 @@ class UserProfile(models.Model):
         return True
 
     def trial_days_remaining(self):
-        """Jours restants du trial"""
         if not self.trial_active or not self.trial_expires_at:
             return 0
         delta = self.trial_expires_at - timezone.now()
         return max(0, delta.days)
 
     def reset_monthly_limits(self):
-        """Reset compteurs mensuels"""
         from dateutil.relativedelta import relativedelta
         today = timezone.now().date()
         if self.ai_messages_reset_date < today:
@@ -202,6 +197,19 @@ class Expense(models.Model):
     amount = models.DecimalField(max_digits=15, decimal_places=2)
     date = models.DateField(default=timezone.now)
     is_necessary = models.BooleanField(default=True)
+
+    # ✅ Destination d'épargne — optionnel. Si renseigné, cette dépense
+    # (typiquement catégorie 'epargne') crédite aussi le solde d'une
+    # poche ou d'un objectif au moment de sa création.
+    destination_account = models.ForeignKey(
+        'Account', on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='funded_expenses'
+    )
+    destination_goal = models.ForeignKey(
+        'Goal', on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='funded_expenses'
+    )
+
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -223,9 +231,6 @@ class Budget(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
-    destination_account = models.ForeignKey('Account', on_delete=models.SET_NULL, null=True, blank=True, related_name='funded_expenses')
-    destination_goal = models.ForeignKey('Goal', on_delete=models.SET_NULL, null=True, blank=True, related_name='funded_expenses')    
-
     class Meta:
         unique_together = ('user', 'category')
         ordering = ['category']
@@ -234,7 +239,6 @@ class Budget(models.Model):
         return f"{self.user.username} - {self.category}: {self.allocated_amount}"
 
     def get_spent_amount(self, period_start=None):
-        """Calcule le montant dépensé dans cette catégorie pour la période"""
         if not period_start:
             period_start = timezone.now().replace(day=1)
 
@@ -300,7 +304,6 @@ class Goal(models.Model):
         super().save(*args, **kwargs)
 
 
-
 class Saving(models.Model):
     """Épargnes personnelles de l'utilisateur"""
     GOAL_CHOICES = [
@@ -335,13 +338,12 @@ class Saving(models.Model):
 
 class Envelope(models.Model):
     """Système des 4 enveloppes budgétaires - Inspiré du livre"""
-    
+
     ENVELOPE_TYPES = [
         ('essentiels', 'Essentiels'),
         ('plaisirs', 'Plaisirs'),
         ('projets', 'Projets'),
         ('liberation', 'Libération'),
-        # Sous-catégories
         ('alimentation', 'Alimentation'),
         ('transport', 'Transport'),
         ('logement', 'Logement'),
@@ -354,7 +356,7 @@ class Envelope(models.Model):
         ('dettes', 'Dettes'),
         ('autre', 'Autre')
     ]
-    
+
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='envelopes')
     envelope_type = models.CharField(max_length=20, choices=ENVELOPE_TYPES)
     allocated_percentage = models.DecimalField(max_digits=5, decimal_places=2, default=0)
@@ -378,19 +380,16 @@ class Envelope(models.Model):
 
     @property
     def remaining_budget(self):
-        """Budget restant dans cette enveloppe"""
         return max(0, self.monthly_budget - self.current_spent)
 
     @property
     def usage_percentage(self):
-        """Pourcentage d'utilisation de l'enveloppe"""
         if self.monthly_budget <= 0:
             return 0
         return min((self.current_spent / self.monthly_budget) * 100, 100)
 
     @property
     def status(self):
-        """Statut de l'enveloppe : good, warning, danger"""
         usage = self.usage_percentage
         if usage <= 70:
             return 'good'
@@ -400,14 +399,12 @@ class Envelope(models.Model):
             return 'danger'
 
     def calculate_monthly_budget(self, monthly_income):
-        """Calcule le budget mensuel basé sur le pourcentage et le revenu"""
         if monthly_income > 0:
             self.monthly_budget = (self.allocated_percentage / 100) * monthly_income
             self.save()
         return self.monthly_budget
 
     def reset_monthly_spent(self):
-        """Remet à zéro les dépenses du mois (à appeler en début de mois)"""
         self.current_spent = 0
         self.save()
 
@@ -599,14 +596,8 @@ class Transaction(models.Model):
 
 
 # ==========================================
-# REMPLACER dans api/models.py — modèle Debt
-# (garde direction/counterparty déjà en place depuis le patch précédent)
+# DETTES (bidirectionnel : je dois / on me doit)
 # ==========================================
-#
-# Changements dans CETTE version :
-# 1. monthly_payment devient optionnel (null=True, blank=True, default=None)
-# 2. target_end_date sert d'alternative pour calculer l'échéance
-# 3. months_remaining gère tous les cas (avec mensualité, avec échéance, ni l'un ni l'autre)
 
 class Debt(models.Model):
     """Tracker les dettes et créances — bidirectionnel, mensualité optionnelle"""
@@ -634,7 +625,7 @@ class Debt(models.Model):
     total_amount = models.DecimalField(max_digits=12, decimal_places=2)
     amount_paid = models.DecimalField(max_digits=12, decimal_places=2, default=0)
 
-    # ✅ Optionnel désormais — une dette peut n'avoir qu'un montant + une échéance,
+    # Optionnel — une dette peut n'avoir qu'un montant + une échéance,
     # sans mensualité fixe (ex: prêt entre proches remboursé "quand on peut")
     monthly_payment = models.DecimalField(
         max_digits=12, decimal_places=2, null=True, blank=True, default=None
@@ -663,10 +654,9 @@ class Debt(models.Model):
     @property
     def months_remaining(self):
         """
-        Nombre de mois restants — calculé selon ce qui est disponible :
-        1. Si mensualité fixée → remaining / mensualité (comportement historique)
+        1. Si mensualité fixée → remaining / mensualité (arrondi au-dessus)
         2. Sinon si échéance cible fixée → mois entre aujourd'hui et l'échéance
-        3. Sinon → None (pas d'estimation possible, l'app doit gérer l'absence)
+        3. Sinon → None (pas d'estimation possible)
         """
         if self.remaining_amount <= 0:
             return 0
@@ -705,19 +695,6 @@ class Debt(models.Model):
     class Meta:
         ordering = ['-is_active', '-created_at']
 
-# ──────────────────────────────────────────────────────────
-# DebtPayment ne change PAS structurellement, mais son comportement
-# `save()` doit être adapté pour créer soit une Expense (owed_by_me,
-# comme avant) soit une Income (owed_to_me — on reçoit un remboursement).
-# Voir le fichier debt_payment_save_patch.py fourni séparément.
-# ──────────────────────────────────────────────────────────
-
-# ==========================================
-# MODIFICATION dans api/models.py — méthode save() de DebtPayment
-# ==========================================
-#
-# Remplacer la méthode save() existante de DebtPayment par celle-ci.
-# Le reste de la classe (champs, __str__, Meta) ne change pas.
 
 class DebtPayment(models.Model):
     """Historique des remboursements — dans les deux sens"""
@@ -742,7 +719,6 @@ class DebtPayment(models.Model):
 
         if is_new:
             if self.debt.direction == 'owed_by_me':
-                # Je rembourse ma dette → c'est une dépense
                 Expense.objects.create(
                     user=self.debt.user,
                     category='remboursement_dette',
@@ -751,7 +727,6 @@ class DebtPayment(models.Model):
                     date=self.payment_date
                 )
             else:
-                # On me rembourse une créance → c'est un revenu
                 Income.objects.create(
                     user=self.debt.user,
                     source='remboursement_recu',
@@ -760,7 +735,6 @@ class DebtPayment(models.Model):
                     date=self.payment_date
                 )
 
-        # Recalculer le montant payé/remboursé
         from django.db.models import Sum
         total_paid = self.debt.payments.aggregate(
             total=Sum('amount')
@@ -775,22 +749,11 @@ class DebtPayment(models.Model):
 
         self.debt.save()
 
-    def __str__(self):
-        return f"{self.debt.name} - {self.amount} FCFA le {self.payment_date}"
-
-    class Meta:
-        ordering = ['-payment_date']
-# ==========================================
-# AJOUTER dans api/models.py — méthode delete() de DebtPayment
-# ==========================================
-#
-# Ajouter cette méthode dans la classe DebtPayment, à côté de save() :
-
     def delete(self, *args, **kwargs):
         """
         Supprime la transaction financière liée ET recalcule amount_paid
-        après suppression - sinon le total affiche reste gonfle de
-        l'ancien montant du paiement supprime.
+        après suppression — sinon le total affiché reste gonflé de
+        l'ancien montant du paiement supprimé.
         """
         debt = self.debt
 
@@ -804,7 +767,7 @@ class DebtPayment(models.Model):
             linked = Income.objects.filter(
                 user=debt.user, source='remboursement_recu',
                 amount=self.amount, date=self.payment_date,
-                description=f"Remboursement recu: {debt.name}"
+                description=f"Remboursement reçu: {debt.name}"
             ).first()
 
         if linked:
@@ -822,6 +785,13 @@ class DebtPayment(models.Model):
             debt.actual_end_date = None
 
         debt.save()
+
+    def __str__(self):
+        return f"{self.debt.name} - {self.amount} FCFA le {self.payment_date}"
+
+    class Meta:
+        ordering = ['-payment_date']
+
 
 # ==========================================
 # DIAGNOSTIC
@@ -846,7 +816,7 @@ class DiagnosticResult(models.Model):
 
 
 # ==========================================
-# TONTINES (modèles complets conservés)
+# TONTINES
 # ==========================================
 
 class Tontine(models.Model):
@@ -878,7 +848,6 @@ class Tontine(models.Model):
     rules = models.TextField(blank=True, null=True)
     is_private = models.BooleanField(default=False)
     invitation_code = models.CharField(max_length=20, unique=True, blank=True, null=True)
-    # AJOUTER :
     payout_mode = models.CharField(
         max_length=10,
         choices=[('manual', 'Manuel'), ('random', 'Aléatoire')],
@@ -911,44 +880,37 @@ class Tontine(models.Model):
 
     @property
     def available_spots(self):
-        """Nombre de places disponibles"""
         return self.max_participants - self.participants.count()
 
     @property
     def progress_percentage(self):
-        """Pourcentage de remplissage des participants"""
         if self.max_participants == 0:
             return 0
         return (self.participants.count() / self.max_participants) * 100
 
     def next_payment_date(self):
-        """Date du prochain paiement"""
         from datetime import datetime
         from dateutil.relativedelta import relativedelta
-        
+
         if self.status != 'active':
             return None
-        
-        # Calculer le prochain paiement en fonction de la date de début
+
         if self.frequency == 'monthly':
-            # Trouver le mois suivant
             today = datetime.now().date()
             next_date = self.start_date
             while next_date <= today:
                 next_date = next_date + relativedelta(months=1)
             return next_date
-        
+
         return None
 
     def total_contributions_received(self):
-        """Total des contributions reçues"""
         from django.db.models import Sum
-        # Récupérer le modèle TontineContribution depuis apps
         from django.apps import apps
         TontineContribution = apps.get_model('api', 'TontineContribution')
-        
+
         total = TontineContribution.objects.filter(
-            participant__tontine=self  # ✅
+            participant__tontine=self
         ).aggregate(total=Sum('amount'))['total']
         return total or 0
 
@@ -965,7 +927,6 @@ class TontineParticipant(models.Model):
     payout_date = models.DateField(null=True, blank=True)
     payout_amount = models.DecimalField(max_digits=15, decimal_places=2, null=True, blank=True)
     payout_position = models.IntegerField(null=True, blank=True)
-    # Nouveaux champs pour timeline
     payout_month = models.IntegerField(null=True, blank=True, help_text="Mois de paiement (1-12)")
     is_paid = models.BooleanField(default=False, help_text="A reçu son paiement")
     paid_at = models.DateTimeField(null=True, blank=True, help_text="Date du paiement")
@@ -979,14 +940,13 @@ class TontineParticipant(models.Model):
 
     @property
     def total_contributions(self):
-        """Total des contributions versées par ce participant"""
         from django.db.models import Sum
         from django.apps import apps
         TontineContribution = apps.get_model('api', 'TontineContribution')
-        
+
         total = TontineContribution.objects.filter(
-            participant=self, 
-            status='confirmed'  # ✅ Uniquement les contributions validées 
+            participant=self,
+            status='confirmed'
         ).aggregate(total=Sum('amount'))['total']
         return total or 0
 
@@ -1012,13 +972,13 @@ class TontineParticipant(models.Model):
 
 class TontineContribution(models.Model):
     """Contributions versées dans les tontines"""
-    
+
     STATUS_CHOICES = [
         ('pending', 'En attente'),
         ('confirmed', 'Confirmée'),
         ('rejected', 'Rejetée'),
     ]
-    
+
     participant = models.ForeignKey(TontineParticipant, on_delete=models.CASCADE, related_name='contributions')
     amount = models.DecimalField(max_digits=15, decimal_places=2)
     date = models.DateField(default=timezone.now)
@@ -1063,7 +1023,7 @@ class TontinePayout(models.Model):
 
 class TontineActivity(models.Model):
     """Fil d'activité d'une tontine"""
-    
+
     ACTIVITY_TYPES = [
         ('join', 'Nouveau participant'),
         ('contribution', 'Contribution'),
@@ -1072,7 +1032,7 @@ class TontineActivity(models.Model):
         ('validation', 'Contribution validée'),
         ('rejection', 'Contribution rejetée'),
     ]
-    
+
     tontine = models.ForeignKey(Tontine, on_delete=models.CASCADE, related_name='activities')
     activity_type = models.CharField(max_length=20, choices=ACTIVITY_TYPES)
     participant = models.ForeignKey(TontineParticipant, on_delete=models.CASCADE, null=True, blank=True)
@@ -1080,12 +1040,12 @@ class TontineActivity(models.Model):
     message = models.TextField(help_text="Message descriptif de l'activité")
     created_at = models.DateTimeField(auto_now_add=True)
     created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
-    
+
     class Meta:
         ordering = ['-created_at']
         verbose_name = 'Activité tontine'
         verbose_name_plural = 'Activités tontines'
-    
+
     def __str__(self):
         return f"{self.tontine.name} - {self.get_activity_type_display()} - {self.created_at.strftime('%d/%m/%Y %H:%M')}"
 
@@ -1129,53 +1089,53 @@ def assign_position(sender, instance, created, **kwargs):
 
 
 # ==========================================
-# PHASE 2 - GOALS
+# GOALS — extras
 # ==========================================
 
 class GoalContribution(models.Model):
     """Historique des contributions à un objectif"""
-    
+
     TYPE_CHOICES = [
         ('add', 'Ajout'),
         ('remove', 'Retrait'),
         ('auto', 'Auto-allocation'),
     ]
-    
+
     goal = models.ForeignKey('Goal', on_delete=models.CASCADE, related_name='contributions')
     amount = models.DecimalField(max_digits=15, decimal_places=2)
     contribution_type = models.CharField(max_length=10, choices=TYPE_CHOICES, default='add')
     source = models.CharField(max_length=100, blank=True)
     note = models.TextField(blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
-    
+
     class Meta:
         ordering = ['-created_at']
-    
+
     def __str__(self):
         return f"{self.goal.title} - {self.get_contribution_type_display()}: {self.amount}"
 
 
 class GoalAutoAllocation(models.Model):
     """Configuration auto-allocation enveloppe → objectif"""
-    
+
     goal = models.ForeignKey('Goal', on_delete=models.CASCADE, related_name='auto_allocations')
     envelope = models.ForeignKey('Envelope', on_delete=models.CASCADE, related_name='goal_allocations')
     percentage = models.DecimalField(max_digits=5, decimal_places=2)
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
-    
+
     class Meta:
         unique_together = ('goal', 'envelope')
         ordering = ['-created_at']
-    
+
     def __str__(self):
         return f"{self.goal.title} ← {self.percentage}% de {self.envelope.category}"
 
 
 class GoalMilestone(models.Model):
     """Jalons atteints pour gamification"""
-    
+
     MILESTONE_CHOICES = [
         ('25', '25% atteint'),
         ('50', '50% atteint'),
@@ -1183,21 +1143,21 @@ class GoalMilestone(models.Model):
         ('100', '100% atteint'),
         ('first_contribution', 'Première contribution'),
     ]
-    
+
     goal = models.ForeignKey('Goal', on_delete=models.CASCADE, related_name='milestones')
     milestone_type = models.CharField(max_length=20, choices=MILESTONE_CHOICES)
     unlocked_at = models.DateTimeField(auto_now_add=True)
-    
+
     class Meta:
         unique_together = ('goal', 'milestone_type')
         ordering = ['-unlocked_at']
-    
+
     def __str__(self):
         return f"{self.goal.title} - {self.get_milestone_type_display()}"
 
 
 # ==========================================
-# À AJOUTER DANS api/models.py
+# IA — conversations, mémoire
 # ==========================================
 
 class AIConversation(models.Model):
@@ -1236,23 +1196,14 @@ class AIMemory(models.Model):
     """Mémoire persistante de l'IA par utilisateur"""
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='ai_memory')
     facts = models.JSONField(default=dict, blank=True)
-    # Structure des facts :
-    # {
-    #   "projets_importants": "Prépare un mariage en décembre 2026",
-    #   "pattern_depenses": "Solidarité famille pic en mai (Tabaski)",
-    #   "objectifs_prioritaires": "Fondation à financer avant juillet",
-    #   "contexte_personnel": "Entrepreneur, revenus variables",
-    #   "preferences": "Préfère les réponses courtes et directes",
-    #   "evenements_a_venir": "Mariage décembre, rentrée scolaire septembre",
-    #   "derniere_mise_a_jour": "2026-06-24"
-    # }
     updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
         return f"Mémoire de {self.user.username}"
 
+
 # ==========================================
-# À AJOUTER À LA FIN DE api/models.py
+# CATÉGORIES PERSONNALISÉES
 # ==========================================
 
 class UserCategoryRule(models.Model):
@@ -1279,18 +1230,18 @@ class UserCategoryRule(models.Model):
 
 
 # ==========================================
-# À AJOUTER À LA FIN DE api/models.py
+# REPORT DU SOLDE MENSUEL
 # ==========================================
 
 class MonthlyCarryover(models.Model):
     """
-    Report du solde mensuel d'un mois vers le suivant.
-    Créé automatiquement à la détection d'un nouveau mois si le solde
-    du mois précédent est positif. L'utilisateur choisit ensuite comment
-    l'affecter (répartition, objectif, épargne, ou manuel).
+    Report du solde mensuel d'un mois vers le suivant. Le solde positif
+    du mois précédent rejoint automatiquement le compte Disponible (Account) —
+    aucune décision n'est requise à cette étape.
     """
 
     ALLOCATION_TYPES = [
+        ('disponible', 'Ajouté au Disponible'),
         ('envelopes', 'Réparti selon mes enveloppes'),
         ('goal', 'Envoyé vers un objectif'),
         ('emergency', 'Fonds d\'urgence / épargne'),
@@ -1315,11 +1266,7 @@ class MonthlyCarryover(models.Model):
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
     allocation_type = models.CharField(max_length=20, choices=ALLOCATION_TYPES, null=True, blank=True)
 
-    # Détail de l'affectation choisie, structure variable selon allocation_type :
-    #   'envelopes' → {"essentiels": 21000, "plaisirs": 12600, "projets": 8400, "liberation": 0}
-    #   'goal'      → {"goal_id": 3, "goal_title": "Fondation"}
-    #   'emergency' → {} (tout part en catégorie épargne, rien à préciser)
-    #   'manual'    → {"essentiels": 20000, "plaisirs": 0, "projets": 22000, "liberation": 0}
+    # Détail de l'affectation, structure variable selon allocation_type
     allocation_detail = models.JSONField(default=dict, blank=True)
 
     created_at = models.DateTimeField(auto_now_add=True)
@@ -1342,7 +1289,7 @@ class MonthlyCarryover(models.Model):
 
 
 # ==========================================
-# À AJOUTER À LA FIN DE api/models.py
+# TRANSACTIONS RÉCURRENTES
 # ==========================================
 
 class RecurringTransaction(models.Model):
@@ -1360,8 +1307,6 @@ class RecurringTransaction(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='recurring_transactions')
     type = models.CharField(max_length=10, choices=TYPE_CHOICES)
 
-    # Pour une dépense : category (parmi Expense.CATEGORY_CHOICES)
-    # Pour un revenu : source (texte libre, ex: "Salaire", "Business")
     category_or_source = models.CharField(max_length=50)
 
     description = models.CharField(max_length=200)
@@ -1375,8 +1320,7 @@ class RecurringTransaction(models.Model):
     is_active = models.BooleanField(default=True)
 
     # Pour un revenu : distingue un vrai revenu (salaire) d'une entrée
-    # non-revenu récurrente (ex: retrait mensuel d'épargne programmé).
-    # Sans effet pour type='expense'.
+    # non-revenu récurrente. Sans effet pour type='expense'.
     is_real_income = models.BooleanField(default=True)
 
     start_date = models.DateField(default=timezone.now)
@@ -1392,7 +1336,6 @@ class RecurringTransaction(models.Model):
         return f"{self.user.username} — {self.description} ({self.amount} FCFA, le {self.day_of_month})"
 
     def is_due_for_month(self, month_start):
-        """L'abonnement est-il actif pour ce mois donné (1er jour du mois) ?"""
         if not self.is_active:
             return False
         if self.start_date > month_start:
@@ -1418,7 +1361,6 @@ class RecurringGeneration(models.Model):
     month = models.DateField(help_text="1er jour du mois concerné")
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
 
-    # Lien vers la transaction réelle créée une fois confirmée
     expense = models.ForeignKey(Expense, on_delete=models.SET_NULL, null=True, blank=True)
     income = models.ForeignKey(Income, on_delete=models.SET_NULL, null=True, blank=True)
 
@@ -1432,9 +1374,9 @@ class RecurringGeneration(models.Model):
     def __str__(self):
         return f"{self.recurring.description} — {self.month.strftime('%B %Y')} ({self.status})"
 
+
 # ==========================================
-# À AJOUTER À LA FIN DE api/models.py
-# Fondation Patrimoine — Mes poches
+# FONDATION PATRIMOINE — MES POCHES
 # ==========================================
 
 class Account(models.Model):
@@ -1442,8 +1384,7 @@ class Account(models.Model):
     Une poche d'argent — trésorerie réelle et permanente, distincte du
     budget mensuel. 'Disponible' est créé automatiquement pour chaque
     utilisateur ; 'Épargne de sécurité' peut être créé à la demande ;
-    'personnalise' permet à l'utilisateur d'ajouter ses propres poches
-    (Cash maison, Compte secondaire...).
+    'personnalise' permet à l'utilisateur d'ajouter ses propres poches.
     """
 
     ACCOUNT_TYPES = [
@@ -1454,16 +1395,10 @@ class Account(models.Model):
 
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='accounts')
     account_type = models.CharField(max_length=20, choices=ACCOUNT_TYPES)
-
-    # Nom affiché — auto-rempli pour disponible/epargne_securite,
-    # libre pour une poche personnalisée (ex: "Cash maison")
     name = models.CharField(max_length=100)
-
     balance = models.DecimalField(max_digits=15, decimal_places=2, default=0)
-
     icon = models.CharField(max_length=10, default='💰')
     is_active = models.BooleanField(default=True)
-
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -1474,12 +1409,10 @@ class Account(models.Model):
         return f"{self.user.username} — {self.name}: {self.balance} FCFA"
 
     def credit(self, amount):
-        """Créditer la poche (transfert entrant, revenu affecté...)"""
         self.balance += Decimal(str(amount))
         self.save(update_fields=['balance', 'updated_at'])
 
     def debit(self, amount):
-        """Débiter la poche — lève une erreur si le solde devient négatif"""
         amount = Decimal(str(amount))
         if self.balance < amount:
             raise ValueError(f"Solde insuffisant dans {self.name} ({self.balance} FCFA disponibles)")
@@ -1488,7 +1421,6 @@ class Account(models.Model):
 
     @classmethod
     def get_or_create_disponible(cls, user):
-        """Le compte Disponible existe toujours — création automatique si absent"""
         account, _ = cls.objects.get_or_create(
             user=user, account_type='disponible',
             defaults={'name': 'Disponible', 'icon': '💰'}
@@ -1499,8 +1431,7 @@ class Account(models.Model):
 class AccountTransfer(models.Model):
     """
     Mouvement d'argent entre deux poches (ou entre une poche et un objectif).
-    N'impacte JAMAIS le Score, les Revenus/Dépenses, ni le budget mensuel —
-    c'est un déplacement d'argent qui t'appartient déjà, pas un flux.
+    N'impacte JAMAIS le Score, les Revenus/Dépenses, ni le budget mensuel.
     """
 
     SOURCE_TYPE_CHOICES = [
@@ -1510,7 +1441,6 @@ class AccountTransfer(models.Model):
 
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='account_transfers')
 
-    # Source — soit une Account, soit un Goal
     source_type = models.CharField(max_length=10, choices=SOURCE_TYPE_CHOICES)
     source_account = models.ForeignKey(
         Account, on_delete=models.CASCADE, null=True, blank=True, related_name='transfers_out'
@@ -1519,7 +1449,6 @@ class AccountTransfer(models.Model):
         Goal, on_delete=models.CASCADE, null=True, blank=True, related_name='transfers_out'
     )
 
-    # Destination — soit une Account, soit un Goal
     destination_type = models.CharField(max_length=10, choices=SOURCE_TYPE_CHOICES)
     destination_account = models.ForeignKey(
         Account, on_delete=models.CASCADE, null=True, blank=True, related_name='transfers_in'
@@ -1531,7 +1460,6 @@ class AccountTransfer(models.Model):
     amount = models.DecimalField(max_digits=15, decimal_places=2)
     note = models.CharField(max_length=200, blank=True)
 
-    # Traçabilité — d'où vient ce transfert (pour l'historique / le débogage)
     REASON_CHOICES = [
         ('manual', 'Transfert manuel'),
         ('carryover', 'Report de fin de mois'),
@@ -1551,10 +1479,7 @@ class AccountTransfer(models.Model):
         return f"{self.user.username} — {src} → {dst} : {self.amount} FCFA"
 
     def execute(self):
-        """
-        Applique réellement le mouvement — débite la source, crédite la
-        destination. À appeler une seule fois, à la création du transfert.
-        """
+        """Applique réellement le mouvement — débite la source, crédite la destination."""
         amount = self.amount
 
         if self.source_account:
