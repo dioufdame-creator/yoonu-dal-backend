@@ -1,34 +1,34 @@
 import React, { useState, useEffect } from 'react';
 import API from '../../services/api';
 
+const PAYMENT_METHODS = [
+  { value: 'cash', label: 'Espèces', emoji: '💵' },
+  { value: 'virement', label: 'Virement', emoji: '🏦' },
+  { value: 'mobile_money', label: 'Mobile Money', emoji: '📱' },
+  { value: 'cheque', label: 'Chèque', emoji: '📝' },
+  { value: 'autre', label: 'Autre', emoji: '📋' }
+];
+
+const DEBT_TYPE_EMOJI = {
+  credit_bancaire: '🏦', pret_personnel: '💰', dette_famille: '👨‍👩‍👧',
+  dette_ami: '🤝', credit_commerce: '🏪', tontine: '🦁', autre: '📋'
+};
+
+const emptyPaymentForm = {
+  amount: '', payment_date: new Date().toISOString().split('T')[0],
+  payment_method: 'cash', notes: ''
+};
+
 const DebtDetailPage = ({ debtId, onNavigate, toast }) => {
   const [debt, setDebt] = useState(null);
   const [payments, setPayments] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [showPaymentModal, setShowPaymentModal] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [sortBy, setSortBy] = useState('date_desc');
+  const [showPaymentSheet, setShowPaymentSheet] = useState(false);
+  const [paymentForm, setPaymentForm] = useState(emptyPaymentForm);
   const [confirmDeleteId, setConfirmDeleteId] = useState(null);
 
-  const [paymentForm, setPaymentForm] = useState({
-    amount: '',
-    payment_date: new Date().toISOString().split('T')[0],
-    payment_method: 'cash',
-    notes: ''
-  });
-
-  const PAYMENT_METHODS = [
-    { value: 'cash', label: 'Espèces', emoji: '💵' },
-    { value: 'virement', label: 'Virement', emoji: '🏦' },
-    { value: 'mobile_money', label: 'Mobile Money', emoji: '📱' },
-    { value: 'cheque', label: 'Chèque', emoji: '📝' },
-    { value: 'autre', label: 'Autre', emoji: '📋' }
-  ];
-
-  const DEBT_TYPE_EMOJI = {
-    'credit_bancaire': '🏦', 'pret_personnel': '💰', 'dette_famille': '👨‍👩‍👧',
-    'dette_ami': '🤝', 'credit_commerce': '🏪', 'tontine': '🦁', 'autre': '📋'
-  };
+  const formatFCFA = (v) => new Intl.NumberFormat('fr-FR').format(Math.round(v || 0));
+  const formatDate = (d) => new Date(d).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' });
 
   useEffect(() => { loadData(); }, [debtId]);
 
@@ -41,98 +41,54 @@ const DebtDetailPage = ({ debtId, onNavigate, toast }) => {
       ]);
       setDebt(debtRes.data);
       setPayments(paymentsRes.data);
-    } catch (error) {
-      console.error('Erreur chargement:', error);
-      toast?.showError('Erreur lors du chargement');
+    } catch {
+      toast?.showError?.('Erreur lors du chargement');
       onNavigate?.('debts');
     } finally {
       setLoading(false);
     }
   };
 
-  const handleAddPayment = async (e) => {
-    e.preventDefault();
+  const handleAddPayment = async () => {
+    if (!paymentForm.amount) {
+      toast?.showError?.('Montant requis');
+      return;
+    }
     try {
       await API.post(`/debts/${debtId}/payments/`, paymentForm);
-      toast?.showSuccess(isOwedByMe ? 'Paiement enregistré !' : 'Remboursement reçu enregistré !');
-      setShowPaymentModal(false);
-      setPaymentForm({
-        amount: '', payment_date: new Date().toISOString().split('T')[0],
-        payment_method: 'cash', notes: ''
-      });
+      toast?.showSuccess?.(isOwedByMe ? 'Paiement enregistré !' : 'Remboursement reçu enregistré !');
+      setShowPaymentSheet(false);
+      setPaymentForm(emptyPaymentForm);
       loadData();
-    } catch (error) {
-      console.error('Erreur:', error);
-      toast?.showError('Erreur lors de l\'enregistrement');
+    } catch {
+      toast?.showError?.('Erreur lors de l\'enregistrement');
     }
   };
 
   const handleDeletePayment = async (paymentId) => {
     try {
       await API.delete(`/debts/payments/${paymentId}/`);
-      toast?.showSuccess('Supprimé');
+      toast?.showSuccess?.('Supprimé');
       setConfirmDeleteId(null);
       loadData();
-    } catch (error) {
-      console.error('Erreur:', error);
-      toast?.showError('Erreur lors de la suppression');
+    } catch {
+      toast?.showError?.('Erreur lors de la suppression');
     }
   };
 
-  const formatCurrency = (amount) => new Intl.NumberFormat('fr-FR').format(amount || 0) + ' FCFA';
+  const getMethodEmoji = (m) => PAYMENT_METHODS.find(x => x.value === m)?.emoji || '📋';
+  const getStateColor = (pct) => pct >= 100 ? 'bg-green-500' : pct >= 50 ? 'bg-blue-500' : 'bg-amber-500';
 
-  const formatDate = (dateString) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' });
-  };
-
-  const getStatusColor = (status) => {
-    const colors = {
-      paid: 'from-green-500 to-emerald-500',
-      almost_done: 'from-blue-500 to-indigo-500',
-      halfway: 'from-yellow-500 to-orange-500',
-      in_progress: 'from-orange-500 to-red-500',
-      started: 'from-red-500 to-pink-500'
-    };
-    return colors[status] || 'from-gray-500 to-gray-600';
-  };
-
-  const getMethodEmoji = (method) => PAYMENT_METHODS.find(m => m.value === method)?.emoji || '📋';
-
-  const filteredPayments = payments
-    .filter(payment => {
-      if (!searchQuery) return true;
-      const query = searchQuery.toLowerCase();
-      return (
-        payment.notes?.toLowerCase().includes(query) ||
-        payment.payment_method.toLowerCase().includes(query) ||
-        formatCurrency(payment.amount).toLowerCase().includes(query) ||
-        formatDate(payment.payment_date).toLowerCase().includes(query)
-      );
-    })
-    .sort((a, b) => {
-      switch (sortBy) {
-        case 'date_desc': return new Date(b.payment_date) - new Date(a.payment_date);
-        case 'date_asc': return new Date(a.payment_date) - new Date(b.payment_date);
-        case 'amount_desc': return b.amount - a.amount;
-        case 'amount_asc': return a.amount - b.amount;
-        default: return 0;
-      }
-    });
-
-  const totalPaid = payments.reduce((sum, p) => sum + parseFloat(p.amount), 0);
+  const totalPaid = payments.reduce((s, p) => s + parseFloat(p.amount), 0);
   const avgPayment = payments.length > 0 ? totalPaid / payments.length : 0;
   const lastPayment = payments.length > 0
-    ? payments.reduce((latest, p) => new Date(p.payment_date) > new Date(latest.payment_date) ? p : latest)
+    ? payments.reduce((l, p) => new Date(p.payment_date) > new Date(l.payment_date) ? p : l)
     : null;
 
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="w-16 h-16 border-4 border-green-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-gray-600">Chargement...</p>
-        </div>
+        <div className="w-10 h-10 border-4 border-green-500 border-t-transparent rounded-full animate-spin" />
       </div>
     );
   }
@@ -140,300 +96,265 @@ const DebtDetailPage = ({ debtId, onNavigate, toast }) => {
   if (!debt) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <p className="text-gray-600">Introuvable</p>
+        <p className="text-gray-500 text-sm">Introuvable</p>
       </div>
     );
   }
 
-  // ✅ Sens de la dette — adapte tous les libellés
   const isOwedByMe = debt.direction === 'owed_by_me';
   const counterpartyLabel = isOwedByMe ? 'Créancier' : 'Débiteur';
+  const pct = debt.progress_percentage || 0;
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-20">
-      {/* Header */}
-      <div className="bg-white border-b border-gray-200 sticky top-0 z-10 shadow-sm">
-        <div className="max-w-6xl mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <button onClick={() => onNavigate?.('debts')} className="text-gray-600 hover:text-gray-900 text-2xl">←</button>
-              <div className="flex items-center gap-2">
-                <span className="text-3xl">{DEBT_TYPE_EMOJI[debt.debt_type] || '📋'}</span>
-                <div>
-                  <div className="flex items-center gap-2">
-                    <h1 className="text-xl font-bold text-gray-900">{debt.name}</h1>
-                    <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${
-                      isOwedByMe ? 'bg-red-50 text-red-600' : 'bg-green-50 text-green-600'
-                    }`}>
-                      {isOwedByMe ? 'Je dois' : 'On me doit'}
-                    </span>
-                  </div>
-                  {debt.counterparty && (
-                    <p className="text-sm text-gray-600">{counterpartyLabel}: {debt.counterparty}</p>
-                  )}
-                </div>
-              </div>
+    <div className="min-h-screen bg-gray-50 pb-28">
+      <div className="max-w-2xl mx-auto px-4 py-5">
+
+        {/* Header */}
+        <div className="flex items-center gap-3 mb-5">
+          <button
+            onClick={() => onNavigate?.('debts')}
+            className="w-10 h-10 rounded-full bg-white border border-gray-200 flex items-center justify-center text-gray-600 hover:bg-gray-50 flex-shrink-0"
+          >
+            ←
+          </button>
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2">
+              <h1 className="text-base font-bold text-gray-900 truncate">{debt.name}</h1>
+              <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full flex-shrink-0 ${
+                isOwedByMe ? 'bg-red-50 text-red-600' : 'bg-green-50 text-green-600'
+              }`}>
+                {isOwedByMe ? 'Je dois' : 'On me doit'}
+              </span>
             </div>
-            <button
-              onClick={() => setShowPaymentModal(true)}
-              className="px-4 py-2 bg-green-600 text-white rounded-lg font-semibold hover:bg-green-700 transition-all"
-            >
-              + {isOwedByMe ? 'Paiement' : 'Remboursement'}
-            </button>
+            {debt.counterparty && (
+              <p className="text-xs text-gray-400 truncate">{counterpartyLabel}: {debt.counterparty}</p>
+            )}
+          </div>
+          <button
+            onClick={() => setShowPaymentSheet(true)}
+            className="w-10 h-10 rounded-full bg-green-600 text-white flex items-center justify-center text-lg flex-shrink-0 shadow-md"
+          >
+            +
+          </button>
+        </div>
+
+        {/* Carte résumé */}
+        <div className={`rounded-3xl p-5 mb-4 text-white shadow-xl ${
+          isOwedByMe
+            ? 'bg-gradient-to-br from-red-500 to-rose-600'
+            : 'bg-gradient-to-br from-green-600 to-emerald-700'
+        }`}>
+          <div className="flex items-center gap-2 mb-1">
+            <span className="text-xl">{DEBT_TYPE_EMOJI[debt.debt_type] || '📋'}</span>
+            <p className="text-sm opacity-80">{isOwedByMe ? 'Reste à payer' : 'Reste à recevoir'}</p>
+          </div>
+          <p className="text-3xl font-bold mb-3">{formatFCFA(debt.remaining_amount)} FCFA</p>
+
+          <div className="w-full bg-white/20 rounded-full h-2 overflow-hidden mb-3">
+            <div className="h-full bg-white rounded-full transition-all duration-700" style={{ width: `${Math.min(pct, 100)}%` }} />
+          </div>
+
+          <div className="grid grid-cols-2 gap-2">
+            <div className="bg-black/20 rounded-2xl px-3 py-2.5">
+              <p className="text-[11px] opacity-75">{isOwedByMe ? 'Déjà payé' : 'Déjà reçu'}</p>
+              <p className="text-sm font-bold">{formatFCFA(debt.amount_paid)} ({pct.toFixed(0)}%)</p>
+            </div>
+            <div className="bg-black/20 rounded-2xl px-3 py-2.5">
+              <p className="text-[11px] opacity-75">Mensualité</p>
+              <p className="text-sm font-bold">{debt.monthly_payment ? formatFCFA(debt.monthly_payment) : '—'}</p>
+            </div>
           </div>
         </div>
-      </div>
 
-      <div className="max-w-6xl mx-auto px-4 py-6 space-y-6">
-        {/* Carte résumé */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-          <div className="mb-6">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-sm text-gray-600">Progression</span>
-              <span className="font-bold text-gray-900">{debt.progress_percentage?.toFixed(1)}%</span>
-            </div>
-            <div className="w-full bg-gray-200 rounded-full h-4 overflow-hidden">
-              <div
-                className={`h-4 rounded-full bg-gradient-to-r ${getStatusColor(debt.status)} transition-all duration-500`}
-                style={{ width: `${Math.min(debt.progress_percentage, 100)}%` }}
-              ></div>
-            </div>
+        {/* Détails */}
+        <div className="bg-white rounded-2xl border border-gray-200 p-4 mb-4 shadow-sm grid grid-cols-2 gap-3">
+          <div>
+            <p className="text-[11px] text-gray-400">Montant total</p>
+            <p className="text-sm font-bold text-gray-800">{formatFCFA(debt.total_amount)} FCFA</p>
           </div>
-
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <div className="bg-gray-50 rounded-lg p-4">
-              <p className="text-xs text-gray-600 mb-1">Montant total</p>
-              <p className="text-lg font-bold text-gray-900">{formatCurrency(debt.total_amount)}</p>
-            </div>
-            <div className="bg-green-50 rounded-lg p-4">
-              <p className="text-xs text-gray-600 mb-1">{isOwedByMe ? 'Déjà payé' : 'Déjà reçu'}</p>
-              <p className="text-lg font-bold text-green-700">{formatCurrency(debt.amount_paid)}</p>
-            </div>
-            <div className="bg-orange-50 rounded-lg p-4">
-              <p className="text-xs text-gray-600 mb-1">{isOwedByMe ? 'Reste à payer' : 'Reste à recevoir'}</p>
-              <p className="text-lg font-bold text-orange-700">{formatCurrency(debt.remaining_amount)}</p>
-            </div>
-            <div className="bg-blue-50 rounded-lg p-4">
-              <p className="text-xs text-gray-600 mb-1">Mensualité</p>
-              <p className="text-lg font-bold text-blue-700">{debt.monthly_payment ? formatCurrency(debt.monthly_payment) : "—"}</p>
-            </div>
+          <div>
+            <p className="text-[11px] text-gray-400">Échéance</p>
+            <p className="text-sm font-bold text-gray-800">
+              {debt.months_remaining !== null ? `${debt.months_remaining} mois` : 'Non définie'}
+            </p>
           </div>
-
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4 pt-4 border-t border-gray-200">
+          <div>
+            <p className="text-[11px] text-gray-400">Date début</p>
+            <p className="text-sm font-bold text-gray-800">{formatDate(debt.start_date)}</p>
+          </div>
+          {debt.target_end_date && (
             <div>
-              <p className="text-xs text-gray-500">Mois restants</p>
-              <p className="font-semibold text-gray-900">
-                {debt.months_remaining !== null ? `⏱️ ${debt.months_remaining} mois` : '⏱️ Non défini'}
-              </p>
+              <p className="text-[11px] text-gray-400">Fin prévue</p>
+              <p className="text-sm font-bold text-gray-800">{formatDate(debt.target_end_date)}</p>
             </div>
-            {debt.interest_rate > 0 && (
-              <div>
-                <p className="text-xs text-gray-500">Taux d'intérêt</p>
-                <p className="font-semibold text-gray-900">📊 {debt.interest_rate}%</p>
-              </div>
-            )}
+          )}
+          {debt.interest_rate > 0 && (
             <div>
-              <p className="text-xs text-gray-500">Date début</p>
-              <p className="font-semibold text-gray-900">📅 {formatDate(debt.start_date)}</p>
+              <p className="text-[11px] text-gray-400">Taux d'intérêt</p>
+              <p className="text-sm font-bold text-gray-800">{debt.interest_rate}%</p>
             </div>
-            {debt.target_end_date && (
-              <div>
-                <p className="text-xs text-gray-500">Date fin prévue</p>
-                <p className="font-semibold text-gray-900">🎯 {formatDate(debt.target_end_date)}</p>
-              </div>
-            )}
-          </div>
-
+          )}
           {debt.notes && (
-            <div className="mt-4 pt-4 border-t border-gray-200">
-              <p className="text-xs text-gray-500 mb-1">Notes</p>
-              <p className="text-sm text-gray-700">{debt.notes}</p>
+            <div className="col-span-2 pt-2 border-t border-gray-100">
+              <p className="text-[11px] text-gray-400 mb-0.5">Notes</p>
+              <p className="text-xs text-gray-600">{debt.notes}</p>
             </div>
           )}
         </div>
 
-        {/* Stats paiements */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
-            <p className="text-sm text-gray-600 mb-1">{isOwedByMe ? 'Total paiements' : 'Total remboursements'}</p>
-            <p className="text-2xl font-bold text-gray-900">{payments.length}</p>
+        {/* Mini-stats paiements */}
+        <div className="grid grid-cols-3 gap-2 mb-4">
+          <div className="bg-white rounded-2xl border border-gray-200 p-3 text-center shadow-sm">
+            <p className="text-lg font-bold text-gray-900">{payments.length}</p>
+            <p className="text-[10px] text-gray-400">{isOwedByMe ? 'Paiements' : 'Remb.'}</p>
           </div>
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
-            <p className="text-sm text-gray-600 mb-1">Montant moyen</p>
-            <p className="text-2xl font-bold text-blue-600">{formatCurrency(avgPayment)}</p>
+          <div className="bg-white rounded-2xl border border-gray-200 p-3 text-center shadow-sm">
+            <p className="text-sm font-bold text-blue-600">{formatFCFA(avgPayment)}</p>
+            <p className="text-[10px] text-gray-400">Moyenne</p>
           </div>
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
-            <p className="text-sm text-gray-600 mb-1">{isOwedByMe ? 'Dernier paiement' : 'Dernier remboursement'}</p>
-            <p className="text-lg font-bold text-green-600">
-              {lastPayment ? formatDate(lastPayment.payment_date) : 'Aucun'}
-            </p>
+          <div className="bg-white rounded-2xl border border-gray-200 p-3 text-center shadow-sm">
+            <p className="text-sm font-bold text-green-600">{lastPayment ? formatDate(lastPayment.payment_date) : '—'}</p>
+            <p className="text-[10px] text-gray-400">Dernier</p>
           </div>
         </div>
 
         {/* Historique */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200">
-          <div className="p-6 border-b border-gray-200">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-xl font-bold text-gray-900">
-                📅 Historique {isOwedByMe ? 'des paiements' : 'des remboursements'} ({filteredPayments.length})
-              </h2>
-            </div>
-
-            <div className="flex flex-col md:flex-row gap-3">
-              <div className="flex-1">
-                <input
-                  type="text"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Rechercher par montant, méthode, notes..."
-                  className="w-full px-4 py-2 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                />
-              </div>
-              <select
-                value={sortBy}
-                onChange={(e) => setSortBy(e.target.value)}
-                className="px-4 py-2 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-              >
-                <option value="date_desc">📅 Plus récent</option>
-                <option value="date_asc">📅 Plus ancien</option>
-                <option value="amount_desc">💰 Montant décroissant</option>
-                <option value="amount_asc">💰 Montant croissant</option>
-              </select>
-            </div>
+        <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden shadow-sm">
+          <div className="px-4 pt-4 pb-2">
+            <h2 className="text-sm font-bold text-gray-900">
+              Historique {isOwedByMe ? 'des paiements' : 'des remboursements'}
+            </h2>
           </div>
 
-          <div className="divide-y divide-gray-200">
-            {filteredPayments.length === 0 ? (
-              <div className="p-12 text-center">
-                <div className="text-6xl mb-4">💸</div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                  {searchQuery ? 'Aucun résultat' : isOwedByMe ? 'Aucun paiement' : 'Aucun remboursement'}
-                </h3>
-                <p className="text-gray-600 mb-6">
-                  {searchQuery ? 'Essayez avec d\'autres mots-clés' : `Commencez par ajouter ${isOwedByMe ? 'un paiement' : 'un remboursement'}`}
-                </p>
-                {!searchQuery && (
-                  <button
-                    onClick={() => setShowPaymentModal(true)}
-                    className="px-6 py-3 bg-green-600 text-white rounded-lg font-semibold hover:bg-green-700 transition-all"
-                  >
-                    + Ajouter {isOwedByMe ? 'un paiement' : 'un remboursement'}
-                  </button>
-                )}
-              </div>
-            ) : (
-              filteredPayments.map(payment => (
-                <div key={payment.id} className="p-4 hover:bg-gray-50 transition-colors">
-                  <div className="flex items-start justify-between">
-                    <div className="flex items-start gap-3 flex-1">
-                      <div className="text-2xl">{getMethodEmoji(payment.payment_method)}</div>
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-1">
-                          <span className="font-bold text-lg text-gray-900">{formatCurrency(payment.amount)}</span>
-                          <span className="text-sm px-2 py-0.5 bg-blue-100 text-blue-700 rounded-full">
-                            {PAYMENT_METHODS.find(m => m.value === payment.payment_method)?.label}
-                          </span>
-                        </div>
-                        <p className="text-sm text-gray-600">📅 {formatDate(payment.payment_date)}</p>
-                        {payment.notes && <p className="text-sm text-gray-500 mt-1">💬 {payment.notes}</p>}
-                      </div>
+          {payments.length === 0 ? (
+            <div className="text-center py-8 px-4">
+              <div className="text-3xl mb-2">💸</div>
+              <p className="text-sm text-gray-500 mb-3">
+                {isOwedByMe ? 'Aucun paiement' : 'Aucun remboursement'}
+              </p>
+              <button
+                onClick={() => setShowPaymentSheet(true)}
+                className="text-sm bg-green-600 text-white px-4 py-2 rounded-xl font-semibold"
+              >
+                + Ajouter {isOwedByMe ? 'un paiement' : 'un remboursement'}
+              </button>
+            </div>
+          ) : (
+            <div className="divide-y divide-gray-50">
+              {payments
+                .sort((a, b) => new Date(b.payment_date) - new Date(a.payment_date))
+                .map(payment => (
+                  <div key={payment.id} className="flex items-center gap-3 px-4 py-3">
+                    <div className="w-9 h-9 bg-gray-50 rounded-xl flex items-center justify-center text-base flex-shrink-0">
+                      {getMethodEmoji(payment.payment_method)}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-bold text-gray-800">{formatFCFA(payment.amount)} FCFA</p>
+                      <p className="text-[11px] text-gray-400">
+                        {formatDate(payment.payment_date)}
+                        {payment.notes && ` · ${payment.notes}`}
+                      </p>
                     </div>
 
                     {confirmDeleteId === payment.id ? (
-                      <div className="flex gap-2">
-                        <button onClick={() => handleDeletePayment(payment.id)} className="px-3 py-1 bg-red-600 text-white text-sm rounded-lg hover:bg-red-700 transition-all">Confirmer</button>
-                        <button onClick={() => setConfirmDeleteId(null)} className="px-3 py-1 bg-gray-300 text-gray-700 text-sm rounded-lg hover:bg-gray-400 transition-all">Annuler</button>
+                      <div className="flex gap-1 flex-shrink-0">
+                        <button onClick={() => handleDeletePayment(payment.id)} className="text-xs font-bold text-red-600 px-2 py-1">✓</button>
+                        <button onClick={() => setConfirmDeleteId(null)} className="text-xs text-gray-400 px-2 py-1">✕</button>
                       </div>
                     ) : (
-                      <button onClick={() => setConfirmDeleteId(payment.id)} className="px-3 py-1 bg-red-50 text-red-700 text-sm rounded-lg border-2 border-red-200 hover:bg-red-100 transition-all">🗑️</button>
+                      <button
+                        onClick={() => setConfirmDeleteId(payment.id)}
+                        className="text-gray-300 hover:text-red-500 text-sm flex-shrink-0 px-2"
+                      >
+                        🗑️
+                      </button>
                     )}
                   </div>
-                </div>
-              ))
-            )}
-          </div>
+                ))}
+            </div>
+          )}
         </div>
       </div>
 
-      {/* Modal Paiement */}
-      {showPaymentModal && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6">
-            <h3 className="text-2xl font-bold text-gray-900 mb-2">
-              {isOwedByMe ? '💰 Ajouter un paiement' : '💰 Enregistrer un remboursement reçu'}
-            </h3>
-            <p className="text-gray-600 mb-6">{debt.name}</p>
+      {/* Bottom sheet paiement */}
+      {showPaymentSheet && (
+        <>
+          <div className="fixed inset-0 bg-black/50 z-40" onClick={() => setShowPaymentSheet(false)} />
+          <div className="fixed bottom-0 left-0 right-0 z-50 bg-white rounded-t-3xl shadow-2xl animate-slide-up">
+            <div className="pt-3 pb-2 px-5 border-b border-gray-100">
+              <div className="w-10 h-1 bg-gray-200 rounded-full mx-auto mb-3" />
+              <div className="flex items-center justify-between">
+                <h2 className="text-base font-bold text-gray-900">
+                  {isOwedByMe ? '💰 Ajouter un paiement' : '💰 Remboursement reçu'}
+                </h2>
+                <button onClick={() => setShowPaymentSheet(false)} className="text-gray-400 text-xl">✕</button>
+              </div>
+            </div>
 
-            <form onSubmit={handleAddPayment} className="space-y-4">
+            <div className="p-5 space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Montant (FCFA) *</label>
+                <label className="text-xs text-gray-400 font-semibold uppercase tracking-wide">Montant</label>
                 <input
                   type="number"
+                  inputMode="numeric"
                   value={paymentForm.amount}
-                  onChange={(e) => setPaymentForm({...paymentForm, amount: e.target.value})}
-                  placeholder={debt.monthly_payment ? `Ex: ${debt.monthly_payment}` : "Montant du remboursement"}
-                  className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                  required
+                  onChange={(e) => setPaymentForm({ ...paymentForm, amount: e.target.value })}
+                  placeholder={debt.monthly_payment ? `Ex: ${debt.monthly_payment}` : '0'}
+                  autoFocus
+                  className="w-full mt-1 px-4 py-3 bg-gray-50 rounded-2xl text-lg font-bold outline-none focus:ring-2 focus:ring-green-500"
                 />
               </div>
 
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-xs text-gray-400 font-semibold uppercase tracking-wide">Date</label>
+                  <input
+                    type="date"
+                    value={paymentForm.payment_date}
+                    onChange={(e) => setPaymentForm({ ...paymentForm, payment_date: e.target.value })}
+                    className="w-full mt-1 px-3 py-3 bg-gray-50 rounded-2xl text-sm outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="text-xs text-gray-400 font-semibold uppercase tracking-wide">Méthode</label>
+                  <select
+                    value={paymentForm.payment_method}
+                    onChange={(e) => setPaymentForm({ ...paymentForm, payment_method: e.target.value })}
+                    className="w-full mt-1 px-3 py-3 bg-gray-50 rounded-2xl text-sm outline-none"
+                  >
+                    {PAYMENT_METHODS.map(m => <option key={m.value} value={m.value}>{m.emoji} {m.label}</option>)}
+                  </select>
+                </div>
+              </div>
+
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Date *</label>
+                <label className="text-xs text-gray-400 font-semibold uppercase tracking-wide">Note</label>
                 <input
-                  type="date"
-                  value={paymentForm.payment_date}
-                  onChange={(e) => setPaymentForm({...paymentForm, payment_date: e.target.value})}
-                  className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                  required
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Méthode *</label>
-                <select
-                  value={paymentForm.payment_method}
-                  onChange={(e) => setPaymentForm({...paymentForm, payment_method: e.target.value})}
-                  className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                >
-                  {PAYMENT_METHODS.map(method => (
-                    <option key={method.value} value={method.value}>{method.emoji} {method.label}</option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Note (optionnelle)</label>
-                <textarea
+                  type="text"
                   value={paymentForm.notes}
-                  onChange={(e) => setPaymentForm({...paymentForm, notes: e.target.value})}
-                  rows={2}
-                  placeholder="Ex: Paiement mars 2026"
-                  className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent resize-none"
+                  onChange={(e) => setPaymentForm({ ...paymentForm, notes: e.target.value })}
+                  placeholder="Optionnel"
+                  className="w-full mt-1 px-4 py-3 bg-gray-50 rounded-2xl text-sm outline-none"
                 />
               </div>
+            </div>
 
-              <div className="flex gap-3 pt-2">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setShowPaymentModal(false);
-                    setPaymentForm({ amount: '', payment_date: new Date().toISOString().split('T')[0], payment_method: 'cash', notes: '' });
-                  }}
-                  className="flex-1 px-6 py-3 border-2 border-gray-300 text-gray-700 rounded-xl font-semibold hover:bg-gray-50 transition-all"
-                >
-                  Annuler
-                </button>
-                <button
-                  type="submit"
-                  className="flex-1 px-6 py-3 bg-green-600 text-white rounded-xl font-semibold hover:bg-green-700 transition-all"
-                >
-                  Enregistrer
-                </button>
-              </div>
-            </form>
+            <div className="p-4 pb-6">
+              <button
+                onClick={handleAddPayment}
+                className="w-full py-4 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-2xl font-bold shadow-lg"
+              >
+                Enregistrer
+              </button>
+            </div>
           </div>
-        </div>
+        </>
       )}
+
+      <style>{`
+        @keyframes slide-up { from { transform: translateY(100%); } to { transform: translateY(0); } }
+        .animate-slide-up { animation: slide-up 0.25s ease-out; }
+      `}</style>
     </div>
   );
 };
