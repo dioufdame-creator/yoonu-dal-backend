@@ -5753,3 +5753,266 @@ def confirm_recurring_batch(request):
         'message': f'{len(results)} transaction(s) traitée(s)',
         'results': results,
     })
+
+# ==========================================
+# À AJOUTER À LA FIN DE api/views.py
+# Fondation Patrimoine — Mes poches
+# ==========================================
+
+from .models import Account, AccountTransfer
+
+
+# ── VUE D'ENSEMBLE "MES POCHES" ─────────────────────────────
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def my_pockets(request):
+    """
+    Retourne toutes les poches de l'utilisateur avec leurs soldes,
+    plus le patrimoine total (hors budget mensuel, hors dettes).
+    Crée automatiquement le compte Disponible s'il n'existe pas encore.
+    """
+    user = request.user
+
+    # Le Disponible existe toujours
+    Account.get_or_create_disponible(user)
+
+    accounts = Account.objects.filter(user=user, is_active=True)
+
+    accounts_data = [{
+        'id': a.id,
+        'account_type': a.account_type,
+        'name': a.name,
+        'balance': float(a.balance),
+        'icon': a.icon,
+    } for a in accounts]
+
+    # Objectifs actifs — traités comme des poches dans cette vue
+    goals = Goal.objects.filter(user=user, is_achieved=False)
+    goals_data = [{
+        'id': g.id,
+        'title': g.title,
+        'current_amount': float(g.current_amount),
+        'target_amount': float(g.target_amount),
+        'progress_percentage': float(g.progress_percentage),
+    } for g in goals]
+
+    total_accounts = sum(a['balance'] for a in accounts_data)
+    total_goals = sum(g['current_amount'] for g in goals_data)
+
+    return Response({
+        'accounts': accounts_data,
+        'goals': goals_data,
+        'patrimoine_total': total_accounts + total_goals,
+    })
+
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def create_pocket(request):
+    """
+    Crée une poche personnalisée (ex: 'Cash maison', 'Compte secondaire').
+    Le Disponible et l'Épargne de sécurité ont leurs propres raccourcis
+    (voir get_or_create_disponible et cette même vue avec account_type
+    'epargne_securite' pour la première création).
+    """
+    user = request.user
+    data = request.data
+
+    name = data.get('name')
+    account_type = data.get('account_type', 'personnalise')
+    icon = data.get('icon', '💰')
+
+    if not name:
+        return Response({'error': 'Le nom est obligatoire'}, status=status.HTTP_400_BAD_REQUEST)
+
+    if account_type == 'disponible':
+        return Response({'error': 'Le compte Disponible existe déjà automatiquement'}, status=status.HTTP_400_BAD_REQUEST)
+
+    if account_type == 'epargne_securite' and Account.objects.filter(user=user, account_type='epargne_securite').exists():
+        return Response({'error': 'Vous avez déjà une Épargne de sécurité'}, status=status.HTTP_400_BAD_REQUEST)
+
+    account = Account.objects.create(
+        user=user, account_type=account_type, name=name, icon=icon
+    )
+
+    return Response({
+        'id': account.id,
+        'name': account.name,
+        'account_type': account.account_type,
+        'message': 'Poche créée avec succès'
+    }, status=status.HTTP_201_CREATED)
+
+
+# ── TRANSFERTS ENTRE POCHES ──────────────────────────────────
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def create_transfer(request):
+    """
+    Crée et exécute un transfert entre deux poches (ou poche <-> objectif).
+    N'impacte jamais Score, Revenus/Dépenses, ni budget mensuel.
+
+    Body:
+    {
+        "source_type": "account",       // "account" ou "goal"
+        "source_id": 3,
+        "destination_type": "goal",
+        "destination_id": 7,
+        "amount": 50000,
+        "note": "Pour le mariage",
+        "reason": "manual"              // optionnel, défaut "manual"
+    }
+    """
+    user = request.user
+    data = request.data
+
+    required = ['source_type', 'source_id', 'destination_type', 'destination_id', 'amount']
+    for field in required:
+        if data.get(field) is None:
+            return Response({'error': f'{field} est obligatoire'}, status=status.HTTP_400_BAD_REQUEST)
+
+    amount = Decimal(str(data['amount']))
+    if amount <= 0:
+        return Response({'error': 'Le montant doit être positif'}, status=status.HTTP_400_BAD_REQUEST)
+
+    # Résoudre la source
+    source_account, source_goal = None, None
+    if data['source_type'] == 'account':
+        source_account = Account.objects.filter(id=data['source_id'], user=user).first()
+        if not source_account:
+            return Response({'error': 'Poche source introuvable'}, status=status.HTTP_404_NOT_FOUND)
+        if source_account.balance < amount:
+            return Response({'error': f'Solde insuffisant dans {source_account.name}'}, status=status.HTTP_400_BAD_REQUEST)
+    else:
+        source_goal = Goal.objects.filter(id=data['source_id'], user=user).first()
+        if not source_goal:
+            return Response({'error': 'Objectif source introuvable'}, status=status.HTTP_404_NOT_FOUND)
+        if source_goal.current_amount < amount:
+            return Response({'error': f'Solde insuffisant dans {source_goal.title}'}, status=status.HTTP_400_BAD_REQUEST)
+
+    # Résoudre la destination
+    destination_account, destination_goal = None, None
+    if data['destination_type'] == 'account':
+        destination_account = Account.objects.filter(id=data['destination_id'], user=user).first()
+        if not destination_account:
+            return Response({'error': 'Poche destination introuvable'}, status=status.HTTP_404_NOT_FOUND)
+    else:
+        destination_goal = Goal.objects.filter(id=data['destination_id'], user=user).first()
+        if not destination_goal:
+            return Response({'error': 'Objectif destination introuvable'}, status=status.HTTP_404_NOT_FOUND)
+
+    transfer = AccountTransfer.objects.create(
+        user=user,
+        source_type=data['source_type'],
+        source_account=source_account,
+        source_goal=source_goal,
+        destination_type=data['destination_type'],
+        destination_account=destination_account,
+        destination_goal=destination_goal,
+        amount=amount,
+        note=data.get('note', ''),
+        reason=data.get('reason', 'manual'),
+    )
+    transfer.execute()
+
+    return Response({
+        'id': transfer.id,
+        'amount': float(transfer.amount),
+        'message': 'Transfert effectué avec succès'
+    }, status=status.HTTP_201_CREATED)
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def transfer_history(request):
+    """Historique des transferts de l'utilisateur"""
+    user = request.user
+    transfers = AccountTransfer.objects.filter(user=user)[:50]
+
+    def describe(account, goal):
+        if account:
+            return {'type': 'account', 'name': account.name, 'icon': account.icon}
+        if goal:
+            return {'type': 'goal', 'name': goal.title, 'icon': '🎯'}
+        return None
+
+    data = [{
+        'id': t.id,
+        'source': describe(t.source_account, t.source_goal),
+        'destination': describe(t.destination_account, t.destination_goal),
+        'amount': float(t.amount),
+        'note': t.note,
+        'reason': t.reason,
+        'created_at': t.created_at.isoformat(),
+    } for t in transfers]
+
+    return Response({'transfers': data})
+
+
+# ── AFFECTATION DU DISPONIBLE VERS LE BUDGET DU MOIS ────────
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def allocate_disponible_to_budget(request):
+    """
+    Affecte un montant du compte Disponible vers le budget mensuel —
+    geste conscient et explicite. Ajoute au monthly_budget des enveloppes
+    concernées, débite le Disponible. N'impacte ni Score ni Revenus.
+
+    Body:
+    {
+        "amount": 50000,
+        "allocation": "envelopes" | "manual",
+        "manual_amounts": {"essentiels": 30000, "plaisirs": 20000, ...}  // si manual
+    }
+    """
+    user = request.user
+    data = request.data
+
+    amount = Decimal(str(data.get('amount', 0)))
+    if amount <= 0:
+        return Response({'error': 'Montant invalide'}, status=status.HTTP_400_BAD_REQUEST)
+
+    disponible = Account.get_or_create_disponible(user)
+    if disponible.balance < amount:
+        return Response({'error': 'Solde insuffisant dans Disponible'}, status=status.HTTP_400_BAD_REQUEST)
+
+    allocation = data.get('allocation', 'envelopes')
+
+    if allocation == 'envelopes':
+        envelopes = Envelope.objects.filter(user=user, envelope_type__in=['essentiels', 'plaisirs', 'projets', 'liberation'])
+        total_pct = sum(float(e.allocated_percentage) for e in envelopes) or 100
+        for env in envelopes:
+            share = (float(env.allocated_percentage) / total_pct) * float(amount)
+            env.monthly_budget = env.monthly_budget + Decimal(str(round(share, 2)))
+            env.save(update_fields=['monthly_budget'])
+
+    elif allocation == 'manual':
+        manual_amounts = data.get('manual_amounts', {})
+        total_manual = sum(float(manual_amounts.get(e, 0)) for e in ['essentiels', 'plaisirs', 'projets', 'liberation'])
+        if abs(total_manual - float(amount)) > 1:
+            return Response({'error': 'Le total réparti doit égaler le montant à affecter'}, status=status.HTTP_400_BAD_REQUEST)
+        for env_type in ['essentiels', 'plaisirs', 'projets', 'liberation']:
+            env_amount = float(manual_amounts.get(env_type, 0))
+            if env_amount > 0:
+                env = Envelope.objects.filter(user=user, envelope_type=env_type).first()
+                if env:
+                    env.monthly_budget = env.monthly_budget + Decimal(str(env_amount))
+                    env.save(update_fields=['monthly_budget'])
+    else:
+        return Response({'error': 'allocation doit être "envelopes" ou "manual"'}, status=status.HTTP_400_BAD_REQUEST)
+
+    disponible.debit(amount)
+
+    # Trace de l'opération — pas un vrai AccountTransfer (la destination
+    # n'est pas une poche mais le budget mensuel), donc on ne force pas
+    # le modèle à représenter une source=destination qui n'a pas de sens.
+    # On journalise simplement via le champ note d'un mouvement à part si
+    # besoin plus tard ; pour l'instant le débit de disponible suffit,
+    # combiné à l'historique des enveloppes.
+
+    return Response({
+        'message': 'Montant affecté au budget du mois avec succès',
+        'disponible_balance': float(disponible.balance),
+    })
