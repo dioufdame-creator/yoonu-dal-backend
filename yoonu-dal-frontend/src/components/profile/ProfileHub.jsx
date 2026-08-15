@@ -34,6 +34,7 @@ const ProfileHub = ({ onNavigate, user, onLogout }) => {
       items: [
         { icon: '🎯', label: 'Mon Score Yoonu Dal', page: 'score', color: 'bg-green-50 text-green-700' },
         { icon: '💳', label: 'Mes dettes', page: 'debts', color: 'bg-amber-50 text-amber-700' },
+        { icon: '💼', label: 'Mes poches', page: 'pockets', color: 'bg-indigo-50 text-indigo-700' },
         { icon: '💰', label: 'Historique transactions', page: 'transactions', color: 'bg-purple-50 text-purple-700' },
         { icon: '📄', label: 'Exporter mes données', page: 'exports', color: 'bg-slate-50 text-slate-700' },
         { icon: '🔁', label: 'Transactions récurrentes', page: 'recurring', color: 'bg-purple-50 text-purple-700' },
