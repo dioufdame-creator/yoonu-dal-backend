@@ -596,18 +596,17 @@ class Transaction(models.Model):
 
 
 # ==========================================
-# DETTES (ENVELOPPE LIBÉRATION)
-# ==========================================
-
-# ==========================================
-# MODIFICATION dans api/models.py — modèle Debt existant
+# REMPLACER dans api/models.py — modèle Debt
+# (garde direction/counterparty déjà en place depuis le patch précédent)
 # ==========================================
 #
-# Remplacer la classe Debt existante (et ne toucher à rien d'autre) par
-# cette version enrichie. DebtPayment reste identique (voir note en bas).
+# Changements dans CETTE version :
+# 1. monthly_payment devient optionnel (null=True, blank=True, default=None)
+# 2. target_end_date sert d'alternative pour calculer l'échéance
+# 3. months_remaining gère tous les cas (avec mensualité, avec échéance, ni l'un ni l'autre)
 
 class Debt(models.Model):
-    """Tracker les dettes et créances — bidirectionnel"""
+    """Tracker les dettes et créances — bidirectionnel, mensualité optionnelle"""
     DEBT_TYPES = [
         ('credit_bancaire', 'Crédit bancaire'),
         ('pret_personnel', 'Prêt personnel'),
@@ -618,7 +617,6 @@ class Debt(models.Model):
         ('autre', 'Autre')
     ]
 
-    # ✅ NOUVEAU : sens de la dette
     DIRECTION_CHOICES = [
         ('owed_by_me', 'Je dois'),
         ('owed_to_me', 'On me doit'),
@@ -627,17 +625,18 @@ class Debt(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='debts')
     name = models.CharField(max_length=200)
     debt_type = models.CharField(max_length=50, choices=DEBT_TYPES, default='autre')
-
-    # ✅ Renommé depuis 'creditor' — représente l'autre partie,
-    # quel que soit le sens (celui à qui je dois, OU celui qui me doit)
     counterparty = models.CharField(max_length=200, blank=True)
-
-    # ✅ NOUVEAU — défaut 'owed_by_me' pour compatibilité avec les données existantes
     direction = models.CharField(max_length=20, choices=DIRECTION_CHOICES, default='owed_by_me')
 
     total_amount = models.DecimalField(max_digits=12, decimal_places=2)
     amount_paid = models.DecimalField(max_digits=12, decimal_places=2, default=0)
-    monthly_payment = models.DecimalField(max_digits=12, decimal_places=2)
+
+    # ✅ Optionnel désormais — une dette peut n'avoir qu'un montant + une échéance,
+    # sans mensualité fixe (ex: prêt entre proches remboursé "quand on peut")
+    monthly_payment = models.DecimalField(
+        max_digits=12, decimal_places=2, null=True, blank=True, default=None
+    )
+
     start_date = models.DateField()
     target_end_date = models.DateField(null=True, blank=True)
     actual_end_date = models.DateField(null=True, blank=True)
@@ -660,9 +659,28 @@ class Debt(models.Model):
 
     @property
     def months_remaining(self):
-        if self.monthly_payment > 0 and self.remaining_amount > 0:
-            return int(self.remaining_amount / self.monthly_payment) + 1
-        return 0
+        """
+        Nombre de mois restants — calculé selon ce qui est disponible :
+        1. Si mensualité fixée → remaining / mensualité (comportement historique)
+        2. Sinon si échéance cible fixée → mois entre aujourd'hui et l'échéance
+        3. Sinon → None (pas d'estimation possible, l'app doit gérer l'absence)
+        """
+        if self.remaining_amount <= 0:
+            return 0
+
+        if self.monthly_payment and self.monthly_payment > 0:
+            import math
+            return math.ceil(self.remaining_amount / self.monthly_payment)
+
+        if self.target_end_date:
+            from datetime import date
+            today = date.today()
+            if self.target_end_date <= today:
+                return 0
+            months = (self.target_end_date.year - today.year) * 12 + (self.target_end_date.month - today.month)
+            return max(1, months)
+
+        return None
 
     @property
     def status(self):
@@ -683,7 +701,6 @@ class Debt(models.Model):
 
     class Meta:
         ordering = ['-is_active', '-created_at']
-
 
 # ──────────────────────────────────────────────────────────
 # DebtPayment ne change PAS structurellement, mais son comportement
