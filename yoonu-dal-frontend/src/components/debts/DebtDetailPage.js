@@ -215,14 +215,16 @@ const DebtDetailPage = ({ debtId, onNavigate, toast }) => {
             </div>
             <div className="bg-blue-50 rounded-lg p-4">
               <p className="text-xs text-gray-600 mb-1">Mensualité</p>
-              <p className="text-lg font-bold text-blue-700">{formatCurrency(debt.monthly_payment)}</p>
+              <p className="text-lg font-bold text-blue-700">{debt.monthly_payment ? formatCurrency(debt.monthly_payment) : "—"}</p>
             </div>
           </div>
 
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4 pt-4 border-t border-gray-200">
             <div>
               <p className="text-xs text-gray-500">Mois restants</p>
-              <p className="font-semibold text-gray-900">⏱️ {debt.months_remaining} mois</p>
+              <p className="font-semibold text-gray-900">
+                {debt.months_remaining !== null ? `⏱️ ${debt.months_remaining} mois` : '⏱️ Non défini'}
+              </p>
             </div>
             {debt.interest_rate > 0 && (
               <div>
@@ -369,7 +371,7 @@ const DebtDetailPage = ({ debtId, onNavigate, toast }) => {
                   type="number"
                   value={paymentForm.amount}
                   onChange={(e) => setPaymentForm({...paymentForm, amount: e.target.value})}
-                  placeholder={`Ex: ${debt.monthly_payment}`}
+                  placeholder={debt.monthly_payment ? `Ex: ${debt.monthly_payment}` : "Montant du remboursement"}
                   className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent"
                   required
                 />
