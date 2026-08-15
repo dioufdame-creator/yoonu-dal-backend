@@ -64,6 +64,18 @@ const BottomNav = ({ currentPage, onNavigate, isAuthenticated }) => {
                   <p className="text-xs text-gray-500">Enregistrer une entrée d'argent</p>
                 </div>
               </button>
+              <button
+                onClick={() => handleAdd('savings')}
+                className="w-full flex items-center gap-4 p-4 rounded-2xl bg-indigo-50 hover:bg-indigo-100 transition-all"
+              >
+                <div className="w-12 h-12 bg-gradient-to-br from-indigo-500 to-purple-500 rounded-2xl flex items-center justify-center text-2xl shadow-lg">
+                  🎯
+                </div>
+                <div className="text-left">
+                  <p className="font-bold text-gray-900">Épargner</p>
+                  <p className="text-xs text-gray-500">Mettre de l'argent de côté</p>
+                </div>
+              </button>
             </div>
           </div>
         </>
