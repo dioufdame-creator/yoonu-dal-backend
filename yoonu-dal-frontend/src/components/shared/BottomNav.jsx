@@ -9,7 +9,7 @@ const BottomNav = ({ currentPage, onNavigate, isAuthenticated }) => {
 
   const navItems = [
     { icon: '🏠', label: 'Accueil', page: 'dashboard' },
-    { icon: '🎯', label: 'Mes projets', page: 'goals' },
+    { icon: '🎯', label: 'Objectifs', page: 'goals' },
     null, // emplacement du bouton central ➕
     { icon: '🤝', label: 'Tontines', page: 'tontines' },
     { icon: '👤', label: 'Moi', page: 'profile-hub' },
@@ -26,6 +26,11 @@ const BottomNav = ({ currentPage, onNavigate, isAuthenticated }) => {
   const handleAdd = (type) => {
     setShowAddSheet(false);
     onNavigate('quick-add', { type });
+  };
+
+  const handleCreateShortcut = (page, direction) => {
+    setShowAddSheet(false);
+    onNavigate(page, { openCreate: true, ...(direction ? { direction } : {}) });
   };
 
   return (
@@ -76,6 +81,39 @@ const BottomNav = ({ currentPage, onNavigate, isAuthenticated }) => {
                   <p className="text-xs text-gray-500">Mettre de l'argent de côté</p>
                 </div>
               </button>
+
+              <div className="pt-2 mt-1 border-t border-gray-100">
+                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wide px-2 mb-2">Créer</p>
+                <div className="space-y-2">
+                  <button
+                    onClick={() => handleCreateShortcut('debts', 'owed_by_me')}
+                    className="w-full flex items-center gap-3 p-3 rounded-2xl bg-gray-50 hover:bg-gray-100 transition-all"
+                  >
+                    <div className="w-9 h-9 bg-white rounded-xl flex items-center justify-center text-lg shadow-sm">
+                      💳
+                    </div>
+                    <p className="font-semibold text-gray-800 text-sm">Nouvelle dette</p>
+                  </button>
+                  <button
+                    onClick={() => handleCreateShortcut('tontines')}
+                    className="w-full flex items-center gap-3 p-3 rounded-2xl bg-gray-50 hover:bg-gray-100 transition-all"
+                  >
+                    <div className="w-9 h-9 bg-white rounded-xl flex items-center justify-center text-lg shadow-sm">
+                      🤝
+                    </div>
+                    <p className="font-semibold text-gray-800 text-sm">Nouvelle tontine</p>
+                  </button>
+                  <button
+                    onClick={() => handleCreateShortcut('goals')}
+                    className="w-full flex items-center gap-3 p-3 rounded-2xl bg-gray-50 hover:bg-gray-100 transition-all"
+                  >
+                    <div className="w-9 h-9 bg-white rounded-xl flex items-center justify-center text-lg shadow-sm">
+                      🎯
+                    </div>
+                    <p className="font-semibold text-gray-800 text-sm">Nouvel objectif</p>
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
         </>
