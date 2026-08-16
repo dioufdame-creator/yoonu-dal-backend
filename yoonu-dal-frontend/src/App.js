@@ -508,7 +508,7 @@ function App() {
         return <AlertsPage onNavigate={handleNavigate} toast={toastMethods} />;
 
       case 'pricing':
-        return <PricingPage onNavigate={handleNavigate} user={user} toast={toastMethods} />;
+        return <PricingPage onNavigate={handleNavigate} user={user} toast={toastMethods} onUserRefresh={handlePaymentSuccess} />;
 
       case 'checkout':
         return <CheckoutPage onNavigate={handleNavigate} toast={toastMethods} plan={pageParams?.plan || 'monthly'} />;
