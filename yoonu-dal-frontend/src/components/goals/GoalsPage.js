@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import API from '../../services/api';
 
-const GoalsPage = ({ toast, onNavigate }) => {
+const GoalsPage = ({ toast, onNavigate, pageParams }) => {
   const [loading, setLoading] = useState(true);
   const [goals, setGoals] = useState([]);
   const [metrics, setMetrics] = useState(null);
@@ -65,6 +65,13 @@ const GoalsPage = ({ toast, onNavigate }) => {
     loadMetrics();
     loadEnvelopeProjets();
   }, []);
+
+  // ✅ Ouverture directe du formulaire de création — depuis le ➕ du bottom sheet
+  useEffect(() => {
+    if (pageParams?.openCreate) {
+      setShowCreateModal(true);
+    }
+  }, [pageParams]);
 
   const loadGoals = async () => {
     setLoading(true);
@@ -166,31 +173,16 @@ const GoalsPage = ({ toast, onNavigate }) => {
     };
   };
 
-  const handleContribute = async () => {
-    if (!contributeAmount || parseFloat(contributeAmount) <= 0) {
-      toast?.showError?.('Montant invalide');
-      return;
-    }
+  // ✅ Contribuer redirige désormais vers une source traçable —
+  // plus de montant "sorti de nulle part". Voir modal ci-dessous.
+  const goToEpargner = () => {
+    setShowContributeModal(false);
+    onNavigate('quick-add', { type: 'savings', preselectGoalId: selectedGoal.id });
+  };
 
-    const amount = parseFloat(contributeAmount);
-
-    try {
-      try {
-        await API.post(`/goals/${selectedGoal.id}/contributions/`, { amount });
-      } catch (err) {
-        if (err.response?.status === 404) {
-          await API.put(`/goals/manage/?goal_id=${selectedGoal.id}`, {
-            current_amount: parseFloat(selectedGoal.current_amount) + amount
-          });
-        } else { throw err; }
-      }
-      toast?.showSuccess?.('Contribution ajoutée !');
-      setShowContributeModal(false);
-      setContributeAmount('');
-      await loadGoals();
-    } catch (error) {
-      toast?.showError?.('Erreur : ' + (error.response?.data?.error || error.message));
-    }
+  const goToPockets = () => {
+    setShowContributeModal(false);
+    onNavigate('pockets', { preselectDestinationGoalId: selectedGoal.id });
   };
 
   const loadHistory = async (goalId) => {
@@ -492,29 +484,42 @@ const GoalsPage = ({ toast, onNavigate }) => {
           <div className="bg-white rounded-2xl max-w-md w-full p-6">
             <div className="flex justify-between items-center mb-4">
               <h3 className="text-xl font-bold">➕ Ajouter à "{selectedGoal.title}"</h3>
-              <button onClick={() => { setShowContributeModal(false); setContributeAmount(''); }}
+              <button onClick={() => setShowContributeModal(false)}
                 className="text-gray-400 hover:text-gray-600 text-2xl">✕</button>
             </div>
-            <div className="mb-2 text-sm text-gray-600">
+            <div className="mb-5 text-sm text-gray-600">
               Progression actuelle : {formatFull(selectedGoal.current_amount)} / {formatFull(selectedGoal.target_amount)}
             </div>
-            <div className="mb-4">
-              <label className="block text-sm font-medium text-gray-700 mb-2">Montant (FCFA)</label>
-              <input
-                type="number"
-                value={contributeAmount}
-                onChange={(e) => setContributeAmount(e.target.value)}
-                placeholder="Ex: 50 000"
-                className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl text-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                autoFocus
-              />
+
+            <p className="text-xs text-gray-400 mb-3">D'où vient cet argent ?</p>
+
+            <div className="space-y-3">
+              <button
+                onClick={goToEpargner}
+                className="w-full flex items-center gap-4 p-4 rounded-2xl bg-indigo-50 hover:bg-indigo-100 transition-all text-left"
+              >
+                <div className="w-12 h-12 bg-gradient-to-br from-indigo-500 to-purple-500 rounded-2xl flex items-center justify-center text-2xl shadow-lg flex-shrink-0">
+                  💰
+                </div>
+                <div>
+                  <p className="font-bold text-gray-900">Argent frais de ce mois</p>
+                  <p className="text-xs text-gray-500">Sort de votre budget mensuel</p>
+                </div>
+              </button>
+
+              <button
+                onClick={goToPockets}
+                className="w-full flex items-center gap-4 p-4 rounded-2xl bg-blue-50 hover:bg-blue-100 transition-all text-left"
+              >
+                <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-2xl flex items-center justify-center text-2xl shadow-lg flex-shrink-0">
+                  🔄
+                </div>
+                <div>
+                  <p className="font-bold text-gray-900">Depuis une de mes poches</p>
+                  <p className="text-xs text-gray-500">Trésorerie ou épargne déjà en réserve</p>
+                </div>
+              </button>
             </div>
-            <button
-              onClick={handleContribute}
-              className="w-full bg-green-600 text-white py-3 rounded-xl font-semibold hover:bg-green-700 transition-all"
-            >
-              Confirmer
-            </button>
           </div>
         </div>
       )}
