@@ -69,10 +69,18 @@ function App() {
       setIsLoading(true);
       try {
         if (authService.isAuthenticated()) {
-          const currentUser = authService.getCurrentUser();
-          if (currentUser) {
+          const cachedUser = authService.getCurrentUser();
+          if (cachedUser) {
+            // Affichage immédiat avec le cache local (évite un écran vide)
             setIsAuthenticated(true);
-            setUser(currentUser);
+            setUser(cachedUser);
+
+            // ✅ Puis rafraîchissement réel du profil (contient
+            // profile.trial_used, subscription_tier, etc. — absents
+            // de l'objet stocké à la connexion) en arrière-plan
+            authService.getUserProfile().then(freshUser => {
+              if (freshUser) setUser(freshUser);
+            });
           } else {
             authService.clearTokens();
             setIsAuthenticated(false);
