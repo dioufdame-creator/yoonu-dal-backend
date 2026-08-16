@@ -48,7 +48,7 @@ const INCOME_SOURCES = [
   { value: 'Autre',          label: 'Autre',          icon: '💵' },
 ];
 
-const QuickAdd = ({ type = 'expense', onNavigate, toast }) => {
+const QuickAdd = ({ type = 'expense', onNavigate, toast, pageParams }) => {
   const isExpense = type === 'expense';
   const isSavings = type === 'savings';
 
@@ -83,11 +83,18 @@ const QuickAdd = ({ type = 'expense', onNavigate, toast }) => {
         // vers la trésorerie elle-même (ça n'aurait pas de sens ici)
         const filtered = accounts.filter(a => a.name !== 'Trésorerie').concat(goals);
         setPockets(filtered);
-        if (filtered.length > 0) setDestination(`${filtered[0].type}:${filtered[0].id}`);
+
+        // ✅ Pré-sélection si on arrive depuis "Ajouter à mon objectif"
+        const preselect = pageParams?.preselectGoalId;
+        if (preselect && filtered.some(p => p.type === 'goal' && String(p.id) === String(preselect))) {
+          setDestination(`goal:${preselect}`);
+        } else if (filtered.length > 0) {
+          setDestination(`${filtered[0].type}:${filtered[0].id}`);
+        }
       })
       .catch(() => {})
       .finally(() => setLoadingPockets(false));
-  }, [isSavings]);
+  }, [isSavings, pageParams]);
 
   const categories = isSavings ? [] : (isExpense
     ? (showAllCategories ? ALL_EXPENSE_CATEGORIES : TOP_EXPENSE_CATEGORIES)
