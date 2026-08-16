@@ -262,7 +262,7 @@ const GoalsPage = ({ toast, onNavigate, pageParams }) => {
             ←
           </button>
           <div className="flex-1">
-            <h1 className="text-lg font-bold text-gray-900">🎯 Mes projets</h1>
+            <h1 className="text-lg font-bold text-gray-900">🎯 Objectifs</h1>
             <p className="text-xs text-gray-400">Vos objectifs financiers</p>
           </div>
           <button
