@@ -31,6 +31,13 @@ const PocketsPage = ({ onNavigate, toast, pageParams }) => {
 
   const [createForm, setCreateForm] = useState({ name: '', account_type: 'personnalise', icon: '💼' });
 
+  const [showAllocateSheet, setShowAllocateSheet] = useState(false);
+  const [allocateAmount, setAllocateAmount] = useState('');
+  const [allocateMode, setAllocateMode] = useState('envelopes'); // 'envelopes' | 'manual'
+  const [manualAllocation, setManualAllocation] = useState({
+    essentiels: '', plaisirs: '', projets: '', liberation: ''
+  });
+
   const formatFCFA = (v) => new Intl.NumberFormat('fr-FR').format(Math.round(v || 0));
 
   useEffect(() => { load(); }, []);
@@ -95,6 +102,48 @@ const PocketsPage = ({ onNavigate, toast, pageParams }) => {
       load();
     } catch (error) {
       toast?.showError?.(error.response?.data?.error || 'Erreur lors du transfert');
+    }
+  };
+
+  const disponibleAccount = accounts.find(a => a.account_type === 'disponible');
+
+  const manualTotal = Object.values(manualAllocation).reduce((s, v) => s + (parseFloat(v) || 0), 0);
+  const manualDiff = allocateAmount ? parseFloat(allocateAmount) - manualTotal : 0;
+
+  const handleAllocate = async () => {
+    const amount = parseFloat(allocateAmount);
+    if (!amount || amount <= 0) {
+      toast?.showError?.('Montant invalide');
+      return;
+    }
+    if (disponibleAccount && amount > disponibleAccount.balance) {
+      toast?.showError?.('Solde insuffisant dans votre trésorerie');
+      return;
+    }
+
+    const payload = { amount, allocation: allocateMode };
+    if (allocateMode === 'manual') {
+      if (Math.abs(manualDiff) >= 1) {
+        toast?.showError?.('Le total réparti doit égaler le montant à affecter');
+        return;
+      }
+      payload.manual_amounts = {
+        essentiels: parseFloat(manualAllocation.essentiels) || 0,
+        plaisirs: parseFloat(manualAllocation.plaisirs) || 0,
+        projets: parseFloat(manualAllocation.projets) || 0,
+        liberation: parseFloat(manualAllocation.liberation) || 0,
+      };
+    }
+
+    try {
+      await API.post('/pockets/allocate-to-budget/', payload);
+      toast?.showSuccess?.('Montant affecté au budget du mois !');
+      setShowAllocateSheet(false);
+      setAllocateAmount('');
+      setManualAllocation({ essentiels: '', plaisirs: '', projets: '', liberation: '' });
+      load();
+    } catch (error) {
+      toast?.showError?.(error.response?.data?.error || 'Erreur lors de l\'affectation');
     }
   };
 
@@ -168,25 +217,38 @@ const PocketsPage = ({ onNavigate, toast, pageParams }) => {
           </div>
 
           <div className="space-y-2">
-            {accounts.map(acc => (
-              <button
-                key={acc.id}
-                onClick={() => openTransfer({ type: 'account', id: acc.id })}
-                className="w-full bg-white rounded-2xl border border-gray-200 p-4 shadow-sm flex items-center gap-3 hover:border-green-300 transition-all"
-              >
-                <div className="w-11 h-11 bg-gray-50 rounded-2xl flex items-center justify-center text-xl flex-shrink-0">
-                  {acc.icon}
+            {accounts.map(acc => {
+              const isDisponible = acc.account_type === 'disponible';
+              return (
+                <div key={acc.id} className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
+                  <button
+                    onClick={() => openTransfer({ type: 'account', id: acc.id })}
+                    className="w-full p-4 flex items-center gap-3 hover:bg-gray-50 transition-all text-left"
+                  >
+                    <div className="w-11 h-11 bg-gray-50 rounded-2xl flex items-center justify-center text-xl flex-shrink-0">
+                      {acc.icon}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-bold text-gray-900 truncate">{displayName(acc)}</p>
+                      <p className="text-xs text-gray-400">
+                        {isDisponible ? 'Argent que vous détenez, hors budget du mois' :
+                         acc.account_type === 'epargne_securite' ? 'Réserve de sécurité' : 'Poche personnalisée'}
+                      </p>
+                    </div>
+                    <p className="text-base font-bold text-gray-900 flex-shrink-0">{formatFCFA(acc.balance)}</p>
+                  </button>
+
+                  {isDisponible && acc.balance > 0 && (
+                    <button
+                      onClick={() => setShowAllocateSheet(true)}
+                      className="w-full px-4 py-2.5 bg-indigo-50 text-indigo-700 text-xs font-bold border-t border-indigo-100 hover:bg-indigo-100 transition-all"
+                    >
+                      💼 Affecter au budget du mois
+                    </button>
+                  )}
                 </div>
-                <div className="flex-1 text-left min-w-0">
-                  <p className="text-sm font-bold text-gray-900 truncate">{displayName(acc)}</p>
-                  <p className="text-xs text-gray-400">
-                    {acc.account_type === 'disponible' ? 'Argent que vous détenez, hors budget du mois' :
-                     acc.account_type === 'epargne_securite' ? 'Réserve de sécurité' : 'Poche personnalisée'}
-                  </p>
-                </div>
-                <p className="text-base font-bold text-gray-900 flex-shrink-0">{formatFCFA(acc.balance)}</p>
-              </button>
-            ))}
+              );
+            })}
 
             {!hasEpargneSecurite && (
               <button
@@ -328,6 +390,114 @@ const PocketsPage = ({ onNavigate, toast, pageParams }) => {
                 className="w-full py-4 bg-gradient-to-r from-indigo-600 to-purple-700 text-white rounded-2xl font-bold shadow-lg"
               >
                 Effectuer le transfert
+              </button>
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* Bottom sheet — Affecter au budget du mois */}
+      {showAllocateSheet && (
+        <>
+          <div className="fixed inset-0 bg-black/50 z-40" onClick={() => setShowAllocateSheet(false)} />
+          <div className="fixed bottom-0 left-0 right-0 z-50 bg-white rounded-t-3xl shadow-2xl animate-slide-up max-h-[85vh] overflow-y-auto">
+            <div className="sticky top-0 bg-white pt-3 pb-2 px-5 border-b border-gray-100">
+              <div className="w-10 h-1 bg-gray-200 rounded-full mx-auto mb-3" />
+              <div className="flex items-center justify-between">
+                <h2 className="text-base font-bold text-gray-900">💼 Affecter au budget</h2>
+                <button onClick={() => setShowAllocateSheet(false)} className="text-gray-400 text-xl">✕</button>
+              </div>
+              <p className="text-xs text-gray-400 mt-1">
+                Trésorerie disponible : {formatFCFA(disponibleAccount?.balance)} FCFA
+              </p>
+            </div>
+
+            <div className="p-5 space-y-4">
+              <div>
+                <label className="text-xs text-gray-400 font-semibold uppercase tracking-wide">Montant à affecter</label>
+                <input
+                  type="number"
+                  inputMode="numeric"
+                  value={allocateAmount}
+                  onChange={(e) => setAllocateAmount(e.target.value)}
+                  placeholder="0"
+                  autoFocus
+                  className="w-full mt-1 px-4 py-3 bg-gray-50 rounded-2xl text-lg font-bold outline-none focus:ring-2 focus:ring-indigo-500"
+                />
+              </div>
+
+              <div>
+                <label className="text-xs text-gray-400 font-semibold uppercase tracking-wide mb-2 block">
+                  Comment répartir ?
+                </label>
+                <div className="flex gap-2 bg-gray-50 rounded-2xl p-1">
+                  <button
+                    onClick={() => setAllocateMode('envelopes')}
+                    className={`flex-1 py-2 rounded-xl text-xs font-bold transition-all ${
+                      allocateMode === 'envelopes' ? 'bg-white text-indigo-600 shadow-sm' : 'text-gray-400'
+                    }`}
+                  >
+                    Selon mes enveloppes
+                  </button>
+                  <button
+                    onClick={() => setAllocateMode('manual')}
+                    className={`flex-1 py-2 rounded-xl text-xs font-bold transition-all ${
+                      allocateMode === 'manual' ? 'bg-white text-indigo-600 shadow-sm' : 'text-gray-400'
+                    }`}
+                  >
+                    Je choisis moi-même
+                  </button>
+                </div>
+              </div>
+
+              {allocateMode === 'manual' && (
+                <div className="space-y-3 bg-gray-50 rounded-2xl p-4">
+                  {[
+                    { key: 'essentiels', label: 'Essentiels', icon: '🏠' },
+                    { key: 'plaisirs', label: 'Plaisirs', icon: '🎉' },
+                    { key: 'projets', label: 'Projets', icon: '🎯' },
+                    { key: 'liberation', label: 'Libération', icon: '🕊️' },
+                  ].map(env => (
+                    <div key={env.key} className="flex items-center gap-3">
+                      <span className="text-lg w-7">{env.icon}</span>
+                      <span className="text-sm text-gray-700 flex-1">{env.label}</span>
+                      <input
+                        type="number"
+                        inputMode="numeric"
+                        value={manualAllocation[env.key]}
+                        onChange={(e) => setManualAllocation(prev => ({ ...prev, [env.key]: e.target.value }))}
+                        placeholder="0"
+                        className="w-24 px-3 py-2 bg-white border border-gray-200 rounded-xl text-sm text-right outline-none focus:border-indigo-500"
+                      />
+                    </div>
+                  ))}
+                  {allocateAmount && (
+                    <p className={`text-xs font-semibold text-center pt-1 ${
+                      Math.abs(manualDiff) < 1 ? 'text-green-600' : 'text-amber-600'
+                    }`}>
+                      {Math.abs(manualDiff) < 1
+                        ? '✓ Répartition complète'
+                        : manualDiff > 0
+                          ? `Reste ${formatFCFA(manualDiff)} FCFA à répartir`
+                          : `Dépassement de ${formatFCFA(Math.abs(manualDiff))} FCFA`}
+                    </p>
+                  )}
+                </div>
+              )}
+
+              <p className="text-[11px] text-gray-400 leading-relaxed">
+                💡 Ce montant sort de votre trésorerie et vient s'ajouter au budget
+                de vos enveloppes pour ce mois. Il ne compte pas comme un nouveau revenu.
+              </p>
+            </div>
+
+            <div className="p-4 pb-6">
+              <button
+                onClick={handleAllocate}
+                disabled={allocateMode === 'manual' && allocateAmount && Math.abs(manualDiff) >= 1}
+                className="w-full py-4 bg-gradient-to-r from-indigo-600 to-purple-700 text-white rounded-2xl font-bold shadow-lg disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                Confirmer l'affectation
               </button>
             </div>
           </div>
