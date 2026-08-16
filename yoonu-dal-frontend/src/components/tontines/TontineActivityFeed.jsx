@@ -50,8 +50,8 @@ const TontineActivityFeed = ({ tontineId }) => {
 
   if (loading) {
     return (
-      <div className="bg-white rounded-2xl shadow-lg p-6 mb-6">
-        <h3 className="text-2xl font-bold mb-4 flex items-center gap-2">
+      <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-5">
+        <h3 className="text-base font-bold text-gray-900 mb-4 flex items-center gap-2">
           <span>📊</span>
           <span>Activité récente</span>
         </h3>
@@ -67,8 +67,8 @@ const TontineActivityFeed = ({ tontineId }) => {
   }
 
   return (
-    <div className="bg-white rounded-2xl shadow-lg p-6 mb-6">
-      <h3 className="text-2xl font-bold mb-4 flex items-center gap-2">
+    <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-5">
+      <h3 className="text-base font-bold text-gray-900 mb-4 flex items-center gap-2">
         <span>📊</span>
         <span>Activité récente</span>
       </h3>
@@ -83,7 +83,7 @@ const TontineActivityFeed = ({ tontineId }) => {
           activities.map((activity) => (
             <div
               key={activity.id}
-              className={`p-4 rounded-lg border-2 ${getActivityColor(activity.type)} hover:shadow-md transition-all`}
+              className={`p-3 rounded-2xl border ${getActivityColor(activity.type)} transition-all`}
             >
               <div className="flex items-start gap-3">
                 {/* Icône */}
