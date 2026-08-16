@@ -14,7 +14,7 @@ const ACCOUNT_ICONS = {
 const displayName = (account) =>
   account.account_type === 'disponible' ? 'Trésorerie' : account.name;
 
-const PocketsPage = ({ onNavigate, toast }) => {
+const PocketsPage = ({ onNavigate, toast, pageParams }) => {
   const [accounts, setAccounts] = useState([]);
   const [goals, setGoals] = useState([]);
   const [total, setTotal] = useState(0);
@@ -57,15 +57,23 @@ const PocketsPage = ({ onNavigate, toast }) => {
     ...goals.map(g => ({ type: 'goal', id: g.id, name: g.title, icon: '🎯', balance: g.current_amount })),
   ];
 
-  const openTransfer = (sourceEntity = null) => {
+  const openTransfer = (sourceEntity = null, destinationEntity = null) => {
     setTransferForm({
       source_type: sourceEntity?.type || '',
       source_id: sourceEntity?.id || '',
-      destination_type: '', destination_id: '',
+      destination_type: destinationEntity?.type || '',
+      destination_id: destinationEntity?.id || '',
       amount: '', note: '',
     });
     setShowTransferSheet(true);
   };
+
+  // ✅ Ouverture directe avec objectif pré-rempli — depuis "Ajouter à mon objectif"
+  useEffect(() => {
+    if (pageParams?.preselectDestinationGoalId && goals.length > 0) {
+      openTransfer(null, { type: 'goal', id: pageParams.preselectDestinationGoalId });
+    }
+  }, [pageParams, goals]);
 
   const handleTransfer = async () => {
     const { source_type, source_id, destination_type, destination_id, amount } = transferForm;
