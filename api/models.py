@@ -262,9 +262,11 @@ class Budget(models.Model):
 
 
 class Goal(models.Model):
-    """Objectifs financiers de l'utilisateur"""
+    """Objectifs financiers de l'utilisateur — le fonds d'urgence est
+    géré exclusivement via une poche 'Épargne de sécurité' (Account),
+    pas comme un objectif : c'est une réserve permanente, pas un but avec
+    une fin."""
     CATEGORY_CHOICES = [
-        ('urgence', 'Fonds d\'urgence'),
         ('transport', 'Transport'),
         ('logement', 'Logement'),
         ('loisirs', 'Loisirs'),
