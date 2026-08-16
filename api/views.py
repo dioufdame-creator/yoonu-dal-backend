@@ -268,6 +268,7 @@ def user_profile(request):
                     'trial_active': profile.trial_active,
                     'trial_expires_at': profile.trial_expires_at,
                     'trial_used': profile.trial_used,
+                    'trial_days_remaining': profile.trial_days_remaining(),
                     'is_premium': profile.is_premium_active(),
                     'ai_messages_count': profile.ai_messages_count
                     # ✅✅✅ FIN AJOUT ✅✅✅
