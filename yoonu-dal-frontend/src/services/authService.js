@@ -172,9 +172,15 @@ const authService = {
   getUserProfile: async () => {
     try {
       const response = await api.get('/profile/');
-      const user = response.data;
-      localStorage.setItem('user', JSON.stringify(user));
-      return user;
+      // ✅ L'API retourne { user: {...}, profile: {...} } — on aplatit
+      // en { ...user, profile: {...} } pour correspondre à ce que le
+      // reste de l'app attend (user.profile.trial_used, etc.)
+      const flatUser = {
+        ...response.data.user,
+        profile: response.data.profile,
+      };
+      localStorage.setItem('user', JSON.stringify(flatUser));
+      return flatUser;
     } catch {
       return null;
     }
