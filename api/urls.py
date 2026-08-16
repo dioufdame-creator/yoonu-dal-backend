@@ -30,6 +30,7 @@ from .views import (
     create_transfer, 
     transfer_history,
     allocate_disponible_to_budget,
+    adjust_pocket_balance,
 )
 
 urlpatterns = [
@@ -170,4 +171,5 @@ urlpatterns = [
     path('pockets/transfer/', create_transfer, name='create_transfer'),
     path('pockets/transfers/history/', transfer_history, name='transfer_history'),
     path('pockets/allocate-to-budget/', allocate_disponible_to_budget, name='allocate_disponible_to_budget'),
+    path('pockets/adjust/', adjust_pocket_balance, name='adjust_pocket_balance'),
 ]
