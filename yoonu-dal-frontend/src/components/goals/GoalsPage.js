@@ -28,7 +28,7 @@ const GoalsPage = ({ toast, onNavigate, pageParams }) => {
     target_amount: '',
     current_amount: '0',
     deadline: new Date(Date.now() + 30*24*60*60*1000).toISOString().split('T')[0],
-    category: 'urgence'
+    category: 'autre'
   });
   const [form, setForm] = useState(emptyForm());
   const [contributeAmount, setContributeAmount] = useState('');
@@ -39,7 +39,6 @@ const GoalsPage = ({ toast, onNavigate, pageParams }) => {
 
   const CATEGORIES = [
     { value: 'all', label: 'Tous', emoji: '🎯' },
-    { value: 'urgence', label: 'Fonds d\'urgence', emoji: '🚨' },
     { value: 'transport', label: 'Transport', emoji: '🚗' },
     { value: 'logement', label: 'Logement', emoji: '🏠' },
     { value: 'loisirs', label: 'Loisirs', emoji: '🎭' },
