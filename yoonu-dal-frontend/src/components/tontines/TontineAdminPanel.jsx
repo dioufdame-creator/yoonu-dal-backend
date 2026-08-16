@@ -157,15 +157,15 @@ const TontineAdminPanel = ({ tontine, participants, onUpdate, toast }) => {
   };
 
   return (
-    <div className="bg-gradient-to-br from-yellow-50 to-orange-50 border-2 border-yellow-400 rounded-2xl p-6 mb-6 shadow-lg">
+    <div className="bg-white border border-amber-200 rounded-3xl p-5 shadow-sm">
       {/* Header */}
       <div className="flex items-center gap-2 mb-4">
-        <span className="text-3xl">👑</span>
-        <h3 className="text-2xl font-bold text-gray-900">Panneau administrateur</h3>
+        <span className="text-xl">👑</span>
+        <h3 className="text-base font-bold text-gray-900">Panneau administrateur</h3>
       </div>
 
       {/* Badge mode */}
-      <div className={`inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-semibold mb-4 ${
+      <div className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-bold mb-4 ${
         isRandom
           ? 'bg-purple-100 text-purple-800 border border-purple-300'
           : 'bg-blue-100 text-blue-800 border border-blue-300'
@@ -175,10 +175,10 @@ const TontineAdminPanel = ({ tontine, participants, onUpdate, toast }) => {
       </div>
 
       {/* Onglets */}
-      <div className="flex gap-1 mb-5 bg-white/50 rounded-xl p-1">
+      <div className="flex gap-1 mb-4 bg-gray-50 rounded-2xl p-1">
         <button
           onClick={() => setActiveTab('order')}
-          className={`flex-1 py-2.5 px-3 rounded-lg text-sm font-semibold transition-all ${
+          className={`flex-1 py-2.5 px-3 rounded-xl text-xs font-bold transition-all ${
             activeTab === 'order'
               ? 'bg-white shadow text-gray-900'
               : 'text-gray-600 hover:text-gray-900'
@@ -188,7 +188,7 @@ const TontineAdminPanel = ({ tontine, participants, onUpdate, toast }) => {
         </button>
         <button
           onClick={() => setActiveTab('contributions')}
-          className={`flex-1 py-2.5 px-3 rounded-lg text-sm font-semibold transition-all flex items-center justify-center gap-2 ${
+          className={`flex-1 py-2.5 px-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 ${
             activeTab === 'contributions'
               ? 'bg-white shadow text-gray-900'
               : 'text-gray-600 hover:text-gray-900'
@@ -206,7 +206,7 @@ const TontineAdminPanel = ({ tontine, participants, onUpdate, toast }) => {
       {/* ── ONGLET ORDRE / TIRAGE ── */}
       {activeTab === 'order' && (
         <div className="space-y-4">
-          <div className="bg-white/70 rounded-xl p-4">
+          <div className="bg-gray-50 rounded-2xl p-4">
             <p className="text-sm text-gray-700 mb-2">
               <strong>En tant qu'administrateur</strong>, vous pouvez :
             </p>
@@ -229,7 +229,7 @@ const TontineAdminPanel = ({ tontine, participants, onUpdate, toast }) => {
               <button
                 onClick={handleRandomDraw}
                 disabled={loading}
-                className="w-full bg-gradient-to-r from-purple-600 to-pink-600 text-white py-3 px-4 rounded-xl font-semibold hover:shadow-lg transition-all transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                className="w-full bg-gradient-to-r from-purple-600 to-pink-600 text-white py-3.5 px-4 rounded-2xl font-bold hover:shadow-lg transition-all transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
               >
                 <span className="text-xl">🎲</span>
                 <span>{loading ? 'Tirage en cours...' : 'Lancer le tirage du mois'}</span>
@@ -242,7 +242,7 @@ const TontineAdminPanel = ({ tontine, participants, onUpdate, toast }) => {
 
           {/* MODE MANUEL */}
           {isManual && (
-            <div className="bg-white rounded-xl p-4">
+            <div className="bg-gray-50 rounded-2xl p-4">
               <div className="flex items-center justify-between mb-3">
                 <p className="font-semibold text-gray-900">Ordre de réception</p>
                 <p className="text-xs text-gray-500">Glisser-déposer ou utiliser les flèches</p>
@@ -256,7 +256,7 @@ const TontineAdminPanel = ({ tontine, participants, onUpdate, toast }) => {
                     onDragStart={(e) => handleDragStart(e, index)}
                     onDragOver={(e) => handleDragOver(e, index)}
                     onDragEnd={handleDragEnd}
-                    className={`p-3 bg-gray-50 rounded-lg border-2 ${
+                    className={`p-3 bg-gray-50 rounded-2xl border-2 ${
                       draggedItem === index ? 'border-blue-500 opacity-50' : 'border-gray-200'
                     } cursor-move hover:bg-gray-100 transition-colors`}
                   >
@@ -289,7 +289,7 @@ const TontineAdminPanel = ({ tontine, participants, onUpdate, toast }) => {
               <button
                 onClick={handleManualOrderSave}
                 disabled={loading}
-                className="w-full bg-gradient-to-r from-green-600 to-emerald-600 text-white py-3 rounded-xl font-semibold hover:shadow-lg transition-all transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                className="w-full bg-gradient-to-r from-green-600 to-emerald-600 text-white py-3.5 rounded-2xl font-bold hover:shadow-lg transition-all transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
               >
                 <span>💾</span>
                 <span>{loading ? 'Sauvegarde...' : 'Sauvegarder cet ordre'}</span>
@@ -331,7 +331,7 @@ const TontineAdminPanel = ({ tontine, participants, onUpdate, toast }) => {
           ) : (
             <div className="space-y-3">
               {pendingContributions.map((contribution) => (
-                <div key={contribution.id} className="bg-white rounded-xl p-4 border-2 border-orange-200 shadow-sm">
+                <div key={contribution.id} className="bg-white rounded-2xl p-4 border border-amber-200 shadow-sm">
 
                   {/* Header contribution */}
                   <div className="flex items-start justify-between mb-3">
@@ -401,13 +401,13 @@ const TontineAdminPanel = ({ tontine, participants, onUpdate, toast }) => {
                     <div className="flex gap-2">
                       <button
                         onClick={() => setRejectingId(contribution.id)}
-                        className="flex-1 py-2.5 bg-red-50 text-red-700 border border-red-200 rounded-lg text-sm font-semibold hover:bg-red-100 transition-all"
+                        className="flex-1 py-3 bg-red-50 text-red-700 rounded-2xl text-xs font-bold hover:bg-red-100 transition-all"
                       >
                         ❌ Rejeter
                       </button>
                       <button
                         onClick={() => handleValidate(contribution.id)}
-                        className="flex-1 py-2.5 bg-green-500 text-white rounded-lg text-sm font-semibold hover:bg-green-600 transition-all"
+                        className="flex-1 py-3 bg-green-600 text-white rounded-2xl text-xs font-bold hover:bg-green-700 transition-all"
                       >
                         ✅ Valider
                       </button>
