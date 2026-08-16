@@ -556,13 +556,14 @@ def manage_incomes(request):
 # REMPLACER dans api/views.py — fonction manage_expenses
 # ==========================================
 #
-# Deux changements : le GET retourne les infos de destination, le POST
-# les accepte et crédite réellement la poche/objectif visé.
+# Un seul ajout par rapport à la version précédente : la création d'une
+# GoalContribution quand destination_goal est renseigné, pour que
+# l'historique de l'objectif affiche correctement d'où vient l'argent.
 
 @api_view(['GET', 'POST'])
 @permission_classes([IsAuthenticated])
 def manage_expenses(request):
-    """Gestion complète des dépenses — support ?month=YYYY-MM et épargne vers poche"""
+    """Gestion complète des dépenses — support ?month=YYYY-MM et épargne vers poche/objectif"""
     user = request.user
 
     if request.method == 'GET':
@@ -589,7 +590,6 @@ def manage_expenses(request):
                 'date': e.date.isoformat(),
                 'is_necessary': e.is_necessary,
                 'created_at': e.created_at.isoformat(),
-                # ✅ Info de destination — pour le badge "🎯 → Épargne de sécurité"
                 'destination_account_name': e.destination_account.name if e.destination_account else None,
                 'destination_goal_title': e.destination_goal.title if e.destination_goal else None,
             } for e in expenses]
@@ -616,7 +616,6 @@ def manage_expenses(request):
 
             amount = Decimal(str(data.get('amount')))
 
-            # ✅ Résoudre la destination d'épargne, si fournie
             destination_account = None
             destination_goal = None
 
@@ -634,24 +633,36 @@ def manage_expenses(request):
                 if not destination_goal:
                     return Response({'error': 'Objectif destination introuvable'}, status=status.HTTP_404_NOT_FOUND)
 
+            expense_date = data.get('date') if data.get('date') else timezone.now().date()
+
             expense = Expense.objects.create(
                 user=user,
                 category=data.get('category'),
                 description=data.get('description', ''),
                 amount=amount,
-                date=data.get('date') if data.get('date') else timezone.now().date(),
+                date=expense_date,
                 is_necessary=data.get('is_necessary', True),
                 destination_account=destination_account,
                 destination_goal=destination_goal,
             )
 
-            # ✅ Créditer réellement la poche/objectif — l'argent part du
-            # budget du mois (dépense normale) ET rejoint la poche visée
+            # ✅ Créditer réellement la poche/objectif, ET tracer la contribution
             if destination_account:
                 destination_account.credit(amount)
+
             elif destination_goal:
                 destination_goal.current_amount = Decimal(str(destination_goal.current_amount)) + amount
                 destination_goal.save()
+
+                # ✅ Trace dans l'historique de l'objectif — sans ça, l'argent
+                # "apparaissait" dans le solde sans explication visible
+                GoalContribution.objects.create(
+                    goal=destination_goal,
+                    amount=amount,
+                    contribution_type='add',
+                    source='Épargne du mois',
+                    note=f"Depuis dépense: {data.get('description', 'Épargne')}"
+                )
 
             update_envelope_spending(user, expense)
             expense.refresh_from_db()
@@ -669,6 +680,7 @@ def manage_expenses(request):
 
         except Exception as e:
             return Response({'error': f'Erreur création dépense: {str(e)}'}, status=status.HTTP_400_BAD_REQUEST)
+
 
 @api_view(['GET', 'PUT', 'DELETE'])
 @permission_classes([IsAuthenticated])
@@ -4444,6 +4456,13 @@ def available_months(request):
     except Exception as e:
         return Response({'error': f'Erreur: {str(e)}'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
+# ==========================================
+# REMPLACER dans api/views.py — fonction goal_payments
+# ==========================================
+#
+# Le POST manuel (contribution "sortie de nulle part") est retiré.
+# Le GET (historique) reste identique et fonctionne toujours normalement.
+
 @api_view(['GET', 'POST'])
 @permission_classes([IsAuthenticated])
 def goal_payments(request, goal_id):
@@ -4455,18 +4474,19 @@ def goal_payments(request, goal_id):
 
     if request.method == 'GET':
         contributions = GoalContribution.objects.filter(goal=goal).order_by('-created_at')
-        data = [{'id': c.id, 'amount': float(c.amount), 'type': c.contribution_type, 'source': c.source, 'note': c.note or '', 'created_at': c.created_at.isoformat()} for c in contributions]
+        data = [{
+            'id': c.id, 'amount': float(c.amount), 'type': c.contribution_type,
+            'source': c.source, 'note': c.note or '', 'created_at': c.created_at.isoformat()
+        } for c in contributions]
         return Response({'contributions': data, 'total': len(data)})
 
     elif request.method == 'POST':
-        amount = Decimal(str(request.data.get('amount', 0)))
-        if amount <= 0:
-            return Response({'error': 'Montant invalide'}, status=status.HTTP_400_BAD_REQUEST)
-        GoalContribution.objects.create(goal=goal, amount=amount, contribution_type='add', source='Manuel', note=request.data.get('note', ''))
-        goal.current_amount = Decimal(str(goal.current_amount)) + amount
-        goal.save()
-        return Response({'message': 'Contribution ajoutée', 'current_amount': float(goal.current_amount)}, status=status.HTTP_201_CREATED)
-
+        # ✅ Retiré — une contribution doit toujours provenir d'une source
+        # traçable : soit une dépense du mois (bouton "Épargner"), soit un
+        # transfert depuis une poche existante (écran "Mes poches").
+        return Response({
+            'error': 'Utilisez le bouton Épargner (argent du mois) ou un transfert depuis Mes poches (argent déjà en réserve) pour alimenter cet objectif.'
+        }, status=status.HTTP_400_BAD_REQUEST)
 
 @api_view(['DELETE'])
 @permission_classes([IsAuthenticated])
