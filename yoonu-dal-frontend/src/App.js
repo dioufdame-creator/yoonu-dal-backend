@@ -551,11 +551,11 @@ function App() {
 
       case 'pockets':
         if (!isAuthenticated) { handleNavigate('login'); return null; }
-        return <PocketsPage onNavigate={handleNavigate} toast={toastMethods} />;
+        return <PocketsPage onNavigate={handleNavigate} toast={toastMethods} pageParams={pageParams} />;
 
       case 'quick-add':
         if (!isAuthenticated) { handleNavigate('login'); return null; }
-        return <QuickAdd type={pageParams?.type || 'expense'} onNavigate={handleNavigate} toast={toastMethods} />;
+        return <QuickAdd type={pageParams?.type || 'expense'} onNavigate={handleNavigate} toast={toastMethods} pageParams={pageParams} />;
 
       case 'debts':
         if (!isAuthenticated) { handleNavigate('login'); return null; }
