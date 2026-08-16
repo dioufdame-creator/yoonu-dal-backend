@@ -386,26 +386,24 @@ const GoalsPage = ({ toast, onNavigate, pageParams }) => {
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-4 gap-2">
+                  <div className="grid grid-cols-3 gap-2">
                     <button
                       onClick={() => { setSelectedGoal(goal); setShowContributeSheet(true); }}
-                      className="col-span-2 text-xs font-bold py-2.5 rounded-xl bg-green-50 text-green-700"
+                      className="text-xs font-bold py-2.5 rounded-xl bg-green-50 text-green-700"
                     >
                       + Ajouter
                     </button>
                     <button
                       onClick={() => { setSelectedGoal(goal); setShowPlanSheet(true); }}
                       className="text-xs font-bold py-2.5 rounded-xl bg-blue-50 text-blue-600"
-                      title="Plan d'atteinte"
                     >
-                      📈
+                      📈 Plan
                     </button>
                     <button
                       onClick={() => openHistory(goal)}
                       className="text-xs font-bold py-2.5 rounded-xl bg-gray-50 text-gray-600"
-                      title="Historique"
                     >
-                      🕐
+                      🕐 Historique
                     </button>
                   </div>
                   <div className="flex gap-2 mt-2">
