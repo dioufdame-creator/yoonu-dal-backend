@@ -6088,3 +6088,80 @@ def allocate_disponible_to_budget(request):
         'message': 'Montant affecté au budget du mois avec succès',
         'disponible_balance': float(disponible.balance),
     })
+
+# ==========================================
+# AJOUTER dans api/views.py — à la suite des vues pockets existantes
+# ==========================================
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def adjust_pocket_balance(request):
+    """
+    Ajuste directement le solde d'une poche (Account ou Goal) — pour
+    corriger une incohérence ou déclarer un montant déjà possédé
+    (ex: "j'ai déjà 200 000 FCFA de côté avant d'utiliser l'app").
+
+    Ce n'est PAS un transfert : rien n'est débité ailleurs. C'est une
+    correction/déclaration ponctuelle, tracée comme telle.
+
+    Body:
+    {
+        "target_type": "account" | "goal",
+        "target_id": 3,
+        "new_balance": 200000,
+        "reason": "Solde déjà existant avant Yoonu Dal"  // optionnel
+    }
+    """
+    user = request.user
+    data = request.data
+
+    target_type = data.get('target_type')
+    target_id = data.get('target_id')
+    new_balance = data.get('new_balance')
+
+    if target_type not in ['account', 'goal'] or not target_id or new_balance is None:
+        return Response({'error': 'target_type, target_id et new_balance sont requis'}, status=status.HTTP_400_BAD_REQUEST)
+
+    try:
+        new_balance = Decimal(str(new_balance))
+    except Exception:
+        return Response({'error': 'new_balance invalide'}, status=status.HTTP_400_BAD_REQUEST)
+
+    if new_balance < 0:
+        return Response({'error': 'Le solde ne peut pas être négatif'}, status=status.HTTP_400_BAD_REQUEST)
+
+    reason = data.get('reason', 'Ajustement manuel')
+
+    if target_type == 'account':
+        target = Account.objects.filter(id=target_id, user=user).first()
+        if not target:
+            return Response({'error': 'Poche introuvable'}, status=status.HTTP_404_NOT_FOUND)
+
+        old_balance = target.balance
+        target.balance = new_balance
+        target.save(update_fields=['balance', 'updated_at'])
+
+    else:  # goal
+        target = Goal.objects.filter(id=target_id, user=user).first()
+        if not target:
+            return Response({'error': 'Objectif introuvable'}, status=status.HTTP_404_NOT_FOUND)
+
+        old_balance = target.current_amount
+        target.current_amount = new_balance
+        target.save()
+
+        # Tracer dans l'historique de l'objectif — visible, pas caché
+        diff = new_balance - old_balance
+        GoalContribution.objects.create(
+            goal=target,
+            amount=abs(diff),
+            contribution_type='add' if diff >= 0 else 'remove',
+            source='Ajustement manuel',
+            note=reason,
+        )
+
+    return Response({
+        'message': 'Solde ajusté avec succès',
+        'old_balance': float(old_balance),
+        'new_balance': float(new_balance),
+    })
