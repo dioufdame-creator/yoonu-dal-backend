@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import API from '../services/api';
 
-const PricingPage = ({ onNavigate, user, toast }) => {
+const PricingPage = ({ onNavigate, user, toast, onUserRefresh }) => {
   const [billingCycle, setBillingCycle] = useState('monthly');
   const [loading, setLoading] = useState(false);
 
@@ -16,7 +16,13 @@ const PricingPage = ({ onNavigate, user, toast }) => {
       const response = await API.post('/payments/start-trial/');
       if (response.data.success) {
         toast?.showSuccess?.('🎁 ' + response.data.message);
-        setTimeout(() => window.location.reload(), 1000);
+        // ✅ Rafraîchir le profil utilisateur AVANT de recharger — sinon
+        // le localStorage périmé continue d'afficher trial_used: false
+        // et l'app propose l'essai en boucle même après l'avoir démarré.
+        if (onUserRefresh) {
+          await onUserRefresh();
+        }
+        setTimeout(() => window.location.reload(), 800);
       } else {
         toast?.showError?.(response.data.error || 'Erreur lors du démarrage du trial');
       }
