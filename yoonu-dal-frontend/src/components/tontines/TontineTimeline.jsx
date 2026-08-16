@@ -73,7 +73,7 @@ const TontineTimeline = ({ tontineId, isAdmin, onUpdate }) => {
 
   if (loading) {
     return (
-      <div className="bg-white rounded-2xl shadow-lg p-6 mb-6">
+      <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-5">
         <div className="animate-pulse">
           <div className="h-6 bg-gray-200 rounded w-1/3 mb-4"></div>
           <div className="space-y-3">
@@ -98,9 +98,9 @@ const TontineTimeline = ({ tontineId, isAdmin, onUpdate }) => {
   }
 
   return (
-    <div className="bg-white rounded-2xl shadow-lg p-6 mb-6">
+    <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-5">
       <div className="flex items-center justify-between mb-6">
-        <h3 className="text-xl font-bold flex items-center gap-2">
+        <h3 className="text-base font-bold text-gray-900 flex items-center gap-2">
           <span>📅</span>
           <span>Ordre de paiement</span>
         </h3>
@@ -115,7 +115,7 @@ const TontineTimeline = ({ tontineId, isAdmin, onUpdate }) => {
         {timeline.map((item) => (
           <div
             key={item.month}
-            className={`p-3 rounded-xl border-2 ${getStatusColor(item.status)} transition-all hover:shadow-md`}
+            className={`p-3 rounded-2xl border ${getStatusColor(item.status)} transition-all`}
           >
             <div className="flex items-center gap-3">
               {/* Icône statut */}
