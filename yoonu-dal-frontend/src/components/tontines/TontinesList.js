@@ -221,10 +221,9 @@ ${payoutMode}
           </div>
           <button
             onClick={() => setShowJoinSheet(true)}
-            className="w-10 h-10 rounded-full bg-white border border-gray-200 flex items-center justify-center text-lg flex-shrink-0"
-            title="Rejoindre avec un code"
+            className="h-10 px-3 rounded-full bg-white border border-gray-200 flex items-center gap-1.5 text-xs font-bold text-gray-700 flex-shrink-0"
           >
-            🔑
+            <span className="text-base">🔑</span> Rejoindre
           </button>
           <button
             onClick={() => { setEditingTontine(null); setForm(emptyForm()); setShowCreateSheet(true); }}
@@ -366,14 +365,14 @@ ${payoutMode}
                       onClick={() => handleShareWhatsApp(tontine)}
                       className="flex-1 text-xs font-bold py-2 rounded-xl bg-emerald-50 text-emerald-700"
                     >
-                      📤 Partager
+                      📤 Partager sur WhatsApp
                     </button>
                     {tontine.is_admin && (
                       <button
                         onClick={() => handleEdit(tontine)}
                         className="text-xs font-bold py-2 px-3 rounded-xl bg-gray-50 text-gray-600"
                       >
-                        ✏️
+                        ✏️ Modifier
                       </button>
                     )}
                   </div>
