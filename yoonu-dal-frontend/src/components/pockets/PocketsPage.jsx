@@ -31,6 +31,11 @@ const PocketsPage = ({ onNavigate, toast, pageParams }) => {
 
   const [createForm, setCreateForm] = useState({ name: '', account_type: 'personnalise', icon: '💼' });
 
+  const [showAdjustSheet, setShowAdjustSheet] = useState(false);
+  const [adjustTarget, setAdjustTarget] = useState(null); // {type, id, name, balance}
+  const [adjustNewBalance, setAdjustNewBalance] = useState('');
+  const [adjustReason, setAdjustReason] = useState('');
+
   const [showAllocateSheet, setShowAllocateSheet] = useState(false);
   const [allocateAmount, setAllocateAmount] = useState('');
   const [allocateMode, setAllocateMode] = useState('envelopes'); // 'envelopes' | 'manual'
@@ -147,6 +152,34 @@ const PocketsPage = ({ onNavigate, toast, pageParams }) => {
     }
   };
 
+  const openAdjust = (target) => {
+    setAdjustTarget(target);
+    setAdjustNewBalance(String(target.balance));
+    setAdjustReason('');
+    setShowAdjustSheet(true);
+  };
+
+  const handleAdjust = async () => {
+    const newBalance = parseFloat(adjustNewBalance);
+    if (isNaN(newBalance) || newBalance < 0) {
+      toast?.showError?.('Montant invalide');
+      return;
+    }
+    try {
+      await API.post('/pockets/adjust/', {
+        target_type: adjustTarget.type,
+        target_id: adjustTarget.id,
+        new_balance: newBalance,
+        reason: adjustReason || 'Ajustement manuel',
+      });
+      toast?.showSuccess?.('Solde ajusté !');
+      setShowAdjustSheet(false);
+      load();
+    } catch (error) {
+      toast?.showError?.(error.response?.data?.error || 'Erreur lors de l\'ajustement');
+    }
+  };
+
   const handleCreatePocket = async () => {
     if (!createForm.name) {
       toast?.showError?.('Nom requis');
@@ -221,22 +254,33 @@ const PocketsPage = ({ onNavigate, toast, pageParams }) => {
               const isDisponible = acc.account_type === 'disponible';
               return (
                 <div key={acc.id} className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
-                  <button
-                    onClick={() => openTransfer({ type: 'account', id: acc.id })}
-                    className="w-full p-4 flex items-center gap-3 hover:bg-gray-50 transition-all text-left"
-                  >
-                    <div className="w-11 h-11 bg-gray-50 rounded-2xl flex items-center justify-center text-xl flex-shrink-0">
-                      {acc.icon}
+                  <div className="w-full p-4 flex items-center gap-3">
+                    <button
+                      onClick={() => openTransfer({ type: 'account', id: acc.id })}
+                      className="flex items-center gap-3 flex-1 min-w-0 text-left hover:opacity-70 transition-opacity"
+                    >
+                      <div className="w-11 h-11 bg-gray-50 rounded-2xl flex items-center justify-center text-xl flex-shrink-0">
+                        {acc.icon}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-bold text-gray-900 truncate">{displayName(acc)}</p>
+                        <p className="text-xs text-gray-400">
+                          {isDisponible ? 'Argent que vous détenez, hors budget du mois' :
+                           acc.account_type === 'epargne_securite' ? 'Réserve de sécurité' : 'Poche personnalisée'}
+                        </p>
+                      </div>
+                    </button>
+                    <div className="flex items-center gap-2 flex-shrink-0">
+                      <p className="text-base font-bold text-gray-900">{formatFCFA(acc.balance)}</p>
+                      <button
+                        onClick={() => openAdjust({ type: 'account', id: acc.id, name: displayName(acc), balance: acc.balance })}
+                        className="text-gray-300 hover:text-gray-500 text-sm p-1"
+                        title="Ajuster le solde"
+                      >
+                        ✏️
+                      </button>
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-bold text-gray-900 truncate">{displayName(acc)}</p>
-                      <p className="text-xs text-gray-400">
-                        {isDisponible ? 'Argent que vous détenez, hors budget du mois' :
-                         acc.account_type === 'epargne_securite' ? 'Réserve de sécurité' : 'Poche personnalisée'}
-                      </p>
-                    </div>
-                    <p className="text-base font-bold text-gray-900 flex-shrink-0">{formatFCFA(acc.balance)}</p>
-                  </button>
+                  </div>
 
                   {isDisponible && acc.balance > 0 && (
                     <button
@@ -269,23 +313,31 @@ const PocketsPage = ({ onNavigate, toast, pageParams }) => {
               {goals.map(g => {
                 const pct = g.progress_percentage || 0;
                 return (
-                  <button
-                    key={g.id}
-                    onClick={() => openTransfer({ type: 'goal', id: g.id })}
-                    className="w-full bg-white rounded-2xl border border-gray-200 p-4 shadow-sm hover:border-green-300 transition-all text-left"
-                  >
+                  <div key={g.id} className="bg-white rounded-2xl border border-gray-200 p-4 shadow-sm hover:border-green-300 transition-all">
                     <div className="flex items-center gap-3 mb-2">
-                      <div className="w-11 h-11 bg-gray-50 rounded-2xl flex items-center justify-center text-xl flex-shrink-0">🎯</div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-bold text-gray-900 truncate">{g.title}</p>
-                        <p className="text-xs text-gray-400">{formatFCFA(g.current_amount)} / {formatFCFA(g.target_amount)} FCFA</p>
-                      </div>
+                      <button
+                        onClick={() => openTransfer({ type: 'goal', id: g.id })}
+                        className="flex items-center gap-3 flex-1 min-w-0 text-left"
+                      >
+                        <div className="w-11 h-11 bg-gray-50 rounded-2xl flex items-center justify-center text-xl flex-shrink-0">🎯</div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-bold text-gray-900 truncate">{g.title}</p>
+                          <p className="text-xs text-gray-400">{formatFCFA(g.current_amount)} / {formatFCFA(g.target_amount)} FCFA</p>
+                        </div>
+                      </button>
                       <p className="text-xs font-bold text-green-600 flex-shrink-0">{pct.toFixed(0)}%</p>
+                      <button
+                        onClick={() => openAdjust({ type: 'goal', id: g.id, name: g.title, balance: g.current_amount })}
+                        className="text-gray-300 hover:text-gray-500 text-sm p-1 flex-shrink-0"
+                        title="Ajuster le solde"
+                      >
+                        ✏️
+                      </button>
                     </div>
                     <div className="w-full bg-gray-100 rounded-full h-1.5 overflow-hidden">
                       <div className="h-full bg-green-500 rounded-full transition-all duration-700" style={{ width: `${Math.min(pct, 100)}%` }} />
                     </div>
-                  </button>
+                  </div>
                 );
               })}
             </div>
@@ -498,6 +550,72 @@ const PocketsPage = ({ onNavigate, toast, pageParams }) => {
                 className="w-full py-4 bg-gradient-to-r from-indigo-600 to-purple-700 text-white rounded-2xl font-bold shadow-lg disabled:opacity-40 disabled:cursor-not-allowed"
               >
                 Confirmer l'affectation
+              </button>
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* Bottom sheet — Ajuster un solde (correction, pas un transfert) */}
+      {showAdjustSheet && adjustTarget && (
+        <>
+          <div className="fixed inset-0 bg-black/50 z-40" onClick={() => setShowAdjustSheet(false)} />
+          <div className="fixed bottom-0 left-0 right-0 z-50 bg-white rounded-t-3xl shadow-2xl animate-slide-up">
+            <div className="pt-3 pb-2 px-5 border-b border-gray-100">
+              <div className="w-10 h-1 bg-gray-200 rounded-full mx-auto mb-3" />
+              <div className="flex items-center justify-between">
+                <h2 className="text-base font-bold text-gray-900">✏️ Ajuster le solde</h2>
+                <button onClick={() => setShowAdjustSheet(false)} className="text-gray-400 text-xl">✕</button>
+              </div>
+              <p className="text-xs text-gray-400 mt-1">{adjustTarget.name}</p>
+            </div>
+
+            <div className="p-5 space-y-4">
+              <div className="bg-amber-50 border border-amber-200 rounded-2xl p-3">
+                <p className="text-xs text-amber-800 leading-relaxed">
+                  ⚠️ Ceci corrige directement le solde affiché — ce n'est pas un
+                  transfert. Utilisez ceci pour déclarer un montant que vous
+                  possédez déjà, ou corriger une erreur.
+                </p>
+              </div>
+
+              <div>
+                <label className="text-xs text-gray-400 font-semibold uppercase tracking-wide">
+                  Solde actuel réel
+                </label>
+                <input
+                  type="number"
+                  inputMode="numeric"
+                  value={adjustNewBalance}
+                  onChange={(e) => setAdjustNewBalance(e.target.value)}
+                  autoFocus
+                  className="w-full mt-1 px-4 py-3 bg-gray-50 rounded-2xl text-lg font-bold outline-none focus:ring-2 focus:ring-gray-400"
+                />
+                <p className="text-[11px] text-gray-400 mt-1">
+                  Ancien solde affiché : {formatFCFA(adjustTarget.balance)} FCFA
+                </p>
+              </div>
+
+              <div>
+                <label className="text-xs text-gray-400 font-semibold uppercase tracking-wide">
+                  Raison (optionnel)
+                </label>
+                <input
+                  type="text"
+                  value={adjustReason}
+                  onChange={(e) => setAdjustReason(e.target.value)}
+                  placeholder="Ex: Argent déjà mis de côté avant Yoonu Dal"
+                  className="w-full mt-1 px-4 py-3 bg-gray-50 rounded-2xl text-sm outline-none"
+                />
+              </div>
+            </div>
+
+            <div className="p-4 pb-6">
+              <button
+                onClick={handleAdjust}
+                className="w-full py-4 bg-gray-800 text-white rounded-2xl font-bold shadow-lg"
+              >
+                Confirmer le nouveau solde
               </button>
             </div>
           </div>
