@@ -34,7 +34,7 @@ const Navigation = ({ currentPage, onNavigate, isAuthenticated, user, onLogout, 
     { icon: '💰', label: 'Transactions', page: 'transactions' },
     { icon: '💳', label: 'Dettes', page: 'debts' },
     { icon: '🤝', label: 'Tontines', page: 'tontines' },
-    { icon: '🎯', label: 'Mes projets', page: 'goals' },
+    { icon: '🎯', label: 'Objectifs', page: 'goals' },
   ];
 
   return (
