@@ -100,7 +100,7 @@ const MyValues = ({ onNavigate, toast }) => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-green-50 via-white to-green-50 pb-40">
+    <div className="min-h-screen bg-gradient-to-br from-green-50 via-white to-green-50 pb-48 lg:pb-40">
       <div className="container mx-auto px-4 py-8 max-w-2xl">
 
         <div className="text-center mb-8">
@@ -201,7 +201,7 @@ const MyValues = ({ onNavigate, toast }) => {
       </div>
 
       {/* ✅ Bouton sticky — toujours visible, au-dessus du bottom bar */}
-      <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-4 pb-6 shadow-lg z-40">
+      <div className="fixed bottom-20 left-0 right-0 bg-white border-t border-gray-200 p-4 shadow-lg z-30 lg:bottom-0 lg:pb-6 lg:z-50">
         <div className="max-w-2xl mx-auto flex gap-3">
           <button
             onClick={() => onNavigate('dashboard')}
