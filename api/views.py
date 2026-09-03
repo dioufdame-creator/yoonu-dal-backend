@@ -1442,85 +1442,75 @@ def reset_monthly_envelopes(request):
 # TONTINES
 # ==========================================
 
+
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def active_tontines(request):
     """Tontines actives de l'utilisateur"""
     user = request.user
-
+ 
     try:
         user_tontines = Tontine.objects.filter(
             Q(creator=user) | Q(participants__user=user)
         ).filter(
             status__in=['planning', 'active']
         ).distinct().order_by('-created_at')
-
-# ==========================================
-# CORRECTION dans api/views.py — fonction manage_tontines
-# ==========================================
-#
-# Le champ 'is_admin' n'existait pas dans la réponse GET, alors que
-# TontinesList.js le lit pour afficher le bouton "🔥 Activer". Résultat :
-# le bouton n'apparaissait jamais, même pour le vrai créateur/admin.
-#
-# Remplacer ce bloc existant (dans la boucle for tontine in tontines) :
-
-            tontines_data = []
-            for tontine in tontines:
-                # ✅ Déterminer si l'utilisateur est admin de cette tontine
-                # (créateur OU une de ses mains marquée is_admin=True)
-                is_admin = (
-                    tontine.creator_id == user.id or
-                    tontine.participants.filter(user=user, is_admin=True).exists()
-                )
-
-                tontines_data.append({
-                    'id': tontine.id,
-                    'name': tontine.name,
-                    'duration_months': tontine.duration_months,
-                    'payment_day': tontine.payment_day,
-                    'description': tontine.description,
-                    'status': tontine.status,
-                    'total_amount': float(tontine.total_amount),
-                    'monthly_contribution': float(tontine.monthly_contribution),
-                    'max_participants': tontine.max_participants,
-                    'current_participants': tontine.participants.count(),
-                    'available_spots': tontine.available_spots,
-                    'invitation_code': tontine.invitation_code,
-                    'payout_mode': tontine.payout_mode,
-                    'current_payout_month': tontine.current_payout_month,
-                    'start_date': tontine.start_date.isoformat() if tontine.start_date else None,
-                    'end_date': tontine.end_date.isoformat() if tontine.end_date else None,
-                    'created_at': tontine.created_at.isoformat(),
-                    'is_admin': is_admin,  # ✅ le champ manquant
-                    'creator': {
-                        'id': tontine.creator.id,
-                        'username': tontine.creator.username,
-                        'first_name': tontine.creator.first_name,
-                        'last_name': tontine.creator.last_name
-                    }
-                })
+ 
+        tontines_data = []
+        for tontine in user_tontines:
+            is_admin = (
+                tontine.creator_id == user.id or
+                tontine.participants.filter(user=user, is_admin=True).exists()
+            )
+ 
+            tontines_data.append({
+                'id': tontine.id,
+                'name': tontine.name,
+                'duration_months': tontine.duration_months,
+                'payment_day': tontine.payment_day,
+                'description': tontine.description,
+                'status': tontine.status,
+                'total_amount': float(tontine.total_amount),
+                'monthly_contribution': float(tontine.monthly_contribution),
+                'max_participants': tontine.max_participants,
+                'current_participants': tontine.participants.count(),
+                'available_spots': tontine.available_spots,
+                'invitation_code': tontine.invitation_code,
+                'payout_mode': tontine.payout_mode,
+                'current_payout_month': tontine.current_payout_month,
+                'start_date': tontine.start_date.isoformat() if tontine.start_date else None,
+                'end_date': tontine.end_date.isoformat() if tontine.end_date else None,
+                'created_at': tontine.created_at.isoformat(),
+                'is_admin': is_admin,
+                'creator': {
+                    'id': tontine.creator.id,
+                    'username': tontine.creator.username,
+                    'first_name': tontine.creator.first_name,
+                    'last_name': tontine.creator.last_name
+                }
+            })
+ 
         return Response(tontines_data)
-
+ 
     except Exception as e:
         return Response({
             'error': f'Erreur tontines actives: {str(e)}'
         }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
+ 
 
 @api_view(['GET', 'POST'])
 @permission_classes([IsAuthenticated])
 def manage_tontines(request):
     """Gestion des tontines"""
     user = request.user
-
+ 
     if request.method == 'GET':
         try:
             tontines = Tontine.objects.filter(
                 Q(creator=user) | Q(participants__user=user)
             ).distinct()
-
-tontines_data = []
+ 
+            tontines_data = []
             for tontine in tontines:
                 # Déterminer si l'utilisateur est admin de cette tontine
                 # (créateur OU une de ses mains marquée is_admin=True)
@@ -1528,7 +1518,7 @@ tontines_data = []
                     tontine.creator_id == user.id or
                     tontine.participants.filter(user=user, is_admin=True).exists()
                 )
-
+ 
                 tontines_data.append({
                     'id': tontine.id,
                     'name': tontine.name,
@@ -1555,36 +1545,37 @@ tontines_data = []
                         'last_name': tontine.creator.last_name
                     }
                 })
+ 
             return Response(tontines_data)
-
+ 
         except Exception as e:
             return Response({
                 'error': f'Erreur récupération tontines: {str(e)}'
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
+ 
     else:  # POST
         try:
             data = request.data
             required_fields = ['name', 'total_amount', 'monthly_contribution', 'max_participants',
                                'start_date']
-
+ 
             for field in required_fields:
                 if not data.get(field):
                     return Response({
                         'error': f'Le champ {field} est obligatoire'
                     }, status=status.HTTP_400_BAD_REQUEST)
-
+ 
             from dateutil.relativedelta import relativedelta
             start_date = datetime.strptime(data['start_date'], '%Y-%m-%d').date()
             end_date = start_date + relativedelta(months=int(data['duration_months']))
-
+ 
             payout_mode = data.get('payout_mode', 'manual')
             payment_day = int(data.get('payment_day', 5))
             if payment_day < 1 or payment_day > 28:
                 payment_day = 5
             if payout_mode not in ['manual', 'random']:
                 payout_mode = 'manual'
-
+ 
             tontine = Tontine.objects.create(
                 name=data['name'],
                 description=data.get('description', ''),
@@ -1608,18 +1599,18 @@ tontines_data = []
                 position=1,
                 is_admin=True
             )
-
+ 
             return Response({
                 'id': tontine.id,
                 'invitation_code': tontine.invitation_code,
                 'message': 'Tontine créée avec succès'
             }, status=status.HTTP_201_CREATED)
-
+ 
         except Exception as e:
             return Response({
                 'error': f'Erreur création tontine: {str(e)}'
             }, status=status.HTTP_400_BAD_REQUEST)
-
+ 
 
 @api_view(['GET', 'PATCH', 'DELETE'])
 @permission_classes([IsAuthenticated])
