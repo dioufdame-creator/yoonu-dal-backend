@@ -918,10 +918,24 @@ class Tontine(models.Model):
 
 
 class TontineParticipant(models.Model):
-    """Participants à une tontine"""
+    """
+    Une 'part' (main) dans une tontine. Un même utilisateur peut détenir
+    plusieurs mains dans la même tontine — chaque main est une ligne
+    TontineParticipant distincte, avec sa propre position dans la
+    rotation, ses propres cotisations à suivre, et son propre tour de
+    réception. C'est le fonctionnement normal d'une tontine : une
+    personne à 2 mains cotise 2 fois par mois et reçoit le pot complet
+    à deux moments différents de la rotation.
+    """
     tontine = models.ForeignKey(Tontine, on_delete=models.CASCADE, related_name='participants')
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='tontine_participations')
     position = models.IntegerField()
+
+    # ✅ Numéro de main pour ce user dans cette tontine (1ère main, 2e main...)
+    # Purement informatif pour l'affichage — n'affecte pas la logique de
+    # cotisation/réception, qui reste portée par chaque ligne indépendamment.
+    hand_number = models.IntegerField(default=1, help_text="Numéro de main (1 = première, 2 = deuxième...)")
+
     joined_at = models.DateTimeField(auto_now_add=True)
     is_admin = models.BooleanField(default=False)
     is_active = models.BooleanField(default=True)
@@ -934,11 +948,16 @@ class TontineParticipant(models.Model):
     paid_at = models.DateTimeField(null=True, blank=True, help_text="Date du paiement")
 
     class Meta:
-        unique_together = ('tontine', 'user')
+        # ✅ Un même (tontine, user) peut apparaître plusieurs fois —
+        # une ligne par main détenue. On garantit juste l'unicité de
+        # la combinaison (tontine, user, hand_number) pour éviter les
+        # doublons accidentels de la même main.
+        unique_together = ('tontine', 'user', 'hand_number')
         ordering = ['position']
 
     def __str__(self):
-        return f"{self.user.username} dans {self.tontine.name} (pos. {self.position})"
+        hand_label = f" (main {self.hand_number})" if self.hand_number > 1 else ""
+        return f"{self.user.username} dans {self.tontine.name} (pos. {self.position}){hand_label}"
 
     @property
     def total_contributions(self):
