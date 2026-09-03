@@ -15,6 +15,7 @@ const TontineDetail = ({ tontineId, onNavigate, toast, user }) => {
   const [myContributions, setMyContributions] = useState([]);
   const [loadingContributions, setLoadingContributions] = useState(false);
   const [showMyPayments, setShowMyPayments] = useState(false);
+  const [selectedHand, setSelectedHand] = useState(null); // main active pour paiements/contribution
 
   useEffect(() => {
     const loadUser = async () => {
@@ -49,12 +50,14 @@ const TontineDetail = ({ tontineId, onNavigate, toast, user }) => {
   };
 
   const loadMyContributions = async () => {
-    if (!tontine || !currentUser) return;
+    if (!tontine || !currentUser || !currentUserParticipant) return;
     setLoadingContributions(true);
     try {
-      const myParticipant = tontine.participants?.find(p => p.user?.id === currentUser?.id);
-      if (!myParticipant) return;
-      const response = await API.get(`/tontines/${tontineId}/my-contributions/`);
+      // ✅ Précise quelle main — l'endpoint retourne les contributions
+      // de cette participation précise, pas toutes les mains mélangées
+      const response = await API.get(
+        `/tontines/${tontineId}/my-contributions/?participant_id=${currentUserParticipant.id}`
+      );
       setMyContributions(response.data.contributions || []);
     } catch {
       setMyContributions([]);
@@ -131,11 +134,13 @@ const TontineDetail = ({ tontineId, onNavigate, toast, user }) => {
 
   const handleContribute = async () => {
     if (!contributeAmount) { toast?.showError?.('Entre un montant'); return; }
+    if (!currentUserParticipant) { toast?.showError?.('Sélectionnez une main'); return; }
     try {
       await API.post(`/tontines/${tontineId}/contribute/`, {
         amount: parseFloat(contributeAmount),
         payment_method: contributeMethod,
         transaction_reference: contributeRef,
+        participant_id: currentUserParticipant.id, // ✅ précise quelle main cotise
       });
       toast?.showSuccess?.("Contribution enregistrée ! En attente de validation par l'admin.");
       setShowContributeSheet(false);
@@ -224,8 +229,11 @@ const TontineDetail = ({ tontineId, onNavigate, toast, user }) => {
 
   const statusConfig = getStatusConfig(tontine.status);
   const progress = tontine.max_participants > 0 ? (tontine.current_participants / tontine.max_participants) * 100 : 0;
-  const currentUserParticipant = tontine.participants?.find(p => p.user?.id === currentUser?.id);
-  const isAdmin = currentUserParticipant?.is_admin || tontine.creator?.id === currentUser?.id;
+
+  // ✅ Toutes les mains de l'utilisateur dans cette tontine (peut être 1, 2, 3...)
+  const myHands = tontine.participants?.filter(p => p.user?.id === currentUser?.id) || [];
+  const currentUserParticipant = selectedHand || myHands[0];
+  const isAdmin = myHands.some(h => h.is_admin) || tontine.creator?.id === currentUser?.id;
   const payoutAmount = (tontine.monthly_contribution || 0) * (tontine.max_participants || 0);
   const deadlineInfo = getPaymentDeadlineInfo(tontine);
   const paymentSummary = getPaymentSummary();
@@ -291,6 +299,30 @@ const TontineDetail = ({ tontineId, onNavigate, toast, user }) => {
         {tontine.description && (
           <div className="bg-white rounded-2xl border border-gray-200 p-4 mb-4 shadow-sm">
             <p className="text-sm text-gray-600">{tontine.description}</p>
+          </div>
+        )}
+
+        {/* ✅ Sélecteur de main — visible uniquement si plusieurs mains */}
+        {myHands.length > 1 && (
+          <div className="bg-indigo-50 border border-indigo-200 rounded-2xl p-3 mb-4">
+            <p className="text-[11px] text-indigo-600 font-semibold mb-2">
+              Vous avez {myHands.length} mains dans cette tontine — laquelle voulez-vous suivre ?
+            </p>
+            <div className="flex gap-2 overflow-x-auto">
+              {myHands.map(hand => (
+                <button
+                  key={hand.id}
+                  onClick={() => setSelectedHand(hand)}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all ${
+                    currentUserParticipant?.id === hand.id
+                      ? 'bg-indigo-600 text-white'
+                      : 'bg-white text-indigo-600 border border-indigo-200'
+                  }`}
+                >
+                  Main {hand.hand_number}
+                </button>
+              ))}
+            </div>
           </div>
         )}
 
@@ -472,6 +504,9 @@ const TontineDetail = ({ tontineId, onNavigate, toast, user }) => {
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-semibold text-gray-900 truncate">
                       {participant.user?.first_name} {participant.user?.last_name}
+                      {participant.hand_number > 1 && (
+                        <span className="ml-1 text-[10px] text-indigo-500 font-bold">· Main {participant.hand_number}</span>
+                      )}
                       {participant.user?.id === currentUser?.id && (
                         <span className="ml-1 text-[10px] bg-blue-500 text-white px-1.5 py-0.5 rounded-full">Vous</span>
                       )}
