@@ -197,9 +197,16 @@ const TontineDetail = ({ tontineId, onNavigate, toast, user }) => {
     return { label: `📆 Limite : le ${t.payment_day} de chaque mois`, style: 'bg-blue-50 text-blue-700' };
   };
 
+  // ✅ Recharge "Mes paiements" à l'ouverture ET au changement de main.
+  // Calcule la main active localement (sans dépendre d'une variable
+  // déclarée plus bas) pour respecter les Rules of Hooks — ce useEffect
+  // doit rester avant tout "return" conditionnel.
   useEffect(() => {
-    if (showMyPayments && tontine && currentUser && currentUserParticipant) loadMyContributions();
-  }, [showMyPayments, tontine, currentUser, currentUserParticipant]);
+    if (!showMyPayments || !tontine || !currentUser) return;
+    const myHandsForEffect = tontine.participants?.filter(p => p.user?.id === currentUser?.id) || [];
+    const activeHand = selectedHand || myHandsForEffect[0];
+    if (activeHand) loadMyContributions();
+  }, [showMyPayments, tontine, currentUser, selectedHand]);
 
   if (loading) {
     return (
