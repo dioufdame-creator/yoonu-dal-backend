@@ -1637,6 +1637,8 @@ def tontine_detail(request, tontine_id):
             participants = TontineParticipant.objects.filter(tontine=tontine).order_by('position')
             participants_data = []
 
+# Dans la boucle "for participant in participants:", remplacer :
+ 
             for participant in participants:
                 participants_data.append({
                     'id': participant.id,
@@ -1647,6 +1649,7 @@ def tontine_detail(request, tontine_id):
                         'last_name': participant.user.last_name
                     },
                     'position': participant.position,
+                    'hand_number': participant.hand_number,  # ✅ le champ manquant
                     'is_admin': participant.is_admin,
                     'is_active': participant.is_active,
                     'received_payout': participant.received_payout,
@@ -1655,37 +1658,6 @@ def tontine_detail(request, tontine_id):
                     'payment_day': tontine.payment_day,
                     'joined_at': participant.joined_at.isoformat()
                 })
-
-            return Response({
-                'id': tontine.id,
-                'name': tontine.name,
-                'description': tontine.description,
-                'total_amount': float(tontine.total_amount),
-                'monthly_contribution': float(tontine.monthly_contribution),
-                'max_participants': tontine.max_participants,
-                'current_participants': tontine.participants.count(),
-                'available_spots': tontine.available_spots,
-                'status': tontine.status,
-                'invitation_code': tontine.invitation_code,
-                'start_date': tontine.start_date.isoformat() if tontine.start_date else None,
-                'end_date': tontine.end_date.isoformat() if tontine.end_date else None,
-                'duration_months': tontine.duration_months,
-                'frequency': tontine.frequency,
-                'rules': tontine.rules,
-                'is_private': tontine.is_private,
-                'payout_mode': tontine.payout_mode,
-                'current_payout_month': tontine.current_payout_month,
-                'progress_percentage': round(tontine.progress_percentage, 1),
-                'total_contributions_received': float(tontine.total_contributions_received()),
-                'created_at': tontine.created_at.isoformat(),
-                'participants': participants_data,
-                'creator': {
-                    'id': tontine.creator.id,
-                    'username': tontine.creator.username,
-                    'first_name': tontine.creator.first_name,
-                    'last_name': tontine.creator.last_name
-                }
-            })
 
         elif request.method == 'PATCH':
             data = request.data
