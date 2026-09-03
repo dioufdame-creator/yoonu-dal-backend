@@ -423,7 +423,9 @@ ${payoutMode}
                   />
                 </div>
                 <div>
-                  <label className="text-xs text-gray-400 font-semibold uppercase tracking-wide">Participants</label>
+                  <label className="text-xs text-gray-400 font-semibold uppercase tracking-wide">
+                    Nombre de mains
+                  </label>
                   <input
                     type="number"
                     inputMode="numeric"
@@ -432,6 +434,9 @@ ${payoutMode}
                     placeholder="Ex: 10"
                     className="w-full mt-1 px-4 py-3 bg-gray-50 rounded-2xl text-sm font-bold outline-none focus:ring-2 focus:ring-green-500"
                   />
+                  <p className="text-[10px] text-gray-400 mt-1">
+                    Une personne peut prendre plusieurs mains
+                  </p>
                 </div>
               </div>
 
