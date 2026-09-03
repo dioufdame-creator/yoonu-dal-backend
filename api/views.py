@@ -1455,22 +1455,51 @@ def active_tontines(request):
             status__in=['planning', 'active']
         ).distinct().order_by('-created_at')
 
-        tontines_data = []
-        for tontine in user_tontines:
-            tontines_data.append({
-                'id': tontine.id,
-                'name': tontine.name,
-                'total_amount': float(tontine.total_amount),
-                'monthly_contribution': float(tontine.monthly_contribution),
-                'current_participants': tontine.participants.count(),
-                'max_participants': tontine.max_participants,
-                'status': tontine.status,
-                'progress_percentage': round(tontine.progress_percentage, 1),
-                'available_spots': tontine.available_spots,
-                'next_payment_date': tontine.next_payment_date().isoformat() if tontine.next_payment_date() else None,
-                'created_at': tontine.created_at.isoformat()
-            })
+# ==========================================
+# CORRECTION dans api/views.py — fonction manage_tontines
+# ==========================================
+#
+# Le champ 'is_admin' n'existait pas dans la réponse GET, alors que
+# TontinesList.js le lit pour afficher le bouton "🔥 Activer". Résultat :
+# le bouton n'apparaissait jamais, même pour le vrai créateur/admin.
+#
+# Remplacer ce bloc existant (dans la boucle for tontine in tontines) :
 
+            tontines_data = []
+            for tontine in tontines:
+                # ✅ Déterminer si l'utilisateur est admin de cette tontine
+                # (créateur OU une de ses mains marquée is_admin=True)
+                is_admin = (
+                    tontine.creator_id == user.id or
+                    tontine.participants.filter(user=user, is_admin=True).exists()
+                )
+
+                tontines_data.append({
+                    'id': tontine.id,
+                    'name': tontine.name,
+                    'duration_months': tontine.duration_months,
+                    'payment_day': tontine.payment_day,
+                    'description': tontine.description,
+                    'status': tontine.status,
+                    'total_amount': float(tontine.total_amount),
+                    'monthly_contribution': float(tontine.monthly_contribution),
+                    'max_participants': tontine.max_participants,
+                    'current_participants': tontine.participants.count(),
+                    'available_spots': tontine.available_spots,
+                    'invitation_code': tontine.invitation_code,
+                    'payout_mode': tontine.payout_mode,
+                    'current_payout_month': tontine.current_payout_month,
+                    'start_date': tontine.start_date.isoformat() if tontine.start_date else None,
+                    'end_date': tontine.end_date.isoformat() if tontine.end_date else None,
+                    'created_at': tontine.created_at.isoformat(),
+                    'is_admin': is_admin,  # ✅ le champ manquant
+                    'creator': {
+                        'id': tontine.creator.id,
+                        'username': tontine.creator.username,
+                        'first_name': tontine.creator.first_name,
+                        'last_name': tontine.creator.last_name
+                    }
+                })
         return Response(tontines_data)
 
     except Exception as e:
