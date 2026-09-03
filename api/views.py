@@ -1730,10 +1730,18 @@ def tontine_detail(request, tontine_id):
         )
 
 
+# ==========================================
+# REMPLACER dans api/views.py — fonction join_tontine
+# ==========================================
+#
+# Permet à un utilisateur de rejoindre une même tontine plusieurs fois
+# (plusieurs "mains") — comportement normal d'une tontine, plutôt que
+# de le bloquer après la première participation.
+
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
 def join_tontine(request):
-    """Rejoindre une tontine via un code d'invitation"""
+    """Rejoindre une tontine via un code d'invitation — plusieurs mains possibles"""
     user = request.user
 
     try:
@@ -1745,7 +1753,6 @@ def join_tontine(request):
                 'error': 'Le code d\'invitation est obligatoire'
             }, status=status.HTTP_400_BAD_REQUEST)
 
-        # Trouver la tontine par le code
         try:
             tontine = Tontine.objects.get(invitation_code=invitation_code)
         except Tontine.DoesNotExist:
@@ -1753,31 +1760,31 @@ def join_tontine(request):
                 'error': 'Code d\'invitation invalide'
             }, status=status.HTTP_404_NOT_FOUND)
 
-        # Vérifier que la tontine est en planification ou active
         if tontine.status not in ['planning', 'active']:
             return Response({
                 'error': 'Cette tontine n\'accepte plus de participants'
             }, status=status.HTTP_400_BAD_REQUEST)
 
-        # Vérifier qu'il reste des places
         if tontine.available_spots <= 0:
             return Response({
                 'error': 'La tontine est complète'
             }, status=status.HTTP_400_BAD_REQUEST)
 
-        # Vérifier que l'utilisateur n'est pas déjà participant
-        if TontineParticipant.objects.filter(tontine=tontine, user=user).exists():
-            return Response({
-                'error': 'Vous êtes déjà participant à cette tontine'
-            }, status=status.HTTP_400_BAD_REQUEST)
+        # ✅ Autoriser plusieurs mains — on calcule le numéro de la
+        # prochaine main pour ce user dans cette tontine, au lieu de
+        # bloquer une seconde participation.
+        existing_hands = TontineParticipant.objects.filter(tontine=tontine, user=user).count()
+        next_hand_number = existing_hands + 1
 
-        # Créer la participation (la position est assignée automatiquement par le signal)
         participant = TontineParticipant.objects.create(
             tontine=tontine,
             user=user,
             position=0,  # sera mis à jour par le signal
+            hand_number=next_hand_number,
             is_admin=False
         )
+
+        hand_label = f" (main {next_hand_number})" if next_hand_number > 1 else ""
 
         return Response({
             'id': participant.id,
@@ -1786,14 +1793,14 @@ def join_tontine(request):
                 'name': tontine.name
             },
             'position': participant.position,
-            'message': f'Vous avez rejoint la tontine "{tontine.name}" avec succès'
+            'hand_number': next_hand_number,
+            'message': f'Vous avez rejoint la tontine "{tontine.name}" avec succès{hand_label}'
         }, status=status.HTTP_201_CREATED)
 
     except Exception as e:
         return Response({
             'error': f'Erreur: {str(e)}'
         }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
 
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
@@ -1830,32 +1837,62 @@ def activate_tontine(request, tontine_id):
         }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
+# ==========================================
+# REMPLACER dans api/views.py — fonction make_contribution
+# ==========================================
+#
+# Gère le cas où l'utilisateur a plusieurs mains dans la même tontine :
+# le frontend peut préciser quelle main cotise via participant_id.
+# Si l'utilisateur n'a qu'une seule main, tout fonctionne comme avant
+# sans rien changer côté appelant (rétrocompatible).
+
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
 def make_contribution(request, tontine_id):
-    """Effectuer une contribution à une tontine"""
+    """Effectuer une contribution à une tontine — gère les mains multiples"""
     user = request.user
 
     try:
         tontine = get_object_or_404(Tontine, id=tontine_id)
+        data = request.data
 
-        # Vérifier que l'utilisateur est participant
-        try:
-            participant = TontineParticipant.objects.get(tontine=tontine, user=user)
-        except TontineParticipant.DoesNotExist:
-            return Response({
-                'error': 'Vous n\'êtes pas participant à cette tontine'
-            }, status=status.HTTP_403_FORBIDDEN)
+        # ✅ Résoudre LA bonne main qui cotise
+        participant_id = data.get('participant_id')
 
-        # Vérifier que la tontine est active
+        if participant_id:
+            # Le frontend précise explicitement quelle main
+            participant = TontineParticipant.objects.filter(
+                id=participant_id, tontine=tontine, user=user
+            ).first()
+            if not participant:
+                return Response({
+                    'error': 'Participation introuvable pour cet utilisateur'
+                }, status=status.HTTP_404_NOT_FOUND)
+        else:
+            # Pas de précision — comportement rétrocompatible :
+            # fonctionne directement si une seule main, sinon on demande
+            # de préciser laquelle plutôt que de planter ou deviner.
+            my_hands = TontineParticipant.objects.filter(tontine=tontine, user=user)
+            count = my_hands.count()
+
+            if count == 0:
+                return Response({
+                    'error': 'Vous n\'êtes pas participant à cette tontine'
+                }, status=status.HTTP_403_FORBIDDEN)
+            elif count == 1:
+                participant = my_hands.first()
+            else:
+                return Response({
+                    'error': 'Vous avez plusieurs mains dans cette tontine — précisez participant_id',
+                    'hands': [{'id': p.id, 'hand_number': p.hand_number} for p in my_hands]
+                }, status=status.HTTP_400_BAD_REQUEST)
+
         if tontine.status != 'active':
             return Response({
                 'error': 'La tontine doit être active pour effectuer une contribution'
             }, status=status.HTTP_400_BAD_REQUEST)
 
-        data = request.data
         amount = data.get('amount')
-
         if not amount:
             return Response({
                 'error': 'Le montant est obligatoire'
@@ -1867,9 +1904,8 @@ def make_contribution(request, tontine_id):
             participant=participant, status='confirmed'
         ).count()
         contribution_month = tontine.start_date.replace(day=1)
-        from dateutil.relativedelta import relativedelta
         contribution_month = contribution_month + relativedelta(months=confirmed_count)
-        
+
         contribution = TontineContribution.objects.create(
             participant=participant,
             amount=Decimal(amount),
@@ -1881,12 +1917,12 @@ def make_contribution(request, tontine_id):
             is_validated=False
         )
 
-        # ✅ Créer automatiquement une dépense dans l'enveloppe Projets
         try:
+            hand_note = f" (main {participant.hand_number})" if participant.hand_number > 1 else ""
             Expense.objects.create(
                 user=user,
                 category='tontine_epargne',
-                description=f'Contribution tontine "{tontine.name}"',
+                description=f'Contribution tontine "{tontine.name}"{hand_note}',
                 amount=Decimal(amount),
                 date=contribution_date,
                 is_necessary=True
@@ -1900,6 +1936,7 @@ def make_contribution(request, tontine_id):
             'amount': float(contribution.amount),
             'date': contribution.date.isoformat(),
             'is_validated': contribution.is_validated,
+            'hand_number': participant.hand_number,
             'message': 'Contribution enregistrée avec succès. Elle sera validée par l\'administrateur.'
         }, status=status.HTTP_201_CREATED)
 
@@ -1907,7 +1944,6 @@ def make_contribution(request, tontine_id):
         return Response({
             'error': f'Erreur contribution: {str(e)}'
         }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
 
 @api_view(['GET', 'POST'])
 @permission_classes([IsAuthenticated])
@@ -2993,9 +3029,29 @@ def execute_prediction_action(request, alert_id):
             tontine_id = action.get('tontine_id')
             amount = action.get('amount')
 
-            tontine = Tontine.objects.get(id=tontine_id)
-            participant = TontineParticipant.objects.get(tontine=tontine, user=user)
+# ==========================================
+# CORRECTION dans api/views.py — execute_prediction_action
+# ==========================================
+#
+# Remplacer ce fragment (dans le bloc action_type == 'contribute_tontine') :
+#
+#             tontine = Tontine.objects.get(id=tontine_id)
+#             participant = TontineParticipant.objects.get(tontine=tontine, user=user)
+#
+# Par ce fragment corrigé — gère le cas de plusieurs mains en prenant
+# la première par défaut (l'alerte prédictive ne peut pas connaître à
+# l'avance quelle main l'utilisateur veut créditer ; à défaut de plus
+# de contexte, on prend la première main comme choix raisonnable) :
 
+            tontine = Tontine.objects.get(id=tontine_id)
+            participant = TontineParticipant.objects.filter(
+                tontine=tontine, user=user
+            ).order_by('hand_number').first()
+
+            if not participant:
+                return Response({
+                    'error': 'Vous n\'êtes pas participant à cette tontine'
+                }, status=status.HTTP_400_BAD_REQUEST)
             contribution = TontineContribution.objects.create(
                 participant=participant,
                 amount=amount,
@@ -6165,4 +6221,59 @@ def adjust_pocket_balance(request):
         'message': 'Solde ajusté avec succès',
         'old_balance': float(old_balance),
         'new_balance': float(new_balance),
+    })
+
+# ==========================================
+# AJOUTER dans api/views.py — nouvelle vue manquante
+# ==========================================
+#
+# Cette route est appelée par TontineDetail.js (loadMyContributions)
+# mais n'existait nulle part côté backend — bug préexistant, indépendant
+# du sujet des mains multiples. Créée ici avec le support de plusieurs
+# mains dès le départ.
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def my_tontine_contributions(request, tontine_id):
+    """
+    Contributions de l'utilisateur pour une tontine — pour UNE main
+    précise si participant_id est fourni, sinon pour sa première main
+    (rétrocompatible avec un utilisateur à une seule main).
+    """
+    user = request.user
+    tontine = get_object_or_404(Tontine, id=tontine_id)
+
+    participant_id = request.GET.get('participant_id')
+
+    if participant_id:
+        participant = TontineParticipant.objects.filter(
+            id=participant_id, tontine=tontine, user=user
+        ).first()
+    else:
+        participant = TontineParticipant.objects.filter(
+            tontine=tontine, user=user
+        ).order_by('hand_number').first()
+
+    if not participant:
+        return Response({'error': 'Vous n\'êtes pas participant à cette tontine'}, status=status.HTTP_403_FORBIDDEN)
+
+    contributions = TontineContribution.objects.filter(
+        participant=participant
+    ).order_by('-date')
+
+    data = [{
+        'id': c.id,
+        'amount': float(c.amount),
+        'date': c.date.isoformat(),
+        'status': c.status,
+        'payment_method': c.payment_method,
+        'transaction_reference': c.transaction_reference,
+        'notes': c.notes,
+        'contribution_month': c.contribution_month.isoformat() if c.contribution_month else None,
+    } for c in contributions]
+
+    return Response({
+        'contributions': data,
+        'hand_number': participant.hand_number,
+        'participant_id': participant.id,
     })
