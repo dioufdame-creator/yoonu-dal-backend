@@ -1520,26 +1520,34 @@ def manage_tontines(request):
                 Q(creator=user) | Q(participants__user=user)
             ).distinct()
 
-            tontines_data = []
+tontines_data = []
             for tontine in tontines:
+                # Déterminer si l'utilisateur est admin de cette tontine
+                # (créateur OU une de ses mains marquée is_admin=True)
+                is_admin = (
+                    tontine.creator_id == user.id or
+                    tontine.participants.filter(user=user, is_admin=True).exists()
+                )
+
                 tontines_data.append({
                     'id': tontine.id,
                     'name': tontine.name,
-                    'duration_months': tontine.duration_months,  # ← AJOUTER
+                    'duration_months': tontine.duration_months,
                     'payment_day': tontine.payment_day,
                     'description': tontine.description,
-                    'status': tontine.status,          # ← MANQUANT, ajouter ici
+                    'status': tontine.status,
                     'total_amount': float(tontine.total_amount),
                     'monthly_contribution': float(tontine.monthly_contribution),
                     'max_participants': tontine.max_participants,
                     'current_participants': tontine.participants.count(),
                     'available_spots': tontine.available_spots,
                     'invitation_code': tontine.invitation_code,
-                    'payout_mode': tontine.payout_mode,          # ← AJOUTER
-                    'current_payout_month': tontine.current_payout_month,  # ← AJOUTER
+                    'payout_mode': tontine.payout_mode,
+                    'current_payout_month': tontine.current_payout_month,
                     'start_date': tontine.start_date.isoformat() if tontine.start_date else None,
                     'end_date': tontine.end_date.isoformat() if tontine.end_date else None,
                     'created_at': tontine.created_at.isoformat(),
+                    'is_admin': is_admin,
                     'creator': {
                         'id': tontine.creator.id,
                         'username': tontine.creator.username,
@@ -1547,7 +1555,6 @@ def manage_tontines(request):
                         'last_name': tontine.creator.last_name
                     }
                 })
-
             return Response(tontines_data)
 
         except Exception as e:
