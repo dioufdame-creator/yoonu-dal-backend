@@ -31,6 +31,7 @@ from .views import (
     transfer_history,
     allocate_disponible_to_budget,
     adjust_pocket_balance,
+    my_tontine_contributions,
 )
 
 urlpatterns = [
@@ -172,4 +173,5 @@ urlpatterns = [
     path('pockets/transfers/history/', transfer_history, name='transfer_history'),
     path('pockets/allocate-to-budget/', allocate_disponible_to_budget, name='allocate_disponible_to_budget'),
     path('pockets/adjust/', adjust_pocket_balance, name='adjust_pocket_balance'),
+    path('tontines/<int:tontine_id>/my-contributions/', my_tontine_contributions, name='my_tontine_contributions'),
 ]
