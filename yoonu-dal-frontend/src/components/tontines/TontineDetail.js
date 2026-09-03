@@ -198,8 +198,8 @@ const TontineDetail = ({ tontineId, onNavigate, toast, user }) => {
   };
 
   useEffect(() => {
-    if (showMyPayments && tontine && currentUser) loadMyContributions();
-  }, [showMyPayments, tontine, currentUser]);
+    if (showMyPayments && tontine && currentUser && currentUserParticipant) loadMyContributions();
+  }, [showMyPayments, tontine, currentUser, currentUserParticipant]);
 
   if (loading) {
     return (
