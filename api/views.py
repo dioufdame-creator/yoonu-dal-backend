@@ -6497,3 +6497,87 @@ def my_tontine_contributions(request, tontine_id):
         'hand_number': participant.hand_number,
         'participant_id': participant.id,
     })
+
+# ==========================================
+# AJOUTER dans api/views.py — nouvelle vue
+# ==========================================
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def mark_tontine_payout(request, tontine_id):
+    """
+    Marque qu'un participant (une main précise) a reçu son versement
+    du mois. Souple : ne bloque pas si des cotisations du mois sont
+    encore en attente — l'admin garde la décision.
+
+    Body:
+    {
+        "participant_id": 42,
+        "amount": 500000,        // optionnel, défaut = payout théorique de la tontine
+        "date": "2026-09-15"     // optionnel, défaut = aujourd'hui
+    }
+    """
+    user = request.user
+    tontine = get_object_or_404(Tontine, id=tontine_id)
+
+    # Seul l'admin (créateur ou main marquée is_admin) peut marquer un versement
+    is_admin = (
+        tontine.creator_id == user.id or
+        tontine.participants.filter(user=user, is_admin=True).exists()
+    )
+    if not is_admin:
+        return Response(
+            {'error': 'Seul un administrateur peut marquer un versement'},
+            status=status.HTTP_403_FORBIDDEN
+        )
+
+    participant_id = request.data.get('participant_id')
+    if not participant_id:
+        return Response({'error': 'participant_id requis'}, status=status.HTTP_400_BAD_REQUEST)
+
+    participant = TontineParticipant.objects.filter(id=participant_id, tontine=tontine).first()
+    if not participant:
+        return Response({'error': 'Participation introuvable'}, status=status.HTTP_404_NOT_FOUND)
+
+    if participant.received_payout:
+        return Response(
+            {'error': f'{participant.user.first_name or participant.user.username} a déjà reçu son versement pour cette main'},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+
+    amount = request.data.get('amount')
+    payout_amount = Decimal(str(amount)) if amount else (
+        Decimal(str(tontine.monthly_contribution)) * tontine.max_participants
+    )
+
+    payout_date_str = request.data.get('date')
+    payout_date = datetime.strptime(payout_date_str, '%Y-%m-%d').date() if payout_date_str else datetime.now().date()
+
+    participant.received_payout = True
+    participant.payout_date = payout_date
+    participant.payout_amount = payout_amount
+    participant.is_paid = True
+    participant.paid_at = timezone.now()
+    participant.save()
+
+    # Trace dans le journal d'activité de la tontine
+    try:
+        TontineActivity.objects.create(
+            tontine=tontine,
+            activity_type='payout',
+            participant=participant,
+            amount=payout_amount,
+            message=f"{participant.user.first_name or participant.user.username} a reçu son versement"
+                    + (f" (main {participant.hand_number})" if participant.hand_number > 1 else ""),
+            created_by=user,
+        )
+    except Exception:
+        pass  # le journal n'est pas critique, ne bloque jamais le versement
+
+    return Response({
+        'success': True,
+        'message': f'Versement de {payout_amount:,.0f} FCFA marqué pour {participant.user.first_name or participant.user.username}',
+        'participant_id': participant.id,
+        'payout_date': participant.payout_date.isoformat(),
+        'payout_amount': float(participant.payout_amount),
+    })
