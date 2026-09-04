@@ -252,7 +252,7 @@ const TontineDetail = ({ tontineId, onNavigate, toast, user }) => {
   const monthsTimeline = showMyPayments ? getMonthsTimeline() : [];
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-28">
+    <div className="min-h-screen bg-gray-50 pb-40">
       <div className="max-w-2xl mx-auto px-4 py-5">
 
         {/* Header */}
@@ -273,7 +273,7 @@ const TontineDetail = ({ tontineId, onNavigate, toast, user }) => {
         </div>
 
         {/* Carte résumé */}
-        <div className="bg-gradient-to-br from-orange-500 to-red-600 rounded-3xl p-5 mb-4 text-white shadow-xl">
+        <div className="bg-gradient-to-br from-green-600 to-emerald-700 rounded-3xl p-5 mb-4 text-white shadow-xl">
           <div className="flex items-center justify-between mb-3">
             <div>
               <p className="text-sm opacity-80">Tu reçois à ton tour</p>
@@ -546,8 +546,8 @@ const TontineDetail = ({ tontineId, onNavigate, toast, user }) => {
 
       </div>
 
-      {/* Bouton contribuer flottant */}
-      {tontine.status === 'active' && (
+      {/* Bouton contribuer flottant — masqué si un bottom-sheet est déjà ouvert */}
+      {tontine.status === 'active' && !showContributeSheet && (
         <div className="fixed bottom-24 left-0 right-0 px-4 z-30">
           <div className="max-w-2xl mx-auto">
             <button
