@@ -4941,6 +4941,18 @@ def ai_chat_v2(request):
         except:
             yoonu_score = 0
             score_level = 'Non calculé'
+# Insère CE bloc entre les deux (juste avant "# ── TONTINES") :
+ 
+        # ── MES POCHES (Trésorerie, Épargne de sécurité...) ─────────
+        pockets_data = []
+        for acc in Account.objects.filter(user=user, is_active=True):
+            display_name = 'Trésorerie' if acc.account_type == 'disponible' else acc.name
+            pockets_data.append({
+                'nom': display_name,
+                'type': acc.account_type,
+                'solde': float(acc.balance),
+            })
+
 
         # ── TONTINES ─────────────────────────────────────────────────
         my_tontines = Tontine.objects.filter(
@@ -5072,6 +5084,15 @@ Dépenses : {monthly_expenses:,.0f} FCFA
 
 ━━━ ENVELOPPES ━━━
 {json.dumps(envelopes_data, ensure_ascii=False, indent=2)}
+
+# Juste APRÈS cette ligne (avant "━━━ OBJECTIFS ━━━"), insère :
+ 
+━━━ MES POCHES (trésorerie permanente, PAS le budget du mois) ━━━
+{json.dumps(pockets_data, ensure_ascii=False, indent=2) if pockets_data else 'Aucune poche créée'}
+Note : "Trésorerie" (ex-Disponible) est l'argent que l'utilisateur détient
+en permanence, distinct du "reste du mois" ci-dessus. Un virement entre
+poches ou vers un objectif ne change jamais le budget du mois ni les
+revenus — c'est juste de l'argent qui change de place.
 
 ━━━ OBJECTIFS ━━━
 {json.dumps(goals_data, ensure_ascii=False, indent=2) if goals_data else 'Aucun objectif'}
