@@ -13,6 +13,7 @@ const TontineDetail = ({ tontineId, onNavigate, toast, user }) => {
   const [contributeRef, setContributeRef] = useState('');
   const [currentUser, setCurrentUser] = useState(null);
   const [myContributions, setMyContributions] = useState([]);
+  const [contributionsLoaded, setContributionsLoaded] = useState(false);
   const [loadingContributions, setLoadingContributions] = useState(false);
   const [showMyPayments, setShowMyPayments] = useState(false);
   const [selectedHand, setSelectedHand] = useState(null); // main active pour paiements/contribution
@@ -63,6 +64,7 @@ const TontineDetail = ({ tontineId, onNavigate, toast, user }) => {
       setMyContributions([]);
     } finally {
       setLoadingContributions(false);
+      setContributionsLoaded(true); // ✅ vraies données arrivées, le badge peut s'afficher
     }
   };
 
@@ -197,16 +199,19 @@ const TontineDetail = ({ tontineId, onNavigate, toast, user }) => {
     return { label: `📆 Limite : le ${t.payment_day} de chaque mois`, style: 'bg-blue-50 text-blue-700' };
   };
 
-  // ✅ Recharge "Mes paiements" à l'ouverture ET au changement de main.
-  // Calcule la main active localement (sans dépendre d'une variable
-  // déclarée plus bas) pour respecter les Rules of Hooks — ce useEffect
-  // doit rester avant tout "return" conditionnel.
+  // ✅ Charge "Mes paiements" dès l'arrivée sur la page (pas seulement
+  // à l'ouverture du panneau) — sinon le badge de statut affiche
+  // "En retard" par défaut le temps que l'utilisateur clique, avant
+  // que les vraies données n'arrivent. Se recharge aussi au changement
+  // de main. Calcule la main active localement (sans dépendre d'une
+  // variable déclarée plus bas) pour respecter les Rules of Hooks —
+  // ce useEffect doit rester avant tout "return" conditionnel.
   useEffect(() => {
-    if (!showMyPayments || !tontine || !currentUser) return;
+    if (!tontine || !currentUser) return;
     const myHandsForEffect = tontine.participants?.filter(p => p.user?.id === currentUser?.id) || [];
     const activeHand = selectedHand || myHandsForEffect[0];
     if (activeHand) loadMyContributions();
-  }, [showMyPayments, tontine, currentUser, selectedHand]);
+  }, [tontine, currentUser, selectedHand]);
 
   if (loading) {
     return (
@@ -344,7 +349,7 @@ const TontineDetail = ({ tontineId, onNavigate, toast, user }) => {
                 <span className="text-xl">💳</span>
                 <div className="text-left">
                   <p className="text-sm font-bold text-gray-900">Mes paiements</p>
-                  {paymentSummary && (
+                  {contributionsLoaded && paymentSummary && (
                     <p className="text-xs text-gray-400">
                       {paymentSummary.confirmedCount}/{paymentSummary.monthsElapsed} mois payés
                     </p>
@@ -352,7 +357,11 @@ const TontineDetail = ({ tontineId, onNavigate, toast, user }) => {
                 </div>
               </div>
               <div className="flex items-center gap-2">
-                {paymentSummary && (
+                {!contributionsLoaded ? (
+                  <span className="px-2 py-1 rounded-full text-[10px] font-bold bg-gray-100 text-gray-400">
+                    Chargement...
+                  </span>
+                ) : paymentSummary && (
                   <span className={`px-2 py-1 rounded-full text-[10px] font-bold ${paymentSummary.statusColor}`}>
                     {paymentSummary.statusLabel}
                   </span>
