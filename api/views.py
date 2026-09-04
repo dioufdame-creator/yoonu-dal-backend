@@ -3018,8 +3018,6 @@ def ai_execute_action(request):
         else:
             return Response({'error': f'Action inconnue: {action_type}'}, status=status.HTTP_400_BAD_REQUEST)
  
-        else:
-            return Response({'error': f'Action inconnue: {action_type}'}, status=status.HTTP_400_BAD_REQUEST)
 
     except Exception as e:
         return Response({'error': f'Erreur: {str(e)}'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
