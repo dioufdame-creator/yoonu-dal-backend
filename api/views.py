@@ -2465,31 +2465,46 @@ def ai_chat(request):
         my_tontines = Tontine.objects.filter(
             Q(creator=user) | Q(participants__user=user)
         ).distinct()
+ 
         tontines_data = []
-        for tontine in my_tontines:
-            my_participation = tontine.participants.filter(user=user).first()
+        for t in my_tontines:
+            my_hands = t.participants.filter(user=user)
             tontines_data.append({
-                'id': tontine.id,
-                'name': tontine.name,
-                'monthly_contribution': float(tontine.monthly_contribution),
-                'total_amount': float(tontine.total_amount),
-                'frequency': tontine.frequency,
-                'participants': tontine.participants.count(),
-                'max_participants': tontine.max_participants,
-                'status': tontine.status,
-                'payout_mode': tontine.payout_mode,
-                'my_position': my_participation.position if my_participation else None
+                'id': t.id, 'name': t.name,
+                'monthly_contribution': float(t.monthly_contribution),
+                'status': t.status,
+                'nombre_de_mains': my_hands.count(),
+                'positions': [h.position for h in my_hands],
             })
-
-        # ── DETTES ──────────────────────────────────────────────────
-        debts = Debt.objects.filter(user=user, is_active=True)
+ 
+        # ── DETTES ET CRÉANCES (bidirectionnel) ─────────────────────
         debts_data = [{
             'name': d.name,
+            'direction': 'je_dois' if d.direction == 'owed_by_me' else 'on_me_doit',
+            'counterparty': d.counterparty,
             'remaining_amount': float(d.remaining_amount),
-            'monthly_payment': float(d.monthly_payment),
-            'progress_percentage': float(d.progress_percentage),
-        } for d in debts]
-
+            'monthly_payment': float(d.monthly_payment) if d.monthly_payment else None,
+        } for d in Debt.objects.filter(user=user, is_active=True)]
+ 
+ 
+# ==========================================
+# AJOUT dans api/views.py — fonction ai_chat_v2
+# Nouveau bloc "Mes poches" — totalement absent jusqu'ici
+# ==========================================
+#
+# Insérer ce bloc juste après le calcul du Score (yoonu_score, score_level)
+# et juste AVANT le commentaire "# ── TONTINES ─────" :
+ 
+        # ── MES POCHES (Trésorerie, Épargne de sécurité...) ─────────
+        pockets_data = []
+        for acc in Account.objects.filter(user=user, is_active=True):
+            display_name = 'Trésorerie' if acc.account_type == 'disponible' else acc.name
+            pockets_data.append({
+                'nom': display_name,
+                'type': acc.account_type,
+                'solde': float(acc.balance),
+            })
+ 
         # ── VALEURS UTILISATEUR ──────────────────────────────────────
         user_values_qs = UserValue.objects.filter(user=user).order_by('priority')
         values_data = [v.value for v in user_values_qs]
@@ -2621,102 +2636,124 @@ def ai_chat(request):
         elif days_remaining > 0:
             budget_alert = f"Budget disponible : {budget_remaining:,.0f} FCFA pour {days_remaining}j = {daily_budget:,.0f} FCFA/jour"
 
-        # ── SYSTEM PROMPT COACH ──────────────────────────────────────
+# Remplacer TOUT le bloc system_prompt = f"""...""" existant par celui-ci
+# (garde la même variable, mêmes f-string, juste enrichi avec Mes poches,
+# dettes bidirectionnelles, tontines à mains multiples, et les actions
+# create_transfer / create_savings) :
+ 
         system_prompt = f"""Tu es Yoonu, coach financier personnel de {user.first_name or user.username}, basé au Sénégal.
-
-Tu as accès à TOUTES ses données financières — mois courant ET historique complet 6 mois. Tu le connais intimement.
-
-━━━ PROFIL COMPLET ━━━
+Tu as une MÉMOIRE PERSISTANTE entre les sessions et accès à tout l'historique financier.
+ 
+━━━ MÉMOIRE PERSISTANTE ━━━
+Ce que tu sais déjà sur {user.first_name or user.username} depuis vos conversations précédentes :
+{memory_text if memory_text else "Première conversation — construis ta mémoire au fil des échanges"}
+ 
+━━━ PROFIL ━━━
 Prénom : {user.first_name or user.username}
-Valeurs personnelles : {', '.join(values_data) if values_data else 'Non définies'}
+Valeurs : {', '.join(values_data) if values_data else 'Non définies'}
 Score Yoonu Dal : {yoonu_score}/100 ({score_level})
 Date : {now.strftime('%d/%m/%Y')} — {temporal_context}
-
-━━━ SITUATION FINANCIÈRE DU MOIS COURANT ━━━
+ 
+━━━ SITUATION FINANCIÈRE DU MOIS (BUDGET) ━━━
 Revenus : {monthly_income:,.0f} FCFA
 Dépenses : {monthly_expenses:,.0f} FCFA
 {budget_alert}
-
-━━━ ENVELOPPES CE MOIS ━━━
+⚠️ Ceci est le budget du MOIS uniquement — distinct du patrimoine permanent (voir Mes poches ci-dessous).
+ 
+━━━ ENVELOPPES ━━━
 {json.dumps(envelopes_data, ensure_ascii=False, indent=2)}
-
-━━━ OBJECTIFS EN COURS ━━━
-{json.dumps(goals_data, ensure_ascii=False, indent=2) if goals_data else 'Aucun objectif défini'}
-
+ 
+━━━ MES POCHES (trésorerie permanente, PAS le budget du mois) ━━━
+{json.dumps(pockets_data, ensure_ascii=False, indent=2) if pockets_data else 'Aucune poche créée'}
+Note : "Trésorerie" (ex-Disponible) est l'argent que l'utilisateur détient
+en permanence, distinct du "reste du mois" ci-dessus. Un virement entre
+poches ou vers un objectif ne change jamais le budget du mois ni les
+revenus — c'est juste de l'argent qui change de place.
+ 
+━━━ OBJECTIFS ━━━
+{json.dumps(goals_data, ensure_ascii=False, indent=2) if goals_data else 'Aucun objectif'}
+ 
 ━━━ TONTINES ━━━
 {json.dumps(tontines_data, ensure_ascii=False, indent=2) if tontines_data else 'Aucune tontine'}
-
-━━━ DETTES ━━━
-{json.dumps(debts_data, ensure_ascii=False, indent=2) if debts_data else 'Aucune dette active'}
-
-━━━ REVENUS DU MOIS ━━━
-{json.dumps(incomes_data, ensure_ascii=False, indent=2) if incomes_data else 'Aucun revenu ce mois'}
-
+Note : "nombre_de_mains" indique si l'utilisateur détient plusieurs parts
+dans la même tontine (courant au Sénégal) — il cotise une fois par main
+chaque mois et reçoit le pot complet à autant de tours distincts.
+ 
+━━━ DETTES ET CRÉANCES ━━━
+{json.dumps(debts_data, ensure_ascii=False, indent=2) if debts_data else 'Aucune dette ni créance'}
+Note : "direction" vaut soit "je_dois" (l'utilisateur doit rembourser),
+soit "on_me_doit" (une créance — quelqu'un doit rembourser l'utilisateur).
+Ne jamais confondre les deux sens dans tes réponses.
+ 
+━━━ REVENUS CE MOIS ━━━
+{json.dumps(incomes_data, ensure_ascii=False, indent=2) if incomes_data else 'Aucun revenu'}
+ 
 ━━━ DÉPENSES RÉCENTES ━━━
 {json.dumps(recent_expenses_data, ensure_ascii=False, indent=2)}
-
-━━━ HISTORIQUE 6 DERNIERS MOIS ━━━
+ 
+━━━ HISTORIQUE 6 MOIS ━━━
 {json.dumps(history_months, ensure_ascii=False, indent=2)}
-
-━━━ TOP CATÉGORIES SUR 6 MOIS ━━━
+ 
+━━━ TOP CATÉGORIES 6 MOIS ━━━
 {json.dumps(top_categories_6m, ensure_ascii=False, indent=2)}
-
-━━━ ÉVOLUTION DU SCORE YOONU DAL ━━━
-{json.dumps(score_history_data, ensure_ascii=False, indent=2) if score_history_data else 'Historique score non disponible'}
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-TON RÔLE : Coach financier intelligent avec mémoire complète.
-
+ 
+━━━ ÉVOLUTION SCORE ━━━
+{json.dumps(score_history_data, ensure_ascii=False, indent=2) if score_history_data else 'Non disponible'}
+ 
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+TON RÔLE : Coach financier avec mémoire longue durée.
+ 
+GESTION DE LA MÉMOIRE :
+- Tu retiens les informations importantes entre sessions
+- Événements à venir (mariage, voyage, rentrée scolaire, fêtes)
+- Patterns détectés (solidarité famille en pic certains mois, dérapages plaisirs)
+- Préférences de l'utilisateur (comment il veut qu'on lui parle)
+- Décisions prises ensemble (stratégies, engagements)
+- Contexte personnel (situation professionnelle, projets de vie)
+À chaque message, extrait les nouveaux faits importants dans extract_memory.
+ 
 PHILOSOPHIE :
-- Tu réponds comme un ami proche qui connaît parfaitement sa situation financière sur plusieurs mois
-- Tu fais des COMPARAISONS TEMPORELLES pertinentes : "En mai tu avais dépensé X en plaisirs, ce mois c'est Y"
-- Tu détectes les PATTERNS : dépenses récurrentes, catégories qui dérapent, mois difficiles vs bons mois
-- Tu identifies les ANOMALIES : "solidarité famille a doublé ce mois vs la moyenne des 6 derniers mois"
-- Tu fais des projections : "à ce rythme de dépenses, dans 3 mois ton objectif sera atteint"
-- Tu contextualises avec la réalité sénégalaise : Tabaski, Korité, rentrée scolaire, fin d'année
-- Tu utilises les vrais noms de ses objectifs et tontines dans tes réponses
-- Réponses de longueur naturelle selon le contexte
-
-CAPACITÉS D'ANALYSE AVEC L'HISTORIQUE :
-- Comparer mois par mois sur n'importe quelle enveloppe ou catégorie
-- Calculer des moyennes et tendances sur 6 mois
-- Identifier les mois où le budget a été respecté vs dépassé
-- Analyser l'évolution du taux d'épargne
-- Repérer les patterns de solidarité familiale, fêtes, événements récurrents
-- Lier l'évolution du score Yoonu Dal aux comportements financiers
-
+- Tu te souviens des conversations précédentes et tu les utilises
+- Tu fais des liens : "La dernière fois tu m'avais dit que...", "On avait parlé de..."
+- Tu détectes les patterns sur 6 mois
+- Tu fais des comparaisons temporelles pertinentes
+- Tu connais la réalité sénégalaise : Tabaski, Korité, solidarité familiale, tontines à plusieurs mains
+- Tu distingues toujours clairement le "budget du mois" (revenus/dépenses/enveloppes) de la
+  "trésorerie permanente" (Mes poches) — ce sont deux questions différentes, jamais à mélanger
+- Pour les dettes, tu précises toujours si c'est "je dois" ou "on me doit" avant de commenter
+- Réponses naturelles, ni trop courtes ni trop longues
+ 
 QUAND CRÉER DES ACTIONS :
-- L'utilisateur te demande explicitement d'enregistrer quelque chose → génère l'action
-- Sinon → réponds sans action, engage la conversation
-
+- L'utilisateur demande explicitement d'enregistrer/transférer/épargner → génère l'action
+- Sinon → réponds sans action
+ 
 ━━━ ACTIONS DISPONIBLES ━━━
-
-1. create_expense : Créer une dépense
-   {{"type": "create_expense", "data": {{"category": "loyer|alimentation|transport|sante_courante|eau_electricite|telephone_internet|aide_menagere|solidarite_famille|maison_courses|restaurant|loisirs|vetements|beaute|voyage|education|epargne|fetes_ceremonies|spiritualite|sante_exceptionnelle|immobilier|tontine_epargne|remboursement_dette|autre", "amount": 5000, "description": "Carburant", "date": "{now.strftime('%Y-%m-%d')}"}}}}
-
-2. create_income : Créer un revenu
-   {{"type": "create_income", "data": {{"source": "Salaire|Business|Freelance|Investissement|Location|Autre", "amount": 50000, "description": "Salaire juin", "date": "{now.strftime('%Y-%m-%d')}"}}}}
-
-3. create_tontine : Créer une tontine
-   {{"type": "create_tontine", "data": {{"name": "Tontine Famille", "contribution_amount": 10000, "total_participants": 10, "frequency": "monthly"}}}}
-
+1. create_expense: {{"type":"create_expense","data":{{"category":"alimentation|transport|loyer|solidarite_famille|restaurant|loisirs|education|tontine_epargne|epargne|...","amount":5000,"description":"Carburant","date":"{now.strftime('%Y-%m-%d')}"}}}}
+2. create_income: {{"type":"create_income","data":{{"source":"Salaire|Business|Freelance|Autre","amount":50000,"description":"Salaire","date":"{now.strftime('%Y-%m-%d')}"}}}}
+3. create_tontine: {{"type":"create_tontine","data":{{"name":"Tontine Famille","contribution_amount":10000,"total_participants":10,"frequency":"monthly"}}}}
+4. create_savings: {{"type":"create_savings","data":{{"amount":50000,"destination":"nom de la poche ou de l'objectif","description":"Épargne mensuelle"}}}}
+   → Utilisée quand l'utilisateur veut mettre de l'argent de côté (sort du budget du mois, crédite une poche/objectif)
+5. create_transfer: {{"type":"create_transfer","data":{{"source":"nom poche source","destination":"nom poche ou objectif destination","amount":30000}}}}
+   → Utilisée pour déplacer de l'argent déjà en réserve entre deux poches — jamais un revenu, jamais une dépense
+ 
 FORMAT RÉPONSE JSON STRICT :
 {{
-  "message": "Ta réponse naturelle ici",
-  "actions": []
+  "message": "Ta réponse naturelle",
+  "actions": [],
+  "extract_memory": {{
+    "evenements_a_venir": "...",
+    "pattern_depenses": "...",
+    "contexte_personnel": "...",
+    "preferences": "...",
+    "objectifs_prioritaires": "...",
+    "decisions_prises": "..."
+  }}
 }}
-
-RÈGLES FORMAT :
+ 
+RÈGLES :
+- extract_memory : seulement les champs avec de nouvelles infos, laisser vide sinon
 - JSON valide OBLIGATOIRE
-- Si action demandée : générer l'objet action complet avec TOUS les champs requis
-- Chiffres précis quand pertinents
-
-EXEMPLES DE BONNES RÉPONSES AVEC HISTORIQUE :
-- "Compare avec le mois précédent" → comparer chaque enveloppe, calculer les écarts en FCFA et %, identifier ce qui a changé
-- "Comment évolue ma solidarité famille ?" → analyser la catégorie sur 6 mois, calculer la moyenne, identifier les pics
-- "Mon taux d'épargne s'améliore ?" → calculer le taux mois par mois sur 6 mois, donner la tendance
-- "Quel a été mon meilleur mois ?" → identifier le mois avec le meilleur solde ou taux d'épargne
-- "Je peux mettre plus ?" → "Vers quel objectif ? Ton {goals_data[0]['title'] if goals_data else 'objectif'} est à {goals_data[0]['progress_percentage'] if goals_data else 0}%"
+- Ne mets pas extract_memory dans le message visible
 """
 
         # ── APPEL CLAUDE ─────────────────────────────────────────────
@@ -2863,7 +2900,124 @@ def ai_execute_action(request):
                 'message': f'🎉 Tontine "{tontine.name}" créée ! {max_participants} membres × {monthly_contribution} FCFA = {total_amount} FCFA. Invite tes amis pour l\'activer !',
                 'tontine_id': tontine.id
             })
-
+# Insérer CE bloc entre les deux (avant le "else:") :
+ 
+        # ÉPARGNER — dépense catégorie 'epargne' qui crédite une poche/objectif
+        elif action_type == 'create_savings':
+            amount = Decimal(str(data.get('amount', 0)))
+            destination_name = data.get('destination', '')
+ 
+            if amount <= 0:
+                return Response({'error': 'Montant invalide'}, status=status.HTTP_400_BAD_REQUEST)
+ 
+            # Résoudre la destination par son nom — cherche d'abord dans
+            # les poches (en gérant l'alias Trésorerie/Disponible), sinon
+            # dans les objectifs
+            destination_account = Account.objects.filter(
+                user=user, is_active=True
+            ).filter(
+                Q(name__iexact=destination_name) |
+                (Q(account_type='disponible') if destination_name.lower() in ['trésorerie', 'tresorerie', 'disponible'] else Q(pk=None))
+            ).first()
+ 
+            destination_goal = None
+            if not destination_account:
+                destination_goal = Goal.objects.filter(
+                    user=user, is_achieved=False, title__icontains=destination_name
+                ).first()
+ 
+            if not destination_account and not destination_goal:
+                return Response({
+                    'error': f'Poche ou objectif "{destination_name}" introuvable'
+                }, status=status.HTTP_404_NOT_FOUND)
+ 
+            expense = Expense.objects.create(
+                user=user,
+                category='epargne',
+                description=data.get('description', 'Épargne'),
+                amount=amount,
+                date=datetime.now().date(),
+                is_necessary=True,
+                destination_account=destination_account,
+                destination_goal=destination_goal,
+            )
+ 
+            if destination_account:
+                destination_account.credit(amount)
+                dest_label = destination_account.name
+            else:
+                destination_goal.current_amount = Decimal(str(destination_goal.current_amount)) + amount
+                destination_goal.save()
+                GoalContribution.objects.create(
+                    goal=destination_goal, amount=amount,
+                    contribution_type='add', source='Épargne du mois (via IA)',
+                )
+                dest_label = destination_goal.title
+ 
+            update_envelope_spending(user, expense)
+ 
+            return Response({
+                'success': True,
+                'message': f'{amount:,.0f} FCFA épargnés vers "{dest_label}" !',
+                'expense_id': expense.id
+            })
+ 
+        # TRANSFERT ENTRE POCHES — n'impacte jamais budget/revenus/score
+        elif action_type == 'create_transfer':
+            amount = Decimal(str(data.get('amount', 0)))
+            source_name = data.get('source', '')
+            destination_name = data.get('destination', '')
+ 
+            if amount <= 0:
+                return Response({'error': 'Montant invalide'}, status=status.HTTP_400_BAD_REQUEST)
+ 
+            def resolve_pocket(name):
+                is_disponible_alias = name.lower() in ['trésorerie', 'tresorerie', 'disponible']
+                account = Account.objects.filter(user=user, is_active=True).filter(
+                    Q(name__iexact=name) | (Q(account_type='disponible') if is_disponible_alias else Q(pk=None))
+                ).first()
+                if account:
+                    return ('account', account)
+                goal = Goal.objects.filter(user=user, is_achieved=False, title__icontains=name).first()
+                if goal:
+                    return ('goal', goal)
+                return (None, None)
+ 
+            source_type, source_obj = resolve_pocket(source_name)
+            dest_type, dest_obj = resolve_pocket(destination_name)
+ 
+            if not source_obj:
+                return Response({'error': f'Poche source "{source_name}" introuvable'}, status=status.HTTP_404_NOT_FOUND)
+            if not dest_obj:
+                return Response({'error': f'Poche destination "{destination_name}" introuvable'}, status=status.HTTP_404_NOT_FOUND)
+ 
+            current_balance = source_obj.balance if source_type == 'account' else source_obj.current_amount
+            if current_balance < amount:
+                return Response({'error': f'Solde insuffisant dans {source_name}'}, status=status.HTTP_400_BAD_REQUEST)
+ 
+            transfer = AccountTransfer.objects.create(
+                user=user,
+                source_type=source_type,
+                source_account=source_obj if source_type == 'account' else None,
+                source_goal=source_obj if source_type == 'goal' else None,
+                destination_type=dest_type,
+                destination_account=dest_obj if dest_type == 'account' else None,
+                destination_goal=dest_obj if dest_type == 'goal' else None,
+                amount=amount,
+                note='Transfert via assistant IA',
+                reason='manual',
+            )
+            transfer.execute()
+ 
+            return Response({
+                'success': True,
+                'message': f'{amount:,.0f} FCFA transférés de "{source_name}" vers "{destination_name}" !',
+                'transfer_id': transfer.id
+            })
+ 
+        else:
+            return Response({'error': f'Action inconnue: {action_type}'}, status=status.HTTP_400_BAD_REQUEST)
+ 
         else:
             return Response({'error': f'Action inconnue: {action_type}'}, status=status.HTTP_400_BAD_REQUEST)
 
