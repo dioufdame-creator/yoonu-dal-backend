@@ -4946,18 +4946,28 @@ def ai_chat_v2(request):
         my_tontines = Tontine.objects.filter(
             Q(creator=user) | Q(participants__user=user)
         ).distinct()
-        tontines_data = [{
-            'id': t.id, 'name': t.name,
-            'monthly_contribution': float(t.monthly_contribution),
-            'status': t.status,
-            'my_position': t.participants.filter(user=user).first().position if t.participants.filter(user=user).exists() else None
-        } for t in my_tontines]
+# Remplace-le par :
+ 
+        tontines_data = []
+        for t in my_tontines:
+            my_hands = t.participants.filter(user=user)
+            tontines_data.append({
+                'id': t.id, 'name': t.name,
+                'monthly_contribution': float(t.monthly_contribution),
+                'status': t.status,
+                'nombre_de_mains': my_hands.count(),
+                'positions': [h.position for h in my_hands],
+            })
 
-        # ── DETTES ───────────────────────────────────────────────────
+# Remplace-le par :
+ 
+        # ── DETTES ET CRÉANCES (bidirectionnel) ─────────────────────
         debts_data = [{
             'name': d.name,
+            'direction': 'je_dois' if d.direction == 'owed_by_me' else 'on_me_doit',
+            'counterparty': d.counterparty,
             'remaining_amount': float(d.remaining_amount),
-            'monthly_payment': float(d.monthly_payment),
+            'monthly_payment': float(d.monthly_payment) if d.monthly_payment else None,
         } for d in Debt.objects.filter(user=user, is_active=True)]
 
         # ── VALEURS ──────────────────────────────────────────────────
