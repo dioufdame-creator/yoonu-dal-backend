@@ -32,6 +32,7 @@ from .views import (
     allocate_disponible_to_budget,
     adjust_pocket_balance,
     my_tontine_contributions,
+    mark_tontine_payout,
 )
 
 urlpatterns = [
@@ -174,4 +175,5 @@ urlpatterns = [
     path('pockets/allocate-to-budget/', allocate_disponible_to_budget, name='allocate_disponible_to_budget'),
     path('pockets/adjust/', adjust_pocket_balance, name='adjust_pocket_balance'),
     path('tontines/<int:tontine_id>/my-contributions/', my_tontine_contributions, name='my_tontine_contributions'),
+    path('tontines/<int:tontine_id>/mark-payout/', mark_tontine_payout, name='mark_tontine_payout'),
 ]
