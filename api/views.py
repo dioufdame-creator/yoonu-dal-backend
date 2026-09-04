@@ -1612,15 +1612,26 @@ def manage_tontines(request):
             }, status=status.HTTP_400_BAD_REQUEST)
  
 
+# ==========================================
+# REMPLACER dans api/views.py — fonction tontine_detail COMPLÈTE
+# ==========================================
+#
+# Bug trouvé : le bloc GET construisait participants_data mais ne
+# faisait jamais de "return Response(...)" — la fonction retournait
+# None, ce qui provoquait un crash DRF et empêchait la tontine de
+# s'afficher (page blanche puis "Tontine introuvable").
+#
+# Repère "@api_view(['GET', 'PATCH', 'DELETE'])" suivi de
+# "def tontine_detail(request, tontine_id):" et remplace TOUTE la
+# fonction (jusqu'au prochain @api_view qui suit) par ceci :
+
 @api_view(['GET', 'PATCH', 'DELETE'])
 @permission_classes([IsAuthenticated])
 def tontine_detail(request, tontine_id):
     """Gestion détaillée d'une tontine"""
     try:
-        # Récupérer la tontine (sans filtre créateur)
         tontine = get_object_or_404(Tontine, id=tontine_id)
 
-        # Vérifier l'accès : créateur OU participant
         is_creator = tontine.creator == request.user
         is_participant = TontineParticipant.objects.filter(
             tontine=tontine,
@@ -1629,7 +1640,7 @@ def tontine_detail(request, tontine_id):
 
         if not (is_creator or is_participant):
             return Response(
-                {'error': 'Vous n\'avez pas accès à cette tontine'},
+                {"error": "Vous n'avez pas accès à cette tontine"},
                 status=status.HTTP_403_FORBIDDEN
             )
 
@@ -1637,8 +1648,6 @@ def tontine_detail(request, tontine_id):
             participants = TontineParticipant.objects.filter(tontine=tontine).order_by('position')
             participants_data = []
 
-# Dans la boucle "for participant in participants:", remplacer :
- 
             for participant in participants:
                 participants_data.append({
                     'id': participant.id,
@@ -1649,7 +1658,7 @@ def tontine_detail(request, tontine_id):
                         'last_name': participant.user.last_name
                     },
                     'position': participant.position,
-                    'hand_number': participant.hand_number,  # ✅ le champ manquant
+                    'hand_number': participant.hand_number,
                     'is_admin': participant.is_admin,
                     'is_active': participant.is_active,
                     'received_payout': participant.received_payout,
@@ -1658,6 +1667,37 @@ def tontine_detail(request, tontine_id):
                     'payment_day': tontine.payment_day,
                     'joined_at': participant.joined_at.isoformat()
                 })
+
+            # ✅ Le return manquant — c'est lui qui causait le bug
+            return Response({
+                'id': tontine.id,
+                'name': tontine.name,
+                'description': tontine.description,
+                'creator': {
+                    'id': tontine.creator.id,
+                    'username': tontine.creator.username,
+                    'first_name': tontine.creator.first_name,
+                    'last_name': tontine.creator.last_name
+                },
+                'total_amount': float(tontine.total_amount),
+                'monthly_contribution': float(tontine.monthly_contribution),
+                'max_participants': tontine.max_participants,
+                'current_participants': tontine.participants.count(),
+                'available_spots': tontine.available_spots,
+                'duration_months': tontine.duration_months,
+                'frequency': tontine.frequency,
+                'start_date': tontine.start_date.isoformat() if tontine.start_date else None,
+                'end_date': tontine.end_date.isoformat() if tontine.end_date else None,
+                'status': tontine.status,
+                'invitation_code': tontine.invitation_code,
+                'payout_mode': tontine.payout_mode,
+                'current_payout_month': tontine.current_payout_month,
+                'payment_day': tontine.payment_day,
+                'is_admin': is_creator or TontineParticipant.objects.filter(
+                    tontine=tontine, user=request.user, is_admin=True
+                ).exists(),
+                'participants': participants_data,
+            })
 
         elif request.method == 'PATCH':
             data = request.data
@@ -1673,7 +1713,6 @@ def tontine_detail(request, tontine_id):
             if 'description' in data:
                 tontine.description = data['description']
 
-            # Ces champs ne sont modifiables que si personne d'autre ne s'est encore inscrit
             if tontine.participants.count() <= 1:
                 if 'monthly_contribution' in data:
                     tontine.monthly_contribution = Decimal(data['monthly_contribution'])
@@ -1727,7 +1766,6 @@ def tontine_detail(request, tontine_id):
             {'error': f'Erreur: {str(e)}'},
             status=status.HTTP_500_INTERNAL_SERVER_ERROR
         )
-
 
 # ==========================================
 # REMPLACER dans api/views.py — fonction join_tontine
