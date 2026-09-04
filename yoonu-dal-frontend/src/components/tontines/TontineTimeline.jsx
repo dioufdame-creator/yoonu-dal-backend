@@ -145,12 +145,9 @@ const TontineTimeline = ({ tontineId, isAdmin, onUpdate }) => {
                 </div>
               </div>
 
-              {/* Montant + statut — colonne droite fixe */}
+              {/* Statut — colonne droite fixe (montant retiré, déjà visible en en-tête) */}
               <div className="text-right flex-shrink-0">
-                <div className="font-bold text-green-600 text-base">
-                  {formatAmount(item.amount)}
-                </div>
-                <div className={`text-xs font-semibold mt-0.5 ${
+                <div className={`text-xs font-semibold ${
                   item.status === 'paid' ? 'text-green-600' :
                   item.status === 'current' ? 'text-orange-600' :
                   item.status === 'late' ? 'text-red-600' :
