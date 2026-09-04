@@ -10,6 +10,7 @@ const TontineAdminPanel = ({ tontine, participants, onUpdate, toast }) => {
   const [loadingContributions, setLoadingContributions] = useState(false);
   const [rejectingId, setRejectingId] = useState(null);
   const [rejectReason, setRejectReason] = useState('');
+  const [markingPayoutId, setMarkingPayoutId] = useState(null);
 
   const isManual = tontine?.payout_mode === 'manual' || !tontine?.payout_mode;
   const isRandom = tontine?.payout_mode === 'random';
@@ -28,6 +29,27 @@ const TontineAdminPanel = ({ tontine, participants, onUpdate, toast }) => {
       loadPendingContributions();
     }
   }, [activeTab]);
+
+  const handleMarkPayout = async (participant) => {
+    const label = participant.hand_number > 1
+      ? `${participant.user?.first_name || participant.user?.username} (main ${participant.hand_number})`
+      : (participant.user?.first_name || participant.user?.username);
+
+    if (!window.confirm(`Confirmer le versement à ${label} ?`)) return;
+
+    setMarkingPayoutId(participant.id);
+    try {
+      await API.post(`/tontines/${tontine.id}/mark-payout/`, {
+        participant_id: participant.id,
+      });
+      toast?.showSuccess?.(`Versement marqué pour ${label} !`);
+      onUpdate?.();
+    } catch (error) {
+      toast?.showError?.(error.response?.data?.error || 'Erreur lors du marquage');
+    } finally {
+      setMarkingPayoutId(null);
+    }
+  };
 
   const loadPendingContributions = async () => {
     setLoadingContributions(true);
@@ -200,6 +222,16 @@ const TontineAdminPanel = ({ tontine, participants, onUpdate, toast }) => {
               {pendingContributions.length}
             </span>
           )}
+        </button>
+        <button
+          onClick={() => setActiveTab('payouts')}
+          className={`flex-1 py-2.5 px-3 rounded-xl text-xs font-bold transition-all ${
+            activeTab === 'payouts'
+              ? 'bg-white shadow text-gray-900'
+              : 'text-gray-600 hover:text-gray-900'
+          }`}
+        >
+          💰 Versements
         </button>
       </div>
 
@@ -417,6 +449,70 @@ const TontineAdminPanel = ({ tontine, participants, onUpdate, toast }) => {
               ))}
             </div>
           )}
+        </div>
+      )}
+
+      {/* ── Onglet Versements ── */}
+      {activeTab === 'payouts' && (
+        <div className="bg-gray-50 rounded-2xl p-4">
+          <p className="text-xs text-gray-500 mb-3">
+            💡 Marquer un versement ne dépend pas des cotisations du mois —
+            vous décidez librement du moment du versement.
+          </p>
+
+          <div className="space-y-2 max-h-80 overflow-y-auto">
+            {manualOrder.map((participant, index) => {
+              const label = participant.user?.first_name
+                ? `${participant.user.first_name} ${participant.user.last_name || ''}`
+                : participant.user?.username || 'Participant';
+              const isMarking = markingPayoutId === participant.id;
+
+              return (
+                <div
+                  key={participant.id}
+                  className={`p-3 rounded-2xl border ${
+                    participant.received_payout
+                      ? 'bg-green-50 border-green-200'
+                      : 'bg-white border-gray-200'
+                  }`}
+                >
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-white flex-shrink-0 ${
+                        participant.received_payout ? 'bg-green-500' : 'bg-gray-400'
+                      }`}>
+                        {index + 1}
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-sm font-semibold text-gray-900 truncate">
+                          {label}
+                          {participant.hand_number > 1 && (
+                            <span className="ml-1 text-[10px] text-indigo-500 font-bold">· Main {participant.hand_number}</span>
+                          )}
+                        </p>
+                        {participant.received_payout && participant.payout_date && (
+                          <p className="text-[11px] text-green-600">
+                            ✅ Reçu le {new Date(participant.payout_date).toLocaleDateString('fr-FR')}
+                            {participant.payout_amount && ` · ${new Intl.NumberFormat('fr-FR').format(participant.payout_amount)} FCFA`}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+
+                    {!participant.received_payout && (
+                      <button
+                        onClick={() => handleMarkPayout(participant)}
+                        disabled={isMarking}
+                        className="text-xs font-bold py-2 px-3 rounded-xl bg-green-600 text-white hover:bg-green-700 transition-all disabled:opacity-50 flex-shrink-0"
+                      >
+                        {isMarking ? '...' : '💰 Marquer reçu'}
+                      </button>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
         </div>
       )}
     </div>
