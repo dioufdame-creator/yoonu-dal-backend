@@ -935,6 +935,7 @@ class TontineParticipant(models.Model):
     # Purement informatif pour l'affichage — n'affecte pas la logique de
     # cotisation/réception, qui reste portée par chaque ligne indépendamment.
     hand_number = models.IntegerField(default=1, help_text="Numéro de main (1 = première, 2 = deuxième...)")
+    display_name = models.CharField(max_length=100, blank=True, null=True,help_text="Nom à afficher pour cette main (ex: 'Maman') — laisser vide pour afficher le nom du compte")
 
     joined_at = models.DateTimeField(auto_now_add=True)
     is_admin = models.BooleanField(default=False)
