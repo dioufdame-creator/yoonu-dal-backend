@@ -33,6 +33,7 @@ from .views import (
     adjust_pocket_balance,
     my_tontine_contributions,
     mark_tontine_payout,
+    rename_tontine_hand,
 )
 
 urlpatterns = [
@@ -176,4 +177,5 @@ urlpatterns = [
     path('pockets/adjust/', adjust_pocket_balance, name='adjust_pocket_balance'),
     path('tontines/<int:tontine_id>/my-contributions/', my_tontine_contributions, name='my_tontine_contributions'),
     path('tontines/<int:tontine_id>/mark-payout/', mark_tontine_payout, name='mark_tontine_payout'),
+    path('tontines/participants/<int:participant_id>/rename/', rename_tontine_hand, name='rename_tontine_hand'),
 ]
