@@ -17,6 +17,9 @@ const TontineDetail = ({ tontineId, onNavigate, toast, user }) => {
   const [loadingContributions, setLoadingContributions] = useState(false);
   const [showMyPayments, setShowMyPayments] = useState(false);
   const [selectedHand, setSelectedHand] = useState(null); // main active pour paiements/contribution
+  const [showRenameSheet, setShowRenameSheet] = useState(false);
+  const [renameTarget, setRenameTarget] = useState(null);
+  const [renameValue, setRenameValue] = useState('');
 
   useEffect(() => {
     const loadUser = async () => {
@@ -152,6 +155,25 @@ const TontineDetail = ({ tontineId, onNavigate, toast, user }) => {
       loadMyContributions();
     } catch (error) {
       toast?.showError?.(error.response?.data?.error || 'Erreur contribution');
+    }
+  };
+
+  const openRename = (hand) => {
+    setRenameTarget(hand);
+    setRenameValue(hand.display_name || '');
+    setShowRenameSheet(true);
+  };
+
+  const handleRename = async () => {
+    try {
+      await API.patch(`/tontines/participants/${renameTarget.id}/rename/`, {
+        display_name: renameValue.trim(),
+      });
+      toast?.showSuccess?.('Nom mis à jour !');
+      setShowRenameSheet(false);
+      loadDetail();
+    } catch (error) {
+      toast?.showError?.(error.response?.data?.error || 'Erreur lors du renommage');
     }
   };
 
@@ -322,17 +344,29 @@ const TontineDetail = ({ tontineId, onNavigate, toast, user }) => {
             </p>
             <div className="flex gap-2 overflow-x-auto">
               {myHands.map(hand => (
-                <button
-                  key={hand.id}
-                  onClick={() => setSelectedHand(hand)}
-                  className={`px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all ${
-                    currentUserParticipant?.id === hand.id
-                      ? 'bg-indigo-600 text-white'
-                      : 'bg-white text-indigo-600 border border-indigo-200'
-                  }`}
-                >
-                  Main {hand.hand_number}
-                </button>
+                <div key={hand.id} className="flex items-center flex-shrink-0">
+                  <button
+                    onClick={() => setSelectedHand(hand)}
+                    className={`px-3 py-1.5 rounded-l-xl text-xs font-bold whitespace-nowrap transition-all ${
+                      currentUserParticipant?.id === hand.id
+                        ? 'bg-indigo-600 text-white'
+                        : 'bg-white text-indigo-600 border border-indigo-200'
+                    }`}
+                  >
+                    {hand.display_name || `Main ${hand.hand_number}`}
+                  </button>
+                  <button
+                    onClick={() => openRename(hand)}
+                    className={`px-2 py-1.5 rounded-r-xl text-xs transition-all ${
+                      currentUserParticipant?.id === hand.id
+                        ? 'bg-indigo-700 text-white'
+                        : 'bg-white text-indigo-400 border border-l-0 border-indigo-200'
+                    }`}
+                    title="Renommer cette main"
+                  >
+                    ✏️
+                  </button>
+                </div>
               ))}
             </div>
           </div>
@@ -520,7 +554,10 @@ const TontineDetail = ({ tontineId, onNavigate, toast, user }) => {
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-semibold text-gray-900 truncate">
                       {participant.user?.first_name} {participant.user?.last_name}
-                      {participant.hand_number > 1 && (
+                      {participant.display_name && (
+                        <span className="ml-1 text-[10px] text-indigo-500 font-bold">· {participant.display_name}</span>
+                      )}
+                      {!participant.display_name && participant.hand_number > 1 && (
                         <span className="ml-1 text-[10px] text-indigo-500 font-bold">· Main {participant.hand_number}</span>
                       )}
                       {participant.user?.id === currentUser?.id && (
@@ -558,6 +595,49 @@ const TontineDetail = ({ tontineId, onNavigate, toast, user }) => {
             </button>
           </div>
         </div>
+      )}
+
+      {/* Bottom sheet — Renommer une main */}
+      {showRenameSheet && renameTarget && (
+        <>
+          <div className="fixed inset-0 bg-black/50 z-40" onClick={() => setShowRenameSheet(false)} />
+          <div className="fixed bottom-0 left-0 right-0 z-50 bg-white rounded-t-3xl shadow-2xl animate-slide-up">
+            <div className="pt-3 pb-2 px-5 border-b border-gray-100">
+              <div className="w-10 h-1 bg-gray-200 rounded-full mx-auto mb-3" />
+              <div className="flex items-center justify-between">
+                <h2 className="text-base font-bold text-gray-900">✏️ Nommer cette main</h2>
+                <button onClick={() => setShowRenameSheet(false)} className="text-gray-400 text-xl">✕</button>
+              </div>
+            </div>
+
+            <div className="p-5 space-y-4">
+              <p className="text-xs text-gray-500">
+                Utile si vous gérez cette main pour un proche sans compte
+                Yoonu Dal — son nom apparaîtra à la place de "Main {renameTarget.hand_number}".
+              </p>
+              <div>
+                <label className="text-xs text-gray-400 font-semibold uppercase tracking-wide">Nom à afficher</label>
+                <input
+                  type="text"
+                  value={renameValue}
+                  onChange={(e) => setRenameValue(e.target.value)}
+                  placeholder="Ex: Maman"
+                  autoFocus
+                  className="w-full mt-1 px-4 py-3 bg-gray-50 rounded-2xl text-sm outline-none focus:ring-2 focus:ring-indigo-500"
+                />
+              </div>
+            </div>
+
+            <div className="p-4 pb-6">
+              <button
+                onClick={handleRename}
+                className="w-full py-4 bg-gradient-to-r from-indigo-600 to-purple-700 text-white rounded-2xl font-bold shadow-lg"
+              >
+                Enregistrer
+              </button>
+            </div>
+          </div>
+        </>
       )}
 
       {/* Bottom sheet — Contribution */}
