@@ -1659,6 +1659,7 @@ def tontine_detail(request, tontine_id):
                     },
                     'position': participant.position,
                     'hand_number': participant.hand_number,
+                    'display_name': participant.display_name,
                     'is_admin': participant.is_admin,
                     'is_active': participant.is_active,
                     'received_payout': participant.received_payout,
@@ -6580,4 +6581,27 @@ def mark_tontine_payout(request, tontine_id):
         'participant_id': participant.id,
         'payout_date': participant.payout_date.isoformat(),
         'payout_amount': float(participant.payout_amount),
+    })
+
+api_view(['PATCH'])
+@permission_classes([IsAuthenticated])
+def rename_tontine_hand(request, participant_id):
+    """
+    Renomme l'affichage d'une main précise — utile quand un participant
+    gère une main pour un proche sans compte (ex: sa maman).
+    Seul le propriétaire du compte qui détient cette main peut la renommer.
+    """
+    user = request.user
+    participant = TontineParticipant.objects.filter(id=participant_id, user=user).first()
+
+    if not participant:
+        return Response({'error': 'Main introuvable ou vous n\'en êtes pas le titulaire'}, status=status.HTTP_404_NOT_FOUND)
+
+    display_name = request.data.get('display_name', '').strip()
+    participant.display_name = display_name if display_name else None
+    participant.save(update_fields=['display_name'])
+
+    return Response({
+        'message': 'Nom mis à jour' if display_name else 'Nom personnalisé retiré',
+        'display_name': participant.display_name,
     })
