@@ -6605,3 +6605,65 @@ def rename_tontine_hand(request, participant_id):
         'message': 'Nom mis à jour' if display_name else 'Nom personnalisé retiré',
         'display_name': participant.display_name,
     })
+
+# ==========================================
+# AJOUTER dans api/views.py — nouvelle vue
+# ==========================================
+
+@api_view(['DELETE'])
+@permission_classes([IsAuthenticated])
+def remove_tontine_participant(request, participant_id):
+    """
+    Retire une main (participation) d'une tontine — utile si quelqu'un
+    a rejoint par erreur, ou plus de fois que prévu.
+
+    Garde-fous :
+    - Seul un admin peut retirer quelqu'un
+    - On ne peut pas se retirer soi-même via cette route (utiliser une
+      route "quitter" dédiée si besoin un jour)
+    - Impossible de retirer une main qui a déjà des contributions
+      confirmées — pour ne jamais perdre un historique financier réel.
+      Une main avec seulement des contributions en attente peut être
+      retirée (celles-ci sont alors supprimées avec elle).
+    - Le créateur de la tontine ne peut jamais être retiré
+    """
+    user = request.user
+    participant = get_object_or_404(TontineParticipant, id=participant_id)
+    tontine = participant.tontine
+
+    is_admin = (
+        tontine.creator_id == user.id or
+        tontine.participants.filter(user=user, is_admin=True).exists()
+    )
+    if not is_admin:
+        return Response({'error': 'Seul un administrateur peut retirer un participant'}, status=status.HTTP_403_FORBIDDEN)
+
+    if participant.user_id == tontine.creator_id:
+        return Response({'error': 'Le créateur de la tontine ne peut pas être retiré'}, status=status.HTTP_400_BAD_REQUEST)
+
+    has_confirmed = TontineContribution.objects.filter(
+        participant=participant, status='confirmed'
+    ).exists()
+    if has_confirmed:
+        return Response({
+            'error': 'Cette main a déjà des contributions confirmées — impossible de la retirer sans perdre cet historique. Contactez le support si nécessaire.'
+        }, status=status.HTTP_400_BAD_REQUEST)
+
+    label = participant.user.first_name or participant.user.username
+    hand_label = f" (main {participant.hand_number})" if participant.hand_number > 1 else ""
+
+    try:
+        TontineActivity.objects.create(
+            tontine=tontine,
+            activity_type='order_change',
+            message=f"{label}{hand_label} a été retiré(e) de la tontine",
+            created_by=user,
+        )
+    except Exception:
+        pass
+
+    # Les contributions en attente (jamais confirmées) partent avec la main
+    TontineContribution.objects.filter(participant=participant).delete()
+    participant.delete()
+
+    return Response({'message': f'{label}{hand_label} a été retiré(e) de la tontine'})
