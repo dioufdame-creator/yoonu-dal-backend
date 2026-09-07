@@ -31,9 +31,9 @@ const TontineAdminPanel = ({ tontine, participants, onUpdate, toast }) => {
   }, [activeTab]);
 
   const handleRemoveParticipant = async (participant) => {
-    const label = participant.user?.first_name
+    const label = participant.display_name || (participant.user?.first_name
       ? `${participant.user.first_name} ${participant.user.last_name || ''}`.trim()
-      : participant.user?.username || 'ce participant';
+      : participant.user?.username || 'ce participant');
     const handLabel = participant.hand_number > 1 ? ` (main ${participant.hand_number})` : '';
 
     if (!window.confirm(`Retirer ${label}${handLabel} de la tontine ?\n\nCette action est irréversible.`)) return;
@@ -322,9 +322,9 @@ const TontineAdminPanel = ({ tontine, participants, onUpdate, toast }) => {
                         </div>
                         <div>
                           <div className="font-semibold text-gray-900">
-                            {participant.user?.first_name
+                            {participant.display_name || (participant.user?.first_name
                               ? `${participant.user.first_name} ${participant.user.last_name || ''}`
-                              : participant.user?.username || 'Participant'}
+                              : participant.user?.username || 'Participant')}
                           </div>
                           <div className="text-xs text-gray-500">Mois {index + 1}</div>
                         </div>
@@ -485,9 +485,9 @@ const TontineAdminPanel = ({ tontine, participants, onUpdate, toast }) => {
 
           <div className="space-y-2 max-h-80 overflow-y-auto">
             {manualOrder.map((participant, index) => {
-              const label = participant.user?.first_name
+              const label = participant.display_name || (participant.user?.first_name
                 ? `${participant.user.first_name} ${participant.user.last_name || ''}`
-                : participant.user?.username || 'Participant';
+                : participant.user?.username || 'Participant');
               const isMarking = markingPayoutId === participant.id;
 
               return (
