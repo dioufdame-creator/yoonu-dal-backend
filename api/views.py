@@ -6583,7 +6583,7 @@ def mark_tontine_payout(request, tontine_id):
         'payout_amount': float(participant.payout_amount),
     })
 
-api_view(['PATCH'])
+@api_view(['PATCH'])
 @permission_classes([IsAuthenticated])
 def rename_tontine_hand(request, participant_id):
     """
