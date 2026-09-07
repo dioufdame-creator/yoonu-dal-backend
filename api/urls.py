@@ -34,6 +34,7 @@ from .views import (
     my_tontine_contributions,
     mark_tontine_payout,
     rename_tontine_hand,
+    remove_tontine_participant,
 )
 
 urlpatterns = [
@@ -178,4 +179,5 @@ urlpatterns = [
     path('tontines/<int:tontine_id>/my-contributions/', my_tontine_contributions, name='my_tontine_contributions'),
     path('tontines/<int:tontine_id>/mark-payout/', mark_tontine_payout, name='mark_tontine_payout'),
     path('tontines/participants/<int:participant_id>/rename/', rename_tontine_hand, name='rename_tontine_hand'),
+    path('tontines/participants/<int:participant_id>/remove/', remove_tontine_participant, name='remove_tontine_participant'),
 ]
