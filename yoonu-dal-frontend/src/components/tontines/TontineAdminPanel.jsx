@@ -30,6 +30,23 @@ const TontineAdminPanel = ({ tontine, participants, onUpdate, toast }) => {
     }
   }, [activeTab]);
 
+  const handleRemoveParticipant = async (participant) => {
+    const label = participant.user?.first_name
+      ? `${participant.user.first_name} ${participant.user.last_name || ''}`.trim()
+      : participant.user?.username || 'ce participant';
+    const handLabel = participant.hand_number > 1 ? ` (main ${participant.hand_number})` : '';
+
+    if (!window.confirm(`Retirer ${label}${handLabel} de la tontine ?\n\nCette action est irréversible.`)) return;
+
+    try {
+      await API.delete(`/tontines/participants/${participant.id}/remove/`);
+      toast?.showSuccess?.(`${label}${handLabel} a été retiré(e)`);
+      onUpdate?.();
+    } catch (error) {
+      toast?.showError?.(error.response?.data?.error || 'Erreur lors du retrait');
+    }
+  };
+
   const handleMarkPayout = async (participant) => {
     const label = participant.hand_number > 1
       ? `${participant.user?.first_name || participant.user?.username} (main ${participant.hand_number})`
@@ -312,7 +329,13 @@ const TontineAdminPanel = ({ tontine, participants, onUpdate, toast }) => {
                           <div className="text-xs text-gray-500">Mois {index + 1}</div>
                         </div>
                       </div>
-                      <div className="text-2xl cursor-grab active:cursor-grabbing">⋮⋮</div>
+                      <button
+                        onClick={() => handleRemoveParticipant(participant)}
+                        className="text-red-400 hover:text-red-600 text-xs font-bold px-2 py-1.5 rounded-lg hover:bg-red-50 transition-all flex-shrink-0"
+                        title="Retirer ce participant"
+                      >
+                        🗑️
+                      </button>
                     </div>
                   </div>
                 ))}
