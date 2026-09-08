@@ -4245,7 +4245,7 @@ def tontine_timeline(request, tontine_id):
                 'participant': {
                     'id': p.id,
                     'user_id': p.user.id,
-                    'name': p.user.get_full_name() or p.user.username,
+                    'name': p.display_name or p.user.get_full_name() or p.user.username,
                     'is_current_user': p.user == request.user,
                     'is_admin': p.is_admin
                 },
