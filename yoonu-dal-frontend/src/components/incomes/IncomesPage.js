@@ -445,15 +445,22 @@ const handleSubmit = async (e) => {
         )}
       </div>
 
-      {/* Modal Add/Edit */}
+      {/* Bottom sheet — Add/Edit */}
       {showModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 animate-fadeIn">
-          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-8 animate-scaleIn">
-            <h2 className="text-2xl font-bold text-gray-900 mb-6">
-              {editingIncome ? '✏️ Modifier le revenu' : '➕ Nouveau revenu'}
-            </h2>
+        <>
+          <div className="fixed inset-0 bg-black/50 z-40" onClick={() => { setShowModal(false); setEditingIncome(null); }} />
+          <div className="fixed bottom-0 left-0 right-0 z-50 bg-white rounded-t-3xl shadow-2xl max-h-[88vh] overflow-y-auto animate-slide-up">
+            <div className="sticky top-0 bg-white pt-3 pb-2 px-5 border-b border-gray-100">
+              <div className="w-10 h-1 bg-gray-200 rounded-full mx-auto mb-3" />
+              <div className="flex items-center justify-between">
+                <h2 className="text-base font-bold text-gray-900">
+                  {editingIncome ? '✏️ Modifier le revenu' : '➕ Nouveau revenu'}
+                </h2>
+                <button onClick={() => { setShowModal(false); setEditingIncome(null); }} className="text-gray-400 text-xl">✕</button>
+              </div>
+            </div>
 
-            <form onSubmit={handleSubmit} className="space-y-4">
+            <form onSubmit={handleSubmit} className="space-y-4 p-5">
               {/* Montant */}
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-2">
@@ -518,48 +525,48 @@ const handleSubmit = async (e) => {
               </div>
 
               {/* Buttons */}
-              <div className="flex gap-3 pt-4">
+              <div className="flex gap-3 pt-4 pb-2">
                 <button
                   type="button"
                   onClick={() => { setShowModal(false); setEditingIncome(null); }}
-                  className="flex-1 px-6 py-3 border-2 border-gray-300 text-gray-700 rounded-xl font-semibold hover:bg-gray-50 transition-colors"
+                  className="flex-1 px-6 py-3 border border-gray-200 text-gray-700 rounded-2xl font-semibold hover:bg-gray-50 transition-colors"
                 >
                   Annuler
                 </button>
                 <button
                   type="submit"
-                  className="flex-1 px-6 py-3 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-xl font-semibold hover:shadow-lg transition-all"
+                  className="flex-1 px-6 py-3 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-2xl font-semibold hover:shadow-lg transition-all"
                 >
                   {editingIncome ? 'Modifier' : 'Ajouter'}
                 </button>
               </div>
             </form>
           </div>
-        </div>
+        </>
       )}
 
-      {/* Modal Delete Confirmation */}
+      {/* Confirmation suppression */}
       {confirmDeleteId && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 animate-fadeIn">
-          <div className="bg-white rounded-2xl shadow-2xl max-w-sm w-full p-8 animate-scaleIn">
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-3xl shadow-2xl max-w-sm w-full p-6">
             <div className="text-center">
-              <div className="text-6xl mb-4">🗑️</div>
-              <h2 className="text-2xl font-bold text-gray-900 mb-4">
+              <div className="text-5xl mb-4">🗑️</div>
+              <h2 className="text-lg font-bold text-gray-900 mb-2">
                 Supprimer ce revenu ?
               </h2>
-              <p className="text-gray-600 mb-6">
+              <p className="text-sm text-gray-500 mb-6">
                 Cette action est irréversible.
               </p>
               <div className="flex gap-3">
                 <button
                   onClick={() => setConfirmDeleteId(null)}
-                  className="flex-1 px-6 py-3 border-2 border-gray-300 text-gray-700 rounded-xl font-semibold hover:bg-gray-50 transition-colors"
+                  className="flex-1 px-4 py-3 bg-gray-100 text-gray-700 rounded-2xl font-semibold text-sm"
                 >
                   Annuler
                 </button>
                 <button
                   onClick={() => handleDelete(confirmDeleteId)}
-                  className="flex-1 px-6 py-3 bg-red-600 text-white rounded-xl font-semibold hover:bg-red-700 transition-all"
+                  className="flex-1 px-4 py-3 bg-red-600 text-white rounded-2xl font-semibold text-sm hover:bg-red-700 transition-all"
                 >
                   Supprimer
                 </button>
@@ -570,6 +577,9 @@ const handleSubmit = async (e) => {
       )}
 
       <style jsx>{`
+        @keyframes slide-up { from { transform: translateY(100%); } to { transform: translateY(0); } }
+        .animate-slide-up { animation: slide-up 0.25s ease-out; }
+
         @keyframes fadeIn {
           from { opacity: 0; }
           to { opacity: 1; }
