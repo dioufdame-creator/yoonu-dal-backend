@@ -972,6 +972,8 @@ class TontineParticipant(models.Model):
         ).aggregate(total=Sum('amount'))['total']
         return total or 0
 
+# Remplacer la propriété existante par celle-ci :
+ 
     @property
     def contribution_status(self):
         from datetime import date
@@ -980,10 +982,17 @@ class TontineParticipant(models.Model):
             return 'à_jour'
         today = date.today()
         start = tontine.start_date
+ 
+        # ✅ La tontine n'a pas encore réellement démarré — personne
+        # n'est en retard puisqu'aucun mois de cotisation n'est encore dû
+        if today < start:
+            return 'à_jour'
+ 
         payment_day = tontine.payment_day or 5
-        months_elapsed = max(1, (today.year - start.year) * 12 + (today.month - start.month) + 1)
+        months_elapsed = (today.year - start.year) * 12 + (today.month - start.month) + 1
         confirmed_count = self.contributions.filter(status='confirmed').count()
         deadline_passed = today.day > payment_day
+ 
         if confirmed_count >= months_elapsed:
             return 'à_jour'
         elif confirmed_count >= months_elapsed - 1 and not deadline_passed:
