@@ -1768,23 +1768,23 @@ def tontine_detail(request, tontine_id):
             status=status.HTTP_500_INTERNAL_SERVER_ERROR
         )
 
-# ==========================================
-# REMPLACER dans api/views.py — fonction join_tontine
-# ==========================================
-#
-# Permet à un utilisateur de rejoindre une même tontine plusieurs fois
-# (plusieurs "mains") — comportement normal d'une tontine, plutôt que
-# de le bloquer après la première participation.
+
 
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
 def join_tontine(request):
-    """Rejoindre une tontine via un code d'invitation — plusieurs mains possibles"""
+    """Rejoindre une tontine via un code d'invitation — plusieurs mains en une fois"""
     user = request.user
 
     try:
         data = request.data
         invitation_code = data.get('invitation_code')
+        hand_count = int(data.get('hand_count', 1))
+
+        if hand_count < 1:
+            hand_count = 1
+        if hand_count > 10:
+            return Response({'error': 'Maximum 10 mains à la fois'}, status=status.HTTP_400_BAD_REQUEST)
 
         if not invitation_code:
             return Response({
@@ -1803,35 +1803,34 @@ def join_tontine(request):
                 'error': 'Cette tontine n\'accepte plus de participants'
             }, status=status.HTTP_400_BAD_REQUEST)
 
-        if tontine.available_spots <= 0:
+        if tontine.available_spots < hand_count:
             return Response({
-                'error': 'La tontine est complète'
+                'error': f'Seulement {tontine.available_spots} place(s) disponible(s), vous en demandez {hand_count}'
             }, status=status.HTTP_400_BAD_REQUEST)
 
-        # ✅ Autoriser plusieurs mains — on calcule le numéro de la
-        # prochaine main pour ce user dans cette tontine, au lieu de
-        # bloquer une seconde participation.
         existing_hands = TontineParticipant.objects.filter(tontine=tontine, user=user).count()
-        next_hand_number = existing_hands + 1
 
-        participant = TontineParticipant.objects.create(
-            tontine=tontine,
-            user=user,
-            position=0,  # sera mis à jour par le signal
-            hand_number=next_hand_number,
-            is_admin=False
-        )
+        created_participants = []
+        for i in range(hand_count):
+            next_hand_number = existing_hands + i + 1
+            participant = TontineParticipant.objects.create(
+                tontine=tontine,
+                user=user,
+                position=0,  # sera mis à jour par le signal
+                hand_number=next_hand_number,
+                is_admin=False
+            )
+            created_participants.append(participant)
 
-        hand_label = f" (main {next_hand_number})" if next_hand_number > 1 else ""
+        hand_label = f" ({hand_count} mains)" if hand_count > 1 else ""
 
         return Response({
-            'id': participant.id,
             'tontine': {
                 'id': tontine.id,
                 'name': tontine.name
             },
-            'position': participant.position,
-            'hand_number': next_hand_number,
+            'hands_created': len(created_participants),
+            'hand_numbers': [p.hand_number for p in created_participants],
             'message': f'Vous avez rejoint la tontine "{tontine.name}" avec succès{hand_label}'
         }, status=status.HTTP_201_CREATED)
 
@@ -1839,6 +1838,7 @@ def join_tontine(request):
         return Response({
             'error': f'Erreur: {str(e)}'
         }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
 
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
