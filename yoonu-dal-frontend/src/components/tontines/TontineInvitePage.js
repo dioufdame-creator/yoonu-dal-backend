@@ -7,6 +7,7 @@ const TontineInvitePage = ({ inviteCode, onNavigate, toast, isAuthenticated }) =
   const [joining, setJoining] = useState(false);
   const [error, setError] = useState(null);
   const [joined, setJoined] = useState(false);
+  const [handCount, setHandCount] = useState(1);
 
   useEffect(() => {
     if (inviteCode) loadTontineInfo();
@@ -33,9 +34,15 @@ const TontineInvitePage = ({ inviteCode, onNavigate, toast, isAuthenticated }) =
     }
     setJoining(true);
     try {
-      await API.post('/tontines/join/', { invitation_code: inviteCode });
+      const response = await API.post('/tontines/join/', {
+        invitation_code: inviteCode,
+        hand_count: handCount,
+      });
+      const handsCreated = response.data?.hands_created || 1;
       setJoined(true);
-      toast?.showSuccess?.('Tu as rejoint la tontine !');
+      toast?.showSuccess?.(
+        handsCreated > 1 ? `Tu as rejoint avec ${handsCreated} mains !` : 'Tu as rejoint la tontine !'
+      );
     } catch (err) {
       toast?.showError?.(err.response?.data?.error || 'Erreur lors de la tentative de rejoindre');
     } finally {
@@ -201,6 +208,32 @@ const TontineInvitePage = ({ inviteCode, onNavigate, toast, isAuthenticated }) =
               </div>
             ) : (
               <div className="space-y-3">
+                {isAuthenticated && (
+                  <div className="bg-white/10 rounded-2xl p-4">
+                    <p className="text-xs text-white/70 font-semibold uppercase tracking-wide mb-2 text-center">
+                      Nombre de mains
+                    </p>
+                    <div className="flex items-center gap-3 justify-center">
+                      <button
+                        type="button"
+                        onClick={() => setHandCount(Math.max(1, handCount - 1))}
+                        className="w-9 h-9 rounded-xl bg-white/20 text-white font-bold text-lg flex items-center justify-center"
+                      >
+                        −
+                      </button>
+                      <span className="text-xl font-bold text-white w-16 text-center">
+                        {handCount} main{handCount > 1 ? 's' : ''}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => setHandCount(handCount + 1)}
+                        className="w-9 h-9 rounded-xl bg-white/20 text-white font-bold text-lg flex items-center justify-center"
+                      >
+                        +
+                      </button>
+                    </div>
+                  </div>
+                )}
                 <button onClick={handleJoin} disabled={joining}
                   className="w-full bg-gradient-to-r from-green-600 to-emerald-600 text-white px-6 py-4 rounded-xl font-bold text-lg hover:shadow-2xl hover:shadow-green-500/50 transition-all transform hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed">
                   {joining ? (
