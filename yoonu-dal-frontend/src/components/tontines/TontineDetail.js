@@ -225,6 +225,17 @@ const TontineDetail = ({ tontineId, onNavigate, toast, user }) => {
   const getPaymentDeadlineInfo = (t) => {
     if (t.status !== 'active' || !t.payment_day) return null;
     const now = new Date();
+    const start = new Date(t.start_date);
+
+    // ✅ Pas encore démarrée — aucune deadline n'a de sens tant que le
+    // premier mois de cotisation n'a pas commencé
+    if (now < start) {
+      return {
+        label: `📆 Démarre le ${start.toLocaleDateString('fr-FR')} — premier paiement le ${t.payment_day}`,
+        style: 'bg-blue-50 text-blue-700'
+      };
+    }
+
     const daysLeft = t.payment_day - now.getDate();
     if (daysLeft < 0) return { label: `Date limite dépassée ce mois (était le ${t.payment_day})`, style: 'bg-gray-50 text-gray-500' };
     if (daysLeft === 0) return { label: "⚠️ Aujourd'hui est la date limite !", style: 'bg-red-50 text-red-700' };
