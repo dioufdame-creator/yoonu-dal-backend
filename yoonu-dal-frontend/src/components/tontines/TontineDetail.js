@@ -77,10 +77,20 @@ const TontineDetail = ({ tontineId, onNavigate, toast, user }) => {
     const start = new Date(tontine.start_date);
     const paymentDay = tontine.payment_day || 5;
 
-    const monthsElapsed = Math.max(1,
-      (today.getFullYear() - start.getFullYear()) * 12 +
-      (today.getMonth() - start.getMonth()) + 1
-    );
+    // ✅ La tontine n'a pas encore réellement démarré — personne n'est
+    // en retard puisqu'aucun mois de cotisation n'est encore dû
+    if (today < start) {
+      return {
+        monthsElapsed: 0, confirmedCount: 0, pendingCount: 0,
+        deadlinePassed: false, paymentDay,
+        status: 'à_jour', statusColor: 'bg-green-50 text-green-700',
+        statusLabel: '✅ À jour', missingMonths: 0,
+        notStartedYet: true,
+      };
+    }
+
+    const monthsElapsed = (today.getFullYear() - start.getFullYear()) * 12 +
+      (today.getMonth() - start.getMonth()) + 1;
 
     const confirmedCount = myContributions.filter(c => c.status === 'confirmed').length;
     const pendingCount = myContributions.filter(c => c.status === 'pending').length;
@@ -112,10 +122,12 @@ const TontineDetail = ({ tontineId, onNavigate, toast, user }) => {
     if (!tontine || !tontine.start_date) return [];
     const today = new Date();
     const start = new Date(tontine.start_date);
-    const monthsElapsed = Math.max(1,
-      (today.getFullYear() - start.getFullYear()) * 12 +
-      (today.getMonth() - start.getMonth()) + 1
-    );
+
+    // ✅ Pas encore démarrée — aucun mois à afficher
+    if (today < start) return [];
+
+    const monthsElapsed = (today.getFullYear() - start.getFullYear()) * 12 +
+      (today.getMonth() - start.getMonth()) + 1;
 
     const months = [];
     for (let i = 0; i < monthsElapsed; i++) {
@@ -385,7 +397,9 @@ const TontineDetail = ({ tontineId, onNavigate, toast, user }) => {
                   <p className="text-sm font-bold text-gray-900">Mes paiements</p>
                   {contributionsLoaded && paymentSummary && (
                     <p className="text-xs text-gray-400">
-                      {paymentSummary.confirmedCount}/{paymentSummary.monthsElapsed} mois payés
+                      {paymentSummary.notStartedYet
+                        ? `Démarre le ${new Date(tontine.start_date).toLocaleDateString('fr-FR')}`
+                        : `${paymentSummary.confirmedCount}/${paymentSummary.monthsElapsed} mois payés`}
                     </p>
                   )}
                 </div>
