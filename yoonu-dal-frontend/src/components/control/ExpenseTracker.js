@@ -458,18 +458,22 @@ const ExpenseTrackerPremium = ({ toast, onNavigate, auth, user }) => {
         )}
       </div>
 
-      {/* Modal Add/Edit */}
+      {/* Bottom sheet — Add/Edit */}
       {showModal && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-3 sm:p-4">
-          <div className="bg-white/95 backdrop-blur-xl rounded-2xl shadow-2xl max-w-md w-full p-5 sm:p-8 max-h-[90vh] overflow-y-auto border border-white/20">
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-xl font-bold text-gray-900">
-                {editingExpense ? '✏️ Modifier' : '➕ Nouvelle dépense'}
-              </h2>
-              <button onClick={() => setShowModal(false)} className="text-gray-400 hover:text-gray-600 text-xl">✕</button>
+        <>
+          <div className="fixed inset-0 bg-black/50 z-40" onClick={() => setShowModal(false)} />
+          <div className="fixed bottom-0 left-0 right-0 z-50 bg-white rounded-t-3xl shadow-2xl max-h-[88vh] overflow-y-auto animate-slide-up">
+            <div className="sticky top-0 bg-white pt-3 pb-2 px-5 border-b border-gray-100">
+              <div className="w-10 h-1 bg-gray-200 rounded-full mx-auto mb-3" />
+              <div className="flex items-center justify-between">
+                <h2 className="text-base font-bold text-gray-900">
+                  {editingExpense ? '✏️ Modifier' : '➕ Nouvelle dépense'}
+                </h2>
+                <button onClick={() => setShowModal(false)} className="text-gray-400 text-xl">✕</button>
+              </div>
             </div>
 
-            <form onSubmit={handleSubmit} className="space-y-5">
+            <form onSubmit={handleSubmit} className="space-y-5 p-5">
               {/* Montant */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">Montant *</label>
@@ -534,35 +538,35 @@ const ExpenseTrackerPremium = ({ toast, onNavigate, auth, user }) => {
                   required />
               </div>
 
-              <div className="flex gap-3 pt-4">
+              <div className="flex gap-3 pt-4 pb-2">
                 <button type="button" onClick={() => setShowModal(false)}
-                  className="flex-1 px-6 py-3 bg-gray-100 text-gray-700 rounded-xl font-semibold text-sm hover:bg-gray-200 transition-all">
+                  className="flex-1 px-6 py-3 bg-gray-100 text-gray-700 rounded-2xl font-semibold text-sm hover:bg-gray-200 transition-all">
                   Annuler
                 </button>
                 <button type="submit"
-                  className="flex-1 px-6 py-3 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-xl font-semibold text-sm hover:shadow-xl transition-all">
+                  className="flex-1 px-6 py-3 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-2xl font-semibold text-sm hover:shadow-xl transition-all">
                   {editingExpense ? 'Modifier' : 'Ajouter'}
                 </button>
               </div>
             </form>
           </div>
-        </div>
+        </>
       )}
 
-      {/* Confirm Delete */}
+      {/* Confirmation suppression */}
       {confirmDeleteId && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-white/95 rounded-2xl shadow-2xl max-w-sm w-full p-6 text-center">
-            <div className="text-6xl mb-4">⚠️</div>
-            <h3 className="text-xl font-bold text-gray-900 mb-2">Supprimer la dépense ?</h3>
-            <p className="text-sm text-gray-600 mb-6">Cette action est irréversible</p>
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-3xl shadow-2xl max-w-sm w-full p-6 text-center">
+            <div className="text-5xl mb-4">⚠️</div>
+            <h3 className="text-lg font-bold text-gray-900 mb-2">Supprimer la dépense ?</h3>
+            <p className="text-sm text-gray-500 mb-6">Cette action est irréversible</p>
             <div className="flex gap-3">
               <button onClick={() => setConfirmDeleteId(null)}
-                className="flex-1 px-4 py-2.5 bg-gray-100 text-gray-700 rounded-xl font-semibold text-sm">
+                className="flex-1 px-4 py-3 bg-gray-100 text-gray-700 rounded-2xl font-semibold text-sm">
                 Annuler
               </button>
               <button onClick={() => handleDelete(confirmDeleteId)}
-                className="flex-1 px-4 py-2.5 bg-gradient-to-r from-red-600 to-rose-600 text-white rounded-xl font-semibold text-sm hover:shadow-xl transition-all">
+                className="flex-1 px-4 py-3 bg-red-600 text-white rounded-2xl font-semibold text-sm hover:bg-red-700 transition-all">
                 Supprimer
               </button>
             </div>
@@ -592,6 +596,8 @@ const ExpenseTrackerPremium = ({ toast, onNavigate, auth, user }) => {
       <style jsx>{`
         .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
         .scrollbar-hide::-webkit-scrollbar { display: none; }
+        @keyframes slide-up { from { transform: translateY(100%); } to { transform: translateY(0); } }
+        .animate-slide-up { animation: slide-up 0.25s ease-out; }
       `}</style>
     </div>
   );
