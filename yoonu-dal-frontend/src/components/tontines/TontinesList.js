@@ -10,6 +10,7 @@ const TontinesListPremium = ({ onNavigate, toast, pageParams }) => {
   const [showJoinSheet, setShowJoinSheet] = useState(false);
   const [editingTontine, setEditingTontine] = useState(null);
   const [joinCode, setJoinCode] = useState('');
+  const [handCount, setHandCount] = useState(1);
 
   const emptyForm = () => ({
     name: '',
@@ -89,6 +90,8 @@ const TontinesListPremium = ({ onNavigate, toast, pageParams }) => {
   const getPaymentUrgency = (tontine) => {
     if (tontine.status !== 'active' || !tontine.payment_day) return null;
     const now = new Date();
+    const start = new Date(tontine.start_date);
+    if (now < start) return null; // pas encore démarrée, pas d'urgence possible
     const daysLeft = tontine.payment_day - now.getDate();
     if (daysLeft < 0) return null;
     if (daysLeft <= 2) return { label: `⚠️ Limite dans ${daysLeft}j`, color: 'text-red-600' };
@@ -163,9 +166,15 @@ ${payoutMode}
   const handleJoinTontine = async () => {
     if (!joinCode) { toast?.showError?.('Entre le code d\'invitation'); return; }
     try {
-      await API.post('/tontines/join/', { invitation_code: joinCode });
-      toast?.showSuccess?.('Tu as rejoint la tontine !');
-      setShowJoinSheet(false); setJoinCode(''); loadTontines();
+      const response = await API.post('/tontines/join/', {
+        invitation_code: joinCode,
+        hand_count: handCount,
+      });
+      const handsCreated = response.data?.hands_created || 1;
+      toast?.showSuccess?.(
+        handsCreated > 1 ? `Tu as rejoint avec ${handsCreated} mains !` : 'Tu as rejoint la tontine !'
+      );
+      setShowJoinSheet(false); setJoinCode(''); setHandCount(1); loadTontines();
     } catch (error) {
       toast?.showError?.(error.response?.data?.error || 'Code invalide ou tontine complète');
     }
@@ -543,6 +552,35 @@ ${payoutMode}
                   autoFocus
                   className="w-full mt-1 px-4 py-3 bg-gray-50 rounded-2xl text-lg font-bold text-center tracking-widest outline-none focus:ring-2 focus:ring-green-500"
                 />
+              </div>
+
+              <div>
+                <label className="text-xs text-gray-400 font-semibold uppercase tracking-wide">
+                  Nombre de mains
+                </label>
+                <div className="flex items-center gap-3 mt-1">
+                  <button
+                    type="button"
+                    onClick={() => setHandCount(Math.max(1, handCount - 1))}
+                    className="w-10 h-10 rounded-xl bg-gray-100 text-gray-600 font-bold text-lg flex items-center justify-center"
+                  >
+                    −
+                  </button>
+                  <div className="flex-1 text-center">
+                    <span className="text-2xl font-bold text-gray-900">{handCount}</span>
+                    <span className="text-sm text-gray-400 ml-1">main{handCount > 1 ? 's' : ''}</span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setHandCount(handCount + 1)}
+                    className="w-10 h-10 rounded-xl bg-gray-100 text-gray-600 font-bold text-lg flex items-center justify-center"
+                  >
+                    +
+                  </button>
+                </div>
+                <p className="text-[11px] text-gray-400 mt-2 text-center">
+                  Une seule requête pour toutes vos mains — plus besoin de rejoindre plusieurs fois
+                </p>
               </div>
             </div>
 
