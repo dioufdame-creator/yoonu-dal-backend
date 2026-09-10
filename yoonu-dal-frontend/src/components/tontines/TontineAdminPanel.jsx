@@ -283,9 +283,37 @@ const TontineAdminPanel = ({ tontine, participants, onUpdate, toast }) => {
                 <span className="text-xl">🎲</span>
                 <span>{loading ? 'Tirage en cours...' : 'Lancer le tirage du mois'}</span>
               </button>
-              <p className="text-xs text-gray-600 mt-1 text-center">
+              <p className="text-xs text-gray-600 mt-1 text-center mb-4">
                 Tire au sort parmi les participants n'ayant pas encore reçu les fonds
               </p>
+
+              <div className="bg-gray-50 rounded-2xl p-4">
+                <p className="text-xs font-bold text-gray-500 uppercase tracking-wide mb-3">Participants</p>
+                <div className="space-y-2">
+                  {manualOrder.map((participant) => {
+                    const label = participant.display_name || (participant.user?.first_name
+                      ? `${participant.user.first_name} ${participant.user.last_name || ''}`
+                      : participant.user?.username || 'Participant');
+                    return (
+                      <div key={participant.id} className="flex items-center justify-between bg-white rounded-xl p-3">
+                        <p className="text-sm font-semibold text-gray-900 truncate">
+                          {label}
+                          {participant.hand_number > 1 && !participant.display_name && (
+                            <span className="ml-1 text-[10px] text-indigo-500 font-bold">· Main {participant.hand_number}</span>
+                          )}
+                        </p>
+                        <button
+                          onClick={() => handleRemoveParticipant(participant)}
+                          className="text-red-400 hover:text-red-600 text-xs font-bold px-2 py-1.5 rounded-lg hover:bg-red-50 transition-all flex-shrink-0"
+                          title="Retirer ce participant"
+                        >
+                          🗑️
+                        </button>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
             </div>
           )}
 
