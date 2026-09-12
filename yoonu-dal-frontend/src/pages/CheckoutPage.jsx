@@ -44,13 +44,13 @@ const CheckoutPage = ({ onNavigate, toast, plan = 'monthly' }) => {
         {/* Retour */}
         <button
           onClick={() => onNavigate?.('pricing')}
-          className="mb-6 text-gray-600 hover:text-gray-900 flex items-center gap-2 text-sm"
+          className="w-10 h-10 rounded-full bg-white border border-gray-200 flex items-center justify-center text-gray-600 hover:bg-gray-50 mb-5"
         >
-          ← Retour
+          ←
         </button>
 
         {/* Card principale */}
-        <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-8">
+        <div className="bg-white rounded-3xl shadow-sm border border-gray-200 p-6">
 
           {/* Header */}
           <div className="text-center mb-8">
