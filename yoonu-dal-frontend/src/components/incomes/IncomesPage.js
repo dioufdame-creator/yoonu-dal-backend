@@ -2,11 +2,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import API from '../../services/api';
 
-// ==========================================
-// INCOMES PAGE V2 - PREMIUM DESIGN
-// Match ExpenseTracker quality
-// ==========================================
-
 const SOURCES = [
   { value: 'Salaire', label: 'Salaire', icon: '💼', color: 'bg-blue-50 border-blue-200 text-blue-700' },
   { value: 'Freelance', label: 'Freelance', icon: '💻', color: 'bg-purple-50 border-purple-200 text-purple-700' },
@@ -17,11 +12,14 @@ const SOURCES = [
   { value: 'Allocation', label: 'Allocation', icon: '🎁', color: 'bg-teal-50 border-teal-200 text-teal-700' },
   { value: 'Prime', label: 'Prime', icon: '⭐', color: 'bg-yellow-50 border-yellow-200 text-yellow-700' },
   { value: 'Cadeau', label: 'Cadeau', icon: '🎁', color: 'bg-red-50 border-red-200 text-red-700' },
+  { value: 'remboursement_recu', label: 'Remboursement reçu', icon: '🤝', color: 'bg-cyan-50 border-cyan-200 text-cyan-700' },
   { value: 'Autre', label: 'Autre', icon: '💰', color: 'bg-gray-50 border-gray-200 text-gray-700' }
 ];
 
+const MONTHS_FR_SEL = ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin',
+  'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'];
+
 const IncomesPageV2 = ({ toast, onNavigate }) => {
-  // États UI
   const [showModal, setShowModal] = useState(false);
   const [loading, setLoading] = useState(true);
   const [expandedId, setExpandedId] = useState(null);
@@ -30,21 +28,14 @@ const IncomesPageV2 = ({ toast, onNavigate }) => {
   const [filterSource, setFilterSource] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
 
-  // États données
   const [incomes, setIncomes] = useState([]);
 
-  // Formulaire
   const emptyForm = () => ({
-    amount: '',
-    source: '',
-    description: '',
+    amount: '', source: '', description: '',
     date: new Date().toISOString().split('T')[0]
   });
   const [form, setForm] = useState(emptyForm);
 
-  // ✅ Sélecteur de mois — 6 derniers mois
-  const MONTHS_FR_SEL = ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin',
-    'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'];
   const monthOptions = (() => {
     const options = [];
     const nowD = new Date();
@@ -63,7 +54,6 @@ const IncomesPageV2 = ({ toast, onNavigate }) => {
   const isCurrentMonth = selectedMonth === monthOptions[0].key;
   const selectedOption = monthOptions.find(m => m.key === selectedMonth) || monthOptions[0];
 
-  // ✅ Formatter FCFA CORRIGÉ
   const formatCurrency = (value) => {
     const num = Math.abs(value || 0);
     if (num >= 1000000) return `${(num / 1000000).toFixed(1)}M`;
@@ -71,19 +61,12 @@ const IncomesPageV2 = ({ toast, onNavigate }) => {
     return num.toString();
   };
 
-  const formatCurrencyFull = (value) => {
-    return new Intl.NumberFormat('fr-FR').format(value || 0) + ' FCFA';
-  };
+  const formatCurrencyFull = (value) =>
+    new Intl.NumberFormat('fr-FR').format(value || 0) + ' FCFA';
 
-  const formatDate = (dateString) => {
-    return new Date(dateString).toLocaleDateString('fr-FR', {
-      day: '2-digit',
-      month: 'long',
-      year: 'numeric'
-    });
-  };
+  const formatDate = (dateString) =>
+    new Date(dateString).toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' });
 
-  // Charger données
   const loadIncomes = useCallback(async () => {
     setLoading(true);
     try {
@@ -92,58 +75,42 @@ const IncomesPageV2 = ({ toast, onNavigate }) => {
       const incomesList = response.data?.incomes || [];
       setIncomes(incomesList);
     } catch (error) {
-      console.error('Erreur chargement revenus:', error);
       toast?.showError('Erreur lors du chargement');
     } finally {
       setLoading(false);
     }
   }, [toast, selectedMonth, isCurrentMonth]);
 
-  useEffect(() => {
-    loadIncomes();
-  }, [loadIncomes]);
+  useEffect(() => { loadIncomes(); }, [loadIncomes]);
 
-  // Actions
-const handleSubmit = async (e) => {
-  e.preventDefault();
-  
-  if (!form.amount || !form.source || !form.description) {
-    toast?.showError('Remplis tous les champs obligatoires');
-    return;
-  }
-
-  try {
-    const payload = {
-      amount: parseFloat(form.amount),
-      source: form.source,
-      description: form.description,
-      date: form.date
-    };
-
-    console.log('📤 Envoi du payload:', payload);  // ✅ AJOUTER
-
-    let response;
-    if (editingIncome) {
-      response = await API.put(`/incomes/${editingIncome.id}/`, payload);
-      console.log('✅ Réponse PUT:', response);  // ✅ AJOUTER
-      toast?.showSuccess('Revenu modifié avec succès');
-    } else {
-      response = await API.post('/incomes/', payload);
-      console.log('✅ Réponse POST:', response);  // ✅ AJOUTER
-      toast?.showSuccess('Revenu ajouté avec succès');
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!form.amount || !form.source || !form.description) {
+      toast?.showError('Remplis tous les champs obligatoires');
+      return;
     }
-
-    setShowModal(false);
-    setEditingIncome(null);
-    setForm(emptyForm());
-    loadIncomes();
-  } catch (error) {
-    console.error('❌ Erreur complète:', error);
-    console.error('❌ Réponse:', error.response);
-    console.error('❌ Data:', error.response?.data);
-    toast?.showError('Erreur lors de l\'enregistrement');
-  }
-};
+    try {
+      const payload = {
+        amount: parseFloat(form.amount),
+        source: form.source,
+        description: form.description,
+        date: form.date
+      };
+      if (editingIncome) {
+        await API.put(`/incomes/${editingIncome.id}/`, payload);
+        toast?.showSuccess('Revenu modifié avec succès');
+      } else {
+        await API.post('/incomes/', payload);
+        toast?.showSuccess('Revenu ajouté avec succès');
+      }
+      setShowModal(false);
+      setEditingIncome(null);
+      setForm(emptyForm());
+      loadIncomes();
+    } catch (error) {
+      toast?.showError('Erreur lors de l\'enregistrement');
+    }
+  };
 
   const handleDelete = async (id) => {
     try {
@@ -152,7 +119,6 @@ const handleSubmit = async (e) => {
       setConfirmDeleteId(null);
       loadIncomes();
     } catch (error) {
-      console.error('Erreur suppression:', error);
       toast?.showError('Erreur lors de la suppression');
     }
   };
@@ -160,36 +126,23 @@ const handleSubmit = async (e) => {
   const handleEdit = (income) => {
     setEditingIncome(income);
     setForm({
-      amount: income.amount,
-      source: income.source,
-      description: income.description,
-      date: income.date
+      amount: income.amount, source: income.source,
+      description: income.description, date: income.date
     });
     setShowModal(true);
   };
 
-  // Calculs — sur le mois sélectionné
   const monthlyIncomes = incomes.filter(inc => inc.date && inc.date.startsWith(selectedMonth));
-  
   const totalIncomes = monthlyIncomes.reduce((sum, inc) => sum + parseFloat(inc.amount || 0), 0);
-  
-  // Stats par source
+
   const sourceStats = SOURCES.map(src => {
-    const total = monthlyIncomes
-      .filter(inc => inc.source === src.value)
-      .reduce((sum, inc) => sum + parseFloat(inc.amount || 0), 0);
-    
-    return {
-      ...src,
-      total,
-      count: monthlyIncomes.filter(inc => inc.source === src.value).length
-    };
+    const total = monthlyIncomes.filter(inc => inc.source === src.value).reduce((sum, inc) => sum + parseFloat(inc.amount || 0), 0);
+    return { ...src, total, count: monthlyIncomes.filter(inc => inc.source === src.value).length };
   }).filter(s => s.total > 0);
 
-  // Filtres
   const filteredIncomes = monthlyIncomes.filter(inc => {
     const matchesSource = filterSource === 'all' || inc.source === filterSource;
-    const matchesSearch = !searchQuery || 
+    const matchesSearch = !searchQuery ||
       inc.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
       inc.source.toLowerCase().includes(searchQuery.toLowerCase());
     return matchesSource && matchesSearch;
@@ -200,107 +153,94 @@ const handleSubmit = async (e) => {
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="w-16 h-16 border-4 border-green-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-gray-600">Chargement...</p>
-        </div>
+        <div className="w-10 h-10 border-4 border-green-500 border-t-transparent rounded-full animate-spin" />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 lg:py-10">
-        
+    <div className="min-h-screen bg-gray-50 pb-28">
+      <div className="max-w-2xl mx-auto px-4 py-5">
+
         {/* Header */}
-        <div className="mb-6">
-          <div className="flex items-center justify-between mb-4">
-            <div>
-              <h1 className="text-2xl lg:text-3xl font-bold text-gray-900">
-                💰 Mes Revenus
-              </h1>
-              <div className="relative mt-1">
-                <button
-                  onClick={() => setShowMonthPicker(!showMonthPicker)}
-                  className="flex items-center gap-1 text-sm font-semibold text-gray-600 hover:text-green-600 transition-colors"
-                >
-                  <span>{selectedOption.label}</span>
-                  <span className={`transition-transform text-[10px] ${showMonthPicker ? 'rotate-180' : ''}`}>▼</span>
-                </button>
-                {showMonthPicker && (
-                  <>
-                    <div className="fixed inset-0 z-20" onClick={() => setShowMonthPicker(false)} />
-                    <div className="absolute top-6 left-0 z-30 bg-white rounded-2xl shadow-2xl border border-gray-100 py-2 min-w-[170px]">
-                      {monthOptions.map(m => (
-                        <button
-                          key={m.key}
-                          onClick={() => { setSelectedMonth(m.key); setShowMonthPicker(false); }}
-                          className={`w-full text-left px-4 py-2 text-sm transition-colors ${
-                            m.key === selectedMonth
-                              ? 'bg-green-50 text-green-700 font-bold'
-                              : 'text-gray-700 hover:bg-gray-50'
-                          }`}
-                        >
-                          {m.label}{m.isCurrent ? ' (en cours)' : ''}
-                        </button>
-                      ))}
-                    </div>
-                  </>
-                )}
-              </div>
+        <div className="flex items-center gap-3 mb-5">
+          <button
+            onClick={() => onNavigate?.('dashboard')}
+            className="w-10 h-10 rounded-full bg-white border border-gray-200 flex items-center justify-center text-gray-600 hover:bg-gray-50 flex-shrink-0"
+          >
+            ←
+          </button>
+          <div className="flex-1">
+            <h1 className="text-lg font-bold text-gray-900">💰 Mes revenus</h1>
+            <div className="relative">
+              <button
+                onClick={() => setShowMonthPicker(!showMonthPicker)}
+                className="flex items-center gap-1 text-xs font-semibold text-gray-500 hover:text-green-600"
+              >
+                <span>{selectedOption.label}</span>
+                <span className={`transition-transform text-[10px] ${showMonthPicker ? 'rotate-180' : ''}`}>▼</span>
+              </button>
+              {showMonthPicker && (
+                <>
+                  <div className="fixed inset-0 z-20" onClick={() => setShowMonthPicker(false)} />
+                  <div className="absolute top-6 left-0 z-30 bg-white rounded-2xl shadow-2xl border border-gray-100 py-2 min-w-[170px]">
+                    {monthOptions.map(m => (
+                      <button
+                        key={m.key}
+                        onClick={() => { setSelectedMonth(m.key); setShowMonthPicker(false); }}
+                        className={`w-full text-left px-4 py-2 text-sm transition-colors ${
+                          m.key === selectedMonth ? 'bg-green-50 text-green-700 font-bold' : 'text-gray-700 hover:bg-gray-50'
+                        }`}
+                      >
+                        {m.label}{m.isCurrent ? ' (en cours)' : ''}
+                      </button>
+                    ))}
+                  </div>
+                </>
+              )}
             </div>
           </div>
-
-          {/* Action Button */}
           <button
             onClick={() => { setEditingIncome(null); setForm(emptyForm()); setShowModal(true); }}
-            className="w-full bg-gradient-to-r from-green-600 to-emerald-600 text-white px-6 py-3 rounded-xl font-semibold hover:shadow-lg transition-all transform hover:scale-105 flex items-center justify-center gap-2"
+            className="w-10 h-10 rounded-full bg-green-600 text-white flex items-center justify-center text-xl font-bold flex-shrink-0 shadow-md"
           >
-            <span className="text-xl">➕</span>
-            <span>Nouveau revenu</span>
+            +
           </button>
         </div>
 
-        {/* Summary Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-          {/* Total Card */}
-          <div className="bg-white rounded-xl p-5 shadow-sm border border-gray-200">
-            <p className="text-xs text-gray-500 uppercase tracking-wide mb-1">Total des revenus</p>
-            <p className="text-3xl font-bold text-green-600">{formatCurrency(totalIncomes)}</p>
-            <p className="text-xs text-gray-400 mt-0.5">{formatCurrencyFull(totalIncomes)}</p>
-          </div>
-
-          {/* Count Card */}
-          <div className="bg-white rounded-xl p-5 shadow-sm border border-gray-200">
-            <p className="text-xs text-gray-500 uppercase tracking-wide mb-1">Nombre de revenus</p>
-            <p className="text-3xl font-bold text-gray-900">{monthlyIncomes.length}</p>
-            <p className="text-xs text-gray-400 mt-0.5">{sourceStats.length} sources actives</p>
+        {/* Carte résumé */}
+        <div className="bg-gradient-to-br from-green-600 to-emerald-700 rounded-3xl p-5 mb-4 text-white shadow-xl">
+          <p className="text-sm opacity-80 mb-1">Total des revenus ce mois</p>
+          <p className="text-3xl font-bold mb-3">{formatCurrencyFull(totalIncomes)}</p>
+          <div className="grid grid-cols-2 gap-2">
+            <div className="bg-black/20 rounded-2xl px-3 py-2.5">
+              <p className="text-[11px] opacity-75">Nombre de revenus</p>
+              <p className="text-sm font-bold">{monthlyIncomes.length}</p>
+            </div>
+            <div className="bg-black/20 rounded-2xl px-3 py-2.5">
+              <p className="text-[11px] opacity-75">Sources actives</p>
+              <p className="text-sm font-bold">{sourceStats.length}</p>
+            </div>
           </div>
         </div>
 
-        {/* Sources Stats */}
+        {/* Répartition par source */}
         {sourceStats.length > 0 && (
-          <div className="bg-white rounded-xl p-5 shadow-sm border border-gray-200 mb-6">
-            <h3 className="font-semibold text-gray-900 mb-4">📊 Répartition par source</h3>
+          <div className="bg-white rounded-2xl border border-gray-200 p-4 mb-4 shadow-sm">
+            <h2 className="text-sm font-bold text-gray-900 mb-3">📊 Répartition par source</h2>
             <div className="space-y-3">
               {sourceStats.map(src => {
                 const percentage = (src.total / totalIncomes) * 100;
                 return (
                   <div key={src.value}>
                     <div className="flex items-center justify-between mb-1">
-                      <div className="flex items-center gap-2">
-                        <span className="text-lg">{src.icon}</span>
-                        <span className="text-sm font-medium text-gray-700">{src.label}</span>
-                      </div>
-                      <span className="text-sm font-bold text-green-600">
-                        {formatCurrency(src.total)}
+                      <span className="text-xs font-semibold text-gray-700 flex items-center gap-1.5">
+                        <span>{src.icon}</span> {src.label}
                       </span>
+                      <span className="text-xs font-bold text-green-600">{formatCurrency(src.total)}</span>
                     </div>
-                    <div className="w-full bg-gray-200 rounded-full h-2">
-                      <div
-                        className="h-2 rounded-full bg-gradient-to-r from-green-500 to-emerald-500"
-                        style={{ width: `${percentage}%` }}
-                      />
+                    <div className="w-full bg-gray-100 rounded-full h-2 overflow-hidden">
+                      <div className="h-full rounded-full bg-green-500 transition-all duration-700" style={{ width: `${percentage}%` }} />
                     </div>
                   </div>
                 );
@@ -309,129 +249,82 @@ const handleSubmit = async (e) => {
           </div>
         )}
 
-        {/* Filters & Search */}
-        <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-200 mb-6">
-          <div className="flex flex-col lg:flex-row gap-4">
-            {/* Search */}
-            <div className="flex-1">
-              <div className="relative">
-                <input
-                  type="text"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Rechercher un revenu..."
-                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                />
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">🔍</span>
-              </div>
-            </div>
+        {/* Recherche */}
+        <input
+          type="text"
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          placeholder="🔍 Rechercher un revenu..."
+          className="w-full mb-3 px-4 py-3 bg-white border border-gray-200 rounded-2xl text-sm outline-none focus:ring-2 focus:ring-green-500"
+        />
 
-            {/* Source Filter */}
-            <div className="flex gap-2 overflow-x-auto pb-2 lg:pb-0">
-              <button
-                onClick={() => setFilterSource('all')}
-                className={`px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-all ${
-                  filterSource === 'all'
-                    ? 'bg-green-600 text-white'
-                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                }`}
-              >
-                Toutes
-              </button>
-              {sourceStats.slice(0, 4).map(src => (
-                <button
-                  key={src.value}
-                  onClick={() => setFilterSource(src.value)}
-                  className={`px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-all ${
-                    filterSource === src.value
-                      ? 'bg-green-600 text-white'
-                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                  }`}
-                >
-                  {src.icon} {src.label}
-                </button>
-              ))}
-            </div>
-          </div>
+        {/* Filtres sources */}
+        <div className="flex gap-2 mb-4 overflow-x-auto pb-1">
+          <button
+            onClick={() => setFilterSource('all')}
+            className={`px-3 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-all ${
+              filterSource === 'all' ? 'bg-green-600 text-white shadow-sm' : 'bg-white text-gray-500 border border-gray-200'
+            }`}
+          >
+            Toutes
+          </button>
+          {sourceStats.slice(0, 5).map(src => (
+            <button
+              key={src.value}
+              onClick={() => setFilterSource(src.value)}
+              className={`px-3 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-all ${
+                filterSource === src.value ? 'bg-green-600 text-white shadow-sm' : 'bg-white text-gray-500 border border-gray-200'
+              }`}
+            >
+              {src.icon} {src.label}
+            </button>
+          ))}
         </div>
 
-        {/* Incomes List */}
+        {/* Liste */}
         {filteredIncomes.length === 0 ? (
-          <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-12 text-center">
-            <div className="text-6xl mb-4">💸</div>
-            <h2 className="text-2xl font-bold text-gray-900 mb-3">
+          <div className="bg-white rounded-2xl border border-gray-200 p-8 text-center shadow-sm">
+            <div className="text-4xl mb-3">💸</div>
+            <p className="text-sm text-gray-500 mb-4">
               {incomes.length === 0 ? 'Aucun revenu enregistré' : 'Aucun résultat'}
-            </h2>
-            <p className="text-gray-600 mb-6">
-              {incomes.length === 0 
-                ? 'Commence à tracker tes revenus pour mieux gérer tes finances'
-                : 'Essaie de modifier tes filtres de recherche'}
             </p>
             {incomes.length === 0 && (
               <button
                 onClick={() => { setEditingIncome(null); setForm(emptyForm()); setShowModal(true); }}
-                className="bg-gradient-to-r from-green-600 to-emerald-600 text-white px-8 py-3 rounded-xl font-semibold hover:shadow-lg transform hover:scale-105 transition-all"
+                className="text-sm bg-green-600 text-white px-4 py-2 rounded-xl font-semibold"
               >
                 Ajouter mon premier revenu
               </button>
             )}
           </div>
         ) : (
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-            <div className="divide-y divide-gray-100">
+          <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden shadow-sm">
+            <div className="divide-y divide-gray-50">
               {filteredIncomes.map((income) => {
                 const srcInfo = getSourceInfo(income.source);
                 const isExpanded = expandedId === income.id;
-                
                 return (
-                  <div key={income.id} className="hover:bg-gray-50 transition-colors">
-                    <div className="p-4">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-4 flex-1 min-w-0">
-                          <div className={`w-12 h-12 rounded-xl ${srcInfo.color} border-2 flex items-center justify-center text-2xl flex-shrink-0`}>
-                            {srcInfo.icon}
-                          </div>
-                          
-                          <div className="flex-1 min-w-0">
-                            <h3 className="font-semibold text-gray-900 truncate">{income.description}</h3>
-                            <div className="flex items-center gap-2 mt-1">
-                              <span className={`text-xs px-2 py-0.5 rounded-full border ${srcInfo.color}`}>
-                                {srcInfo.label}
-                              </span>
-                              <span className="text-xs text-gray-500">
-                                {formatDate(income.date)}
-                              </span>
-                            </div>
-                          </div>
+                  <div key={income.id}>
+                    <div className="px-4 py-3">
+                      <div className="flex items-center gap-3">
+                        <div className={`w-10 h-10 rounded-xl ${srcInfo.color} border flex items-center justify-center text-lg flex-shrink-0`}>
+                          {srcInfo.icon}
                         </div>
-
-                        <div className="flex items-center gap-3">
-                          <p className="text-xl font-bold text-green-600">
-                            +{formatCurrency(income.amount)}
-                          </p>
-                          
-                          <button
-                            onClick={() => setExpandedId(isExpanded ? null : income.id)}
-                            className="text-gray-400 hover:text-gray-600 transition-colors"
-                          >
-                            {isExpanded ? '▲' : '▼'}
-                          </button>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-semibold text-gray-900 truncate">{income.description}</p>
+                          <p className="text-[11px] text-gray-400">{srcInfo.label} · {formatDate(income.date)}</p>
                         </div>
+                        <p className="text-sm font-bold text-green-600 flex-shrink-0">+{formatCurrency(income.amount)}</p>
+                        <button onClick={() => setExpandedId(isExpanded ? null : income.id)} className="text-gray-300 text-xs flex-shrink-0">
+                          {isExpanded ? '▲' : '▼'}
+                        </button>
                       </div>
-
-                      {/* Expanded Actions */}
                       {isExpanded && (
-                        <div className="mt-4 pt-4 border-t border-gray-100 flex gap-2 animate-fadeIn">
-                          <button
-                            onClick={() => handleEdit(income)}
-                            className="flex-1 bg-blue-50 text-blue-700 px-4 py-2 rounded-lg font-medium hover:bg-blue-100 transition-colors"
-                          >
+                        <div className="mt-3 pt-3 border-t border-gray-100 flex gap-2">
+                          <button onClick={() => handleEdit(income)} className="flex-1 bg-blue-50 text-blue-700 py-2 rounded-xl text-xs font-bold">
                             ✏️ Modifier
                           </button>
-                          <button
-                            onClick={() => setConfirmDeleteId(income.id)}
-                            className="flex-1 bg-red-50 text-red-700 px-4 py-2 rounded-lg font-medium hover:bg-red-100 transition-colors"
-                          >
+                          <button onClick={() => setConfirmDeleteId(income.id)} className="flex-1 bg-red-50 text-red-700 py-2 rounded-xl text-xs font-bold">
                             🗑️ Supprimer
                           </button>
                         </div>
@@ -461,81 +354,66 @@ const handleSubmit = async (e) => {
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-4 p-5">
-              {/* Montant */}
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  Montant (FCFA) *
-                </label>
+                <label className="block text-xs text-gray-400 font-semibold uppercase tracking-wide mb-2">Montant</label>
                 <input
                   type="number"
                   value={form.amount}
                   onChange={(e) => setForm({...form, amount: e.target.value})}
-                  placeholder="150000"
-                  className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-green-500 focus:outline-none"
+                  placeholder="0"
+                  className="w-full px-4 py-3 bg-gray-50 rounded-2xl text-lg font-bold outline-none focus:ring-2 focus:ring-green-500"
                   required
                 />
               </div>
 
-              {/* Source */}
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  Source *
-                </label>
+                <label className="block text-xs text-gray-400 font-semibold uppercase tracking-wide mb-2">Source</label>
                 <select
                   value={form.source}
                   onChange={(e) => setForm({...form, source: e.target.value})}
-                  className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-green-500 focus:outline-none"
+                  className="w-full px-4 py-3 bg-gray-50 rounded-2xl text-sm outline-none"
                   required
                 >
                   <option value="">Sélectionner...</option>
                   {SOURCES.map(src => (
-                    <option key={src.value} value={src.value}>
-                      {src.icon} {src.label}
-                    </option>
+                    <option key={src.value} value={src.value}>{src.icon} {src.label}</option>
                   ))}
                 </select>
               </div>
 
-              {/* Description */}
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  Description *
-                </label>
+                <label className="block text-xs text-gray-400 font-semibold uppercase tracking-wide mb-2">Description</label>
                 <input
                   type="text"
                   value={form.description}
                   onChange={(e) => setForm({...form, description: e.target.value})}
-                  placeholder="Ex: Salaire Mars 2026"
-                  className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-green-500 focus:outline-none"
+                  placeholder="Ex: Salaire mars"
+                  className="w-full px-4 py-3 bg-gray-50 rounded-2xl text-sm outline-none focus:ring-2 focus:ring-green-500"
                   required
                 />
               </div>
 
-              {/* Date */}
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  Date
-                </label>
+                <label className="block text-xs text-gray-400 font-semibold uppercase tracking-wide mb-2">Date</label>
                 <input
                   type="date"
                   value={form.date}
                   onChange={(e) => setForm({...form, date: e.target.value})}
-                  className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-green-500 focus:outline-none"
+                  className="w-full px-4 py-3 bg-gray-50 rounded-2xl text-sm outline-none"
                 />
               </div>
 
-              {/* Buttons */}
-              <div className="flex gap-3 pt-4 pb-2">
+              <div className="flex gap-3 pt-2 pb-2">
                 <button
                   type="button"
                   onClick={() => { setShowModal(false); setEditingIncome(null); }}
-                  className="flex-1 px-6 py-3 border border-gray-200 text-gray-700 rounded-2xl font-semibold hover:bg-gray-50 transition-colors"
+                  className="flex-1 px-6 py-3 bg-gray-100 text-gray-700 rounded-2xl font-semibold text-sm"
                 >
                   Annuler
                 </button>
                 <button
                   type="submit"
-                  className="flex-1 px-6 py-3 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-2xl font-semibold hover:shadow-lg transition-all"
+                  className="flex-1 px-6 py-3 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-2xl font-semibold text-sm"
                 >
                   {editingIncome ? 'Modifier' : 'Ajouter'}
                 </button>
@@ -551,23 +429,13 @@ const handleSubmit = async (e) => {
           <div className="bg-white rounded-3xl shadow-2xl max-w-sm w-full p-6">
             <div className="text-center">
               <div className="text-5xl mb-4">🗑️</div>
-              <h2 className="text-lg font-bold text-gray-900 mb-2">
-                Supprimer ce revenu ?
-              </h2>
-              <p className="text-sm text-gray-500 mb-6">
-                Cette action est irréversible.
-              </p>
+              <h2 className="text-lg font-bold text-gray-900 mb-2">Supprimer ce revenu ?</h2>
+              <p className="text-sm text-gray-500 mb-6">Cette action est irréversible.</p>
               <div className="flex gap-3">
-                <button
-                  onClick={() => setConfirmDeleteId(null)}
-                  className="flex-1 px-4 py-3 bg-gray-100 text-gray-700 rounded-2xl font-semibold text-sm"
-                >
+                <button onClick={() => setConfirmDeleteId(null)} className="flex-1 px-4 py-3 bg-gray-100 text-gray-700 rounded-2xl font-semibold text-sm">
                   Annuler
                 </button>
-                <button
-                  onClick={() => handleDelete(confirmDeleteId)}
-                  className="flex-1 px-4 py-3 bg-red-600 text-white rounded-2xl font-semibold text-sm hover:bg-red-700 transition-all"
-                >
+                <button onClick={() => handleDelete(confirmDeleteId)} className="flex-1 px-4 py-3 bg-red-600 text-white rounded-2xl font-semibold text-sm hover:bg-red-700 transition-all">
                   Supprimer
                 </button>
               </div>
@@ -579,30 +447,6 @@ const handleSubmit = async (e) => {
       <style jsx>{`
         @keyframes slide-up { from { transform: translateY(100%); } to { transform: translateY(0); } }
         .animate-slide-up { animation: slide-up 0.25s ease-out; }
-
-        @keyframes fadeIn {
-          from { opacity: 0; }
-          to { opacity: 1; }
-        }
-        
-        @keyframes scaleIn {
-          from {
-            transform: scale(0.95);
-            opacity: 0;
-          }
-          to {
-            transform: scale(1);
-            opacity: 1;
-          }
-        }
-        
-        .animate-fadeIn {
-          animation: fadeIn 0.2s ease-out;
-        }
-        
-        .animate-scaleIn {
-          animation: scaleIn 0.3s ease-out;
-        }
       `}</style>
     </div>
   );
