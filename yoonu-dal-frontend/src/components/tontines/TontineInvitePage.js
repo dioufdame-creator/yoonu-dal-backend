@@ -209,25 +209,25 @@ const TontineInvitePage = ({ inviteCode, onNavigate, toast, isAuthenticated }) =
             ) : (
               <div className="space-y-3">
                 {isAuthenticated && (
-                  <div className="bg-white/10 rounded-2xl p-4">
-                    <p className="text-xs text-white/70 font-semibold uppercase tracking-wide mb-2 text-center">
+                  <div className="bg-green-50 border border-green-200 rounded-2xl p-4">
+                    <p className="text-xs text-gray-500 font-semibold uppercase tracking-wide mb-2 text-center">
                       Nombre de mains
                     </p>
                     <div className="flex items-center gap-3 justify-center">
                       <button
                         type="button"
                         onClick={() => setHandCount(Math.max(1, handCount - 1))}
-                        className="w-9 h-9 rounded-xl bg-white/20 text-white font-bold text-lg flex items-center justify-center"
+                        className="w-9 h-9 rounded-xl bg-white text-gray-700 font-bold text-lg flex items-center justify-center shadow-sm"
                       >
                         −
                       </button>
-                      <span className="text-xl font-bold text-white w-16 text-center">
+                      <span className="text-xl font-bold text-gray-900 w-16 text-center">
                         {handCount} main{handCount > 1 ? 's' : ''}
                       </span>
                       <button
                         type="button"
                         onClick={() => setHandCount(handCount + 1)}
-                        className="w-9 h-9 rounded-xl bg-white/20 text-white font-bold text-lg flex items-center justify-center"
+                        className="w-9 h-9 rounded-xl bg-white text-gray-700 font-bold text-lg flex items-center justify-center shadow-sm"
                       >
                         +
                       </button>
