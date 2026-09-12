@@ -4,6 +4,7 @@ import API from '../services/api';
 const PricingPage = ({ onNavigate, user, toast, onUserRefresh }) => {
   const [billingCycle, setBillingCycle] = useState('monthly');
   const [loading, setLoading] = useState(false);
+  const [openFaq, setOpenFaq] = useState(null);
 
   const isPremium = user?.profile?.subscription_tier === 'premium' || user?.subscription_tier === 'premium';
   const isTrialActive = user?.profile?.trial_active || user?.trial_active;
@@ -16,12 +17,7 @@ const PricingPage = ({ onNavigate, user, toast, onUserRefresh }) => {
       const response = await API.post('/payments/start-trial/');
       if (response.data.success) {
         toast?.showSuccess?.('🎁 ' + response.data.message);
-        // ✅ Rafraîchir le profil utilisateur AVANT de recharger — sinon
-        // le localStorage périmé continue d'afficher trial_used: false
-        // et l'app propose l'essai en boucle même après l'avoir démarré.
-        if (onUserRefresh) {
-          await onUserRefresh();
-        }
+        if (onUserRefresh) await onUserRefresh();
         setTimeout(() => window.location.reload(), 800);
       } else {
         toast?.showError?.(response.data.error || 'Erreur lors du démarrage du trial');
@@ -33,71 +29,68 @@ const PricingPage = ({ onNavigate, user, toast, onUserRefresh }) => {
     }
   };
 
-  const features = {
-    free: [
-      { icon: '✅', text: 'Dashboard complet', included: true },
-      { icon: '✅', text: 'Dépenses illimitées', included: true },
-      { icon: '✅', text: 'Enveloppes illimitées', included: true },
-      { icon: '✅', text: 'Diagnostic valeurs', included: true },
-      { icon: '✅', text: 'Score Yoonu', included: true },
-      { icon: '✅', text: '1 tontine', included: true },
-      { icon: '✅', text: 'Chat IA texte (50/mois)', included: true },
-      { icon: '❌', text: 'Scanner OCR', included: false },
-      { icon: '❌', text: 'Chat IA vocal', included: false },
-      { icon: '❌', text: 'Export PDF/Excel', included: false },
-      { icon: '❌', text: 'Tontines illimitées', included: false },
-      { icon: '❌', text: 'Analytics avancées', included: false }
-    ],
-    premium: [
-      { icon: '✅', text: 'Tout Freemium +', highlight: true },
-      { icon: '📸', text: 'Scanner OCR illimité', highlight: true },
-      { icon: '🎤', text: 'Chat IA vocal', highlight: true },
-      { icon: '💬', text: 'Chat IA illimité', highlight: true },
-      { icon: '📄', text: 'Export PDF/Excel', highlight: true },
-      { icon: '🦁', text: 'Tontines illimitées', highlight: true },
-      { icon: '📊', text: 'Analytics avancées', highlight: true },
-      { icon: '🔔', text: 'Alertes prédictives', highlight: true },
-      { icon: '⚡', text: 'Support prioritaire', highlight: true },
-      { icon: '🎁', text: '30 jours d\'essai gratuit', highlight: true }
-    ]
-  };
+  const freeFeatures = [
+    { icon: '✅', text: 'Dashboard complet', included: true },
+    { icon: '✅', text: 'Dépenses illimitées', included: true },
+    { icon: '✅', text: 'Enveloppes illimitées', included: true },
+    { icon: '✅', text: 'Score Yoonu', included: true },
+    { icon: '✅', text: '1 tontine', included: true },
+    { icon: '✅', text: 'Chat IA texte (50/mois)', included: true },
+    { icon: '❌', text: 'Scanner OCR', included: false },
+    { icon: '❌', text: 'Tontines illimitées', included: false },
+  ];
+
+  const premiumFeatures = [
+    { icon: '✅', text: 'Tout Freemium +' },
+    { icon: '📸', text: 'Scanner OCR illimité' },
+    { icon: '🎤', text: 'Chat IA vocal' },
+    { icon: '💬', text: 'Chat IA illimité' },
+    { icon: '📄', text: 'Export PDF/Excel' },
+    { icon: '🦁', text: 'Tontines illimitées' },
+    { icon: '📊', text: 'Analytics avancées' },
+    { icon: '🔔', text: 'Alertes prédictives' },
+  ];
+
+  const faqItems = [
+    { q: "Comment fonctionne l'essai gratuit ?", a: "30 jours d'accès Premium complet sans engagement, aucune carte requise. À la fin, continuez en Premium ou revenez en Freemium." },
+    { q: "Puis-je annuler à tout moment ?", a: "Oui — votre abonnement reste actif jusqu'à la fin de la période payée, puis bascule automatiquement en Freemium." },
+    { q: "Quels moyens de paiement ?", a: "Mobile Money (Wave, Orange Money, Free Money) et cartes bancaires, via PayDunya." },
+    { q: "Mes données si je reviens en Freemium ?", a: "Toutes vos données restent intactes — seules les fonctionnalités Premium deviennent inaccessibles." },
+  ];
 
   const renderPremiumButton = () => {
     if (isPremium) {
       return (
-        <button className="w-full bg-gradient-to-r from-green-600 to-emerald-600 text-white px-6 py-3 rounded-xl font-bold shadow-lg cursor-default">
+        <button className="w-full py-4 bg-gray-200 text-gray-500 rounded-2xl font-bold">
           ✓ Abonnement actif
         </button>
       );
     }
-
     if (isTrialActive) {
       return (
         <button
           onClick={() => onNavigate('checkout', { plan: billingCycle })}
-          className="w-full bg-gradient-to-r from-green-600 to-emerald-600 text-white px-6 py-3 rounded-xl font-bold hover:shadow-xl transition-all transform hover:scale-105"
+          className="w-full py-4 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-2xl font-bold shadow-lg"
         >
           💎 Continuer en Premium ({trialDaysLeft}j restants)
         </button>
       );
     }
-
     if (trialUsed) {
       return (
         <button
           onClick={() => onNavigate('checkout', { plan: billingCycle })}
-          className="w-full bg-gradient-to-r from-green-600 to-emerald-600 text-white px-6 py-3 rounded-xl font-bold hover:shadow-xl transition-all transform hover:scale-105"
+          className="w-full py-4 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-2xl font-bold shadow-lg"
         >
-          💎 Passer en Premium — {billingCycle === 'monthly' ? '1 500 FCFA/mois' : '15 000 FCFA/an'}
+          💎 Passer en Premium
         </button>
       );
     }
-
     return (
       <button
         onClick={handleStartTrial}
         disabled={loading}
-        className="w-full bg-gradient-to-r from-green-600 to-emerald-600 text-white px-6 py-3 rounded-xl font-bold hover:shadow-xl transition-all transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
+        className="w-full py-4 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-2xl font-bold shadow-lg disabled:opacity-50"
       >
         {loading ? '⏳ Activation...' : '🎁 Essayer 30 jours gratuit'}
       </button>
@@ -105,181 +98,149 @@ const PricingPage = ({ onNavigate, user, toast, onUserRefresh }) => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+    <div className="min-h-screen bg-gray-50 pb-28">
+      <div className="max-w-2xl mx-auto px-4 py-5">
 
         {/* Header */}
-        <div className="text-center mb-12">
-          <h1 className="text-4xl lg:text-5xl font-bold text-gray-900 mb-4">
-            Choisis ton offre
-          </h1>
-          <p className="text-xl text-gray-600 max-w-2xl mx-auto">
-            Commence gratuitement, passe en Premium quand tu es prêt
-          </p>
-
-          {isTrialActive && (
-            <div className="mt-6 inline-flex items-center gap-2 bg-green-50 border border-green-200 rounded-xl px-6 py-3">
-              <span className="text-2xl">🎁</span>
-              <div className="text-left">
-                <div className="font-bold text-green-800">Essai Premium actif !</div>
-                <div className="text-sm text-green-600">{trialDaysLeft} jours restants</div>
-              </div>
-            </div>
-          )}
-
-          {isPremium && !isTrialActive && (
-            <div className="mt-6 inline-flex items-center gap-2 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-xl px-6 py-3">
-              <span className="text-2xl">💎</span>
-              <div className="font-bold">Tu es Premium !</div>
-            </div>
-          )}
-        </div>
-
-        {/* Billing Toggle */}
-        <div className="flex justify-center mb-12">
-          <div className="bg-gray-100 rounded-xl p-1 inline-flex">
-            <button
-              onClick={() => setBillingCycle('monthly')}
-              className={`px-6 py-2 rounded-lg font-semibold transition-all ${
-                billingCycle === 'monthly' ? 'bg-white text-gray-900 shadow-md' : 'text-gray-600'
-              }`}
-            >
-              Mensuel
-            </button>
-            <button
-              onClick={() => setBillingCycle('yearly')}
-              className={`px-6 py-2 rounded-lg font-semibold transition-all ${
-                billingCycle === 'yearly' ? 'bg-white text-gray-900 shadow-md' : 'text-gray-600'
-              }`}
-            >
-              Annuel
-              <span className="ml-2 text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full">-17%</span>
-            </button>
+        <div className="flex items-center gap-3 mb-5">
+          <button
+            onClick={() => onNavigate('subscription')}
+            className="w-10 h-10 rounded-full bg-white border border-gray-200 flex items-center justify-center text-gray-600 hover:bg-gray-50 flex-shrink-0"
+          >
+            ←
+          </button>
+          <div>
+            <h1 className="text-lg font-bold text-gray-900">Choisis ton offre</h1>
+            <p className="text-xs text-gray-400">Gratuit pour commencer, Premium quand tu es prêt</p>
           </div>
         </div>
 
-        {/* Cards */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 max-w-5xl mx-auto">
+        {(isTrialActive || (isPremium && !isTrialActive)) && (
+          <div className={`rounded-2xl p-4 mb-4 flex items-center gap-3 ${
+            isPremium && !isTrialActive
+              ? 'bg-gradient-to-r from-green-600 to-emerald-600 text-white'
+              : 'bg-green-50 border border-green-200 text-green-800'
+          }`}>
+            <span className="text-2xl">{isPremium && !isTrialActive ? '💎' : '🎁'}</span>
+            <div>
+              <p className="text-sm font-bold">{isPremium && !isTrialActive ? 'Tu es Premium !' : 'Essai Premium actif'}</p>
+              {isTrialActive && <p className="text-xs opacity-80">{trialDaysLeft} jours restants</p>}
+            </div>
+          </div>
+        )}
 
-          {/* FREEMIUM */}
-          <div className="bg-white rounded-2xl shadow-lg border-2 border-gray-200 p-8">
-            <div className="text-center mb-6">
-              <div className="text-5xl mb-4">🌱</div>
-              <h2 className="text-2xl font-bold text-gray-900 mb-2">Freemium</h2>
-              <div className="text-5xl font-bold text-gray-900 mb-2">Gratuit</div>
-              <p className="text-gray-600">Pour toujours</p>
-            </div>
-            <div className="space-y-3 mb-8">
-              {features.free.map((feature, idx) => (
-                <div key={idx} className={`flex items-start gap-3 ${!feature.included ? 'opacity-40' : ''}`}>
-                  <span className="text-xl flex-shrink-0">{feature.icon}</span>
-                  <span className="text-gray-700">{feature.text}</span>
-                </div>
-              ))}
-            </div>
-            {!isPremium && !isTrialActive && (
-              <button className="w-full bg-gray-100 text-gray-700 px-6 py-3 rounded-xl font-bold">
-                Plan actuel
-              </button>
+        {/* Toggle mensuel/annuel */}
+        <div className="flex bg-white border border-gray-200 rounded-2xl p-1 mb-4">
+          <button
+            onClick={() => setBillingCycle('monthly')}
+            className={`flex-1 py-2.5 rounded-xl text-sm font-bold transition-all ${
+              billingCycle === 'monthly' ? 'bg-green-600 text-white shadow-sm' : 'text-gray-500'
+            }`}
+          >
+            Mensuel
+          </button>
+          <button
+            onClick={() => setBillingCycle('yearly')}
+            className={`flex-1 py-2.5 rounded-xl text-sm font-bold transition-all flex items-center justify-center gap-1.5 ${
+              billingCycle === 'yearly' ? 'bg-green-600 text-white shadow-sm' : 'text-gray-500'
+            }`}
+          >
+            Annuel
+            <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${
+              billingCycle === 'yearly' ? 'bg-white/20' : 'bg-green-100 text-green-700'
+            }`}>-17%</span>
+          </button>
+        </div>
+
+        {/* Carte Freemium */}
+        <div className="bg-white rounded-3xl border border-gray-200 p-5 mb-4 shadow-sm">
+          <div className="text-center mb-4">
+            <div className="text-3xl mb-2">🌱</div>
+            <h2 className="text-base font-bold text-gray-900">Freemium</h2>
+            <p className="text-2xl font-bold text-gray-900 mt-1">Gratuit</p>
+            <p className="text-xs text-gray-400">Pour toujours</p>
+          </div>
+          <div className="space-y-2 mb-4">
+            {freeFeatures.map((f, idx) => (
+              <div key={idx} className={`flex items-center gap-2.5 ${!f.included ? 'opacity-40' : ''}`}>
+                <span className="text-sm">{f.icon}</span>
+                <span className="text-sm text-gray-700">{f.text}</span>
+              </div>
+            ))}
+          </div>
+          {!isPremium && !isTrialActive && (
+            <div className="text-center text-xs font-bold text-gray-400 py-2">Plan actuel</div>
+          )}
+        </div>
+
+        {/* Carte Premium */}
+        <div className="relative bg-gradient-to-br from-green-50 to-emerald-50 rounded-3xl border-2 border-green-500 p-5 mb-4 shadow-lg mt-6">
+          <div className="absolute -top-3 left-1/2 -translate-x-1/2">
+            <span className="bg-green-600 text-white px-4 py-1 rounded-full text-xs font-bold shadow-md">
+              ⭐ Recommandé
+            </span>
+          </div>
+
+          <div className="text-center mb-4 pt-2">
+            <div className="text-3xl mb-2">💎</div>
+            <h2 className="text-base font-bold text-gray-900">Premium</h2>
+            <p className="text-2xl font-bold text-green-600 mt-1">
+              {billingCycle === 'monthly' ? '1 500' : '15 000'} FCFA
+            </p>
+            <p className="text-xs text-gray-500">{billingCycle === 'monthly' ? 'Par mois' : 'Par an'}</p>
+            {billingCycle === 'yearly' && (
+              <p className="text-xs text-green-600 font-semibold mt-1">Économise 3 000 FCFA/an</p>
             )}
           </div>
 
-          {/* PREMIUM */}
-          <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-2xl shadow-2xl border-2 border-green-500 p-8 relative">
-            <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
-              <span className="bg-gradient-to-r from-green-600 to-emerald-600 text-white px-6 py-2 rounded-full text-sm font-bold shadow-lg">
-                ⭐ Recommandé
-              </span>
-            </div>
-
-            <div className="text-center mb-6">
-              <div className="text-5xl mb-4">💎</div>
-              <h2 className="text-2xl font-bold text-gray-900 mb-2">Premium</h2>
-              <div className="text-5xl font-bold bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent mb-2">
-                {billingCycle === 'monthly' ? '1 500' : '15 000'} FCFA
+          <div className="space-y-2 mb-4">
+            {premiumFeatures.map((f, idx) => (
+              <div key={idx} className="flex items-center gap-2.5">
+                <span className="text-sm">{f.icon}</span>
+                <span className="text-sm font-semibold text-green-700">{f.text}</span>
               </div>
-              <p className="text-gray-600">{billingCycle === 'monthly' ? 'Par mois' : 'Par an'}</p>
-              {billingCycle === 'yearly' && (
-                <p className="text-sm text-green-600 font-semibold mt-1">Économise 3 000 FCFA/an</p>
-              )}
-            </div>
-
-            <div className="space-y-3 mb-8">
-              {features.premium.map((feature, idx) => (
-                <div key={idx} className="flex items-start gap-3 font-semibold">
-                  <span className="text-xl flex-shrink-0">{feature.icon}</span>
-                  <span className="text-green-700">{feature.text}</span>
-                </div>
-              ))}
-            </div>
-
-            {renderPremiumButton()}
-
-            <p className="text-center text-xs text-gray-600 mt-4">
-              {trialUsed || isPremium || isTrialActive
-                ? 'Paiement sécurisé via PayDunya · Wave, Orange Money, Free Money'
-                : 'Aucune carte requise · Annulation à tout moment'}
-            </p>
+            ))}
           </div>
+
+          {renderPremiumButton()}
+
+          <p className="text-center text-[11px] text-gray-500 mt-3">
+            {trialUsed || isPremium || isTrialActive
+              ? 'Paiement sécurisé via PayDunya · Wave, Orange Money, Free Money'
+              : 'Aucune carte requise · Annulation à tout moment'}
+          </p>
         </div>
 
         {/* FAQ */}
-        <div className="mt-16 max-w-3xl mx-auto">
-          <h2 className="text-2xl font-bold text-center mb-8">Questions fréquentes</h2>
-          <div className="space-y-4">
-            <FAQItem
-              question="Comment fonctionne l'essai gratuit ?"
-              answer="Tu bénéficies de 30 jours d'accès Premium complet sans aucun engagement. Aucune carte requise. À la fin, choisis de continuer en Premium ou revenir en Freemium."
-            />
-            <FAQItem
-              question="Puis-je annuler à tout moment ?"
-              answer="Oui, absolument ! Ton abonnement reste actif jusqu'à la fin de la période payée, puis bascule automatiquement en Freemium."
-            />
-            <FAQItem
-              question="Quels moyens de paiement acceptez-vous ?"
-              answer="Nous acceptons Mobile Money (Wave, Orange Money, Free Money) et les cartes bancaires internationales, via la plateforme sécurisée PayDunya."
-            />
-            <FAQItem
-              question="Mes données sont-elles conservées si je reviens en Freemium ?"
-              answer="Oui ! Toutes tes données restent intactes. Seules les fonctionnalités Premium deviennent inaccessibles."
-            />
+        <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden shadow-sm mb-4">
+          <div className="px-4 pt-4 pb-2">
+            <h2 className="text-sm font-bold text-gray-900">Questions fréquentes</h2>
+          </div>
+          <div className="divide-y divide-gray-50">
+            {faqItems.map((item, idx) => (
+              <div key={idx}>
+                <button
+                  onClick={() => setOpenFaq(openFaq === idx ? null : idx)}
+                  className="w-full text-left px-4 py-3 flex items-center justify-between"
+                >
+                  <span className="text-sm font-semibold text-gray-900 pr-3">{item.q}</span>
+                  <span className={`text-gray-300 text-xs flex-shrink-0 transition-transform ${openFaq === idx ? 'rotate-180' : ''}`}>▼</span>
+                </button>
+                {openFaq === idx && (
+                  <p className="px-4 pb-3 text-xs text-gray-500 leading-relaxed">{item.a}</p>
+                )}
+              </div>
+            ))}
           </div>
         </div>
 
-        {/* Trust Badges */}
-        <div className="mt-16 text-center">
-          <div className="flex justify-center gap-8 flex-wrap">
-            <div className="flex items-center gap-2 text-gray-600">
-              <span className="text-2xl">🔒</span>
-              <span className="font-semibold">Paiement sécurisé</span>
-            </div>
-            <div className="flex items-center gap-2 text-gray-600">
-              <span className="text-2xl">🇸🇳</span>
-              <span className="font-semibold">Made in Senegal</span>
-            </div>
-            <div className="flex items-center gap-2 text-gray-600">
-              <span className="text-2xl">💚</span>
-              <span className="font-semibold">+1000 utilisateurs</span>
-            </div>
-          </div>
+        {/* Trust badges */}
+        <div className="flex justify-center gap-4 flex-wrap text-xs text-gray-400 font-semibold">
+          <span className="flex items-center gap-1.5">🔒 Paiement sécurisé</span>
+          <span className="flex items-center gap-1.5">🇸🇳 Made in Senegal</span>
         </div>
+
       </div>
-    </div>
-  );
-};
-
-const FAQItem = ({ question, answer }) => {
-  const [isOpen, setIsOpen] = useState(false);
-  return (
-    <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-      <button
-        onClick={() => setIsOpen(!isOpen)}
-        className="w-full text-left p-6 flex items-center justify-between hover:bg-gray-50 transition-colors"
-      >
-        <span className="font-semibold text-gray-900">{question}</span>
-        <span className={`text-2xl transition-transform ${isOpen ? 'rotate-180' : ''}`}>▼</span>
-      </button>
-      {isOpen && <div className="px-6 pb-6 text-gray-600">{answer}</div>}
     </div>
   );
 };
