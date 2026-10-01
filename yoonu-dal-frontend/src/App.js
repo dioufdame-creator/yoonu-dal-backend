@@ -255,6 +255,7 @@ function App() {
   const renderPage = () => {
     switch (currentPage) {
       case 'home':
+        if (isAuthenticated) { handleNavigate('dashboard'); return null; }
         return <Home2 onNavigate={handleNavigate} toast={toastMethods} auth={authMethods} />;
 
       case 'home2':
@@ -633,6 +634,17 @@ function App() {
         return <Home onNavigate={handleNavigate} toast={toastMethods} auth={authMethods} />;
     }
   };
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 to-green-50">
+        <div className="text-center">
+          <div className="text-5xl mb-4 animate-bounce-slow">🌱</div>
+          <div className="w-10 h-10 border-4 border-green-500 border-t-transparent rounded-full animate-spin mx-auto"></div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="App min-h-screen flex flex-col">
