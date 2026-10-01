@@ -3,6 +3,10 @@ import { useEffect, useRef, useState } from 'react';
 import { requestNotificationPermission, onForegroundMessage } from '../../services/firebaseConfig';
 import API from '../../services/api';
 
+const DISMISSED_KEY = 'yoonu_dal_notif_banner_dismissed_at';
+// Ne plus jamais réafficher le bandeau avant ce délai après un "Plus tard".
+const DISMISS_COOLDOWN_MS = 30 * 24 * 60 * 60 * 1000; // 30 jours
+
 const NotificationManager = ({ user, toast }) => {
   const initialized = useRef(false);
   const [showBanner, setShowBanner] = useState(false);
@@ -15,6 +19,14 @@ const NotificationManager = ({ user, toast }) => {
     if (!('Notification' in window) || !('serviceWorker' in navigator)) return;
 
     if (Notification.permission === 'default') {
+      // Déjà repoussé récemment ("Plus tard") → ne pas re-proposer tout de suite
+      let dismissedAt = null;
+      try {
+        dismissedAt = localStorage.getItem(DISMISSED_KEY);
+      } catch {}
+      if (dismissedAt && Date.now() - Number(dismissedAt) < DISMISS_COOLDOWN_MS) {
+        return;
+      }
       // Montrer le bandeau après 3 secondes
       setTimeout(() => setShowBanner(true), 3000);
     } else if (Notification.permission === 'granted') {
@@ -50,6 +62,11 @@ const NotificationManager = ({ user, toast }) => {
 
   const handleDismiss = () => {
     setShowBanner(false);
+    try {
+      localStorage.setItem(DISMISSED_KEY, String(Date.now()));
+    } catch {
+      // localStorage indisponible — le bandeau pourra réapparaître, tant pis
+    }
   };
 
   if (!showBanner) return null;
