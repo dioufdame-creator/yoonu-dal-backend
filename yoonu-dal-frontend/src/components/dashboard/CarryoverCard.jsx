@@ -2,8 +2,10 @@
 // Carte de décision pour le report du solde mensuel + modals d'affectation
 import React, { useState, useEffect } from 'react';
 import API from '../../services/api';
+import { useCurrency } from '../../contexts/CurrencyContext';
 
 const CarryoverCard = ({ onNavigate, toast, onAllocated }) => {
+  const { format: formatMoney } = useCurrency();
   const [carryover, setCarryover] = useState(null);
   const [deficit, setDeficit] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -16,7 +18,7 @@ const CarryoverCard = ({ onNavigate, toast, onAllocated }) => {
     essentiels: '', plaisirs: '', projets: '', liberation: ''
   });
 
-  const formatFCFA = (v) => new Intl.NumberFormat('fr-FR').format(Math.round(v || 0));
+  const formatFCFA = (v) => formatMoney(Math.round(v || 0), { withSymbol: false });
 
   useEffect(() => {
     checkCarryover();
@@ -94,7 +96,7 @@ const CarryoverCard = ({ onNavigate, toast, onAllocated }) => {
     if (!carryover) return;
     const total = Object.values(manualAmounts).reduce((s, v) => s + (parseFloat(v) || 0), 0);
     if (Math.abs(total - carryover.amount) > 1) {
-      toast?.showError?.(`Le total (${formatFCFA(total)}) doit égaler ${formatFCFA(carryover.amount)} FCFA`);
+      toast?.showError?.(`Le total (${formatFCFA(total)}) doit égaler ${formatMoney(carryover.amount)}`);
       return;
     }
     setSubmitting(true);
@@ -136,7 +138,7 @@ const CarryoverCard = ({ onNavigate, toast, onAllocated }) => {
       <div className="bg-red-50 border border-red-200 rounded-2xl p-4 mb-4 flex items-start gap-3">
         <span className="text-lg flex-shrink-0">⚠️</span>
         <p className="text-sm text-red-800 font-medium">
-          Vous démarrez le mois avec un déficit de {formatFCFA(deficit.amount)} FCFA
+          Vous démarrez le mois avec un déficit de {formatMoney(deficit.amount)}
           {' '}({deficit.from_month_label}) à rattraper.
         </p>
       </div>
@@ -154,7 +156,7 @@ const CarryoverCard = ({ onNavigate, toast, onAllocated }) => {
           <span className="text-2xl flex-shrink-0">💰</span>
           <div>
             <p className="text-sm font-bold text-gray-900">
-              Il vous reste {formatFCFA(carryover.amount)} FCFA de {carryover.from_month_label}
+              Il vous reste {formatMoney(carryover.amount)} de {carryover.from_month_label}
             </p>
             <p className="text-xs text-gray-500 mt-0.5">Que voulez-vous en faire ?</p>
           </div>
@@ -229,7 +231,7 @@ const CarryoverCard = ({ onNavigate, toast, onAllocated }) => {
                   >
                     <p className="text-sm font-bold text-gray-900">{g.title}</p>
                     <p className="text-xs text-gray-500">
-                      {formatFCFA(g.current_amount)} / {formatFCFA(g.target_amount)} FCFA
+                      {formatMoney(g.current_amount)} / {formatMoney(g.target_amount)}
                     </p>
                   </button>
                 ))}
@@ -248,7 +250,7 @@ const CarryoverCard = ({ onNavigate, toast, onAllocated }) => {
               <button onClick={() => setActiveModal(null)} className="text-gray-400 text-xl">✕</button>
             </div>
             <p className="text-xs text-gray-500 mb-4">
-              Total à répartir : <strong>{formatFCFA(carryover.amount)} FCFA</strong>
+              Total à répartir : <strong>{formatMoney(carryover.amount)}</strong>
             </p>
 
             <div className="space-y-3 mb-4">
@@ -279,8 +281,8 @@ const CarryoverCard = ({ onNavigate, toast, onAllocated }) => {
               {Math.abs(manualDiff) < 1
                 ? '✓ Répartition complète'
                 : manualDiff > 0
-                  ? `Reste ${formatFCFA(manualDiff)} FCFA à répartir`
-                  : `Dépassement de ${formatFCFA(Math.abs(manualDiff))} FCFA`}
+                  ? `Reste ${formatMoney(manualDiff)} à répartir`
+                  : `Dépassement de ${formatMoney(Math.abs(manualDiff))}`}
             </div>
 
             <button
