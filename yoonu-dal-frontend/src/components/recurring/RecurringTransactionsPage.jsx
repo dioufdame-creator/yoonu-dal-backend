@@ -2,6 +2,7 @@
 // Gestion des patrons de transactions récurrentes
 import React, { useState, useEffect } from 'react';
 import API from '../../services/api';
+import { useCurrency } from '../../contexts/CurrencyContext';
 
 const CATEGORY_LABELS = {
   loyer: 'Loyer', alimentation: 'Alimentation', transport: 'Transport',
@@ -16,12 +17,13 @@ const CATEGORY_LABELS = {
 };
 
 const RecurringTransactionsPage = ({ onNavigate, toast }) => {
+  const { format: formatMoney } = useCurrency();
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [editingId, setEditingId] = useState(null);
   const [editAmount, setEditAmount] = useState('');
 
-  const formatFCFA = (v) => new Intl.NumberFormat('fr-FR').format(Math.round(v || 0));
+  const formatFCFA = (v) => formatMoney(Math.round(v || 0));
 
   useEffect(() => { load(); }, []);
 
@@ -123,7 +125,7 @@ const RecurringTransactionsPage = ({ onNavigate, toast }) => {
                 item.type === 'expense' ? 'text-red-500' : 'text-green-600'
               }`}
             >
-              {formatFCFA(item.amount)} FCFA
+              {formatFCFA(item.amount)}
             </p>
           )}
         </div>
