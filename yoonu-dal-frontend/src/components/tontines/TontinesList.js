@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import API from '../../services/api';
+import { useCurrency } from '../../contexts/CurrencyContext';
 
 const TontinesListPremium = ({ onNavigate, toast, pageParams }) => {
+  const { format: formatMoney } = useCurrency();
   const [tontines, setTontines] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('all');
@@ -76,8 +78,7 @@ const TontinesListPremium = ({ onNavigate, toast, pageParams }) => {
     return num.toString();
   };
 
-  const formatFull = (amount) =>
-    new Intl.NumberFormat('fr-FR').format(amount || 0) + ' FCFA';
+  const formatFull = (amount) => formatMoney(amount || 0);
 
   const formatDate = (dateStr) => {
     if (!dateStr) return '—';
