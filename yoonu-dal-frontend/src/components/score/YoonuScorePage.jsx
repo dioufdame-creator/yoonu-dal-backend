@@ -157,12 +157,20 @@ const YoonuScorePage = ({ toast, onNavigate }) => {
 
         {/* Header */}
         <div className="mb-6 flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl lg:text-3xl font-bold text-gray-900 flex items-center gap-3">
-              <span>🎯</span>
-              <span>Ton Score Yoonu Dal</span>
-            </h1>
-            <p className="text-sm text-gray-500 mt-1">Alignement entre tes valeurs et ton argent</p>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => onNavigate?.('profile-hub')}
+              className="w-10 h-10 rounded-full bg-white border border-gray-200 flex items-center justify-center text-gray-600 hover:bg-gray-50 flex-shrink-0"
+            >
+              ←
+            </button>
+            <div>
+              <h1 className="text-2xl lg:text-3xl font-bold text-gray-900 flex items-center gap-3">
+                <span>🎯</span>
+                <span>Ton Score Yoonu Dal</span>
+              </h1>
+              <p className="text-sm text-gray-500 mt-1">Alignement entre tes valeurs et ton argent</p>
+            </div>
           </div>
           <button onClick={recalculateScore}
             className="bg-white text-gray-700 px-4 py-2 rounded-lg border border-gray-300 font-medium hover:bg-gray-50 transition-all flex items-center gap-2">
