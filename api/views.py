@@ -4040,7 +4040,14 @@ def manage_debts(request):
     elif request.method == 'POST':
         data = request.data.copy()
         data['user'] = user.id
-        
+
+        # Les champs date optionnels envoyés comme chaîne vide par le
+        # frontend doivent être traités comme "non renseigné", sinon
+        # DRF les rejette avec "La date n'a pas le bon format".
+        for date_field in ('target_end_date', 'actual_end_date'):
+            if data.get(date_field) == '':
+                data.pop(date_field)
+
         serializer = DebtSerializer(data=data)
         if serializer.is_valid():
             serializer.save(user=user)
@@ -4064,7 +4071,12 @@ def debt_detail(request, debt_id):
         return Response(serializer.data)
     
     elif request.method == 'PUT':
-        serializer = DebtSerializer(debt, data=request.data, partial=True)
+        data = request.data.copy()
+        for date_field in ('target_end_date', 'actual_end_date'):
+            if data.get(date_field) == '':
+                data.pop(date_field)
+
+        serializer = DebtSerializer(debt, data=data, partial=True)
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data)
