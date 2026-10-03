@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
 import API from '../../services/api';
+import { useCurrency } from '../../contexts/CurrencyContext';
 
 const ReceiptScanner = ({ onReceiptScanned, onClose, toast }) => {
+  const { format: formatMoney } = useCurrency();
   const [scanning, setScanning] = useState(false);
   const [previewUrl, setPreviewUrl] = useState(null);
   const [scannedData, setScannedData] = useState(null);
@@ -178,7 +180,7 @@ const ReceiptScanner = ({ onReceiptScanned, onClose, toast }) => {
                     <div className="flex justify-between">
                       <span className="text-gray-600">Montant :</span>
                       <span className="font-bold text-green-700 text-lg">
-                        {scannedData.amount.toLocaleString()} FCFA
+                        {formatMoney(scannedData.amount)}
                       </span>
                     </div>
                     <div className="flex justify-between">
