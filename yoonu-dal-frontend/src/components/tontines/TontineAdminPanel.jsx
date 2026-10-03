@@ -13,6 +13,9 @@ const TontineAdminPanel = ({ tontine, participants, onUpdate, toast }) => {
   const [rejectingId, setRejectingId] = useState(null);
   const [rejectReason, setRejectReason] = useState('');
   const [markingPayoutId, setMarkingPayoutId] = useState(null);
+  const [showDeclareForm, setShowDeclareForm] = useState(false);
+  const [declareForm, setDeclareForm] = useState({ participant_id: '', amount: '', date: '', notes: '' });
+  const [declaring, setDeclaring] = useState(false);
 
   const isManual = tontine?.payout_mode === 'manual' || !tontine?.payout_mode;
   const isRandom = tontine?.payout_mode === 'random';
@@ -111,6 +114,32 @@ const TontineAdminPanel = ({ tontine, participants, onUpdate, toast }) => {
     } catch (error) {
       const errorMsg = error.response?.data?.error || 'Erreur lors du rejet';
       toast?.showError?.(errorMsg);
+    }
+  };
+
+  const handleDeclareContribution = async (e) => {
+    e.preventDefault();
+    if (!declareForm.participant_id || !declareForm.amount) {
+      toast?.showError?.('Participant et montant requis');
+      return;
+    }
+    setDeclaring(true);
+    try {
+      await API.post(`/tontines/${tontine.id}/contributions/declare/`, {
+        participant_id: declareForm.participant_id,
+        amount: declareForm.amount,
+        date: declareForm.date || undefined,
+        notes: declareForm.notes,
+      });
+      toast?.showSuccess?.('Cotisation déclarée et validée !');
+      setShowDeclareForm(false);
+      setDeclareForm({ participant_id: '', amount: '', date: '', notes: '' });
+      loadPendingContributions();
+      onUpdate?.();
+    } catch (error) {
+      toast?.showError?.(error.response?.data?.error || 'Erreur lors de la déclaration');
+    } finally {
+      setDeclaring(false);
     }
   };
 
@@ -399,6 +428,89 @@ const TontineAdminPanel = ({ tontine, participants, onUpdate, toast }) => {
             >
               🔄 Actualiser
             </button>
+          </div>
+
+          {/* Déclarer une cotisation pour un participant qui ne l'a pas fait lui-même */}
+          <div className="mb-4">
+            {!showDeclareForm ? (
+              <button
+                onClick={() => setShowDeclareForm(true)}
+                className="w-full py-3 bg-blue-50 text-blue-700 rounded-2xl text-xs font-bold hover:bg-blue-100 transition-all flex items-center justify-center gap-2"
+              >
+                <span>✍️</span> Déclarer une cotisation pour un participant
+              </button>
+            ) : (
+              <form onSubmit={handleDeclareContribution} className="bg-blue-50 border border-blue-200 rounded-2xl p-4 space-y-3">
+                <p className="text-xs font-bold text-blue-800">
+                  ✍️ Déclarer une cotisation (ex: payée en main propre, non enregistrée par le participant)
+                </p>
+                <div>
+                  <label className="text-xs text-gray-500 font-semibold uppercase tracking-wide">Participant</label>
+                  <select
+                    value={declareForm.participant_id}
+                    onChange={(e) => setDeclareForm({ ...declareForm, participant_id: e.target.value })}
+                    className="w-full mt-1 px-3 py-2.5 bg-white border border-gray-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-400"
+                  >
+                    <option value="">Choisir un participant…</option>
+                    {manualOrder.map((p) => {
+                      const label = p.display_name || (p.user?.first_name
+                        ? `${p.user.first_name} ${p.user.last_name || ''}`
+                        : p.user?.username || 'Participant');
+                      const handLabel = p.hand_number > 1 ? ` (main ${p.hand_number})` : '';
+                      return <option key={p.id} value={p.id}>{label}{handLabel}</option>;
+                    })}
+                  </select>
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <label className="text-xs text-gray-500 font-semibold uppercase tracking-wide">Montant</label>
+                    <input
+                      type="number"
+                      inputMode="numeric"
+                      value={declareForm.amount}
+                      onChange={(e) => setDeclareForm({ ...declareForm, amount: e.target.value })}
+                      placeholder="0"
+                      className="w-full mt-1 px-3 py-2.5 bg-white border border-gray-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-400"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-xs text-gray-500 font-semibold uppercase tracking-wide">Date (optionnel)</label>
+                    <input
+                      type="date"
+                      value={declareForm.date}
+                      onChange={(e) => setDeclareForm({ ...declareForm, date: e.target.value })}
+                      className="w-full mt-1 px-3 py-2.5 bg-white border border-gray-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-400"
+                    />
+                  </div>
+                </div>
+                <div>
+                  <label className="text-xs text-gray-500 font-semibold uppercase tracking-wide">Note (optionnel)</label>
+                  <input
+                    type="text"
+                    value={declareForm.notes}
+                    onChange={(e) => setDeclareForm({ ...declareForm, notes: e.target.value })}
+                    placeholder="Ex: Reçu en espèces le 1er"
+                    className="w-full mt-1 px-3 py-2.5 bg-white border border-gray-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-400"
+                  />
+                </div>
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => { setShowDeclareForm(false); setDeclareForm({ participant_id: '', amount: '', date: '', notes: '' }); }}
+                    className="flex-1 py-2.5 bg-white text-gray-700 border border-gray-200 rounded-xl text-sm font-medium hover:bg-gray-50 transition-all"
+                  >
+                    Annuler
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={declaring}
+                    className="flex-1 py-2.5 bg-blue-600 text-white rounded-xl text-sm font-semibold hover:bg-blue-700 transition-all disabled:opacity-50"
+                  >
+                    {declaring ? 'Déclaration...' : 'Déclarer et valider'}
+                  </button>
+                </div>
+              </form>
+            )}
           </div>
 
           {loadingContributions ? (
