@@ -2,6 +2,7 @@
 // Saisie rapide — Dépense / Revenu / Épargner (vers une poche ou un objectif)
 import React, { useState, useEffect } from 'react';
 import API from '../../services/api';
+import { useCurrency } from '../../contexts/CurrencyContext';
 
 const TOP_EXPENSE_CATEGORIES = [
   { value: 'alimentation',       label: 'Alimentation',        icon: '🍽️' },
@@ -49,6 +50,7 @@ const INCOME_SOURCES = [
 ];
 
 const QuickAdd = ({ type = 'expense', onNavigate, toast, pageParams }) => {
+  const { currency } = useCurrency();
   const isExpense = type === 'expense';
   const isSavings = type === 'savings';
 
@@ -239,7 +241,7 @@ const QuickAdd = ({ type = 'expense', onNavigate, toast, pageParams }) => {
               autoFocus
               className="text-4xl font-bold text-gray-900 text-center w-full outline-none placeholder-gray-300"
             />
-            <p className="text-sm text-gray-400 mt-1">FCFA</p>
+            <p className="text-sm text-gray-400 mt-1">{currency}</p>
           </div>
 
           {/* 2a. CATÉGORIE (dépense/revenu) — masqué en mode Épargner */}
