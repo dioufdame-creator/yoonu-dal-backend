@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import API from '../../services/api';
+import { useCurrency } from '../../contexts/CurrencyContext';
 
 const ProjectionWidget = () => {
+  const { format: formatMoney } = useCurrency();
   const [projection, setProjection] = useState(null);
   const [loading, setLoading] = useState(true);
 
@@ -65,7 +67,7 @@ const ProjectionWidget = () => {
       <div className="mb-4">
         <p className="text-sm text-gray-600 mb-2">Si tu continues ainsi :</p>
         <div className={`text-3xl font-bold ${is_positive ? 'text-green-600' : 'text-red-600'}`}>
-          {projected_balance >= 0 ? '+' : ''}{Math.round(projected_balance).toLocaleString()} FCFA
+          {projected_balance >= 0 ? '+' : ''}{formatMoney(Math.round(projected_balance))}
         </div>
         <p className="text-sm text-gray-600 mt-1">
           Solde prévu fin février
@@ -79,10 +81,10 @@ const ProjectionWidget = () => {
             <span className="text-2xl">💰</span>
             <div>
               <p className="font-semibold text-gray-900">
-                Épargne probable : {Math.round(projected_savings).toLocaleString()} FCFA
+                Épargne probable : {formatMoney(Math.round(projected_savings))}
               </p>
               <p className="text-xs text-gray-600">
-                Moyenne {Math.round(daily_avg_expense).toLocaleString()} FCFA/jour
+                Moyenne {formatMoney(Math.round(daily_avg_expense))}/jour
               </p>
             </div>
           </div>
