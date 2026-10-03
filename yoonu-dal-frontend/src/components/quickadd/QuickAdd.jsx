@@ -165,7 +165,7 @@ const QuickAdd = ({ type = 'expense', onNavigate, toast, pageParams }) => {
           description: finalDescription,
           date,
         });
-        toast?.showSuccess('✅ Dépense enregistrée !');
+        toast?.showSuccess('Dépense enregistrée !');
       } else {
         await API.post('/incomes/', {
           amount: parseFloat(amount),
@@ -173,7 +173,7 @@ const QuickAdd = ({ type = 'expense', onNavigate, toast, pageParams }) => {
           description: finalDescription,
           date,
         });
-        toast?.showSuccess('✅ Revenu enregistré !');
+        toast?.showSuccess('Revenu enregistré !');
       }
 
       if (makeRecurring) {
