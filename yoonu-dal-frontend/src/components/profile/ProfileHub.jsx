@@ -51,6 +51,7 @@ const ProfileHub = ({ onNavigate, user, onLogout }) => {
     {
       title: 'Compte',
       items: [
+        { icon: '💱', label: 'Devise', page: 'currency-settings', color: 'bg-gray-50 text-gray-700' },
         { icon: '💎', label: 'Mon abonnement', page: 'subscription', color: 'bg-gray-50 text-gray-700' },
         { icon: '❓', label: 'Aide & Support', page: 'help', color: 'bg-gray-50 text-gray-700' },
       ]
