@@ -270,8 +270,9 @@ def user_profile(request):
                     'trial_used': profile.trial_used,
                     'trial_days_remaining': profile.trial_days_remaining(),
                     'is_premium': profile.is_premium_active(),
-                    'ai_messages_count': profile.ai_messages_count
+                    'ai_messages_count': profile.ai_messages_count,
                     # ✅✅✅ FIN AJOUT ✅✅✅
+                    'currency': profile.currency,
                 }
             })
         except Exception as e:
@@ -296,6 +297,8 @@ def user_profile(request):
                 profile.phone_number = data['phone_number']
             if 'monthly_income' in data:
                 profile.monthly_income = Decimal(data['monthly_income'])
+            if 'currency' in data:
+                profile.currency = data['currency']
             profile.save()
 
             return Response({'message': 'Profil mis à jour'})
