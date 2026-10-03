@@ -1,5 +1,6 @@
 // src/services/tontineService.js
 import authService from './authService';
+import { formatCurrency, DEFAULT_CURRENCY } from '../utils/currency';
 
 const API_BASE_URL = process.env.REACT_APP_API_URL 
   ? `${process.env.REACT_APP_API_URL}/api`
@@ -460,9 +461,11 @@ class TontineService {
     return result;
   }
 
-  // Formater les montants en FCFA
+  // Formater les montants selon la devise de l'utilisateur
   formatAmount(amount) {
-    return new Intl.NumberFormat('fr-FR').format(amount) + ' FCFA';
+    const cachedUser = authService.getCurrentUser();
+    const currency = cachedUser?.profile?.currency || DEFAULT_CURRENCY;
+    return formatCurrency(amount, currency);
   }
 
   // Calculer le statut d'une tontine
