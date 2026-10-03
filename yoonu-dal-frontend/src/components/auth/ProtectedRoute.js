@@ -27,7 +27,7 @@ const ProtectedRoute = ({ children, requireAuth = true, requireGuest = false, fa
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 flex items-center justify-center">
         <div className="text-center animate-fade-in">
-          <div className="inline-block animate-spin rounded-full h-16 w-16 border-b-2 border-primary-600 mb-4"></div>
+          <div className="w-16 h-16 border-4 border-green-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
           <h2 className="text-xl font-semibold text-gray-700 mb-2">Chargement...</h2>
           <p className="text-gray-500">Vérification de votre session</p>
         </div>
