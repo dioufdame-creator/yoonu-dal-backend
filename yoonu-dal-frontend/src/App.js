@@ -55,9 +55,37 @@ import GoalsPage from './components/goals/GoalsPage';
 import DebtsPage from './components/debts/DebtsPage';
 import DebtDetailPage from './components/debts/DebtDetailPage';
 
+// Pages qu'il ne faut jamais restaurer telles quelles après un refresh
+// (états transitoires ou liés à une action ponctuelle, pas des destinations).
+const NON_RESTORABLE_PAGES = ['reset-password', 'payment-success', 'payment-cancel', 'tontine-invite'];
+
+// Pages qui nécessitent d'être authentifié — partagée entre handleNavigate
+// et la vérification faite après un refresh.
+const PROTECTED_PAGES = [
+  'dashboard', 'expenses', 'transactions', 'incomes', 'envelopes', 'tontines',
+  'tontine-detail', 'tontine-analysis',
+  'profile', 'profile-hub', 'quick-add', 'exports', 'recurring', 'pockets', 'score', 'alerts',
+  'diagnostic', 'values', 'category-rules', 'goals', 'debts', 'debt-detail',
+  'subscription', 'currency-settings'
+];
+
 function App() {
-  const [currentPage, setCurrentPage] = useState('home');
-  const [pageParams, setPageParams] = useState({});
+  const [currentPage, setCurrentPage] = useState(() => {
+    try {
+      const saved = sessionStorage.getItem('yoonu_dal_current_page');
+      return saved && !NON_RESTORABLE_PAGES.includes(saved) ? saved : 'home';
+    } catch {
+      return 'home';
+    }
+  });
+  const [pageParams, setPageParams] = useState(() => {
+    try {
+      const saved = sessionStorage.getItem('yoonu_dal_page_params');
+      return saved ? JSON.parse(saved) : {};
+    } catch {
+      return {};
+    }
+  });
 
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [user, setUser] = useState(null);
@@ -101,6 +129,19 @@ function App() {
       } finally {
         setIsLoading(false);
 
+        // Si la page restaurée depuis un refresh est protégée et que
+        // l'utilisateur n'est (plus) authentifié, on ne la laisse pas
+        // telle quelle — retour à l'accueil/connexion.
+        const stillProtected = PROTECTED_PAGES.includes(currentPage) && !authService.isAuthenticated();
+        if (stillProtected) {
+          setCurrentPage('home');
+          setPageParams({});
+          try {
+            sessionStorage.removeItem('yoonu_dal_current_page');
+            sessionStorage.removeItem('yoonu_dal_page_params');
+          } catch {}
+        }
+
         // Détection des paramètres URL
         const path = window.location.pathname;
         const params = new URLSearchParams(window.location.search);
@@ -137,14 +178,7 @@ function App() {
   };
 
   const handleNavigate = (page, params = {}) => {
-    const protectedPages = [
-      'dashboard', 'expenses', 'transactions', 'incomes', 'envelopes', 'tontines',
-      'tontine-detail', 'tontine-analysis',
-      'profile', 'profile-hub', 'quick-add', 'exports', 'recurring', 'pockets', 'score', 'alerts',
-      'diagnostic', 'values', 'category-rules', 'goals', 'debts', 'debt-detail',
-      'subscription', 'currency-settings'
-    ];
-    if (protectedPages.includes(page) && !isAuthenticated) {
+    if (PROTECTED_PAGES.includes(page) && !isAuthenticated) {
       setCurrentPage('login');
       return;
     }
@@ -154,6 +188,12 @@ function App() {
     }
     setCurrentPage(page);
     setPageParams(params);
+    try {
+      sessionStorage.setItem('yoonu_dal_current_page', page);
+      sessionStorage.setItem('yoonu_dal_page_params', JSON.stringify(params));
+    } catch {
+      // sessionStorage indisponible (navigation privée stricte...) — tant pis
+    }
   };
 
   const handleLogin = async (credentials) => {
