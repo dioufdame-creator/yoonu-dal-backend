@@ -81,6 +81,7 @@ urlpatterns = [
     path('tontines/<int:tontine_id>/activity/', views.tontine_activity_feed, name='tontine_activity'),
     path('tontines/<int:tontine_id>/manage-order/', views.tontine_manage_order, name='tontine_manage_order'),
     path('tontines/<int:tontine_id>/contributions/pending/', views.tontine_pending_contributions, name='tontine_pending_contributions'),
+    path('tontines/<int:tontine_id>/contributions/declare/', views.declare_tontine_contribution, name='declare_tontine_contribution'),
     path('tontine-contributions/<int:contribution_id>/validate/', views.validate_contribution, name='validate_contribution'),
 
     # Diagnostic
