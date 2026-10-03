@@ -564,6 +564,9 @@ class DebtSerializer(serializers.ModelSerializer):
     payments = DebtPaymentSerializer(many=True, read_only=True)
     payment_count = serializers.SerializerMethodField()
 
+    target_end_date = serializers.DateField(required=False, allow_null=True)
+    actual_end_date = serializers.DateField(required=False, allow_null=True)
+
     class Meta:
         model = Debt
         fields = [
