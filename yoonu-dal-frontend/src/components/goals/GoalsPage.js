@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import API from '../../services/api';
+import { useCurrency } from '../../contexts/CurrencyContext';
+import { getCurrencyInfo } from '../../utils/currency';
 
 const CATEGORIES = [
   { value: 'all',            label: 'Tous',          emoji: '🎯' },
@@ -23,6 +25,7 @@ const emptyForm = () => ({
 });
 
 const GoalsPage = ({ toast, onNavigate, pageParams }) => {
+  const { format: formatMoney, currency } = useCurrency();
   const [loading, setLoading] = useState(true);
   const [goals, setGoals] = useState([]);
   const [metrics, setMetrics] = useState(null);
@@ -50,8 +53,7 @@ const GoalsPage = ({ toast, onNavigate, pageParams }) => {
     if (num >= 1000) return `${(num / 1000).toFixed(0)}k`;
     return num.toString();
   };
-  const formatFull = (amount) =>
-    new Intl.NumberFormat('fr-FR').format(Math.round(parseFloat(amount) || 0)) + ' FCFA';
+  const formatFull = (amount) => formatMoney(Math.round(parseFloat(amount) || 0));
 
   useEffect(() => {
     loadGoals();
@@ -375,7 +377,7 @@ const GoalsPage = ({ toast, onNavigate, pageParams }) => {
                     <div className="flex items-center justify-between text-xs mb-1">
                       <span className="text-gray-400">{pct.toFixed(0)}%</span>
                       <span className="font-bold text-gray-700">
-                        {formatShort(goal.current_amount)} / {formatShort(goal.target_amount)} FCFA
+                        {formatShort(goal.current_amount)} / {formatShort(goal.target_amount)} {getCurrencyInfo(currency).symbol}
                       </span>
                     </div>
                     <div className="w-full bg-gray-100 rounded-full h-2 overflow-hidden">
