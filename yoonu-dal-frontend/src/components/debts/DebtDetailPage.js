@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import API from '../../services/api';
+import { useCurrency } from '../../contexts/CurrencyContext';
 
 const PAYMENT_METHODS = [
   { value: 'cash', label: 'Espèces', emoji: '💵' },
@@ -20,6 +21,7 @@ const emptyPaymentForm = {
 };
 
 const DebtDetailPage = ({ debtId, onNavigate, toast }) => {
+  const { format: formatMoney } = useCurrency();
   const [debt, setDebt] = useState(null);
   const [payments, setPayments] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -27,7 +29,7 @@ const DebtDetailPage = ({ debtId, onNavigate, toast }) => {
   const [paymentForm, setPaymentForm] = useState(emptyPaymentForm);
   const [confirmDeleteId, setConfirmDeleteId] = useState(null);
 
-  const formatFCFA = (v) => new Intl.NumberFormat('fr-FR').format(Math.round(v || 0));
+  const formatFCFA = (v) => formatMoney(Math.round(v || 0), { withSymbol: false });
   const formatDate = (d) => new Date(d).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' });
 
   useEffect(() => { loadData(); }, [debtId]);
@@ -148,7 +150,7 @@ const DebtDetailPage = ({ debtId, onNavigate, toast }) => {
             <span className="text-xl">{DEBT_TYPE_EMOJI[debt.debt_type] || '📋'}</span>
             <p className="text-sm opacity-80">{isOwedByMe ? 'Reste à payer' : 'Reste à recevoir'}</p>
           </div>
-          <p className="text-3xl font-bold mb-3">{formatFCFA(debt.remaining_amount)} FCFA</p>
+          <p className="text-3xl font-bold mb-3">{formatMoney(debt.remaining_amount)}</p>
 
           <div className="w-full bg-white/20 rounded-full h-2 overflow-hidden mb-3">
             <div className="h-full bg-white rounded-full transition-all duration-700" style={{ width: `${Math.min(pct, 100)}%` }} />
@@ -170,7 +172,7 @@ const DebtDetailPage = ({ debtId, onNavigate, toast }) => {
         <div className="bg-white rounded-2xl border border-gray-200 p-4 mb-4 shadow-sm grid grid-cols-2 gap-3">
           <div>
             <p className="text-[11px] text-gray-400">Montant total</p>
-            <p className="text-sm font-bold text-gray-800">{formatFCFA(debt.total_amount)} FCFA</p>
+            <p className="text-sm font-bold text-gray-800">{formatMoney(debt.total_amount)}</p>
           </div>
           <div>
             <p className="text-[11px] text-gray-400">Échéance</p>
@@ -249,7 +251,7 @@ const DebtDetailPage = ({ debtId, onNavigate, toast }) => {
                       {getMethodEmoji(payment.payment_method)}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-bold text-gray-800">{formatFCFA(payment.amount)} FCFA</p>
+                      <p className="text-sm font-bold text-gray-800">{formatMoney(payment.amount)}</p>
                       <p className="text-[11px] text-gray-400">
                         {formatDate(payment.payment_date)}
                         {payment.notes && ` · ${payment.notes}`}
