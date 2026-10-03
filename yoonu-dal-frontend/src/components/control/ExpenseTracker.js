@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import API from '../../services/api';
 import ReceiptScanner from '../ai/ReceiptScanner';
 import { PremiumGate } from '../subscription/SubscriptionComponents';
+import { useCurrency } from '../../contexts/CurrencyContext';
 
 const CATEGORIES = [
   { value: 'loyer',               label: 'Loyer',                 icon: '🏠', color: 'from-orange-500 to-red-500',    bgColor: 'bg-orange-50',  borderColor: 'border-orange-200',  textColor: 'text-orange-700',  group: 'Essentiels' },
@@ -42,6 +43,7 @@ const MONTHS_FR_SHORT = ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin',
   'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'];
 
 const ExpenseTrackerPremium = ({ toast, onNavigate, auth, user }) => {
+  const { format: formatMoney } = useCurrency();
   const [showModal, setShowModal] = useState(false);
   const [loading, setLoading] = useState(true);
   const [expandedId, setExpandedId] = useState(null);
@@ -127,8 +129,7 @@ const ExpenseTrackerPremium = ({ toast, onNavigate, auth, user }) => {
     return num.toString();
   };
 
-  const formatCurrencyFull = (value) =>
-    new Intl.NumberFormat('fr-FR').format(value || 0) + ' FCFA';
+  const formatCurrencyFull = (value) => formatMoney(value || 0);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
