@@ -2,6 +2,7 @@
 // "Mes poches" — vue d'ensemble du patrimoine + transferts
 import React, { useState, useEffect } from 'react';
 import API from '../../services/api';
+import { useCurrency } from '../../contexts/CurrencyContext';
 
 const ACCOUNT_ICONS = {
   disponible: '💰',
@@ -15,6 +16,7 @@ const displayName = (account) =>
   account.account_type === 'disponible' ? 'Trésorerie' : account.name;
 
 const PocketsPage = ({ onNavigate, toast, pageParams }) => {
+  const { format: formatMoney } = useCurrency();
   const [accounts, setAccounts] = useState([]);
   const [goals, setGoals] = useState([]);
   const [total, setTotal] = useState(0);
@@ -43,7 +45,7 @@ const PocketsPage = ({ onNavigate, toast, pageParams }) => {
     essentiels: '', plaisirs: '', projets: '', liberation: ''
   });
 
-  const formatFCFA = (v) => new Intl.NumberFormat('fr-FR').format(Math.round(v || 0));
+  const formatFCFA = (v) => formatMoney(Math.round(v || 0), { withSymbol: false });
 
   useEffect(() => { load(); }, []);
 
@@ -225,7 +227,7 @@ const PocketsPage = ({ onNavigate, toast, pageParams }) => {
         {/* Patrimoine total */}
         <div className="bg-gradient-to-br from-indigo-600 to-purple-700 rounded-3xl p-6 mb-4 text-white shadow-xl">
           <p className="text-sm opacity-80 mb-1">Patrimoine total</p>
-          <p className="text-4xl font-bold">{formatFCFA(total)} <span className="text-lg font-normal opacity-70">FCFA</span></p>
+          <p className="text-4xl font-bold">{formatMoney(total)}</p>
           <p className="text-xs opacity-70 mt-2">Toutes vos poches et objectifs réunis</p>
         </div>
 
@@ -322,7 +324,7 @@ const PocketsPage = ({ onNavigate, toast, pageParams }) => {
                         <div className="w-11 h-11 bg-gray-50 rounded-2xl flex items-center justify-center text-xl flex-shrink-0">🎯</div>
                         <div className="flex-1 min-w-0">
                           <p className="text-sm font-bold text-gray-900 truncate">{g.title}</p>
-                          <p className="text-xs text-gray-400">{formatFCFA(g.current_amount)} / {formatFCFA(g.target_amount)} FCFA</p>
+                          <p className="text-xs text-gray-400">{formatMoney(g.current_amount)} / {formatMoney(g.target_amount)}</p>
                         </div>
                       </button>
                       <p className="text-xs font-bold text-green-600 flex-shrink-0">{pct.toFixed(0)}%</p>
@@ -383,7 +385,7 @@ const PocketsPage = ({ onNavigate, toast, pageParams }) => {
                   <option value=":">Choisir une poche...</option>
                   {allEntities.map(e => (
                     <option key={`${e.type}-${e.id}`} value={`${e.type}:${e.id}`}>
-                      {e.icon} {e.name} ({formatFCFA(e.balance)} FCFA)
+                      {e.icon} {e.name} ({formatMoney(e.balance)})
                     </option>
                   ))}
                 </select>
@@ -406,7 +408,7 @@ const PocketsPage = ({ onNavigate, toast, pageParams }) => {
                   <option value=":">Choisir une poche...</option>
                   {allEntities.map(e => (
                     <option key={`${e.type}-${e.id}`} value={`${e.type}:${e.id}`}>
-                      {e.icon} {e.name} ({formatFCFA(e.balance)} FCFA)
+                      {e.icon} {e.name} ({formatMoney(e.balance)})
                     </option>
                   ))}
                 </select>
@@ -460,7 +462,7 @@ const PocketsPage = ({ onNavigate, toast, pageParams }) => {
                 <button onClick={() => setShowAllocateSheet(false)} className="text-gray-400 text-xl">✕</button>
               </div>
               <p className="text-xs text-gray-400 mt-1">
-                Trésorerie disponible : {formatFCFA(disponibleAccount?.balance)} FCFA
+                Trésorerie disponible : {formatMoney(disponibleAccount?.balance)}
               </p>
             </div>
 
@@ -530,8 +532,8 @@ const PocketsPage = ({ onNavigate, toast, pageParams }) => {
                       {Math.abs(manualDiff) < 1
                         ? '✓ Répartition complète'
                         : manualDiff > 0
-                          ? `Reste ${formatFCFA(manualDiff)} FCFA à répartir`
-                          : `Dépassement de ${formatFCFA(Math.abs(manualDiff))} FCFA`}
+                          ? `Reste ${formatMoney(manualDiff)} à répartir`
+                          : `Dépassement de ${formatMoney(Math.abs(manualDiff))}`}
                     </p>
                   )}
                 </div>
@@ -592,7 +594,7 @@ const PocketsPage = ({ onNavigate, toast, pageParams }) => {
                   className="w-full mt-1 px-4 py-3 bg-gray-50 rounded-2xl text-lg font-bold outline-none focus:ring-2 focus:ring-gray-400"
                 />
                 <p className="text-[11px] text-gray-400 mt-1">
-                  Ancien solde affiché : {formatFCFA(adjustTarget.balance)} FCFA
+                  Ancien solde affiché : {formatMoney(adjustTarget.balance)}
                 </p>
               </div>
 
