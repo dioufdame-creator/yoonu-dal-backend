@@ -3,6 +3,7 @@ import API from '../../services/api';
 import TontineTimeline from './TontineTimeline';
 import TontineActivityFeed from './TontineActivityFeed';
 import TontineAdminPanel from './TontineAdminPanel';
+import { useCurrency } from '../../contexts/CurrencyContext';
 
 const TontineDetail = ({ tontineId, onNavigate, toast, user }) => {
   const [tontine, setTontine] = useState(null);
@@ -200,8 +201,9 @@ const TontineDetail = ({ tontineId, onNavigate, toast, user }) => {
     }
   };
 
-  const formatFCFA = (value) => new Intl.NumberFormat('fr-FR').format(value || 0);
-  const formatFull = (value) => formatFCFA(value) + ' FCFA';
+  const { format: formatMoney } = useCurrency();
+  const formatFCFA = (value) => formatMoney(value || 0, { withSymbol: false });
+  const formatFull = (value) => formatMoney(value || 0);
 
   const getStatusConfig = (status) => {
     const configs = {
