@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import API from '../../services/api';
+import { useCurrency } from '../../contexts/CurrencyContext';
 
 const DEBT_TYPES = [
   { value: 'credit_bancaire', label: 'Crédit bancaire', emoji: '🏦' },
@@ -32,6 +33,7 @@ const emptyPaymentForm = {
 };
 
 const DebtsPage = ({ toast, onNavigate }) => {
+  const { format: formatMoney } = useCurrency();
   const [debts, setDebts] = useState([]);
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -43,7 +45,7 @@ const DebtsPage = ({ toast, onNavigate }) => {
   const [debtForm, setDebtForm] = useState(emptyDebtForm);
   const [paymentForm, setPaymentForm] = useState(emptyPaymentForm);
 
-  const formatFCFA = (v) => new Intl.NumberFormat('fr-FR').format(Math.round(v || 0));
+  const formatFCFA = (v) => formatMoney(Math.round(v || 0), { withSymbol: false });
 
   useEffect(() => { loadData(); }, [filter, direction]);
 
@@ -182,7 +184,7 @@ const DebtsPage = ({ toast, onNavigate }) => {
             <p className="text-sm opacity-80 mb-1">
               {direction === 'owed_by_me' ? 'Reste à payer' : 'Reste à recevoir'}
             </p>
-            <p className="text-3xl font-bold mb-3">{formatFCFA(currentStats.remaining)} FCFA</p>
+            <p className="text-3xl font-bold mb-3">{formatMoney(currentStats.remaining)}</p>
             <div className="grid grid-cols-2 gap-2">
               <div className="bg-black/20 rounded-2xl px-3 py-2.5">
                 <p className="text-[11px] opacity-75">{direction === 'owed_by_me' ? 'Déjà payé' : 'Déjà reçu'}</p>
@@ -264,7 +266,7 @@ const DebtsPage = ({ toast, onNavigate }) => {
                     <div className="flex items-center justify-between text-xs mb-1">
                       <span className="text-gray-400">{pct.toFixed(0)}%</span>
                       <span className="font-bold text-gray-700">
-                        {formatFCFA(debt.remaining_amount)} FCFA restants
+                        {formatMoney(debt.remaining_amount)} restants
                       </span>
                     </div>
                     <div className="w-full bg-gray-100 rounded-full h-2 overflow-hidden">
