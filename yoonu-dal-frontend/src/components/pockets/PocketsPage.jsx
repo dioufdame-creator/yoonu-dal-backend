@@ -225,7 +225,7 @@ const PocketsPage = ({ onNavigate, toast, pageParams }) => {
         </div>
 
         {/* Patrimoine total */}
-        <div className="bg-gradient-to-br from-indigo-600 to-purple-700 rounded-3xl p-6 mb-4 text-white shadow-xl">
+        <div className="bg-gradient-to-br from-green-600 to-emerald-700 rounded-3xl p-6 mb-4 text-white shadow-xl">
           <p className="text-sm opacity-80 mb-1">Patrimoine total</p>
           <p className="text-4xl font-bold">{formatMoney(total)}</p>
           <p className="text-xs opacity-70 mt-2">Toutes vos poches et objectifs réunis</p>
@@ -287,7 +287,7 @@ const PocketsPage = ({ onNavigate, toast, pageParams }) => {
                   {isDisponible && acc.balance > 0 && (
                     <button
                       onClick={() => setShowAllocateSheet(true)}
-                      className="w-full px-4 py-2.5 bg-indigo-50 text-indigo-700 text-xs font-bold border-t border-indigo-100 hover:bg-indigo-100 transition-all"
+                      className="w-full px-4 py-2.5 bg-green-50 text-green-700 text-xs font-bold border-t border-green-100 hover:bg-green-100 transition-all"
                     >
                       💼 Affecter au budget du mois
                     </button>
@@ -441,7 +441,7 @@ const PocketsPage = ({ onNavigate, toast, pageParams }) => {
             <div className="p-4 pb-6">
               <button
                 onClick={handleTransfer}
-                className="w-full py-4 bg-gradient-to-r from-indigo-600 to-purple-700 text-white rounded-2xl font-bold shadow-lg"
+                className="w-full py-4 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-2xl font-bold shadow-lg"
               >
                 Effectuer le transfert
               </button>
@@ -476,7 +476,7 @@ const PocketsPage = ({ onNavigate, toast, pageParams }) => {
                   onChange={(e) => setAllocateAmount(e.target.value)}
                   placeholder="0"
                   autoFocus
-                  className="w-full mt-1 px-4 py-3 bg-gray-50 rounded-2xl text-lg font-bold outline-none focus:ring-2 focus:ring-indigo-500"
+                  className="w-full mt-1 px-4 py-3 bg-gray-50 rounded-2xl text-lg font-bold outline-none focus:ring-2 focus:ring-green-500"
                 />
               </div>
 
@@ -488,7 +488,7 @@ const PocketsPage = ({ onNavigate, toast, pageParams }) => {
                   <button
                     onClick={() => setAllocateMode('envelopes')}
                     className={`flex-1 py-2 rounded-xl text-xs font-bold transition-all ${
-                      allocateMode === 'envelopes' ? 'bg-white text-indigo-600 shadow-sm' : 'text-gray-400'
+                      allocateMode === 'envelopes' ? 'bg-white text-green-600 shadow-sm' : 'text-gray-400'
                     }`}
                   >
                     Selon mes enveloppes
@@ -496,7 +496,7 @@ const PocketsPage = ({ onNavigate, toast, pageParams }) => {
                   <button
                     onClick={() => setAllocateMode('manual')}
                     className={`flex-1 py-2 rounded-xl text-xs font-bold transition-all ${
-                      allocateMode === 'manual' ? 'bg-white text-indigo-600 shadow-sm' : 'text-gray-400'
+                      allocateMode === 'manual' ? 'bg-white text-green-600 shadow-sm' : 'text-gray-400'
                     }`}
                   >
                     Je choisis moi-même
@@ -521,7 +521,7 @@ const PocketsPage = ({ onNavigate, toast, pageParams }) => {
                         value={manualAllocation[env.key]}
                         onChange={(e) => setManualAllocation(prev => ({ ...prev, [env.key]: e.target.value }))}
                         placeholder="0"
-                        className="w-24 px-3 py-2 bg-white border border-gray-200 rounded-xl text-sm text-right outline-none focus:border-indigo-500"
+                        className="w-24 px-3 py-2 bg-white border border-gray-200 rounded-xl text-sm text-right outline-none focus:border-green-500"
                       />
                     </div>
                   ))}
@@ -549,7 +549,7 @@ const PocketsPage = ({ onNavigate, toast, pageParams }) => {
               <button
                 onClick={handleAllocate}
                 disabled={allocateMode === 'manual' && allocateAmount && Math.abs(manualDiff) >= 1}
-                className="w-full py-4 bg-gradient-to-r from-indigo-600 to-purple-700 text-white rounded-2xl font-bold shadow-lg disabled:opacity-40 disabled:cursor-not-allowed"
+                className="w-full py-4 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-2xl font-bold shadow-lg disabled:opacity-40 disabled:cursor-not-allowed"
               >
                 Confirmer l'affectation
               </button>
