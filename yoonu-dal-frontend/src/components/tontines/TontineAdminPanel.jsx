@@ -88,7 +88,7 @@ const TontineAdminPanel = ({ tontine, participants, onUpdate, toast }) => {
       await API.post(`/tontine-contributions/${contributionId}/validate/`, {
         action: 'confirm'
       });
-      toast?.showSuccess?.('✅ Contribution validée !');
+      toast?.showSuccess?.('Contribution validée !');
       loadPendingContributions();
       onUpdate?.();
     } catch (error) {
@@ -145,7 +145,7 @@ const TontineAdminPanel = ({ tontine, participants, onUpdate, toast }) => {
         action: 'manual',
         order
       });
-      toast?.showSuccess?.('✅ Ordre sauvegardé avec succès !');
+      toast?.showSuccess?.('Ordre sauvegardé avec succès !');
       onUpdate?.();
     } catch (error) {
       const errorMsg = error.response?.data?.error || 'Erreur lors de la sauvegarde';
