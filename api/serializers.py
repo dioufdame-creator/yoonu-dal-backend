@@ -35,7 +35,8 @@ class UserProfileSerializer(serializers.ModelSerializer):
         model = UserProfile
         fields = (
             'id', 'user', 'phone_number', 'date_of_birth', 'monthly_income',
-            'financial_goals', 'risk_tolerance', 'created_at', 'updated_at','onboarding_completed'
+            'financial_goals', 'risk_tolerance', 'created_at', 'updated_at',
+            'onboarding_completed', 'currency'
         )
         read_only_fields = ('id', 'created_at', 'updated_at')
 
