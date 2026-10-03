@@ -1,7 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import API from '../../services/api';
+import { useCurrency } from '../../contexts/CurrencyContext';
+import { getCurrencyInfo } from '../../utils/currency';
 
 const AlertsPageV2 = ({ toast, onNavigate }) => {
+  const { currency } = useCurrency();
   const [alerts, setAlerts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [activeFilter, setActiveFilter] = useState('all');
@@ -222,13 +225,13 @@ const AlertsPageV2 = ({ toast, onNavigate }) => {
                         {alert.context.current_spent !== undefined && (
                           <div>
                             <span className="text-gray-400">Dépensé : </span>
-                            <span className="font-semibold text-gray-700">{(alert.context.current_spent / 1000).toFixed(0)}k FCFA</span>
+                            <span className="font-semibold text-gray-700">{(alert.context.current_spent / 1000).toFixed(0)}k {getCurrencyInfo(currency).symbol}</span>
                           </div>
                         )}
                         {alert.context.budget !== undefined && (
                           <div>
                             <span className="text-gray-400">Budget : </span>
-                            <span className="font-semibold text-gray-700">{(alert.context.budget / 1000).toFixed(0)}k FCFA</span>
+                            <span className="font-semibold text-gray-700">{(alert.context.budget / 1000).toFixed(0)}k {getCurrencyInfo(currency).symbol}</span>
                           </div>
                         )}
                         {alert.context.days_remaining !== undefined && (
