@@ -24,6 +24,12 @@ class UserProfile(models.Model):
         default='medium'
     )
     onboarding_completed = models.BooleanField(default=False)
+
+    # Devise d'affichage choisie par l'utilisateur (code ISO 4217).
+    # Affichage uniquement : les montants restent stockés tels quels,
+    # seul le symbole/format présenté change.
+    currency = models.CharField(max_length=3, default='XOF')
+
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
