@@ -2,8 +2,10 @@
 // Carte de confirmation des transactions récurrentes du mois
 import React, { useState, useEffect } from 'react';
 import API from '../../services/api';
+import { useCurrency } from '../../contexts/CurrencyContext';
 
 const RecurringConfirmCard = ({ toast, onProcessed }) => {
+  const { format: formatMoney } = useCurrency();
   const [items, setItems] = useState([]);
   const [monthLabel, setMonthLabel] = useState('');
   const [loading, setLoading] = useState(true);
@@ -12,7 +14,7 @@ const RecurringConfirmCard = ({ toast, onProcessed }) => {
   const [editAmount, setEditAmount] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
-  const formatFCFA = (v) => new Intl.NumberFormat('fr-FR').format(Math.round(v || 0));
+  const formatFCFA = (v) => formatMoney(Math.round(v || 0));
 
   useEffect(() => { check(); }, []);
 
