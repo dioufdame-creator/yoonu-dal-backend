@@ -1,4 +1,5 @@
 import React from 'react';
+import { useCurrency } from '../../contexts/CurrencyContext';
 
 // ==========================================
 // TONTINE CARD V2 - PREMIUM DESIGN
@@ -6,7 +7,8 @@ import React from 'react';
 // ==========================================
 
 const TontineCardV2 = ({ tontine, onNavigate, toast }) => {
-  
+  const { format: formatMoney } = useCurrency();
+
   const getStatusConfig = (status) => {
     switch (status) {
       case 'active':
@@ -65,7 +67,7 @@ const TontineCardV2 = ({ tontine, onNavigate, toast }) => {
   };
 
   const formatCurrency = (amount) => {
-    return new Intl.NumberFormat('fr-FR').format(amount) + ' FCFA';
+    return formatMoney(amount);
   };
 
   const handleCopyInvitation = () => {
