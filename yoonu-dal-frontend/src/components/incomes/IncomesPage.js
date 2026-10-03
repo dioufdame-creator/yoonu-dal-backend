@@ -1,6 +1,7 @@
 // src/components/incomes/IncomesPage.js
 import React, { useState, useEffect, useCallback } from 'react';
 import API from '../../services/api';
+import { useCurrency } from '../../contexts/CurrencyContext';
 
 const SOURCES = [
   { value: 'Salaire', label: 'Salaire', icon: '💼', color: 'bg-blue-50 border-blue-200 text-blue-700' },
@@ -20,6 +21,7 @@ const MONTHS_FR_SEL = ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin',
   'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'];
 
 const IncomesPageV2 = ({ toast, onNavigate }) => {
+  const { format: formatMoney } = useCurrency();
   const [showModal, setShowModal] = useState(false);
   const [loading, setLoading] = useState(true);
   const [expandedId, setExpandedId] = useState(null);
@@ -61,8 +63,7 @@ const IncomesPageV2 = ({ toast, onNavigate }) => {
     return num.toString();
   };
 
-  const formatCurrencyFull = (value) =>
-    new Intl.NumberFormat('fr-FR').format(value || 0) + ' FCFA';
+  const formatCurrencyFull = (value) => formatMoney(value || 0);
 
   const formatDate = (dateString) =>
     new Date(dateString).toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' });
