@@ -49,7 +49,7 @@ const TontineAnalysis = ({ onNavigate }) => {
             title: 'Optimisez vos positions',
             description: 'Vos positions actuelles sont équilibrées mais vous pourriez améliorer votre retour sur investissement.',
             action: 'Négociez des positions plus précoces',
-            impact: 'Gain potentiel de 25,000 FCFA',
+            impact: `Gain potentiel de ${formatMoney(25000)}`,
             icon: '⬆️'
           },
           {
@@ -57,7 +57,7 @@ const TontineAnalysis = ({ onNavigate }) => {
             priority: 'low',
             title: 'Capacité d\'engagement disponible',
             description: 'Votre niveau d\'engagement actuel représente 15.6% de vos revenus. Vous avez une marge pour augmenter.',
-            action: 'Vous pourriez ajouter 40,000 FCFA/mois',
+            action: `Vous pourriez ajouter ${formatMoney(40000)}/mois`,
             impact: 'Optimisation de votre épargne',
             icon: '💪'
           }
