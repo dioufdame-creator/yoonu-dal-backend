@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import API from '../../services/api';
+import { useCurrency } from '../../contexts/CurrencyContext';
 
 const TontineInvitePage = ({ inviteCode, onNavigate, toast, isAuthenticated }) => {
+  const { format: formatMoney } = useCurrency();
   const [tontine, setTontine] = useState(null);
   const [loading, setLoading] = useState(true);
   const [joining, setJoining] = useState(false);
@@ -50,8 +52,7 @@ const TontineInvitePage = ({ inviteCode, onNavigate, toast, isAuthenticated }) =
     }
   };
 
-  const formatCurrencyFull = (amount) =>
-    new Intl.NumberFormat('fr-FR').format(amount || 0) + ' FCFA';
+  const formatCurrencyFull = (amount) => formatMoney(amount || 0);
 
   const formatDate = (dateStr) => {
     if (!dateStr) return '—';
