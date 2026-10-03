@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
+import { useCurrency } from '../../contexts/CurrencyContext';
 
 const TontineAnalysis = ({ onNavigate }) => {
+  const { format: formatMoney } = useCurrency();
   const [analysisData, setAnalysisData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('overview');
@@ -273,7 +275,7 @@ const TontineAnalysis = ({ onNavigate }) => {
                   <div className="flex justify-between items-center">
                     <span className="text-gray-600">Engagement mensuel total</span>
                     <span className="text-xl font-bold text-primary-600">
-                      {analysisData.summary.total_monthly_commitment.toLocaleString()} FCFA
+                      {formatMoney(analysisData.summary.total_monthly_commitment)}
                     </span>
                   </div>
                   <div className="flex justify-between items-center">
@@ -305,13 +307,13 @@ const TontineAnalysis = ({ onNavigate }) => {
                       <div className="flex justify-between">
                         <span className="text-gray-600">À contribuer</span>
                         <span className="font-medium text-red-600">
-                          -{analysisData.projections.next_6_months.contributions_to_pay.toLocaleString()} FCFA
+                          -{formatMoney(analysisData.projections.next_6_months.contributions_to_pay)}
                         </span>
                       </div>
                       <div className="flex justify-between">
                         <span className="text-gray-600">À recevoir</span>
                         <span className="font-medium text-green-600">
-                          +{analysisData.projections.next_6_months.expected_receipts.toLocaleString()} FCFA
+                          +{formatMoney(analysisData.projections.next_6_months.expected_receipts)}
                         </span>
                       </div>
                       <div className="flex justify-between pt-2 border-t">
@@ -320,7 +322,7 @@ const TontineAnalysis = ({ onNavigate }) => {
                           analysisData.projections.next_6_months.net_position >= 0 ? 'text-green-600' : 'text-red-600'
                         }`}>
                           {analysisData.projections.next_6_months.net_position >= 0 ? '+' : ''}
-                          {analysisData.projections.next_6_months.net_position.toLocaleString()} FCFA
+                          {formatMoney(analysisData.projections.next_6_months.net_position)}
                         </span>
                       </div>
                     </div>
@@ -332,13 +334,13 @@ const TontineAnalysis = ({ onNavigate }) => {
                       <div className="flex justify-between">
                         <span className="text-gray-600">À contribuer</span>
                         <span className="font-medium text-red-600">
-                          -{analysisData.projections.next_12_months.contributions_to_pay.toLocaleString()} FCFA
+                          -{formatMoney(analysisData.projections.next_12_months.contributions_to_pay)}
                         </span>
                       </div>
                       <div className="flex justify-between">
                         <span className="text-gray-600">À recevoir</span>
                         <span className="font-medium text-green-600">
-                          +{analysisData.projections.next_12_months.expected_receipts.toLocaleString()} FCFA
+                          +{formatMoney(analysisData.projections.next_12_months.expected_receipts)}
                         </span>
                       </div>
                       <div className="flex justify-between pt-2 border-t">
@@ -347,7 +349,7 @@ const TontineAnalysis = ({ onNavigate }) => {
                           analysisData.projections.next_12_months.net_position >= 0 ? 'text-green-600' : 'text-red-600'
                         }`}>
                           {analysisData.projections.next_12_months.net_position >= 0 ? '+' : ''}
-                          {analysisData.projections.next_12_months.net_position.toLocaleString()} FCFA
+                          {formatMoney(analysisData.projections.next_12_months.net_position)}
                         </span>
                       </div>
                     </div>
@@ -374,7 +376,7 @@ const TontineAnalysis = ({ onNavigate }) => {
                       </div>
                       <div className="text-right">
                         <p className="font-semibold">{item.percentage}%</p>
-                        <p className="text-sm text-gray-600">{item.amount.toLocaleString()} FCFA</p>
+                        <p className="text-sm text-gray-600">{formatMoney(item.amount)}</p>
                       </div>
                     </div>
                   ))}
@@ -395,7 +397,7 @@ const TontineAnalysis = ({ onNavigate }) => {
                         </div>
                       </div>
                       <div className="text-right">
-                        <p className="font-semibold">{item.amount.toLocaleString()} FCFA</p>
+                        <p className="font-semibold">{formatMoney(item.amount)}</p>
                       </div>
                     </div>
                   ))}
@@ -416,7 +418,7 @@ const TontineAnalysis = ({ onNavigate }) => {
                         </div>
                       </div>
                       <div className="text-right">
-                        <p className="font-semibold">{item.amount.toLocaleString()} FCFA</p>
+                        <p className="font-semibold">{formatMoney(item.amount)}</p>
                       </div>
                     </div>
                   ))}
@@ -434,13 +436,13 @@ const TontineAnalysis = ({ onNavigate }) => {
                   <div className="flex justify-between items-center">
                     <span className="text-gray-600">Total contribué</span>
                     <span className="text-lg font-semibold text-red-600">
-                      -{analysisData.performance.total_contributed.toLocaleString()} FCFA
+                      -{formatMoney(analysisData.performance.total_contributed)}
                     </span>
                   </div>
                   <div className="flex justify-between items-center">
                     <span className="text-gray-600">Total reçu</span>
                     <span className="text-lg font-semibold text-green-600">
-                      +{analysisData.performance.total_received.toLocaleString()} FCFA
+                      +{formatMoney(analysisData.performance.total_received)}
                     </span>
                   </div>
                   <div className="flex justify-between items-center pt-3 border-t">
@@ -449,7 +451,7 @@ const TontineAnalysis = ({ onNavigate }) => {
                       analysisData.performance.net_gain >= 0 ? 'text-green-600' : 'text-red-600'
                     }`}>
                       {analysisData.performance.net_gain >= 0 ? '+' : ''}
-                      {analysisData.performance.net_gain.toLocaleString()} FCFA
+                      {formatMoney(analysisData.performance.net_gain)}
                     </span>
                   </div>
                   <div className="flex justify-between items-center">
@@ -482,12 +484,12 @@ const TontineAnalysis = ({ onNavigate }) => {
                           <div 
                             className="bg-red-200 h-4 rounded"
                             style={{ width: `${(month.contributions / 100000) * 100}%` }}
-                            title={`Contributions: ${month.contributions.toLocaleString()} FCFA`}
+                            title={`Contributions: ${formatMoney(month.contributions)}`}
                           ></div>
                           <div 
                             className="bg-green-200 h-4 rounded"
                             style={{ width: `${(month.receipts / 500000) * 100}%` }}
-                            title={`Réceptions: ${month.receipts.toLocaleString()} FCFA`}
+                            title={`Réceptions: ${formatMoney(month.receipts)}`}
                           ></div>
                         </div>
                       </div>
