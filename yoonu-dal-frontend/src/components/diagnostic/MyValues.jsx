@@ -80,7 +80,7 @@ const MyValues = ({ onNavigate, toast }) => {
         console.error('Erreur calcul score:', scoreError);
       }
 
-      toast?.showSuccess?.('✅ Tes valeurs sont mises à jour !');
+      toast?.showSuccess?.('Tes valeurs sont mises à jour !');
       setTimeout(() => onNavigate('dashboard'), 1000);
 
     } catch (error) {
