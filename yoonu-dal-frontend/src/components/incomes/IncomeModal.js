@@ -1,8 +1,10 @@
 // src/components/incomes/IncomeModal.js
 import React, { useState } from 'react';
 import API from '../../services/api';
+import { useCurrency } from '../../contexts/CurrencyContext';
 
 const IncomeModal = ({ isOpen, onClose, onIncomeAdded }) => {
+  const { currency } = useCurrency();
   const [formData, setFormData] = useState({
     source: 'Salaire',
     amount: '',
@@ -115,7 +117,7 @@ const IncomeModal = ({ isOpen, onClose, onIncomeAdded }) => {
           {/* Montant */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Montant (FCFA)
+              Montant ({currency})
             </label>
             <input
               type="number"
