@@ -199,13 +199,21 @@ const EnvelopeManagerPremium = ({ toast, onNavigate, auth }) => {
         {/* Header */}
         <div className="mb-6 sm:mb-8 backdrop-blur-xl bg-white/60 rounded-2xl sm:rounded-3xl p-4 sm:p-6 border border-white/20 shadow-2xl">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-            <div>
-              <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold bg-gradient-to-r from-gray-900 via-blue-900 to-purple-900 bg-clip-text text-transparent">
-                📁 Mes Enveloppes
-              </h1>
-              <p className="text-xs sm:text-sm text-gray-600 mt-1">
-                Gère tes finances selon la méthode Yoonu Dal
-              </p>
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => onNavigate?.('profile-hub')}
+                className="w-10 h-10 rounded-full bg-white border border-gray-200 flex items-center justify-center text-gray-600 hover:bg-gray-50 flex-shrink-0"
+              >
+                ←
+              </button>
+              <div>
+                <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold bg-gradient-to-r from-gray-900 via-blue-900 to-purple-900 bg-clip-text text-transparent">
+                  📁 Mes Enveloppes
+                </h1>
+                <p className="text-xs sm:text-sm text-gray-600 mt-1">
+                  Gère tes finances selon la méthode Yoonu Dal
+                </p>
+              </div>
             </div>
             <button
               onClick={() => setShowAdjustModal(true)}
