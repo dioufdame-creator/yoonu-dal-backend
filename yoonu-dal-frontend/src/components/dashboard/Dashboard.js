@@ -4,6 +4,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import API from '../../services/api';
 import CarryoverNotice from './CarryoverNotice';
 import RecurringConfirmCard from './RecurringConfirmCard';
+import { useCurrency } from '../../contexts/CurrencyContext';
 
 const MONTHS_FR = ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin',
   'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'];
@@ -122,12 +123,15 @@ const Dashboard = ({ toast, auth, onNavigate, user }) => {
 
   useEffect(() => { loadData(); }, [loadData]);
 
-  const formatFCFA = (value) =>
-    new Intl.NumberFormat('fr-FR').format(Math.round(value || 0));
+  const { format: formatMoney } = useCurrency();
 
-  // Montants complets avec séparateurs — cohérent partout dans l'app
+  // Montant sans symbole (pour composer avec un suffixe custom, ex: "/jour")
+  const formatFCFA = (value) =>
+    formatMoney(Math.round(value || 0), { withSymbol: false });
+
+  // Montant complet avec symbole de devise — cohérent partout dans l'app
   const formatShort = (value) =>
-    new Intl.NumberFormat('fr-FR').format(Math.round(Math.abs(value || 0)));
+    formatMoney(Math.round(Math.abs(value || 0)), { withSymbol: false });
 
   // ── CALCULS SUR LE MOIS SÉLECTIONNÉ ──────────────────
   const monthlyExpensesTotal = expenses
@@ -170,14 +174,14 @@ const Dashboard = ({ toast, auth, onNavigate, user }) => {
         return {
           icon: '📊',
           style: 'bg-gray-50 border-gray-200 text-gray-700',
-          text: `Bilan ${selectedOption.label} : solde positif de ${formatFCFA(remaining)} FCFA.`,
+          text: `Bilan ${selectedOption.label} : solde positif de ${formatMoney(remaining)}.`,
           action: null,
         };
       }
       return {
         icon: '📊',
         style: 'bg-gray-50 border-gray-200 text-gray-700',
-        text: `Bilan ${selectedOption.label} : déficit de ${formatFCFA(Math.abs(remaining))} FCFA.`,
+        text: `Bilan ${selectedOption.label} : déficit de ${formatMoney(Math.abs(remaining))}.`,
         action: null,
       };
     }
@@ -186,7 +190,7 @@ const Dashboard = ({ toast, auth, onNavigate, user }) => {
       return {
         icon: '⚠️',
         style: 'bg-red-50 border-red-200 text-red-800',
-        text: `Vous avez dépassé votre budget de ${formatFCFA(Math.abs(remaining))} FCFA ce mois.`,
+        text: `Vous avez dépassé votre budget de ${formatMoney(Math.abs(remaining))} ce mois.`,
         action: () => onNavigate('envelopes'),
       };
     }
@@ -218,7 +222,7 @@ const Dashboard = ({ toast, auth, onNavigate, user }) => {
       return {
         icon: '💳',
         style: 'bg-orange-50 border-orange-200 text-orange-800',
-        text: `Pensez au remboursement de ${formatFCFA(debtDue.monthly_payment)} FCFA pour "${debtDue.name}".`,
+        text: `Pensez au remboursement de ${formatMoney(debtDue.monthly_payment)} pour "${debtDue.name}".`,
         action: () => onNavigate('debts'),
       };
     }
@@ -234,7 +238,7 @@ const Dashboard = ({ toast, auth, onNavigate, user }) => {
       return {
         icon: '💡',
         style: 'bg-amber-50 border-amber-200 text-amber-800',
-        text: `Attention, vos dépenses ${config.label} dépassent votre budget de ${formatFCFA(overspent)} FCFA.`,
+        text: `Attention, vos dépenses ${config.label} dépassent votre budget de ${formatMoney(overspent)}.`,
         action: () => onNavigate('envelopes'),
       };
     }
@@ -250,7 +254,7 @@ const Dashboard = ({ toast, auth, onNavigate, user }) => {
       return {
         icon: '💡',
         style: 'bg-amber-50 border-amber-200 text-amber-800',
-        text: `Votre enveloppe ${config.label} est presque épuisée (${formatFCFA(left)} FCFA restants).`,
+        text: `Votre enveloppe ${config.label} est presque épuisée (${formatMoney(left)} restants).`,
         action: () => onNavigate('envelopes'),
       };
     }
@@ -262,7 +266,7 @@ const Dashboard = ({ toast, auth, onNavigate, user }) => {
         return {
           icon: '💡',
           style: 'bg-blue-50 border-blue-200 text-blue-800',
-          text: `Vous pouvez transférer ${formatFCFA(suggested)} FCFA vers votre projet "${activeGoal.title}".`,
+          text: `Vous pouvez transférer ${formatMoney(suggested)} vers votre projet "${activeGoal.title}".`,
           action: () => onNavigate('goals'),
         };
       }
@@ -393,7 +397,7 @@ const Dashboard = ({ toast, auth, onNavigate, user }) => {
               : (remaining >= 0 ? `Solde de ${selectedOption.label}` : `Déficit de ${selectedOption.label}`)}
           </p>
           <p className="text-4xl font-bold mb-4">
-            {formatFCFA(Math.abs(remaining))} <span className="text-lg font-normal opacity-70">FCFA</span>
+            {formatMoney(Math.abs(remaining))}
           </p>
 
           <div className={`grid ${carryoverTotal > 0 ? 'grid-cols-3' : 'grid-cols-2'} gap-2 mb-3`}>
@@ -415,7 +419,7 @@ const Dashboard = ({ toast, auth, onNavigate, user }) => {
 
           {carryoverTotal > 0 && (
             <p className="text-[11px] opacity-70 mb-3 -mt-1">
-              Comprend {formatFCFA(carryoverTotal)} FCFA reportés du mois dernier
+              Comprend {formatMoney(carryoverTotal)} reportés du mois dernier
             </p>
           )}
 
@@ -423,7 +427,7 @@ const Dashboard = ({ toast, auth, onNavigate, user }) => {
             <div className="flex items-center gap-2 text-sm">
               <span>💡</span>
               <span className="opacity-90">
-                Disponible : <strong>{formatFCFA(dailyAvailable)} FCFA/jour</strong>
+                Disponible : <strong>{formatMoney(dailyAvailable)}/jour</strong>
               </span>
             </div>
           )}
@@ -444,7 +448,7 @@ const Dashboard = ({ toast, auth, onNavigate, user }) => {
               </div>
             </div>
             <div className="flex items-center gap-1">
-              <span className="text-sm font-bold text-gray-800">{formatFCFA(disponible)} FCFA</span>
+              <span className="text-sm font-bold text-gray-800">{formatMoney(disponible)}</span>
               <span className="text-gray-300 text-sm">›</span>
             </div>
           </button>
