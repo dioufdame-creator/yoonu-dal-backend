@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import API from '../../services/api';
 import { LineChart, Line, ResponsiveContainer, Tooltip } from 'recharts';
+import { useCurrency } from '../../contexts/CurrencyContext';
 
 const EnvelopeManagerPremium = ({ toast, onNavigate, auth }) => {
+  const { format: formatMoney } = useCurrency();
   const [loading, setLoading] = useState(true);
   const [envelopes, setEnvelopes] = useState([]);
   const [monthlyIncome, setMonthlyIncome] = useState(0);
@@ -166,8 +168,7 @@ const EnvelopeManagerPremium = ({ toast, onNavigate, auth }) => {
     return num.toString();
   };
 
-  const formatCurrencyFull = (value) =>
-    new Intl.NumberFormat('fr-FR').format(value || 0) + ' FCFA';
+  const formatCurrencyFull = (value) => formatMoney(value || 0);
 
   const totalAllocated = Object.values(adjustPercentages).reduce((sum, val) => sum + val, 0);
   const totalBudget = envelopes.reduce((sum, env) => sum + (env.monthly_budget || 0), 0);
