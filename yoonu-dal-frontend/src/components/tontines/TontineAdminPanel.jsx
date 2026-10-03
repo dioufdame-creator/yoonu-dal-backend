@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import API from '../../services/api';
+import { useCurrency } from '../../contexts/CurrencyContext';
 
 const TontineAdminPanel = ({ tontine, participants, onUpdate, toast }) => {
+  const { format: formatMoney } = useCurrency();
   const [manualOrder, setManualOrder] = useState([]);
   const [loading, setLoading] = useState(false);
   const [draggedItem, setDraggedItem] = useState(null);
@@ -544,7 +546,7 @@ const TontineAdminPanel = ({ tontine, participants, onUpdate, toast }) => {
                         {participant.received_payout && participant.payout_date && (
                           <p className="text-[11px] text-green-600">
                             ✅ Reçu le {new Date(participant.payout_date).toLocaleDateString('fr-FR')}
-                            {participant.payout_amount && ` · ${new Intl.NumberFormat('fr-FR').format(participant.payout_amount)} FCFA`}
+                            {participant.payout_amount && ` · ${formatMoney(participant.payout_amount)}`}
                           </p>
                         )}
                       </div>
