@@ -4229,51 +4229,99 @@ def tontine_timeline(request, tontine_id):
                 'error': 'Vous n\'êtes pas membre de cette tontine'
             }, status=status.HTTP_403_FORBIDDEN)
         
-        # Construire timeline
-        participants = TontineParticipant.objects.filter(
-            tontine=tontine
-        ).select_related('user').order_by('payout_position')
-        
         timeline = []
         today = date.today()
-        
+
         # Calculer le mois actuel par rapport au début
         months_elapsed = (today.year - tontine.start_date.year) * 12 + (today.month - tontine.start_date.month) + 1
         current_month_num = max(1, min(months_elapsed, tontine.duration_months))
-        
-        for idx, p in enumerate(participants, start=1):
-            month_date = tontine.start_date + relativedelta(months=idx-1)
-            
-            # Déterminer statut
-            if p.is_paid:
-                month_status = 'paid'
-            elif idx == current_month_num:
-                month_status = 'current'
-            elif idx < current_month_num:
-                month_status = 'late'  # En retard
-            else:
-                month_status = 'upcoming'
-            
-            timeline.append({
-                'month': idx,
-                'date': month_date.isoformat(),
-                'participant': {
-                    'id': p.id,
-                    'user_id': p.user.id,
-                    'name': p.display_name or p.user.get_full_name() or p.user.username,
-                    'is_current_user': p.user == request.user,
-                    'is_admin': p.is_admin
-                },
-                'status': month_status,
-                'amount': float(tontine.total_amount),
-                'paid_at': p.paid_at.isoformat() if p.paid_at else None
-            })
-        
+
+        def participant_payload(p):
+            return {
+                'id': p.id,
+                'user_id': p.user.id,
+                'name': p.display_name or p.user.get_full_name() or p.user.username,
+                'is_current_user': p.user == request.user,
+                'is_admin': p.is_admin
+            }
+
+        if tontine.payout_mode == 'random':
+            # En mode aléatoire, il n'existe pas d'ordre pré-assigné : un
+            # participant n'est associé à un mois qu'une fois le tirage de
+            # ce mois effectué (payout_month). Afficher un nom avant le
+            # tirage reviendrait à deviner un gagnant qui n'est pas encore
+            # désigné — on affiche donc un mois "à tirer" tant que c'est le cas.
+            participants = TontineParticipant.objects.filter(
+                tontine=tontine
+            ).select_related('user')
+            drawn_by_month = {p.payout_month: p for p in participants if p.payout_month}
+
+            for month in range(1, tontine.duration_months + 1):
+                month_date = tontine.start_date + relativedelta(months=month - 1)
+                p = drawn_by_month.get(month)
+
+                if p is None:
+                    month_status = 'drawing_pending' if month <= current_month_num else 'upcoming'
+                    timeline.append({
+                        'month': month,
+                        'date': month_date.isoformat(),
+                        'participant': None,
+                        'status': month_status,
+                        'amount': float(tontine.total_amount),
+                        'paid_at': None
+                    })
+                    continue
+
+                if p.is_paid:
+                    month_status = 'paid'
+                elif month == current_month_num:
+                    month_status = 'current'  # tiré au sort, versement pas encore marqué
+                elif month < current_month_num:
+                    month_status = 'late'
+                else:
+                    month_status = 'current'
+
+                timeline.append({
+                    'month': month,
+                    'date': month_date.isoformat(),
+                    'participant': participant_payload(p),
+                    'status': month_status,
+                    'amount': float(tontine.total_amount),
+                    'paid_at': p.paid_at.isoformat() if p.paid_at else None
+                })
+        else:
+            # Mode manuel : l'ordre est pré-assigné par l'admin (payout_position).
+            participants = TontineParticipant.objects.filter(
+                tontine=tontine
+            ).select_related('user').order_by('payout_position')
+
+            for idx, p in enumerate(participants, start=1):
+                month_date = tontine.start_date + relativedelta(months=idx - 1)
+
+                if p.is_paid:
+                    month_status = 'paid'
+                elif idx == current_month_num:
+                    month_status = 'current'
+                elif idx < current_month_num:
+                    month_status = 'late'  # En retard
+                else:
+                    month_status = 'upcoming'
+
+                timeline.append({
+                    'month': idx,
+                    'date': month_date.isoformat(),
+                    'participant': participant_payload(p),
+                    'status': month_status,
+                    'amount': float(tontine.total_amount),
+                    'paid_at': p.paid_at.isoformat() if p.paid_at else None
+                })
+
         return Response({
             'tontine_id': tontine.id,
             'tontine_name': tontine.name,
             'total_months': tontine.duration_months,
             'current_month': current_month_num,
+            'payout_mode': tontine.payout_mode,
             'timeline': timeline
         })
         
@@ -4649,6 +4697,119 @@ def tontine_pending_contributions(request, tontine_id):
         return Response({'error': 'Tontine non trouvée'}, status=status.HTTP_404_NOT_FOUND)
     except Exception as e:
         return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def declare_tontine_contribution(request, tontine_id):
+    """
+    Déclare, pour un participant, une cotisation qu'il n'a pas lui-même
+    enregistrée dans l'app (ex: paiement reçu en main propre). Réservé
+    à l'administrateur de la tontine. La cotisation est créée directement
+    validée, puisque c'est l'admin qui atteste l'avoir reçue.
+
+    POST /api/tontines/{id}/contributions/declare/
+    Body:
+    {
+        "participant_id": 42,
+        "amount": 25000,
+        "date": "2026-10-01",       // optionnel, défaut = aujourd'hui
+        "payment_method": "especes", // optionnel
+        "notes": "Reçu en main propre le 1er"  // optionnel
+    }
+    """
+    try:
+        tontine = Tontine.objects.get(id=tontine_id)
+
+        is_admin = TontineParticipant.objects.filter(
+            tontine=tontine,
+            user=request.user,
+            is_admin=True
+        ).exists() or tontine.creator == request.user
+
+        if not is_admin:
+            return Response({
+                'error': 'Seul l\'administrateur peut déclarer une cotisation pour un participant'
+            }, status=status.HTTP_403_FORBIDDEN)
+
+        participant_id = request.data.get('participant_id')
+        if not participant_id:
+            return Response({'error': 'participant_id requis'}, status=status.HTTP_400_BAD_REQUEST)
+
+        participant = TontineParticipant.objects.filter(
+            id=participant_id, tontine=tontine
+        ).select_related('user').first()
+        if not participant:
+            return Response({'error': 'Participant introuvable'}, status=status.HTTP_404_NOT_FOUND)
+
+        amount = request.data.get('amount')
+        if not amount:
+            return Response({'error': 'Le montant est obligatoire'}, status=status.HTTP_400_BAD_REQUEST)
+
+        contribution_date_str = request.data.get('date')
+        contribution_date = (
+            datetime.strptime(contribution_date_str, '%Y-%m-%d').date()
+            if contribution_date_str else timezone.now().date()
+        )
+
+        from dateutil.relativedelta import relativedelta
+        confirmed_count = TontineContribution.objects.filter(
+            participant=participant, status='confirmed'
+        ).count()
+        contribution_month = tontine.start_date.replace(day=1) + relativedelta(months=confirmed_count)
+
+        contribution = TontineContribution.objects.create(
+            participant=participant,
+            amount=Decimal(str(amount)),
+            date=contribution_date,
+            payment_method=request.data.get('payment_method', 'especes'),
+            notes=request.data.get('notes', ''),
+            contribution_month=contribution_month,
+            status='confirmed',
+            is_validated=True,
+            validated_by=request.user,
+            validated_at=timezone.now(),
+        )
+
+        # Reflète la cotisation dans le suivi budgétaire du participant,
+        # comme s'il l'avait déclarée lui-même.
+        try:
+            hand_note = f" (main {participant.hand_number})" if participant.hand_number > 1 else ""
+            Expense.objects.create(
+                user=participant.user,
+                category='tontine_epargne',
+                description=f'Contribution tontine "{tontine.name}"{hand_note} (déclarée par l\'admin)',
+                amount=Decimal(str(amount)),
+                date=contribution_date,
+                is_necessary=True
+            )
+            update_envelope_spending(participant.user)
+        except Exception as e:
+            print(f'Erreur création dépense tontine (déclaration admin): {e}')
+
+        participant_name = participant.display_name or participant.user.get_full_name() or participant.user.username
+        TontineActivity.objects.create(
+            tontine=tontine,
+            activity_type='validation',
+            participant=participant,
+            amount=contribution.amount,
+            message=f"✅ Cotisation de {participant_name} déclarée par l'administrateur",
+            created_by=request.user
+        )
+
+        return Response({
+            'success': True,
+            'id': contribution.id,
+            'amount': float(contribution.amount),
+            'date': contribution.date.isoformat(),
+            'message': f'Cotisation de {participant_name} déclarée et validée'
+        }, status=status.HTTP_201_CREATED)
+
+    except Tontine.DoesNotExist:
+        return Response({'error': 'Tontine non trouvée'}, status=status.HTTP_404_NOT_FOUND)
+    except Exception as e:
+        return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
 
 @api_view(['GET'])
 @permission_classes([AllowAny])
