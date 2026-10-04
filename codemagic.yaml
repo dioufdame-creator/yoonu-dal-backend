@@ -1,0 +1,27 @@
+workflows:
+  android-debug:
+    name: Android Debug Build
+    max_build_duration: 30
+    instance_type: linux_x2
+    environment:
+      node: 20.11.0
+    scripts:
+      - name: Install npm dependencies
+        script: |
+          cd yoonu-dal-frontend
+          npm install
+      - name: Build web app
+        script: |
+          cd yoonu-dal-frontend
+          npm run build
+      - name: Sync Capacitor Android
+        script: |
+          cd yoonu-dal-frontend
+          npx cap sync android
+      - name: Build Android debug APK
+        script: |
+          cd yoonu-dal-frontend/android
+          chmod +x ./gradlew
+          ./gradlew assembleDebug
+    artifacts:
+      - yoonu-dal-frontend/android/app/build/outputs/**/*.apk
