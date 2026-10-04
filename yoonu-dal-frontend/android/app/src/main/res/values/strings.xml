@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Yoonu Dal</string>
+    <string name="title_activity_main">Yoonu Dal</string>
+    <string name="package_name">com.yoonudal.app</string>
+    <string name="custom_url_scheme">com.yoonudal.app</string>
+</resources>
