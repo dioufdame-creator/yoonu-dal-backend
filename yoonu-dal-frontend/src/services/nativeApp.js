@@ -25,6 +25,10 @@ export const initNativeApp = async () => {
 
   try {
     const { StatusBar, Style } = await import('@capacitor/status-bar');
+    // overlay=false : la barre de statut occupe son propre espace au lieu
+    // de se superposer au contenu web (sinon le header de l'app passe
+    // derrière l'horloge/batterie/réseau du téléphone).
+    await StatusBar.setOverlaysWebView({ overlay: false });
     await StatusBar.setStyle({ style: Style.Light });
     if (Capacitor.getPlatform() === 'android') {
       await StatusBar.setBackgroundColor({ color: '#16a34a' }); // vert Yoonu Dal
