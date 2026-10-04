@@ -8,6 +8,7 @@ import MyValues from './components/diagnostic/MyValues';
 import authService from './services/authService';
 import API from './services/api';
 import { CurrencyProvider } from './contexts/CurrencyContext';
+import { initNativeApp, initNativePushNotifications, registerBackButtonHandler } from './services/nativeApp';
 
 import Navigation from './components/shared/Navigation';
 import BottomNav from './components/shared/BottomNav';
@@ -170,7 +171,16 @@ function App() {
       }
     };
     initializeAuth();
+    initNativeApp();
   }, []);
+
+  // Notifications push natives (Android/iOS) — ne fait rien sur le web.
+  // Démarrées séparément de l'auth initiale pour ne pas la bloquer.
+  useEffect(() => {
+    if (isAuthenticated) {
+      initNativePushNotifications();
+    }
+  }, [isAuthenticated]);
 
   const handlePaymentSuccess = async () => {
     const updatedUser = await authService.getUserProfile();
@@ -195,6 +205,18 @@ function App() {
       // sessionStorage indisponible (navigation privée stricte...) — tant pis
     }
   };
+
+  // Bouton retour matériel Android : recule dans l'app au lieu de la
+  // fermer, sauf si on est déjà sur l'accueil.
+  useEffect(() => {
+    let cleanup = () => {};
+    registerBackButtonHandler(
+      () => handleNavigate('home'),
+      () => currentPage === 'home'
+    ).then((fn) => { cleanup = fn; });
+    return () => cleanup();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentPage]);
 
   const handleLogin = async (credentials) => {
     try {
@@ -741,3 +763,4 @@ function App() {
 }
 
 export default App;
+
