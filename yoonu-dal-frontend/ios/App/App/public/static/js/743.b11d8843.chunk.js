@@ -1,0 +1,1 @@
+"use strict";(self.webpackChunkyoonu_dal_frontend=self.webpackChunkyoonu_dal_frontend||[]).push([[743],{743:(e,n,s)=>{s.d(n,{SplashScreen:()=>h});const h=(0,s(344).F3)("SplashScreen",{web:()=>s.e(973).then(s.bind(s,973)).then((e=>new e.SplashScreenWeb))})}}]);

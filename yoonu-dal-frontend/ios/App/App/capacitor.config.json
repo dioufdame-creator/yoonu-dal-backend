@@ -1,0 +1,11 @@
+{
+	"appId": "com.yoonudal.app",
+	"appName": "Yoonu Dal",
+	"webDir": "build",
+	"packageClassList": [
+		"AppPlugin",
+		"PushNotificationsPlugin",
+		"SplashScreenPlugin",
+		"StatusBarPlugin"
+	]
+}
