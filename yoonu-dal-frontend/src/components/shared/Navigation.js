@@ -38,7 +38,10 @@ const Navigation = ({ currentPage, onNavigate, isAuthenticated, user, onLogout, 
   ];
 
   return (
-    <header className="bg-gradient-to-r from-green-600 to-emerald-600 shadow-xl relative z-40">
+    <header
+      className="bg-gradient-to-r from-green-600 to-emerald-600 shadow-xl relative z-40"
+      style={{ paddingTop: 'env(safe-area-inset-top, 0px)' }}
+    >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-14 lg:h-16">
 
