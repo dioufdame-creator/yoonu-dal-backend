@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import './App.css';
 import YoonuScorePage from './components/score/YoonuScorePage';
 import AlertsPage from './components/alerts/AlertsPage';
@@ -187,7 +187,12 @@ function App() {
     if (updatedUser) setUser(updatedUser);
   };
 
-  const handleNavigate = (page, params = {}) => {
+  // Pile d'historique interne pour le bouton retour matériel Android :
+  // on y empile chaque page visitée (hors retours) afin de pouvoir
+  // "reculer" d'un écran, plutôt que de revenir systématiquement à l'accueil.
+  const navigationStackRef = useRef([]);
+
+  const handleNavigate = (page, params = {}, { fromBack = false } = {}) => {
     if (PROTECTED_PAGES.includes(page) && !isAuthenticated) {
       setCurrentPage('login');
       return;
@@ -195,6 +200,9 @@ function App() {
     if ((page === 'login' || page === 'register') && isAuthenticated) {
       setCurrentPage('dashboard');
       return;
+    }
+    if (!fromBack && currentPage && currentPage !== page) {
+      navigationStackRef.current.push(currentPage);
     }
     setCurrentPage(page);
     setPageParams(params);
@@ -206,17 +214,25 @@ function App() {
     }
   };
 
-  // Bouton retour matériel Android : recule dans l'app au lieu de la
-  // fermer, sauf si on est déjà sur l'accueil.
+  // Bouton retour matériel Android : recule d'un écran dans l'historique
+  // de navigation de l'app, et ne quitte/ne va à l'accueil que si la pile
+  // est vide (premier écran visité).
   useEffect(() => {
     let cleanup = () => {};
     registerBackButtonHandler(
-      () => handleNavigate('home'),
-      () => currentPage === 'home'
+      () => {
+        const previousPage = navigationStackRef.current.pop();
+        if (previousPage) {
+          handleNavigate(previousPage, {}, { fromBack: true });
+        } else {
+          handleNavigate('home', {}, { fromBack: true });
+        }
+      },
+      () => navigationStackRef.current.length === 0
     ).then((fn) => { cleanup = fn; });
     return () => cleanup();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentPage]);
+  }, []);
 
   const handleLogin = async (credentials) => {
     try {
