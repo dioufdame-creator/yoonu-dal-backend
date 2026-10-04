@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "276703708612",
+    "project_id": "yoonu-dal",
+    "storage_bucket": "yoonu-dal.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:276703708612:android:f877e86fe50e080b255091",
+        "android_client_info": {
+          "package_name": "com.yoonudal.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBeinfUpS6VlNHTpDHbYZCUp8dcjK6rAFs"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
