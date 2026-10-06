@@ -46,11 +46,11 @@ const Home2 = ({ onNavigate }) => {
           </button>
         </div>
 
-        {/* Fond dégradé derrière le mockup pour masquer le damier */}
+        {/* Mockup : capture réelle de l'app, PNG à fond transparent */}
         <div style={css.heroImageWrap}>
           <img
-            src="/dashboard_v2_mobile.png"
-            alt="Tableau de bord Yoonu Dal montrant le score et le reste par jour"
+            src="/dashboard_v3_mobile_web.png"
+            alt="Tableau de bord Yoonu Dal montrant le reste du mois, le reste par jour et le score"
             style={css.heroImage}
             onError={(e) => { e.target.style.display = 'none'; }}
           />
@@ -246,8 +246,7 @@ const css = {
     fontWeight: '700',
     cursor: 'pointer',
   },
-  // Fond dégradé derrière le mockup — masque le damier tant que
-  // le PNG n'est pas ré-exporté avec une vraie transparence
+  // Fond dégradé léger derrière le mockup (PNG transparent, ombre incluse)
   heroImageWrap: {
     width: '100%',
     display: 'flex',
@@ -262,8 +261,7 @@ const css = {
     width: '100%',
     maxWidth: '320px',
     height: 'auto',
-    filter: 'drop-shadow(0 24px 40px rgba(0,0,0,0.15))',
-    transform: 'translateY(20px)',
+    display: 'block',
   },
 
   // ---- FEATURES (compactes) ----
