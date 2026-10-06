@@ -1,8 +1,19 @@
 import React from 'react';
 
 // ============================================================
-// COMPOSANT HOME2 (V2) - Landing Page Yoonu Dal
-// Structure : Problème -> Solution -> Preuve -> Méthode -> Origine
+// COMPOSANT HOME2 - Landing Page Yoonu Dal (version corrigée)
+//
+// Changements par rapport à la version précédente :
+// 1. CARTES COMPACTES : icône + titre sur la même ligne,
+//    padding réduit → le scroll mobile est divisé par ~2.
+// 2. PALETTE HARMONISÉE : les 4 étapes utilisent la palette
+//    de marque (teal → lime → orange → ambre) au lieu de
+//    vert/orange/bleu/violet.
+// 3. "Se connecter" ajouté dans le hero (bouton secondaire).
+// 4. Mockup : fond dégradé posé derrière l'image pour masquer
+//    le damier. ⚠️ Le damier est probablement DANS le PNG :
+//    ré-exporte dashboard_v2_mobile.png avec un vrai fond
+//    transparent pour un rendu parfait.
 // ============================================================
 
 const Home2 = ({ onNavigate }) => {
@@ -35,10 +46,11 @@ const Home2 = ({ onNavigate }) => {
           </button>
         </div>
 
+        {/* Mockup : capture réelle de l'app, PNG à fond transparent */}
         <div style={css.heroImageWrap}>
           <img
-            src="/assets/images/dashboard_v3_mobile_web.png"
-            alt="Tableau de bord Yoonu Dal montrant le score et le reste par jour"
+            src="/dashboard_v3_mobile_web.png"
+            alt="Tableau de bord Yoonu Dal montrant le reste du mois, le reste par jour et le score"
             style={css.heroImage}
             onError={(e) => { e.target.style.display = 'none'; }}
           />
@@ -46,24 +58,27 @@ const Home2 = ({ onNavigate }) => {
       </section>
 
       {/* ======================================================
-          SECTION 2 : FONCTIONNALITÉS (Ce que vous pouvez faire)
+          SECTION 2 : FONCTIONNALITÉS — cartes compactes
+          Icône à gauche, texte à droite → hauteur divisée par 2
       ====================================================== */}
       <section style={css.featuresSection}>
         <h2 style={css.sectionTitle}>Ce que vous pouvez faire avec Yoonu Dal</h2>
-        
+
         <div style={css.featuresGrid}>
           {[
             { icon: '💰', title: 'Suivre vos dépenses', text: 'Catégorisez automatiquement où va votre argent.' },
             { icon: '📅', title: 'Reste par jour', text: 'Sachez exactement combien vous pouvez dépenser aujourd\'hui.' },
             { icon: '🎯', title: 'Objectifs d\'épargne', text: 'Définissez des cibles et suivez votre progression.' },
             { icon: '🤝', title: 'Gérer vos tontines', text: 'Suivez vos cotisations de groupe sans stress.' },
-            { icon: '🤖', title: 'Yoonu IA', text: 'Un assistant intelligent pour répondre à vos questions financières.' },
+            { icon: '🤖', title: 'Yoonu IA', text: 'Un assistant intelligent pour vos questions financières.' },
             { icon: '📈', title: 'Score Yoonu', text: 'Évaluez la santé de vos finances sur 100 points.' }
           ].map((feat, i) => (
             <div key={i} style={css.featureCard}>
               <div style={css.featureIcon}>{feat.icon}</div>
-              <h3 style={css.featureTitle}>{feat.title}</h3>
-              <p style={css.featureText}>{feat.text}</p>
+              <div style={css.featureBody}>
+                <h3 style={css.featureTitle}>{feat.title}</h3>
+                <p style={css.featureText}>{feat.text}</p>
+              </div>
             </div>
           ))}
         </div>
@@ -102,7 +117,8 @@ const Home2 = ({ onNavigate }) => {
       </section>
 
       {/* ======================================================
-          SECTION 4 : LA MÉTHODE EN 4 ÉTAPES
+          SECTION 4 : LA MÉTHODE — cartes compactes,
+          palette harmonisée teal → lime → orange → ambre
       ====================================================== */}
       <section style={css.methodSection}>
         <h2 style={css.sectionTitle}>La méthode Yoonu Dal</h2>
@@ -112,15 +128,18 @@ const Home2 = ({ onNavigate }) => {
 
         <div style={css.stepsGrid}>
           {[
-            { num: '1', icon: '👁️', title: 'Conscience', text: 'Ouvrez les yeux sur vos habitudes sans jugement.', color: '#0a8043', bg: '#f0fdf4' },
-            { num: '2', icon: '💡', title: 'Clarté', text: 'Comprenez exactement où va votre argent.', color: '#d97706', bg: '#fffbeb' },
-            { num: '3', icon: '🎯', title: 'Choix', text: 'Alignez vos achats avec vos priorités.', color: '#2563eb', bg: '#eff6ff' },
-            { num: '4', icon: '🚀', title: 'Contrôle', text: 'Construisez votre liberté financière.', color: '#7c3aed', bg: '#f5f3ff' },
+            { num: '1', icon: '👁️', title: 'Conscience', text: 'Ouvrez les yeux sur vos habitudes sans jugement.', color: '#0F766E', bg: '#f0fdfa' },
+            { num: '2', icon: '💡', title: 'Clarté', text: 'Comprenez exactement où va votre argent.', color: '#65A30D', bg: '#f7fee7' },
+            { num: '3', icon: '🎯', title: 'Choix', text: 'Alignez vos achats avec vos priorités.', color: '#C2410C', bg: '#fff7ed' },
+            { num: '4', icon: '🚀', title: 'Contrôle', text: 'Construisez votre liberté financière.', color: '#CA8A04', bg: '#fefce8' },
           ].map((step) => (
             <div key={step.num} style={{ ...css.stepCard, backgroundColor: step.bg }}>
-              <div style={{ ...css.stepNum, color: step.color }}>{step.num}.</div>
-              <div style={css.stepIcon}>{step.icon}</div>
-              <div style={{ ...css.stepTitle, color: step.color }}>{step.title}</div>
+              <div style={css.stepHeader}>
+                <span style={css.stepIcon}>{step.icon}</span>
+                <span style={{ ...css.stepTitle, color: step.color }}>
+                  <span style={css.stepNum}>{step.num}.</span> {step.title}
+                </span>
+              </div>
               <p style={css.stepText}>{step.text}</p>
             </div>
           ))}
@@ -167,9 +186,9 @@ const css = {
   },
   bookBadge: {
     display: 'inline-block',
-    backgroundColor: '#f0fdf4',
-    color: '#0a8043',
-    border: '1px solid #bbf7d0',
+    backgroundColor: '#f0fdfa',
+    color: '#14B8A6',
+    border: '1px solid #99f6e4',
     borderRadius: '20px',
     padding: '6px 16px',
     fontSize: '13px',
@@ -185,7 +204,10 @@ const css = {
     color: '#111827',
   },
   heroTitleGreen: {
-    color: '#0a8043',
+    background: 'linear-gradient(to right, #14B8A6, #F97316)',
+    WebkitBackgroundClip: 'text',
+    WebkitTextFillColor: 'transparent',
+    backgroundClip: 'text',
   },
   heroSubtitle: {
     fontSize: '18px',
@@ -205,14 +227,14 @@ const css = {
   },
   btnPrimary: {
     padding: '16px 28px',
-    backgroundColor: '#0a8043',
+    background: 'linear-gradient(to right, #14B8A6, #0F766E)',
     color: '#ffffff',
     border: 'none',
     borderRadius: '12px',
     fontSize: '16px',
     fontWeight: '700',
     cursor: 'pointer',
-    boxShadow: '0 4px 14px rgba(10, 128, 67, 0.25)',
+    boxShadow: '0 4px 14px rgba(20, 184, 166, 0.25)',
   },
   btnSecondary: {
     padding: '16px 28px',
@@ -224,90 +246,99 @@ const css = {
     fontWeight: '700',
     cursor: 'pointer',
   },
+  // Fond dégradé léger derrière le mockup (PNG transparent, ombre incluse)
   heroImageWrap: {
     width: '100%',
     display: 'flex',
     justifyContent: 'center',
     position: 'relative',
     zIndex: 10,
+    background: 'radial-gradient(ellipse at center, #f0fdfa 0%, #ffffff 70%)',
+    borderRadius: '24px',
+    padding: '16px 0 0',
   },
   heroImage: {
     width: '100%',
     maxWidth: '320px',
     height: 'auto',
-    filter: 'drop-shadow(0 24px 40px rgba(0,0,0,0.15))',
-    transform: 'translateY(20px)',
+    display: 'block',
   },
 
-  // ---- FEATURES ----
+  // ---- FEATURES (compactes) ----
   featuresSection: {
     backgroundColor: '#f9fafb',
-    padding: '80px 24px 64px',
+    padding: '64px 24px 56px',
     textAlign: 'center',
   },
   sectionTitle: {
     fontSize: 'clamp(24px, 4vw, 32px)',
     fontWeight: '800',
     marginTop: 0,
-    marginBottom: '40px',
+    marginBottom: '32px',
     color: '#111827',
   },
   featuresGrid: {
     display: 'grid',
     gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
-    gap: '24px',
+    gap: '12px',
     maxWidth: '1000px',
     margin: '0 auto',
   },
+  // ✅ Carte horizontale : icône à gauche, texte à droite
   featureCard: {
     backgroundColor: '#ffffff',
-    borderRadius: '16px',
-    padding: '24px',
+    borderRadius: '14px',
+    padding: '16px',
     textAlign: 'left',
     border: '1px solid #f3f4f6',
-    boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05)',
+    boxShadow: '0 2px 4px rgba(0, 0, 0, 0.04)',
+    display: 'flex',
+    alignItems: 'flex-start',
+    gap: '14px',
   },
   featureIcon: {
-    fontSize: '28px',
-    marginBottom: '16px',
-    backgroundColor: '#f0fdf4',
-    width: '48px',
-    height: '48px',
+    fontSize: '22px',
+    backgroundColor: '#f0fdfa',
+    width: '44px',
+    height: '44px',
+    minWidth: '44px',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
     borderRadius: '12px',
   },
+  featureBody: {
+    flex: 1,
+  },
   featureTitle: {
-    fontSize: '18px',
+    fontSize: '16px',
     fontWeight: '700',
-    marginBottom: '8px',
-    marginTop: 0,
+    margin: '0 0 4px 0',
   },
   featureText: {
-    fontSize: '15px',
+    fontSize: '14px',
     color: '#4b5563',
-    lineHeight: '1.5',
+    lineHeight: '1.45',
     margin: 0,
   },
 
   // ---- TESTIMONIALS ----
   testimonialsSection: {
-    padding: '64px 24px',
+    padding: '56px 24px',
     backgroundColor: '#ffffff',
     textAlign: 'center',
   },
   testimonialsGrid: {
     display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
-    gap: '24px',
+    gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
+    gap: '16px',
     maxWidth: '1000px',
     margin: '0 auto',
   },
   testimonialCard: {
     backgroundColor: '#f9fafb',
     borderRadius: '16px',
-    padding: '32px 24px',
+    padding: '24px 20px',
     textAlign: 'left',
     border: '1px solid #e5e7eb',
     display: 'flex',
@@ -315,26 +346,26 @@ const css = {
     justifyContent: 'space-between',
   },
   testimonialHighlight: {
-    backgroundColor: '#0a8043',
+    background: 'linear-gradient(to right, #14B8A6, #0F766E)',
     color: '#ffffff',
     border: 'none',
   },
   testimonialQuote: {
-    fontSize: '16px',
-    lineHeight: '1.6',
+    fontSize: '15px',
+    lineHeight: '1.55',
     fontStyle: 'italic',
-    margin: '0 0 20px 0',
+    margin: '0 0 16px 0',
     color: 'inherit',
   },
   testimonialAuthor: {
-    fontSize: '14px',
+    fontSize: '13px',
     fontWeight: '700',
     opacity: 0.8,
   },
 
-  // ---- METHOD SECTION ----
+  // ---- METHOD SECTION (compacte + palette harmonisée) ----
   methodSection: {
-    padding: '64px 24px',
+    padding: '56px 24px',
     backgroundColor: '#f9fafb',
     textAlign: 'center',
   },
@@ -342,46 +373,51 @@ const css = {
     fontSize: '16px',
     color: '#6b7280',
     maxWidth: '560px',
-    margin: '0 auto 40px',
+    margin: '0 auto 32px',
     lineHeight: '1.6',
   },
   stepsGrid: {
     display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
-    gap: '20px',
+    gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))',
+    gap: '12px',
     maxWidth: '1000px',
     margin: '0 auto',
   },
+  // ✅ Carte compacte : numéro + icône + titre sur une seule ligne
   stepCard: {
-    borderRadius: '16px',
-    padding: '28px 20px',
+    borderRadius: '14px',
+    padding: '16px 18px',
     textAlign: 'left',
   },
-  stepNum: {
-    fontSize: '14px',
-    fontWeight: '700',
-    marginBottom: '8px',
-    opacity: 0.7,
+  stepHeader: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '10px',
+    marginBottom: '6px',
   },
   stepIcon: {
-    fontSize: '32px',
-    marginBottom: '12px',
+    fontSize: '24px',
+    lineHeight: 1,
   },
   stepTitle: {
-    fontSize: '18px',
+    fontSize: '17px',
     fontWeight: '700',
-    marginBottom: '8px',
+  },
+  stepNum: {
+    opacity: 0.6,
+    fontWeight: '700',
+    marginRight: '2px',
   },
   stepText: {
     fontSize: '14px',
     color: '#4b5563',
-    lineHeight: '1.6',
+    lineHeight: '1.5',
     margin: 0,
   },
 
   // ---- CTA FINAL ----
   ctaSection: {
-    background: 'linear-gradient(135deg, #0a8043 0%, #065f46 100%)',
+    background: 'linear-gradient(to right, #14B8A6, #0F766E)',
     color: '#ffffff',
     textAlign: 'center',
     padding: '72px 24px',
@@ -402,7 +438,7 @@ const css = {
   btnCta: {
     padding: '18px 36px',
     backgroundColor: '#ffffff',
-    color: '#0a8043',
+    color: '#14B8A6',
     border: 'none',
     borderRadius: '12px',
     fontSize: '16px',
