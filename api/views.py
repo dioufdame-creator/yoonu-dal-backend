@@ -3725,7 +3725,7 @@ def complete_onboarding(request):
                 }
             )
         # ✅ MARQUER L'ONBOARDING COMME COMPLET
-        user.profile.onboarding_complete = True
+        user.profile.onboarding_completed = True
         user.profile.save()
         # 4. Créer un diagnostic de base
         DiagnosticResult.objects.get_or_create(
@@ -3973,8 +3973,13 @@ def check_onboarding_status(request):
         # 4. Diagnostic (optionnel)
         has_diagnostic = DiagnosticResult.objects.filter(user=user).exists()
         
-        # ✅ Critère : valeurs + revenus + SCORE
-        onboarding_complete = has_values and has_income and has_score
+        # Critère : indicateur enregistré à la fin de l'onboarding, ou à défaut
+        # valeurs + revenus. Le score n'entre PAS dans le critère : un nouvel
+        # utilisateur sans dépense a un score de 0, ce qui le renvoyait à
+        # l'onboarding à chaque connexion.
+        onboarding_complete = bool(
+            user.profile.onboarding_completed or (has_values and has_income)
+        )
         
         return Response({
             'onboarding_complete': onboarding_complete,
