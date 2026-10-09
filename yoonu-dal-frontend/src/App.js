@@ -250,7 +250,10 @@ function App() {
         try {
           const response = await API.get('/onboarding/status/');
           const pendingCode = localStorage.getItem('pending_invite_code');
-          if (response.data.onboarding_complete) {
+          // Onboarding terminé = indicateur du serveur, ou à défaut valeurs + revenu
+          // déjà enregistrés (le score vaut 0 sans dépense et ne doit pas compter).
+          const { onboarding_complete: onboardingDone, steps } = response.data;
+          if (onboardingDone || (steps?.values && steps?.income)) {
             if (pendingCode) {
               localStorage.removeItem('pending_invite_code');
               handleNavigate('tontine-invite', { code: pendingCode });
