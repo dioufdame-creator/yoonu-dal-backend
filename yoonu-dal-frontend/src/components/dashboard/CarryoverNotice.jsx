@@ -26,15 +26,15 @@ const CarryoverNotice = ({ onNavigate }) => {
     return (
       <button
         onClick={() => onNavigate?.('pockets')}
-        className="w-full bg-blue-50 border border-blue-200 rounded-2xl p-4 mb-4 flex items-start gap-3 text-left hover:border-blue-300 transition-all"
+        className="w-full bg-green-50 border border-green-200 rounded-2xl p-4 mb-4 flex items-start gap-3 text-left hover:border-green-300 transition-all"
       >
         <span className="text-lg flex-shrink-0">💰</span>
-        <p className="text-sm text-blue-800 font-medium flex-1">
+        <p className="text-sm text-green-800 font-medium flex-1">
           +{formatMoney(notice.amount)} de {notice.from_month_label} ajoutés à votre trésorerie.
         </p>
         <span
           onClick={(e) => { e.stopPropagation(); setDismissed(true); }}
-          className="text-blue-300 hover:text-blue-500 text-sm flex-shrink-0"
+          className="text-green-300 hover:text-green-500 text-sm flex-shrink-0"
         >
           ✕
         </span>

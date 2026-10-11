@@ -79,7 +79,7 @@ const DebtDetailPage = ({ debtId, onNavigate, toast }) => {
   };
 
   const getMethodEmoji = (m) => PAYMENT_METHODS.find(x => x.value === m)?.emoji || '📋';
-  const getStateColor = (pct) => pct >= 100 ? 'bg-green-500' : pct >= 50 ? 'bg-blue-500' : 'bg-amber-500';
+  const getStateColor = (pct) => pct >= 100 ? 'bg-green-500' : pct >= 50 ? 'bg-green-500' : 'bg-amber-500';
 
   const totalPaid = payments.reduce((s, p) => s + parseFloat(p.amount), 0);
   const avgPayment = payments.length > 0 ? totalPaid / payments.length : 0;
@@ -143,8 +143,8 @@ const DebtDetailPage = ({ debtId, onNavigate, toast }) => {
         {/* Carte résumé */}
         <div className={`rounded-3xl p-5 mb-4 text-white shadow-xl ${
           isOwedByMe
-            ? 'bg-gradient-to-br from-red-500 to-rose-600'
-            : 'bg-gradient-to-br from-green-600 to-emerald-700'
+            ? 'bg-gradient-to-br from-red-500 to-red-600'
+            : 'bg-gradient-to-br from-green-600 to-green-700'
         }`}>
           <div className="flex items-center gap-2 mb-1">
             <span className="text-xl">{DEBT_TYPE_EMOJI[debt.debt_type] || '📋'}</span>
@@ -211,7 +211,7 @@ const DebtDetailPage = ({ debtId, onNavigate, toast }) => {
             <p className="text-[10px] text-gray-400">{isOwedByMe ? 'Paiements' : 'Remb.'}</p>
           </div>
           <div className="bg-white rounded-2xl border border-gray-200 p-3 text-center shadow-sm">
-            <p className="text-sm font-bold text-blue-600">{formatFCFA(avgPayment)}</p>
+            <p className="text-sm font-bold text-green-600">{formatFCFA(avgPayment)}</p>
             <p className="text-[10px] text-gray-400">Moyenne</p>
           </div>
           <div className="bg-white rounded-2xl border border-gray-200 p-3 text-center shadow-sm">
@@ -344,7 +344,7 @@ const DebtDetailPage = ({ debtId, onNavigate, toast }) => {
             <div className="p-4 pb-6">
               <button
                 onClick={handleAddPayment}
-                className="w-full py-4 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-2xl font-bold shadow-lg"
+                className="w-full py-4 bg-gradient-to-r from-green-600 to-green-600 text-white rounded-2xl font-bold shadow-lg"
               >
                 Enregistrer
               </button>

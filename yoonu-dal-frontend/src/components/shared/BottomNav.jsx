@@ -49,7 +49,7 @@ const BottomNav = ({ currentPage, onNavigate, isAuthenticated }) => {
                 onClick={() => handleAdd('expense')}
                 className="w-full flex items-center gap-4 p-4 rounded-2xl bg-red-50 hover:bg-red-100 transition-all"
               >
-                <div className="w-12 h-12 bg-gradient-to-br from-red-500 to-rose-500 rounded-2xl flex items-center justify-center text-2xl shadow-lg">
+                <div className="w-12 h-12 bg-gradient-to-br from-green-600 to-green-700 rounded-2xl flex items-center justify-center text-2xl shadow-lg">
                   💸
                 </div>
                 <div className="text-left">
@@ -61,7 +61,7 @@ const BottomNav = ({ currentPage, onNavigate, isAuthenticated }) => {
                 onClick={() => handleAdd('income')}
                 className="w-full flex items-center gap-4 p-4 rounded-2xl bg-green-50 hover:bg-green-100 transition-all"
               >
-                <div className="w-12 h-12 bg-gradient-to-br from-green-500 to-emerald-500 rounded-2xl flex items-center justify-center text-2xl shadow-lg">
+                <div className="w-12 h-12 bg-gradient-to-br from-green-500 to-green-500 rounded-2xl flex items-center justify-center text-2xl shadow-lg">
                   💵
                 </div>
                 <div className="text-left">
@@ -71,9 +71,9 @@ const BottomNav = ({ currentPage, onNavigate, isAuthenticated }) => {
               </button>
               <button
                 onClick={() => handleAdd('savings')}
-                className="w-full flex items-center gap-4 p-4 rounded-2xl bg-indigo-50 hover:bg-indigo-100 transition-all"
+                className="w-full flex items-center gap-4 p-4 rounded-2xl bg-green-50 hover:bg-green-100 transition-all"
               >
-                <div className="w-12 h-12 bg-gradient-to-br from-indigo-500 to-purple-500 rounded-2xl flex items-center justify-center text-2xl shadow-lg">
+                <div className="w-12 h-12 bg-gradient-to-br from-green-500 to-green-500 rounded-2xl flex items-center justify-center text-2xl shadow-lg">
                   🎯
                 </div>
                 <div className="text-left">
@@ -107,7 +107,7 @@ const BottomNav = ({ currentPage, onNavigate, isAuthenticated }) => {
                   <div className={`w-14 h-14 rounded-full flex items-center justify-center text-2xl font-bold text-white shadow-xl transition-all transform ${
                     showAddSheet
                       ? 'bg-gray-700 rotate-45'
-                      : 'bg-gradient-to-br from-green-500 to-emerald-600 hover:scale-110'
+                      : 'bg-gradient-to-br from-green-500 to-green-600 hover:scale-110'
                   }`}>
                     +
                   </div>

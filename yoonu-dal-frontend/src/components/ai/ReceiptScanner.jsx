@@ -104,7 +104,7 @@ const ReceiptScanner = ({ onReceiptScanned, onClose, toast }) => {
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4">
       <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full max-h-[90vh] overflow-y-auto">
         {/* Header */}
-        <div className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white p-4 rounded-t-2xl">
+        <div className="bg-gradient-to-r from-green-600 to-green-600 text-white p-4 rounded-t-2xl">
           <div className="flex items-center justify-between">
             <h3 className="font-bold text-lg">📸 Scanner un reçu</h3>
             <button
@@ -124,7 +124,7 @@ const ReceiptScanner = ({ onReceiptScanned, onClose, toast }) => {
           {/* Upload zone */}
           {!previewUrl && (
             <label className="block">
-              <div className="border-2 border-dashed border-gray-300 rounded-xl p-8 text-center cursor-pointer hover:border-blue-500 hover:bg-blue-50 transition-colors">
+              <div className="border-2 border-dashed border-gray-300 rounded-xl p-8 text-center cursor-pointer hover:border-green-500 hover:bg-green-50 transition-colors">
                 <div className="text-6xl mb-4">📸</div>
                 <p className="text-gray-700 font-semibold mb-2">
                   Cliquer pour choisir une photo
@@ -204,8 +204,8 @@ const ReceiptScanner = ({ onReceiptScanned, onClose, toast }) => {
                     )}
 
                     {scannedData.confidence === 'low' && (
-                      <div className="mt-3 pt-3 border-t border-orange-200 bg-orange-50 p-2 rounded">
-                        <p className="text-xs text-orange-700">
+                      <div className="mt-3 pt-3 border-t border-amber-200 bg-amber-50 p-2 rounded">
+                        <p className="text-xs text-amber-700">
                           ⚠️ Confiance faible - Vérifie les informations
                         </p>
                       </div>
@@ -236,7 +236,7 @@ const ReceiptScanner = ({ onReceiptScanned, onClose, toast }) => {
 
               {!scannedData && !scanning && (
                 <label className="block">
-                  <button className="w-full px-4 py-3 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition-colors">
+                  <button className="w-full px-4 py-3 bg-green-600 text-white rounded-lg font-semibold hover:bg-green-700 transition-colors">
                     🔄 Scanner une autre photo
                   </button>
                   <input

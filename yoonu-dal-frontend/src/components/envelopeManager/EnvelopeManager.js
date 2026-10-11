@@ -22,53 +22,53 @@ const EnvelopeManagerPremium = ({ toast, onNavigate, auth }) => {
       name: 'Essentiels',
       icon: '🏠',
       description: 'Loyer, transport, alimentation, santé',
-      color: 'from-red-500 to-pink-500',
-      bgColor: 'bg-red-50',
-      borderColor: 'border-red-200',
-      textColor: 'text-red-700',
+      color: 'from-green-500 to-green-500',
+      bgColor: 'bg-green-50',
+      borderColor: 'border-green-200',
+      textColor: 'text-green-700',
       glowColor: 'shadow-red-500/20',
       recommendedMin: 40,
       recommendedMax: 60,
-      colorHex: ['#ef4444', '#ec4899']
+      colorHex: ['#ef4444', '#ef4444']
     },
     plaisir: {
       name: 'Plaisirs',
       icon: '🎉',
       description: 'Loisirs, sorties, divertissements',
-      color: 'from-blue-500 to-indigo-500',
-      bgColor: 'bg-blue-50',
-      borderColor: 'border-blue-200',
-      textColor: 'text-blue-700',
-      glowColor: 'shadow-blue-500/20',
-      recommendedMin: 20,
-      recommendedMax: 30,
-      colorHex: ['#3b82f6', '#6366f1']
-    },
-    projet: {
-      name: 'Projets',
-      icon: '💎',
-      description: 'Épargne, investissements, famille',
-      color: 'from-green-500 to-emerald-500',
+      color: 'from-green-500 to-green-500',
       bgColor: 'bg-green-50',
       borderColor: 'border-green-200',
       textColor: 'text-green-700',
       glowColor: 'shadow-green-500/20',
       recommendedMin: 20,
       recommendedMax: 30,
-      colorHex: ['#10b981', '#059669']
+      colorHex: ['#16a34a', '#16a34a']
+    },
+    projet: {
+      name: 'Projets',
+      icon: '💎',
+      description: 'Épargne, investissements, famille',
+      color: 'from-green-500 to-green-500',
+      bgColor: 'bg-green-50',
+      borderColor: 'border-green-200',
+      textColor: 'text-green-700',
+      glowColor: 'shadow-green-500/20',
+      recommendedMin: 20,
+      recommendedMax: 30,
+      colorHex: ['#16a34a', '#15803d']
     },
     liberation: {
       name: 'Libération',
       icon: '🔓',
       description: 'Dettes, crédits, solidarité familiale',
-      color: 'from-orange-500 to-amber-500',
-      bgColor: 'bg-orange-50',
-      borderColor: 'border-orange-200',
-      textColor: 'text-orange-700',
-      glowColor: 'shadow-orange-500/20',
+      color: 'from-green-500 to-green-500',
+      bgColor: 'bg-green-50',
+      borderColor: 'border-green-200',
+      textColor: 'text-green-700',
+      glowColor: 'shadow-green-500/20',
       recommendedMin: 0,
       recommendedMax: 20,
-      colorHex: ['#f97316', '#f59e0b']
+      colorHex: ['#f59e0b', '#f59e0b']
     }
   };
 
@@ -183,7 +183,7 @@ const EnvelopeManagerPremium = ({ toast, onNavigate, auth }) => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50 to-purple-50 flex items-center justify-center p-4">
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 via-green-50 to-green-50 flex items-center justify-center p-4">
         <div className="text-center">
           <div className="w-16 h-16 border-4 border-green-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
           <p className="text-gray-600 font-medium">Chargement de vos enveloppes...</p>
@@ -193,7 +193,7 @@ const EnvelopeManagerPremium = ({ toast, onNavigate, auth }) => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50 to-purple-50 pb-20">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-green-50 to-green-50 pb-20">
       <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-8 py-4 sm:py-6 lg:py-10">
 
         {/* Header */}
@@ -207,7 +207,7 @@ const EnvelopeManagerPremium = ({ toast, onNavigate, auth }) => {
                 ←
               </button>
               <div>
-                <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold bg-gradient-to-r from-gray-900 via-blue-900 to-purple-900 bg-clip-text text-transparent">
+                <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold bg-gradient-to-r from-gray-900 via-green-900 to-green-900 bg-clip-text text-transparent">
                   📁 Mes Enveloppes
                 </h1>
                 <p className="text-xs sm:text-sm text-gray-600 mt-1">
@@ -217,7 +217,7 @@ const EnvelopeManagerPremium = ({ toast, onNavigate, auth }) => {
             </div>
             <button
               onClick={() => setShowAdjustModal(true)}
-              className="group relative bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-4 sm:px-6 py-3 sm:py-4 rounded-xl sm:rounded-2xl font-semibold text-sm hover:shadow-2xl transition-all transform hover:scale-105 flex items-center justify-center gap-2 w-full sm:w-auto"
+              className="group relative bg-gradient-to-r from-green-600 to-green-600 text-white px-4 sm:px-6 py-3 sm:py-4 rounded-xl sm:rounded-2xl font-semibold text-sm hover:shadow-2xl transition-all transform hover:scale-105 flex items-center justify-center gap-2 w-full sm:w-auto"
             >
               <span className="text-xl group-hover:rotate-180 transition-transform duration-500">⚙️</span>
               <span>Ajuster les budgets</span>
@@ -226,7 +226,7 @@ const EnvelopeManagerPremium = ({ toast, onNavigate, auth }) => {
         </div>
 
         {/* Income Card */}
-        <div className="relative overflow-hidden bg-gradient-to-br from-green-500 via-emerald-600 to-teal-700 rounded-2xl sm:rounded-3xl shadow-2xl shadow-green-500/30 p-4 sm:p-6 lg:p-10 mb-6 sm:mb-8 text-white">
+        <div className="relative overflow-hidden bg-gradient-to-br from-green-500 via-green-600 to-green-700 rounded-2xl sm:rounded-3xl shadow-2xl shadow-green-500/30 p-4 sm:p-6 lg:p-10 mb-6 sm:mb-8 text-white">
           <div className="relative z-10 grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6">
             <div className="backdrop-blur-sm bg-white/10 rounded-xl sm:rounded-2xl p-4 sm:p-6 border border-white/20">
               <p className="text-xs sm:text-sm text-green-100 mb-1 flex items-center gap-2"><span>💰</span> Revenus mensuels</p>
@@ -331,7 +331,7 @@ const EnvelopeManagerPremium = ({ toast, onNavigate, auth }) => {
         </div>
 
         {/* Tips */}
-        <div className="backdrop-blur-xl bg-gradient-to-br from-indigo-50/80 via-purple-50/80 to-pink-50/80 rounded-2xl p-5 sm:p-6 border-2 border-indigo-200/50 shadow-xl">
+        <div className="backdrop-blur-xl bg-gradient-to-br from-green-50/80 via-green-50/80 to-green-50/80 rounded-2xl p-5 sm:p-6 border-2 border-green-200/50 shadow-xl">
           <div className="flex flex-col sm:flex-row items-start gap-4">
             <div className="text-4xl">💡</div>
             <div className="flex-1">
@@ -457,7 +457,7 @@ const EnvelopeManagerPremium = ({ toast, onNavigate, auth }) => {
               </button>
               <button onClick={handleAdjustSubmit}
                 disabled={Math.abs(totalAllocated - 100) >= 0.1}
-                className="flex-1 py-3 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-xl font-semibold hover:shadow-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed">
+                className="flex-1 py-3 bg-gradient-to-r from-green-600 to-green-600 text-white rounded-xl font-semibold hover:shadow-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed">
                 Enregistrer
               </button>
             </div>

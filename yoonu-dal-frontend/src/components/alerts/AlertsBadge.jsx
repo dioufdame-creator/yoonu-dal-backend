@@ -71,9 +71,9 @@ const AlertsBadgeV2 = ({ onClick }) => {
         };
       default:
         return {
-          bg: 'bg-blue-500',
+          bg: 'bg-green-500',
           pulse: '',
-          glow: 'shadow-blue-500/50'
+          glow: 'shadow-green-500/50'
         };
     }
   };

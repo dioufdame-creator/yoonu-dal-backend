@@ -61,7 +61,7 @@ const CurrencySettingsPage = ({ onNavigate, user, setUser, toast }) => {
         <button
           onClick={handleSave}
           disabled={saving || selected === currency}
-          className="w-full bg-gradient-to-r from-green-600 to-emerald-600 text-white px-6 py-3 rounded-xl font-semibold hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+          className="w-full bg-gradient-to-r from-green-600 to-green-600 text-white px-6 py-3 rounded-xl font-semibold hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {saving ? 'Enregistrement...' : 'Enregistrer'}
         </button>

@@ -8,33 +8,33 @@ const ValueSelector = ({ onNavigate }) => {
 
   const coreValues = [
     // Valeurs personnelles
-    { id: 1, name: 'Famille', icon: '👨‍👩‍👧‍👦', category: 'Personnel', description: 'Priorité aux liens familiaux et au bien-être des proches', color: 'bg-red-500' },
+    { id: 1, name: 'Famille', icon: '👨‍👩‍👧‍👦', category: 'Personnel', description: 'Priorité aux liens familiaux et au bien-être des proches', color: 'bg-green-500' },
     { id: 2, name: 'Santé', icon: '🏥', category: 'Personnel', description: 'Investir dans la santé physique et mentale', color: 'bg-green-500' },
-    { id: 3, name: 'Éducation', icon: '📚', category: 'Personnel', description: 'Formation continue et développement personnel', color: 'bg-blue-500' },
-    { id: 4, name: 'Spiritualité', icon: '🙏', category: 'Personnel', description: 'Développement spirituel et connexion intérieure', color: 'bg-purple-500' },
-    { id: 5, name: 'Aventure', icon: '🌍', category: 'Personnel', description: 'Exploration, voyages et nouvelles expériences', color: 'bg-orange-500' },
-    { id: 6, name: 'Créativité', icon: '🎨', category: 'Personnel', description: 'Expression artistique et innovation', color: 'bg-pink-500' },
+    { id: 3, name: 'Éducation', icon: '📚', category: 'Personnel', description: 'Formation continue et développement personnel', color: 'bg-green-500' },
+    { id: 4, name: 'Spiritualité', icon: '🙏', category: 'Personnel', description: 'Développement spirituel et connexion intérieure', color: 'bg-green-500' },
+    { id: 5, name: 'Aventure', icon: '🌍', category: 'Personnel', description: 'Exploration, voyages et nouvelles expériences', color: 'bg-green-500' },
+    { id: 6, name: 'Créativité', icon: '🎨', category: 'Personnel', description: 'Expression artistique et innovation', color: 'bg-green-500' },
     
     // Valeurs sociales
-    { id: 7, name: 'Communauté', icon: '🤝', category: 'Social', description: 'Contribution au bien-être de la communauté', color: 'bg-teal-500' },
-    { id: 8, name: 'Justice', icon: '⚖️', category: 'Social', description: 'Équité et défense des droits', color: 'bg-indigo-500' },
-    { id: 9, name: 'Solidarité', icon: '🤲', category: 'Social', description: 'Entraide et soutien mutuel', color: 'bg-cyan-500' },
-    { id: 10, name: 'Tradition', icon: '🏛️', category: 'Social', description: 'Respect et préservation des traditions', color: 'bg-amber-500' },
-    { id: 11, name: 'Leadership', icon: '👑', category: 'Social', description: 'Influence positive et guidage des autres', color: 'bg-yellow-500' },
+    { id: 7, name: 'Communauté', icon: '🤝', category: 'Social', description: 'Contribution au bien-être de la communauté', color: 'bg-green-500' },
+    { id: 8, name: 'Justice', icon: '⚖️', category: 'Social', description: 'Équité et défense des droits', color: 'bg-green-500' },
+    { id: 9, name: 'Solidarité', icon: '🤲', category: 'Social', description: 'Entraide et soutien mutuel', color: 'bg-green-500' },
+    { id: 10, name: 'Tradition', icon: '🏛️', category: 'Social', description: 'Respect et préservation des traditions', color: 'bg-green-500' },
+    { id: 11, name: 'Leadership', icon: '👑', category: 'Social', description: 'Influence positive et guidage des autres', color: 'bg-green-500' },
     
     // Valeurs financières
     { id: 12, name: 'Sécurité', icon: '🛡️', category: 'Financier', description: 'Stabilité financière et protection contre les risques', color: 'bg-gray-600' },
-    { id: 13, name: 'Croissance', icon: '📈', category: 'Financier', description: 'Augmentation du patrimoine et des investissements', color: 'bg-emerald-500' },
-    { id: 14, name: 'Indépendance', icon: '🗽', category: 'Financier', description: 'Liberté financière et autonomie', color: 'bg-blue-600' },
-    { id: 15, name: 'Générosité', icon: '💝', category: 'Financier', description: 'Partage et aide financière aux autres', color: 'bg-rose-500' },
+    { id: 13, name: 'Croissance', icon: '📈', category: 'Financier', description: 'Augmentation du patrimoine et des investissements', color: 'bg-green-500' },
+    { id: 14, name: 'Indépendance', icon: '🗽', category: 'Financier', description: 'Liberté financière et autonomie', color: 'bg-green-600' },
+    { id: 15, name: 'Générosité', icon: '💝', category: 'Financier', description: 'Partage et aide financière aux autres', color: 'bg-green-500' },
     { id: 16, name: 'Épargne', icon: '🏦', category: 'Financier', description: 'Constitution de réserves pour l\'avenir', color: 'bg-green-600' },
-    { id: 17, name: 'Impact', icon: '🌱', category: 'Financier', description: 'Investissements responsables et durables', color: 'bg-lime-500' },
+    { id: 17, name: 'Impact', icon: '🌱', category: 'Financier', description: 'Investissements responsables et durables', color: 'bg-green-500' },
     
     // Valeurs professionnelles
-    { id: 18, name: 'Réussite', icon: '🏆', category: 'Professionnel', description: 'Accomplissement et reconnaissance professionnelle', color: 'bg-yellow-600' },
-    { id: 19, name: 'Innovation', icon: '💡', category: 'Professionnel', description: 'Créativité et solutions nouvelles', color: 'bg-blue-400' },
-    { id: 20, name: 'Équilibre', icon: '⚖️', category: 'Professionnel', description: 'Harmony entre vie professionnelle et personnelle', color: 'bg-violet-500' },
-    { id: 21, name: 'Excellence', icon: '⭐', category: 'Professionnel', description: 'Qualité et perfectionnement constant', color: 'bg-orange-600' }
+    { id: 18, name: 'Réussite', icon: '🏆', category: 'Professionnel', description: 'Accomplissement et reconnaissance professionnelle', color: 'bg-green-600' },
+    { id: 19, name: 'Innovation', icon: '💡', category: 'Professionnel', description: 'Créativité et solutions nouvelles', color: 'bg-green-400' },
+    { id: 20, name: 'Équilibre', icon: '⚖️', category: 'Professionnel', description: 'Harmony entre vie professionnelle et personnelle', color: 'bg-green-500' },
+    { id: 21, name: 'Excellence', icon: '⭐', category: 'Professionnel', description: 'Qualité et perfectionnement constant', color: 'bg-green-600' }
   ];
 
   const categories = ['Tous', 'Personnel', 'Social', 'Financier', 'Professionnel'];
@@ -90,7 +90,7 @@ const ValueSelector = ({ onNavigate }) => {
         description: 'Créez un budget qui reflète vos priorités personnelles et familiales.',
         action: 'Créer mon budget',
         icon: '👨‍👩‍👧‍👦',
-        color: 'bg-blue-500',
+        color: 'bg-green-500',
         page: 'expenses'
       });
     }
@@ -101,7 +101,7 @@ const ValueSelector = ({ onNavigate }) => {
         description: 'Rejoignez des tontines communautaires pour allier épargne et solidarité.',
         action: 'Voir les tontines',
         icon: '🤝',
-        color: 'bg-purple-500',
+        color: 'bg-green-500',
         page: 'tontines'
       });
     }
@@ -124,7 +124,7 @@ const ValueSelector = ({ onNavigate }) => {
         description: 'Organisez l\'épargne familiale avec des objectifs clairs pour chaque membre.',
         action: 'Planifier l\'épargne',
         icon: '👨‍👩‍👧‍👦',
-        color: 'bg-red-500',
+        color: 'bg-green-500',
         page: 'dashboard'
       });
     }
@@ -148,7 +148,7 @@ const ValueSelector = ({ onNavigate }) => {
     const recommendations = generateRecommendations();
 
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-purple-50 p-4">
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-green-50 p-4">
         <div className="max-w-4xl mx-auto">
           {/* Header */}
           <div className="text-center mb-8 animate-fade-in">
@@ -208,7 +208,7 @@ const ValueSelector = ({ onNavigate }) => {
                   style={{ animationDelay: `${index * 150}ms` }}
                   onClick={() => onNavigate && onNavigate(rec.page)}
                 >
-                  <div className="border-2 border-gray-200 rounded-xl p-6 hover:border-purple-300 hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1">
+                  <div className="border-2 border-gray-200 rounded-xl p-6 hover:border-green-300 hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1">
                     <div className="flex items-center space-x-3 mb-4">
                       <div className={`${rec.color} text-white p-3 rounded-full text-xl`}>
                         {rec.icon}
@@ -216,7 +216,7 @@ const ValueSelector = ({ onNavigate }) => {
                       <h3 className="text-lg font-semibold text-gray-900">{rec.title}</h3>
                     </div>
                     <p className="text-gray-600 mb-4">{rec.description}</p>
-                    <button className="bg-gradient-to-r from-purple-500 to-pink-500 text-white px-4 py-2 rounded-lg font-semibold hover:shadow-lg transform hover:scale-105 transition-all duration-200">
+                    <button className="bg-gradient-to-r from-green-500 to-green-500 text-white px-4 py-2 rounded-lg font-semibold hover:shadow-lg transform hover:scale-105 transition-all duration-200">
                       {rec.action}
                     </button>
                   </div>
@@ -230,13 +230,13 @@ const ValueSelector = ({ onNavigate }) => {
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <button 
                 onClick={() => onNavigate && onNavigate('dashboard')}
-                className="bg-gradient-to-r from-purple-600 to-pink-600 text-white px-8 py-4 rounded-xl font-semibold text-lg hover:shadow-2xl hover:scale-105 transition-all duration-300 transform"
+                className="bg-gradient-to-r from-green-600 to-green-600 text-white px-8 py-4 rounded-xl font-semibold text-lg hover:shadow-2xl hover:scale-105 transition-all duration-300 transform"
               >
                 📊 Voir mon tableau de bord
               </button>
               <button 
                 onClick={() => onNavigate && onNavigate('tontine-simulator')}
-                className="bg-gradient-to-r from-green-600 to-emerald-600 text-white px-8 py-4 rounded-xl font-semibold text-lg hover:shadow-2xl hover:scale-105 transition-all duration-300 transform"
+                className="bg-gradient-to-r from-green-600 to-green-600 text-white px-8 py-4 rounded-xl font-semibold text-lg hover:shadow-2xl hover:scale-105 transition-all duration-300 transform"
               >
                 🧮 Simuler une épargne
               </button>
@@ -247,7 +247,7 @@ const ValueSelector = ({ onNavigate }) => {
                 setCurrentStep(1);
                 setSelectedValues([]);
               }}
-              className="text-gray-600 hover:text-purple-600 font-semibold transition-colors duration-200"
+              className="text-gray-600 hover:text-green-600 font-semibold transition-colors duration-200"
             >
               🔄 Modifier mes valeurs
             </button>
@@ -258,7 +258,7 @@ const ValueSelector = ({ onNavigate }) => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-purple-50 p-4">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-green-50 p-4">
       <div className="max-w-6xl mx-auto">
         {/* Header */}
         <div className="text-center mb-8 animate-fade-in">
@@ -273,13 +273,13 @@ const ValueSelector = ({ onNavigate }) => {
           <div className="inline-flex items-center space-x-4 bg-white rounded-full px-6 py-3 shadow-lg">
             <span className="text-gray-600">Sélectionnées:</span>
             <div className="flex items-center space-x-2">
-              <span className="text-2xl font-bold text-purple-600">{selectedValues.length}</span>
+              <span className="text-2xl font-bold text-green-600">{selectedValues.length}</span>
               <span className="text-gray-400">/</span>
               <span className="text-gray-600">7</span>
             </div>
             <div className="w-24 bg-gray-200 rounded-full h-2">
               <div 
-                className="h-full bg-gradient-to-r from-purple-500 to-pink-500 rounded-full transition-all duration-300"
+                className="h-full bg-gradient-to-r from-green-500 to-green-500 rounded-full transition-all duration-300"
                 style={{ width: `${(selectedValues.length / 7) * 100}%` }}
               ></div>
             </div>
@@ -296,8 +296,8 @@ const ValueSelector = ({ onNavigate }) => {
                 onClick={() => setSelectedCategory(category)}
                 className={`px-6 py-3 rounded-full font-semibold transition-all duration-200 transform hover:scale-105 ${
                   selectedCategory === category
-                    ? 'bg-purple-500 text-white shadow-lg'
-                    : 'bg-white text-gray-700 hover:bg-purple-50 border border-gray-200'
+                    ? 'bg-green-500 text-white shadow-lg'
+                    : 'bg-white text-gray-700 hover:bg-green-50 border border-gray-200'
                 }`}
               >
                 {category}
@@ -313,7 +313,7 @@ const ValueSelector = ({ onNavigate }) => {
                 placeholder="Rechercher une valeur..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full px-4 py-3 pl-12 border border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200"
+                className="w-full px-4 py-3 pl-12 border border-gray-200 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200"
               />
               <span className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 text-xl">
                 🔍
@@ -339,7 +339,7 @@ const ValueSelector = ({ onNavigate }) => {
                 <div className={`relative bg-white rounded-2xl p-6 shadow-lg transition-all duration-300 transform hover:-translate-y-2 hover:shadow-2xl border-2 ${
                   isSelected 
                     ? `${value.color.replace('bg-', 'border-')} scale-105` 
-                    : 'border-gray-200 hover:border-purple-300'
+                    : 'border-gray-200 hover:border-green-300'
                 }`}>
                   
                   {/* Badge de priorité */}
@@ -356,7 +356,7 @@ const ValueSelector = ({ onNavigate }) => {
 
                   {/* Contenu */}
                   <h3 className={`text-xl font-bold mb-3 transition-colors duration-300 ${
-                    isSelected ? 'text-white' : 'text-gray-900 group-hover:text-purple-600'
+                    isSelected ? 'text-white' : 'text-gray-900 group-hover:text-green-600'
                   }`}>
                     {value.name}
                   </h3>
@@ -370,7 +370,7 @@ const ValueSelector = ({ onNavigate }) => {
                   <span className={`inline-block px-3 py-1 rounded-full text-xs font-semibold transition-all duration-300 ${
                     isSelected 
                       ? 'bg-white bg-opacity-20 text-white'
-                      : 'bg-gray-100 text-gray-600 group-hover:bg-purple-100 group-hover:text-purple-700'
+                      : 'bg-gray-100 text-gray-600 group-hover:bg-green-100 group-hover:text-green-700'
                   }`}>
                     {value.category}
                   </span>
@@ -397,7 +397,7 @@ const ValueSelector = ({ onNavigate }) => {
           {selectedValues.length >= 3 ? (
             <button 
               onClick={() => setShowResults(true)}
-              className="bg-gradient-to-r from-purple-600 to-pink-600 text-white px-12 py-4 rounded-xl font-semibold text-lg hover:shadow-2xl hover:scale-105 transition-all duration-300 transform"
+              className="bg-gradient-to-r from-green-600 to-green-600 text-white px-12 py-4 rounded-xl font-semibold text-lg hover:shadow-2xl hover:scale-105 transition-all duration-300 transform"
             >
               ✨ Voir mes recommandations
             </button>
@@ -410,7 +410,7 @@ const ValueSelector = ({ onNavigate }) => {
           <div className="flex justify-center space-x-4">
             <button 
               onClick={() => onNavigate && onNavigate('dashboard')}
-              className="text-gray-600 hover:text-purple-600 font-semibold transition-colors duration-200"
+              className="text-gray-600 hover:text-green-600 font-semibold transition-colors duration-200"
             >
               ← Retour au tableau de bord
             </button>

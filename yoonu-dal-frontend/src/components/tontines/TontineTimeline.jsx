@@ -34,10 +34,10 @@ const TontineTimeline = ({ tontineId, isAdmin, onUpdate }) => {
   const getStatusColor = (status) => {
     switch(status) {
       case 'paid': return 'bg-green-50 border-green-500 text-green-700';
-      case 'current': return 'bg-orange-50 border-orange-500 text-orange-700';
+      case 'current': return 'bg-amber-50 border-amber-500 text-amber-700';
       case 'late': return 'bg-red-50 border-red-500 text-red-700';
       case 'upcoming': return 'bg-gray-50 border-gray-300 text-gray-600';
-      case 'drawing_pending': return 'bg-purple-50 border-purple-300 border-dashed text-purple-700';
+      case 'drawing_pending': return 'bg-green-50 border-green-300 border-dashed text-green-700';
       default: return 'bg-gray-50 border-gray-300';
     }
   };
@@ -122,14 +122,14 @@ const TontineTimeline = ({ tontineId, isAdmin, onUpdate }) => {
 
       {/* Mise en évidence du gagnant du tirage, avant même le versement */}
       {currentWinner && (
-        <div className="mb-5 p-4 rounded-2xl border-2 border-amber-300 bg-gradient-to-br from-amber-50 to-orange-50 flex items-center gap-3">
+        <div className="mb-5 p-4 rounded-2xl border-2 border-amber-300 bg-gradient-to-br from-amber-50 to-amber-50 flex items-center gap-3">
           <span className="text-3xl flex-shrink-0">🏆</span>
           <div className="flex-1 min-w-0">
             <p className="text-xs font-bold text-amber-700 uppercase tracking-wide">Gagnant du tirage — Mois {currentWinner.month}</p>
             <p className="font-bold text-gray-900 truncate">
               {currentWinner.participant.name}
               {currentWinner.participant.is_current_user && (
-                <span className="ml-2 text-xs bg-blue-500 text-white px-1.5 py-0.5 rounded font-semibold">Vous</span>
+                <span className="ml-2 text-xs bg-green-500 text-white px-1.5 py-0.5 rounded font-semibold">Vous</span>
               )}
             </p>
             <p className="text-xs text-amber-700 mt-0.5">En attente du versement</p>
@@ -160,18 +160,18 @@ const TontineTimeline = ({ tontineId, isAdmin, onUpdate }) => {
                     <span className="text-lg">👤</span>
                     <span className="font-semibold text-sm truncate">{item.participant.name}</span>
                     {item.participant.is_current_user && (
-                      <span className="text-xs bg-blue-500 text-white px-1.5 py-0.5 rounded font-semibold flex-shrink-0">
+                      <span className="text-xs bg-green-500 text-white px-1.5 py-0.5 rounded font-semibold flex-shrink-0">
                         Vous
                       </span>
                     )}
                     {item.participant.is_admin && (
-                      <span className="text-xs bg-yellow-500 text-white px-1.5 py-0.5 rounded font-semibold flex-shrink-0">
+                      <span className="text-xs bg-amber-500 text-white px-1.5 py-0.5 rounded font-semibold flex-shrink-0">
                         👑
                       </span>
                     )}
                   </div>
                 ) : (
-                  <p className="text-sm text-purple-600 italic">
+                  <p className="text-sm text-green-600 italic">
                     Tirage au sort pas encore effectué pour ce mois
                   </p>
                 )}
@@ -181,9 +181,9 @@ const TontineTimeline = ({ tontineId, isAdmin, onUpdate }) => {
               <div className="text-right flex-shrink-0">
                 <div className={`text-xs font-semibold ${
                   item.status === 'paid' ? 'text-green-600' :
-                  item.status === 'current' ? 'text-orange-600' :
+                  item.status === 'current' ? 'text-amber-600' :
                   item.status === 'late' ? 'text-red-600' :
-                  item.status === 'drawing_pending' ? 'text-purple-600' :
+                  item.status === 'drawing_pending' ? 'text-green-600' :
                   'text-gray-500'
                 }`}>
                   {getStatusLabel(item.status, isRandom)}

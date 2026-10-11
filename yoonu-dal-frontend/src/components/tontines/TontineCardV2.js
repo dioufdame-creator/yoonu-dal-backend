@@ -21,9 +21,9 @@ const TontineCardV2 = ({ tontine, onNavigate, toast }) => {
         };
       case 'completed':
         return {
-          bg: 'bg-blue-50',
-          border: 'border-blue-500',
-          text: 'text-blue-700',
+          bg: 'bg-green-50',
+          border: 'border-green-500',
+          text: 'text-green-700',
           label: 'Terminée',
           icon: '🎉'
         };
@@ -37,9 +37,9 @@ const TontineCardV2 = ({ tontine, onNavigate, toast }) => {
         };
       case 'paused':
         return {
-          bg: 'bg-orange-50',
-          border: 'border-orange-500',
-          text: 'text-orange-700',
+          bg: 'bg-green-50',
+          border: 'border-green-500',
+          text: 'text-green-700',
           label: 'En pause',
           icon: '⏸️'
         };
@@ -82,7 +82,7 @@ const TontineCardV2 = ({ tontine, onNavigate, toast }) => {
   const placesRestantes = tontine.max_participants - tontine.current_participants;
 
   return (
-    <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 hover:shadow-xl hover:border-orange-300 transition-all duration-300 group">
+    <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 hover:shadow-xl hover:border-green-300 transition-all duration-300 group">
       
       {/* Header */}
       <div className="flex items-start justify-between mb-4">
@@ -91,7 +91,7 @@ const TontineCardV2 = ({ tontine, onNavigate, toast }) => {
             <span className="text-3xl group-hover:scale-110 transition-transform">
               {getMotivationIcon(tontine.motivation)}
             </span>
-            <h3 className="text-xl font-bold text-gray-900 group-hover:text-orange-600 transition-colors">
+            <h3 className="text-xl font-bold text-gray-900 group-hover:text-green-600 transition-colors">
               {tontine.name}
             </h3>
           </div>
@@ -104,7 +104,7 @@ const TontineCardV2 = ({ tontine, onNavigate, toast }) => {
 
         {/* Montant */}
         <div className="text-right">
-          <div className="text-2xl font-bold bg-gradient-to-r from-orange-600 to-red-600 bg-clip-text text-transparent">
+          <div className="text-2xl font-bold bg-gradient-to-r from-green-600 to-green-700 bg-clip-text text-transparent">
             {formatCurrency(tontine.monthly_contribution)}
           </div>
           <div className="text-xs text-gray-500 mt-1">Par mois</div>
@@ -136,7 +136,7 @@ const TontineCardV2 = ({ tontine, onNavigate, toast }) => {
         </div>
         <div className="w-full bg-gray-200 rounded-full h-3 overflow-hidden">
           <div 
-            className="h-full bg-gradient-to-r from-orange-500 to-orange-600 rounded-full transition-all duration-500"
+            className="h-full bg-gradient-to-r from-green-500 to-green-600 rounded-full transition-all duration-500"
             style={{ width: `${progress}%` }}
           />
         </div>
@@ -146,7 +146,7 @@ const TontineCardV2 = ({ tontine, onNavigate, toast }) => {
       <div className="space-y-2 text-sm mb-4">
         <div className="flex justify-between items-center">
           <span className="text-gray-600">Code invitation</span>
-          <span className="font-mono text-xs bg-orange-50 text-orange-700 px-3 py-1 rounded-lg border border-orange-200">
+          <span className="font-mono text-xs bg-green-50 text-green-700 px-3 py-1 rounded-lg border border-green-200">
             {tontine.invitation_code}
           </span>
         </div>
@@ -161,7 +161,7 @@ const TontineCardV2 = ({ tontine, onNavigate, toast }) => {
 
       {/* Alert Messages */}
       {tontine.status === 'planning' && placesRestantes > 0 && (
-        <div className="mb-4 p-3 bg-amber-50 border-l-4 border-amber-500 rounded-lg">
+        <div className="mb-4 p-3 bg-green-50 border-l-4 border-green-500 rounded-lg">
           <p className="text-sm text-amber-800">
             <span className="font-semibold">{placesRestantes}</span> place{placesRestantes > 1 ? 's' : ''} restante{placesRestantes > 1 ? 's' : ''}
           </p>
@@ -188,7 +188,7 @@ const TontineCardV2 = ({ tontine, onNavigate, toast }) => {
         {tontine.status === 'planning' && (
           <button
             onClick={handleCopyInvitation}
-            className="flex-1 px-4 py-2 bg-orange-100 text-orange-700 rounded-xl font-semibold hover:bg-orange-200 transition-all"
+            className="flex-1 px-4 py-2 bg-green-100 text-green-700 rounded-xl font-semibold hover:bg-green-200 transition-all"
           >
             📤 Inviter
           </button>
@@ -197,7 +197,7 @@ const TontineCardV2 = ({ tontine, onNavigate, toast }) => {
         {tontine.status === 'active' && (
           <button
             onClick={() => onNavigate?.('tontine-detail', { id: tontine.id })}
-            className="flex-1 px-4 py-2 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-xl font-semibold hover:shadow-lg transition-all"
+            className="flex-1 px-4 py-2 bg-gradient-to-r from-green-600 to-green-600 text-white rounded-xl font-semibold hover:shadow-lg transition-all"
           >
             ⚡ Gérer
           </button>
@@ -212,7 +212,7 @@ const TontineCardV2 = ({ tontine, onNavigate, toast }) => {
       )}
       
       {placesRestantes <= 2 && placesRestantes > 0 && tontine.status === 'planning' && (
-        <div className="absolute -top-2 -right-2 w-8 h-8 bg-orange-500 rounded-full flex items-center justify-center text-white font-bold shadow-lg animate-pulse">
+        <div className="absolute -top-2 -right-2 w-8 h-8 bg-green-500 rounded-full flex items-center justify-center text-white font-bold shadow-lg animate-pulse">
           !
         </div>
       )}

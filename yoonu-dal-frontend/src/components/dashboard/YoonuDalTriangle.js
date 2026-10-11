@@ -30,8 +30,8 @@ const YoonuDalTriangle = ({
   // Déterminer le niveau d'alignement
   const getAlignmentLevel = (score) => {
     if (score >= 80) return { level: 'Excellent', color: 'text-green-600', bg: 'bg-green-50' };
-    if (score >= 60) return { level: 'Bon', color: 'text-blue-600', bg: 'bg-blue-50' };
-    if (score >= 40) return { level: 'Moyen', color: 'text-orange-600', bg: 'bg-orange-50' };
+    if (score >= 60) return { level: 'Bon', color: 'text-green-600', bg: 'bg-green-50' };
+    if (score >= 40) return { level: 'Moyen', color: 'text-amber-600', bg: 'bg-amber-50' };
     return { level: 'À améliorer', color: 'text-red-600', bg: 'bg-red-50' };
   };
 
@@ -46,8 +46,8 @@ const YoonuDalTriangle = ({
 
   // Couleurs selon le score
   const getScoreColor = (score) => {
-    if (score >= 80) return '#10B981'; // vert
-    if (score >= 60) return '#3B82F6'; // bleu
+    if (score >= 80) return '#16a34a'; // vert
+    if (score >= 60) return '#16a34a'; // bleu
     if (score >= 40) return '#F59E0B'; // orange
     return '#EF4444'; // rouge
   };
@@ -266,7 +266,7 @@ const YoonuDalTriangle = ({
                 key={key}
                 className={`p-3 rounded-lg border transition-all duration-200 cursor-pointer ${
                   selectedPoint === key 
-                    ? 'border-blue-500 bg-blue-50' 
+                    ? 'border-green-500 bg-green-50' 
                     : 'border-gray-200 hover:border-gray-300'
                 }`}
                 onClick={() => setSelectedPoint(selectedPoint === key ? null : key)}
@@ -293,7 +293,7 @@ const YoonuDalTriangle = ({
                     <ul className="space-y-1">
                       {details.tips.map((tip, index) => (
                         <li key={index} className="text-sm text-gray-600 flex items-start">
-                          <span className="text-blue-500 mr-2">•</span>
+                          <span className="text-green-500 mr-2">•</span>
                           {tip}
                         </li>
                       ))}
@@ -332,11 +332,11 @@ const YoonuDalTriangle = ({
             80-100% Excellent
           </div>
           <div className="flex items-center">
-            <div className="w-3 h-3 bg-blue-500 rounded-full mr-2"></div>
+            <div className="w-3 h-3 bg-green-500 rounded-full mr-2"></div>
             60-79% Bon
           </div>
           <div className="flex items-center">
-            <div className="w-3 h-3 bg-orange-500 rounded-full mr-2"></div>
+            <div className="w-3 h-3 bg-amber-500 rounded-full mr-2"></div>
             40-59% Moyen
           </div>
           <div className="flex items-center">

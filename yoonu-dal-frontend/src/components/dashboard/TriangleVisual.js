@@ -51,15 +51,15 @@ const TriangleVisual = () => {
 
   const getScoreColor = (score) => {
     if (score >= 80) return '#22c55e'; // Vert
-    if (score >= 60) return '#eab308'; // Jaune
-    if (score >= 40) return '#f97316'; // Orange
+    if (score >= 60) return '#f59e0b'; // Jaune
+    if (score >= 40) return '#f59e0b'; // Orange
     return '#ef4444'; // Rouge
   };
 
   const getBalanceMessage = (balance) => {
     if (balance >= 80) return { text: "Excellent équilibre", color: "text-green-700", bg: "bg-green-50" };
-    if (balance >= 65) return { text: "Bon équilibre", color: "text-yellow-700", bg: "bg-yellow-50" };
-    if (balance >= 50) return { text: "Équilibre à améliorer", color: "text-orange-700", bg: "bg-orange-50" };
+    if (balance >= 65) return { text: "Bon équilibre", color: "text-amber-700", bg: "bg-amber-50" };
+    if (balance >= 50) return { text: "Équilibre à améliorer", color: "text-amber-700", bg: "bg-amber-50" };
     return { text: "Déséquilibre important", color: "text-red-700", bg: "bg-red-50" };
   };
 
@@ -214,28 +214,28 @@ const TriangleVisual = () => {
 
       {/* Détails de la dimension sélectionnée */}
       {selectedDimension && (
-        <div className="mb-6 p-4 bg-blue-50 border-l-4 border-blue-400 rounded-r-lg">
+        <div className="mb-6 p-4 bg-green-50 border-l-4 border-green-400 rounded-r-lg">
           <div className="flex justify-between items-start mb-3">
-            <h3 className="font-bold text-blue-800">
+            <h3 className="font-bold text-green-800">
               {getDimensionDetails(selectedDimension).title}
             </h3>
             <button
               onClick={() => setSelectedDimension(null)}
-              className="text-blue-600 hover:text-blue-800"
+              className="text-green-600 hover:text-green-800"
             >
               ✕
             </button>
           </div>
-          <p className="text-blue-700 mb-3">
+          <p className="text-green-700 mb-3">
             {getDimensionDetails(selectedDimension).description}
           </p>
           
           <div>
-            <h4 className="font-semibold text-blue-700 mb-2">💡 Conseils</h4>
+            <h4 className="font-semibold text-green-700 mb-2">💡 Conseils</h4>
             <ul className="space-y-1">
               {getDimensionDetails(selectedDimension).tips.map((tip, index) => (
-                <li key={index} className="flex items-center text-sm text-blue-600">
-                  <div className="w-2 h-2 bg-blue-400 rounded-full mr-2"></div>
+                <li key={index} className="flex items-center text-sm text-green-600">
+                  <div className="w-2 h-2 bg-green-400 rounded-full mr-2"></div>
                   {tip}
                 </li>
               ))}
@@ -254,14 +254,14 @@ const TriangleVisual = () => {
             <div className="text-green-700 text-sm mt-1">{analysis.income}</div>
           </div>
           
-          <div className="p-3 border-l-4 border-blue-400 bg-blue-50 rounded-r">
-            <div className="font-medium text-blue-800 text-sm">Dépenses</div>
-            <div className="text-blue-700 text-sm mt-1">{analysis.expense}</div>
+          <div className="p-3 border-l-4 border-green-400 bg-green-50 rounded-r">
+            <div className="font-medium text-green-800 text-sm">Dépenses</div>
+            <div className="text-green-700 text-sm mt-1">{analysis.expense}</div>
           </div>
           
-          <div className="p-3 border-l-4 border-purple-400 bg-purple-50 rounded-r">
-            <div className="font-medium text-purple-800 text-sm">Valeurs</div>
-            <div className="text-purple-700 text-sm mt-1">{analysis.value}</div>
+          <div className="p-3 border-l-4 border-green-400 bg-green-50 rounded-r">
+            <div className="font-medium text-green-800 text-sm">Valeurs</div>
+            <div className="text-green-700 text-sm mt-1">{analysis.value}</div>
           </div>
         </div>
       </div>
@@ -273,12 +273,12 @@ const TriangleVisual = () => {
           <div className="text-sm opacity-90">Clarifier vos priorités</div>
         </button>
         
-        <button className="p-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-left">
+        <button className="p-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-left">
           <div className="font-medium">Optimiser les Dépenses</div>
           <div className="text-sm opacity-90">Améliorer l'allocation</div>
         </button>
         
-        <button className="p-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors text-left">
+        <button className="p-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-left">
           <div className="font-medium">Diversifier les Revenus</div>
           <div className="text-sm opacity-90">Créer de nouvelles sources</div>
         </button>

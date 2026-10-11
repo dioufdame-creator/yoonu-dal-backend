@@ -96,13 +96,13 @@ const TontinesListPremium = ({ onNavigate, toast, pageParams }) => {
     const daysLeft = tontine.payment_day - now.getDate();
     if (daysLeft < 0) return null;
     if (daysLeft <= 2) return { label: `⚠️ Limite dans ${daysLeft}j`, color: 'text-red-600' };
-    if (daysLeft <= 5) return { label: `⏰ Limite dans ${daysLeft}j`, color: 'text-orange-600' };
+    if (daysLeft <= 5) return { label: `⏰ Limite dans ${daysLeft}j`, color: 'text-amber-600' };
     return null;
   };
 
   const getStatusConfig = (status) => {
     const configs = {
-      planning:  { label: 'En préparation', icon: '📋', badge: 'bg-blue-50 text-blue-600' },
+      planning:  { label: 'En préparation', icon: '📋', badge: 'bg-green-50 text-green-600' },
       active:    { label: 'Active',         icon: '🔥', badge: 'bg-green-50 text-green-600' },
       completed: { label: 'Terminée',       icon: '✅', badge: 'bg-gray-100 text-gray-500' },
     };
@@ -244,7 +244,7 @@ ${payoutMode}
         </div>
 
         {/* Résumé */}
-        <div className="bg-gradient-to-br from-green-600 to-emerald-700 rounded-3xl p-5 mb-4 text-white shadow-xl">
+        <div className="bg-gradient-to-br from-green-600 to-green-700 rounded-3xl p-5 mb-4 text-white shadow-xl">
           <p className="text-sm opacity-80 mb-1">Total en circulation</p>
           <p className="text-3xl font-bold mb-3">{formatFull(stats.totalAmount)}</p>
           <div className="grid grid-cols-3 gap-2">
@@ -373,7 +373,7 @@ ${payoutMode}
                     )}
                     <button
                       onClick={() => handleShareWhatsApp(tontine)}
-                      className="flex-1 text-xs font-bold py-2 rounded-xl bg-emerald-50 text-emerald-700"
+                      className="flex-1 text-xs font-bold py-2 rounded-xl bg-green-50 text-green-700"
                     >
                       📤 Partager sur WhatsApp
                     </button>
@@ -451,11 +451,11 @@ ${payoutMode}
               </div>
 
               {calculatedTotal > 0 && (
-                <div className="bg-indigo-50 rounded-2xl p-3 text-center">
-                  <p className="text-xs text-indigo-600">
+                <div className="bg-green-50 rounded-2xl p-3 text-center">
+                  <p className="text-xs text-green-600">
                     Chaque participant recevra <strong>{formatFull(calculatedPayout)}</strong> à son tour
                   </p>
-                  <p className="text-[11px] text-indigo-400 mt-0.5">
+                  <p className="text-[11px] text-green-400 mt-0.5">
                     Durée totale : {form.max_participants || 0} mois
                   </p>
                 </div>
@@ -520,7 +520,7 @@ ${payoutMode}
             <div className="p-4 pb-6">
               <button
                 onClick={handleSubmit}
-                className="w-full py-4 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-2xl font-bold shadow-lg"
+                className="w-full py-4 bg-gradient-to-r from-green-600 to-green-600 text-white rounded-2xl font-bold shadow-lg"
               >
                 {editingTontine ? 'Enregistrer' : 'Créer la tontine'}
               </button>
@@ -588,7 +588,7 @@ ${payoutMode}
             <div className="p-4 pb-6">
               <button
                 onClick={handleJoinTontine}
-                className="w-full py-4 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-2xl font-bold shadow-lg"
+                className="w-full py-4 bg-gradient-to-r from-green-600 to-green-600 text-white rounded-2xl font-bold shadow-lg"
               >
                 Rejoindre
               </button>

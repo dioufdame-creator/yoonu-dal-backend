@@ -128,10 +128,10 @@ const Home2 = ({ onNavigate }) => {
 
         <div style={css.stepsGrid}>
           {[
-            { num: '1', icon: '👁️', title: 'Conscience', text: 'Ouvrez les yeux sur vos habitudes sans jugement.', color: '#0F766E', bg: '#f0fdfa' },
-            { num: '2', icon: '💡', title: 'Clarté', text: 'Comprenez exactement où va votre argent.', color: '#65A30D', bg: '#f7fee7' },
-            { num: '3', icon: '🎯', title: 'Choix', text: 'Alignez vos achats avec vos priorités.', color: '#C2410C', bg: '#fff7ed' },
-            { num: '4', icon: '🚀', title: 'Contrôle', text: 'Construisez votre liberté financière.', color: '#CA8A04', bg: '#fefce8' },
+            { num: '1', icon: '👁️', title: 'Conscience', text: 'Ouvrez les yeux sur vos habitudes sans jugement.', color: '#166534', bg: '#f0fdf4' },
+            { num: '2', icon: '💡', title: 'Clarté', text: 'Comprenez exactement où va votre argent.', color: '#166534', bg: '#f0fdf4' },
+            { num: '3', icon: '🎯', title: 'Choix', text: 'Alignez vos achats avec vos priorités.', color: '#166534', bg: '#f0fdf4' },
+            { num: '4', icon: '🚀', title: 'Contrôle', text: 'Construisez votre liberté financière.', color: '#166534', bg: '#f0fdf4' },
           ].map((step) => (
             <div key={step.num} style={{ ...css.stepCard, backgroundColor: step.bg }}>
               <div style={css.stepHeader}>
@@ -186,9 +186,9 @@ const css = {
   },
   bookBadge: {
     display: 'inline-block',
-    backgroundColor: '#f0fdfa',
-    color: '#14B8A6',
-    border: '1px solid #99f6e4',
+    backgroundColor: '#f0fdf4',
+    color: '#15803d',
+    border: '1px solid #bbf7d0',
     borderRadius: '20px',
     padding: '6px 16px',
     fontSize: '13px',
@@ -204,7 +204,7 @@ const css = {
     color: '#111827',
   },
   heroTitleGreen: {
-    background: 'linear-gradient(to right, #14B8A6, #F97316)',
+    background: 'linear-gradient(to right, #16a34a, #166534)',
     WebkitBackgroundClip: 'text',
     WebkitTextFillColor: 'transparent',
     backgroundClip: 'text',
@@ -227,14 +227,14 @@ const css = {
   },
   btnPrimary: {
     padding: '16px 28px',
-    background: 'linear-gradient(to right, #14B8A6, #0F766E)',
+    background: 'linear-gradient(to right, #15803d, #166534)',
     color: '#ffffff',
     border: 'none',
     borderRadius: '12px',
     fontSize: '16px',
     fontWeight: '700',
     cursor: 'pointer',
-    boxShadow: '0 4px 14px rgba(20, 184, 166, 0.25)',
+    boxShadow: '0 4px 14px rgba(22, 163, 74, 0.25)',
   },
   btnSecondary: {
     padding: '16px 28px',
@@ -253,7 +253,7 @@ const css = {
     justifyContent: 'center',
     position: 'relative',
     zIndex: 10,
-    background: 'radial-gradient(ellipse at center, #f0fdfa 0%, #ffffff 70%)',
+    background: 'radial-gradient(ellipse at center, #f0fdf4 0%, #ffffff 70%)',
     borderRadius: '24px',
     padding: '16px 0 0',
   },
@@ -298,7 +298,7 @@ const css = {
   },
   featureIcon: {
     fontSize: '22px',
-    backgroundColor: '#f0fdfa',
+    backgroundColor: '#f0fdf4',
     width: '44px',
     height: '44px',
     minWidth: '44px',
@@ -346,7 +346,7 @@ const css = {
     justifyContent: 'space-between',
   },
   testimonialHighlight: {
-    background: 'linear-gradient(to right, #14B8A6, #0F766E)',
+    background: 'linear-gradient(to right, #15803d, #166534)',
     color: '#ffffff',
     border: 'none',
   },
@@ -417,7 +417,7 @@ const css = {
 
   // ---- CTA FINAL ----
   ctaSection: {
-    background: 'linear-gradient(to right, #14B8A6, #0F766E)',
+    background: 'linear-gradient(to right, #15803d, #166534)',
     color: '#ffffff',
     textAlign: 'center',
     padding: '72px 24px',
@@ -438,7 +438,7 @@ const css = {
   btnCta: {
     padding: '18px 36px',
     backgroundColor: '#ffffff',
-    color: '#14B8A6',
+    color: '#15803d',
     border: 'none',
     borderRadius: '12px',
     fontSize: '16px',

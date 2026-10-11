@@ -9,19 +9,19 @@
       "purpose": "any"
     },
     {
-      "src": "logo192.png",
-      "type": "image/png",
-      "sizes": "192x192",
-      "purpose": "maskable"
-    },
-    {
       "src": "logo512.png",
       "type": "image/png",
       "sizes": "512x512",
       "purpose": "any"
     },
     {
-      "src": "logo512.png",
+      "src": "maskable192.png",
+      "type": "image/png",
+      "sizes": "192x192",
+      "purpose": "maskable"
+    },
+    {
+      "src": "maskable512.png",
       "type": "image/png",
       "sizes": "512x512",
       "purpose": "maskable"
@@ -29,7 +29,7 @@
   ],
   "start_url": "/",
   "display": "standalone",
-  "theme_color": "#16a34a",
+  "theme_color": "#166534",
   "background_color": "#ffffff",
   "description": "Gérez votre argent selon vos valeurs. Budgets, tontines, projets et coach IA.",
   "scope": "/",

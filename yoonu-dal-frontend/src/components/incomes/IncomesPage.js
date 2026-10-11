@@ -4,16 +4,16 @@ import API from '../../services/api';
 import { useCurrency } from '../../contexts/CurrencyContext';
 
 const SOURCES = [
-  { value: 'Salaire', label: 'Salaire', icon: '💼', color: 'bg-blue-50 border-blue-200 text-blue-700' },
-  { value: 'Freelance', label: 'Freelance', icon: '💻', color: 'bg-purple-50 border-purple-200 text-purple-700' },
+  { value: 'Salaire', label: 'Salaire', icon: '💼', color: 'bg-green-50 border-green-200 text-green-700' },
+  { value: 'Freelance', label: 'Freelance', icon: '💻', color: 'bg-green-50 border-green-200 text-green-700' },
   { value: 'Business', label: 'Business', icon: '🏢', color: 'bg-green-50 border-green-200 text-green-700' },
-  { value: 'Investissement', label: 'Investissement', icon: '📈', color: 'bg-orange-50 border-orange-200 text-orange-700' },
-  { value: 'Location', label: 'Location', icon: '🏠', color: 'bg-pink-50 border-pink-200 text-pink-700' },
-  { value: 'Pension', label: 'Pension', icon: '👴', color: 'bg-indigo-50 border-indigo-200 text-indigo-700' },
-  { value: 'Allocation', label: 'Allocation', icon: '🎁', color: 'bg-teal-50 border-teal-200 text-teal-700' },
-  { value: 'Prime', label: 'Prime', icon: '⭐', color: 'bg-yellow-50 border-yellow-200 text-yellow-700' },
-  { value: 'Cadeau', label: 'Cadeau', icon: '🎁', color: 'bg-red-50 border-red-200 text-red-700' },
-  { value: 'remboursement_recu', label: 'Remboursement reçu', icon: '🤝', color: 'bg-cyan-50 border-cyan-200 text-cyan-700' },
+  { value: 'Investissement', label: 'Investissement', icon: '📈', color: 'bg-green-50 border-green-200 text-green-700' },
+  { value: 'Location', label: 'Location', icon: '🏠', color: 'bg-green-50 border-green-200 text-green-700' },
+  { value: 'Pension', label: 'Pension', icon: '👴', color: 'bg-green-50 border-green-200 text-green-700' },
+  { value: 'Allocation', label: 'Allocation', icon: '🎁', color: 'bg-green-50 border-green-200 text-green-700' },
+  { value: 'Prime', label: 'Prime', icon: '⭐', color: 'bg-green-50 border-green-200 text-green-700' },
+  { value: 'Cadeau', label: 'Cadeau', icon: '🎁', color: 'bg-green-50 border-green-200 text-green-700' },
+  { value: 'remboursement_recu', label: 'Remboursement reçu', icon: '🤝', color: 'bg-green-50 border-green-200 text-green-700' },
   { value: 'Autre', label: 'Autre', icon: '💰', color: 'bg-gray-50 border-gray-200 text-gray-700' }
 ];
 
@@ -210,7 +210,7 @@ const IncomesPageV2 = ({ toast, onNavigate }) => {
         </div>
 
         {/* Carte résumé */}
-        <div className="bg-gradient-to-br from-green-600 to-emerald-700 rounded-3xl p-5 mb-4 text-white shadow-xl">
+        <div className="bg-gradient-to-br from-green-600 to-green-700 rounded-3xl p-5 mb-4 text-white shadow-xl">
           <p className="text-sm opacity-80 mb-1">Total des revenus ce mois</p>
           <p className="text-3xl font-bold mb-3">{formatCurrencyFull(totalIncomes)}</p>
           <div className="grid grid-cols-2 gap-2">
@@ -322,7 +322,7 @@ const IncomesPageV2 = ({ toast, onNavigate }) => {
                       </div>
                       {isExpanded && (
                         <div className="mt-3 pt-3 border-t border-gray-100 flex gap-2">
-                          <button onClick={() => handleEdit(income)} className="flex-1 bg-blue-50 text-blue-700 py-2 rounded-xl text-xs font-bold">
+                          <button onClick={() => handleEdit(income)} className="flex-1 bg-green-50 text-green-700 py-2 rounded-xl text-xs font-bold">
                             ✏️ Modifier
                           </button>
                           <button onClick={() => setConfirmDeleteId(income.id)} className="flex-1 bg-red-50 text-red-700 py-2 rounded-xl text-xs font-bold">
@@ -414,7 +414,7 @@ const IncomesPageV2 = ({ toast, onNavigate }) => {
                 </button>
                 <button
                   type="submit"
-                  className="flex-1 px-6 py-3 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-2xl font-semibold text-sm"
+                  className="flex-1 px-6 py-3 bg-gradient-to-r from-green-600 to-green-600 text-white rounded-2xl font-semibold text-sm"
                 >
                   {editingIncome ? 'Modifier' : 'Ajouter'}
                 </button>

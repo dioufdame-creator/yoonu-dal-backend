@@ -70,7 +70,7 @@ const PricingPage = ({ onNavigate, user, toast, onUserRefresh }) => {
       return (
         <button
           onClick={() => onNavigate('checkout', { plan: billingCycle })}
-          className="w-full py-4 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-2xl font-bold shadow-lg"
+          className="w-full py-4 bg-gradient-to-r from-green-600 to-green-600 text-white rounded-2xl font-bold shadow-lg"
         >
           💎 Continuer en Premium ({trialDaysLeft}j restants)
         </button>
@@ -80,7 +80,7 @@ const PricingPage = ({ onNavigate, user, toast, onUserRefresh }) => {
       return (
         <button
           onClick={() => onNavigate('checkout', { plan: billingCycle })}
-          className="w-full py-4 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-2xl font-bold shadow-lg"
+          className="w-full py-4 bg-gradient-to-r from-green-600 to-green-600 text-white rounded-2xl font-bold shadow-lg"
         >
           💎 Passer en Premium
         </button>
@@ -90,7 +90,7 @@ const PricingPage = ({ onNavigate, user, toast, onUserRefresh }) => {
       <button
         onClick={handleStartTrial}
         disabled={loading}
-        className="w-full py-4 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-2xl font-bold shadow-lg disabled:opacity-50"
+        className="w-full py-4 bg-gradient-to-r from-green-600 to-green-600 text-white rounded-2xl font-bold shadow-lg disabled:opacity-50"
       >
         {loading ? '⏳ Activation...' : '🎁 Essayer 30 jours gratuit'}
       </button>
@@ -118,7 +118,7 @@ const PricingPage = ({ onNavigate, user, toast, onUserRefresh }) => {
         {(isTrialActive || (isPremium && !isTrialActive)) && (
           <div className={`rounded-2xl p-4 mb-4 flex items-center gap-3 ${
             isPremium && !isTrialActive
-              ? 'bg-gradient-to-r from-green-600 to-emerald-600 text-white'
+              ? 'bg-gradient-to-r from-green-600 to-green-600 text-white'
               : 'bg-green-50 border border-green-200 text-green-800'
           }`}>
             <span className="text-2xl">{isPremium && !isTrialActive ? '💎' : '🎁'}</span>
@@ -174,7 +174,7 @@ const PricingPage = ({ onNavigate, user, toast, onUserRefresh }) => {
         </div>
 
         {/* Carte Premium */}
-        <div className="relative bg-gradient-to-br from-green-50 to-emerald-50 rounded-3xl border-2 border-green-500 p-5 mb-4 shadow-lg mt-6">
+        <div className="relative bg-gradient-to-br from-green-50 to-green-50 rounded-3xl border-2 border-green-500 p-5 mb-4 shadow-lg mt-6">
           <div className="absolute -top-3 left-1/2 -translate-x-1/2">
             <span className="bg-green-600 text-white px-4 py-1 rounded-full text-xs font-bold shadow-md">
               ⭐ Recommandé

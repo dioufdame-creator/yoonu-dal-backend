@@ -151,7 +151,7 @@ const CarryoverCard = ({ onNavigate, toast, onAllocated }) => {
   // ── Cas solde positif — carte de décision ────────────
   return (
     <>
-      <div className="bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-200 rounded-3xl p-5 mb-4 shadow-sm">
+      <div className="bg-gradient-to-br from-green-50 to-green-50 border border-green-200 rounded-3xl p-5 mb-4 shadow-sm">
         <div className="flex items-start gap-2 mb-4">
           <span className="text-2xl flex-shrink-0">💰</span>
           <div>
@@ -166,7 +166,7 @@ const CarryoverCard = ({ onNavigate, toast, onAllocated }) => {
           <button
             onClick={() => handleQuickAllocate('envelopes')}
             disabled={submitting}
-            className="bg-white rounded-2xl p-3 text-left border border-blue-100 hover:border-blue-300 transition-all disabled:opacity-50"
+            className="bg-white rounded-2xl p-3 text-left border border-green-100 hover:border-green-300 transition-all disabled:opacity-50"
           >
             <span className="text-lg">✅</span>
             <p className="text-xs font-bold text-gray-800 mt-1 leading-snug">Répartir selon mes enveloppes</p>
@@ -175,7 +175,7 @@ const CarryoverCard = ({ onNavigate, toast, onAllocated }) => {
           <button
             onClick={openGoalModal}
             disabled={submitting}
-            className="bg-white rounded-2xl p-3 text-left border border-blue-100 hover:border-blue-300 transition-all disabled:opacity-50"
+            className="bg-white rounded-2xl p-3 text-left border border-green-100 hover:border-green-300 transition-all disabled:opacity-50"
           >
             <span className="text-lg">🎯</span>
             <p className="text-xs font-bold text-gray-800 mt-1 leading-snug">Envoyer vers un projet</p>
@@ -184,7 +184,7 @@ const CarryoverCard = ({ onNavigate, toast, onAllocated }) => {
           <button
             onClick={() => handleQuickAllocate('emergency')}
             disabled={submitting}
-            className="bg-white rounded-2xl p-3 text-left border border-blue-100 hover:border-blue-300 transition-all disabled:opacity-50"
+            className="bg-white rounded-2xl p-3 text-left border border-green-100 hover:border-green-300 transition-all disabled:opacity-50"
           >
             <span className="text-lg">💰</span>
             <p className="text-xs font-bold text-gray-800 mt-1 leading-snug">Fonds d'urgence</p>
@@ -193,7 +193,7 @@ const CarryoverCard = ({ onNavigate, toast, onAllocated }) => {
           <button
             onClick={() => setActiveModal('manual')}
             disabled={submitting}
-            className="bg-white rounded-2xl p-3 text-left border border-blue-100 hover:border-blue-300 transition-all disabled:opacity-50"
+            className="bg-white rounded-2xl p-3 text-left border border-green-100 hover:border-green-300 transition-all disabled:opacity-50"
           >
             <span className="text-lg">✍️</span>
             <p className="text-xs font-bold text-gray-800 mt-1 leading-snug">Choisir moi-même</p>

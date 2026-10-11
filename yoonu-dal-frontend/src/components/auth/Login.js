@@ -53,7 +53,7 @@ const Login = ({ onNavigate, toast, onLoginSuccess }) => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-green-50 via-white to-emerald-50 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-gradient-to-br from-green-50 via-white to-green-50 flex items-center justify-center p-4">
       <div className="max-w-md w-full bg-white rounded-3xl shadow-xl p-6">
 
         <div className="text-center mb-6">
@@ -118,7 +118,7 @@ const Login = ({ onNavigate, toast, onLoginSuccess }) => {
             type="submit"
             disabled={isLoading}
             className={`w-full py-4 rounded-2xl font-bold text-white transition-all ${
-              isLoading ? 'bg-gray-300 cursor-not-allowed' : 'bg-gradient-to-r from-green-600 to-emerald-600 shadow-lg'
+              isLoading ? 'bg-gray-300 cursor-not-allowed' : 'bg-gradient-to-r from-green-600 to-green-600 shadow-lg'
             }`}
           >
             {isLoading ? (

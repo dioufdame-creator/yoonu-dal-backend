@@ -2,7 +2,7 @@
    Rôle : rendre l'app installable (handler fetch obligatoire pour Chrome)
    + page de repli hors-ligne. Ne met PAS en cache les appels API. */
 
-const CACHE_NAME = 'yoonu-dal-v1';
+const CACHE_NAME = 'yoonu-dal-v2';
 const OFFLINE_URL = '/offline.html';
 
 const PRECACHE_URLS = [

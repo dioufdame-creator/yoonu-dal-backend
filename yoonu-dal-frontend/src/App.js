@@ -16,6 +16,7 @@ import InstallPrompt from './components/shared/InstallPrompt';
 import Footer from './components/shared/Footer';
 import { ToastContainer, useToast } from './components/shared/Toast';
 import Home from './components/Home';
+import Logo from './components/shared/Logo';
 import Home2 from './components/Home2';
 import Dashboard from './components/dashboard/Dashboard';
 import ExpenseTracker from './components/control/ExpenseTracker';
@@ -321,11 +322,11 @@ function App() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-green-50 flex items-center justify-center">
         <div className="text-center animate-fade-in">
           <div className="mb-8">
             <div className="inline-block animate-bounce">
-              <span className="text-6xl">🌱</span>
+              <Logo className="w-20 h-20" />
             </div>
           </div>
           <h2 className="text-2xl font-bold text-gray-900 mb-2">Yoonu Dal</h2>
@@ -350,7 +351,7 @@ function App() {
           <div className="min-h-screen bg-gradient-to-br from-slate-50 to-green-50 flex items-center justify-center p-4">
             <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-md w-full">
               <div className="text-center mb-8">
-                <div className="text-6xl mb-4 animate-bounce-slow">🌱</div>
+                <Logo className="w-20 h-20 mx-auto mb-4" />
                 <h2 className="text-3xl font-bold text-gray-900 mb-2">Connexion</h2>
                 <p className="text-gray-600">Bienvenue sur Yoonu Dal</p>
               </div>
@@ -401,7 +402,7 @@ function App() {
                 </div>
                 <button
                   type="submit"
-                  className="w-full mt-6 bg-gradient-to-r from-green-600 to-emerald-600 text-white py-4 rounded-xl font-bold text-lg hover:shadow-lg transform hover:scale-105 transition-all duration-200"
+                  className="w-full mt-6 bg-gradient-to-r from-green-600 to-green-600 text-white py-4 rounded-xl font-bold text-lg hover:shadow-lg transform hover:scale-105 transition-all duration-200"
                 >
                   Se connecter
                 </button>
@@ -480,7 +481,7 @@ function App() {
           <div className="min-h-screen bg-gradient-to-br from-slate-50 to-green-50 flex items-center justify-center p-4">
             <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-md w-full">
               <div className="text-center mb-8">
-                <div className="text-6xl mb-4 animate-bounce-slow">🌱</div>
+                <Logo className="w-20 h-20 mx-auto mb-4" />
                 <h2 className="text-3xl font-bold text-gray-900 mb-2">Inscription</h2>
                 <p className="text-gray-600">Rejoignez Yoonu Dal</p>
               </div>
@@ -549,7 +550,7 @@ function App() {
                   </div>
                 </div>
                 <button type="submit"
-                  className="w-full mt-6 bg-gradient-to-r from-green-600 to-emerald-600 text-white py-4 rounded-xl font-bold text-lg hover:shadow-lg transform hover:scale-105 transition-all duration-200">
+                  className="w-full mt-6 bg-gradient-to-r from-green-600 to-green-600 text-white py-4 rounded-xl font-bold text-lg hover:shadow-lg transform hover:scale-105 transition-all duration-200">
                   S'inscrire
                 </button>
               </form>
@@ -699,9 +700,9 @@ function App() {
               <div className="space-y-4 text-center">
                 <p>Besoin d'aide ? Notre équipe est là pour vous !</p>
                 <div className="space-y-3">
-                  <div className="p-4 bg-blue-50 rounded-lg">
+                  <div className="p-4 bg-green-50 rounded-lg">
                     <p className="font-semibold">📧 Email</p>
-                    <p className="text-blue-600">support@yoonudal.com</p>
+                    <p className="text-green-600">support@yoonudal.com</p>
                   </div>
                   <div className="p-4 bg-green-50 rounded-lg">
                     <p className="font-semibold">💬 WhatsApp</p>
@@ -726,7 +727,7 @@ function App() {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 to-green-50">
         <div className="text-center">
-          <div className="text-5xl mb-4 animate-bounce-slow">🌱</div>
+          <Logo className="w-16 h-16 mx-auto mb-4 animate-bounce-slow" />
           <div className="w-10 h-10 border-4 border-green-500 border-t-transparent rounded-full animate-spin mx-auto"></div>
         </div>
       </div>

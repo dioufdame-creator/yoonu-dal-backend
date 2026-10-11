@@ -9,28 +9,28 @@ const Home = ({ onNavigate, toast, auth }) => {
       problem: "Où va mon argent chaque mois ?",
       solution: "Voir clairement vos flux financiers sans jugement. Comprendre vos habitudes est la première étape vers la liberté financière.",
       icon: "👁️",
-      color: "from-[#14B8A6] to-[#0F766E]"
+      color: "from-[#16a34a] to-[#166534]"
     },
     {
       title: "Clarté", 
       problem: "Qu'est-ce qui compte vraiment pour moi ?",
       solution: "Aligner vos dépenses avec vos valeurs profondes. Famille, sécurité, éducation — votre argent doit refléter vos priorités.",
       icon: "💡",
-      color: "from-[#84CC16] to-[#65A30D]"
+      color: "from-[#16a34a] to-[#15803d]"
     },
     {
       title: "Choix",
       problem: "Comment mieux gérer mon budget ?", 
       solution: "Les 4 enveloppes : 50% essentiels, 30% plaisirs, 20% projets, 0% libération. Une méthode simple et adaptée à nos réalités.",
       icon: "🎯",
-      color: "from-[#F97316] to-[#C2410C]"
+      color: "from-[#f59e0b] to-[#b45309]"
     },
     {
       title: "Contrôle",
       problem: "Comment maintenir ces bonnes habitudes ?",
       solution: "Suivi quotidien, alertes intelligentes et score Yoonu Dal pour mesurer vos progrès mois après mois.",
       icon: "🚀",
-      color: "from-[#FDE047] to-[#CA8A04]"
+      color: "from-[#fbbf24] to-[#d97706]"
     }
   ];
 
@@ -56,7 +56,7 @@ const Home = ({ onNavigate, toast, auth }) => {
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-teal-50">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-green-50">
 
       {/* ═══════════════════════════════════════════
           HERO SECTION
@@ -68,13 +68,13 @@ const Home = ({ onNavigate, toast, auth }) => {
             {/* Texte hero */}
             <div>
               {/* Badge livre — subtil */}
-              <div className="inline-flex items-center gap-2 bg-teal-50 border border-teal-200 text-teal-700 px-3 py-1.5 rounded-full text-sm font-medium mb-6">
+              <div className="inline-flex items-center gap-2 bg-green-50 border border-green-200 text-green-700 px-3 py-1.5 rounded-full text-sm font-medium mb-6">
                 📖 Inspiré du livre <em>Les Silences de nos Portefeuilles</em>
               </div>
 
               <h1 className="text-4xl lg:text-5xl font-bold text-gray-900 mb-6 leading-tight">
                 Transformez vos{' '}
-                <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#14B8A6] to-[#F97316]">
+                <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#16a34a] to-[#f59e0b]">
                   silences financiers
                 </span>{' '}
                 en liberté
@@ -91,7 +91,7 @@ const Home = ({ onNavigate, toast, auth }) => {
                 {auth?.isAuthenticated ? (
                   <button
                     onClick={() => onNavigate('dashboard')}
-                    className="px-8 py-4 bg-gradient-to-r from-[#14B8A6] to-[#0F766E] text-white rounded-xl font-semibold hover:shadow-lg transform hover:scale-105 transition-all duration-200"
+                    className="px-8 py-4 bg-gradient-to-r from-[#16a34a] to-[#166534] text-white rounded-xl font-semibold hover:shadow-lg transform hover:scale-105 transition-all duration-200"
                   >
                     Accéder à mon tableau de bord
                   </button>
@@ -99,7 +99,7 @@ const Home = ({ onNavigate, toast, auth }) => {
                   <>
                     <button
                       onClick={() => onNavigate('register')}
-                      className="px-8 py-4 bg-gradient-to-r from-[#14B8A6] to-[#0F766E] text-white rounded-xl font-semibold hover:shadow-lg transform hover:scale-105 transition-all duration-200"
+                      className="px-8 py-4 bg-gradient-to-r from-[#16a34a] to-[#166534] text-white rounded-xl font-semibold hover:shadow-lg transform hover:scale-105 transition-all duration-200"
                     >
                       Commencer gratuitement
                     </button>
@@ -118,8 +118,8 @@ const Home = ({ onNavigate, toast, auth }) => {
             <div className="flex justify-center lg:justify-end">
               <div className="relative">
                 {/* Halos décoratifs */}
-                <div className="absolute -top-6 -right-6 w-24 h-24 bg-teal-200 rounded-full opacity-40 blur-2xl"></div>
-                <div className="absolute -bottom-6 -left-6 w-28 h-28 bg-orange-200 rounded-full opacity-40 blur-2xl"></div>
+                <div className="absolute -top-6 -right-6 w-24 h-24 bg-green-200 rounded-full opacity-40 blur-2xl"></div>
+                <div className="absolute -bottom-6 -left-6 w-28 h-28 bg-amber-200 rounded-full opacity-40 blur-2xl"></div>
 
                 {/* Cadre téléphone */}
                 <div className="relative w-60 lg:w-64 bg-gray-900 rounded-[3rem] p-2.5 shadow-2xl ring-4 ring-gray-800">
@@ -138,24 +138,24 @@ const Home = ({ onNavigate, toast, auth }) => {
                       }}
                     />
                     {/* Fallback illustratif si image absente */}
-                    <div className="w-full h-full bg-gradient-to-b from-teal-50 to-white flex-col items-center justify-center p-6 text-center hidden">
+                    <div className="w-full h-full bg-gradient-to-b from-green-50 to-white flex-col items-center justify-center p-6 text-center hidden">
                       <div className="text-5xl mb-4">🌱</div>
                       <div className="text-sm font-bold text-gray-700 mb-4">Tableau de bord</div>
                       <div className="w-full space-y-2">
-                        <div className="bg-teal-100 rounded-lg p-2 text-left">
+                        <div className="bg-green-100 rounded-lg p-2 text-left">
                           <div className="text-xs text-gray-500">Essentiels</div>
-                          <div className="w-3/4 h-1.5 bg-teal-400 rounded-full mt-1"></div>
+                          <div className="w-3/4 h-1.5 bg-green-400 rounded-full mt-1"></div>
                         </div>
-                        <div className="bg-lime-100 rounded-lg p-2 text-left">
+                        <div className="bg-green-100 rounded-lg p-2 text-left">
                           <div className="text-xs text-gray-500">Plaisirs</div>
-                          <div className="w-1/2 h-1.5 bg-lime-400 rounded-full mt-1"></div>
+                          <div className="w-1/2 h-1.5 bg-green-400 rounded-full mt-1"></div>
                         </div>
-                        <div className="bg-orange-100 rounded-lg p-2 text-left">
+                        <div className="bg-amber-100 rounded-lg p-2 text-left">
                           <div className="text-xs text-gray-500">Projets</div>
-                          <div className="w-1/4 h-1.5 bg-orange-400 rounded-full mt-1"></div>
+                          <div className="w-1/4 h-1.5 bg-amber-400 rounded-full mt-1"></div>
                         </div>
                         <div className="bg-gray-100 rounded-lg p-2 text-center mt-4">
-                          <div className="text-2xl font-bold text-teal-600">90</div>
+                          <div className="text-2xl font-bold text-green-600">90</div>
                           <div className="text-xs text-gray-500">Score Yoonu Dal</div>
                         </div>
                       </div>
@@ -168,7 +168,7 @@ const Home = ({ onNavigate, toast, auth }) => {
                   <span className="text-xl">🏆</span>
                   <div>
                     <div className="text-xs text-gray-500">Score</div>
-                    <div className="text-sm font-bold text-teal-600">90/100</div>
+                    <div className="text-sm font-bold text-green-600">90/100</div>
                   </div>
                 </div>
 
@@ -187,7 +187,7 @@ const Home = ({ onNavigate, toast, auth }) => {
       {/* ═══════════════════════════════════════════
           QUESTION CLÉ
       ═══════════════════════════════════════════ */}
-      <div className="bg-gradient-to-r from-[#14B8A6] to-[#0F766E] py-12">
+      <div className="bg-gradient-to-r from-[#16a34a] to-[#166534] py-12">
         <div className="container mx-auto px-4 text-center">
           <h2 className="text-3xl lg:text-4xl font-bold text-white mb-4">
             Où va votre argent chaque mois ?
@@ -244,20 +244,20 @@ const Home = ({ onNavigate, toast, auth }) => {
                 
                 {currentStep === 2 && (
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6">
-                    <div className="bg-teal-50 border-2 border-teal-200 p-4 rounded-lg text-center">
-                      <div className="text-2xl font-bold text-[#14B8A6]">50%</div>
+                    <div className="bg-green-50 border-2 border-green-200 p-4 rounded-lg text-center">
+                      <div className="text-2xl font-bold text-[#16a34a]">50%</div>
                       <div className="text-sm text-gray-700 font-medium">Essentiels</div>
                     </div>
-                    <div className="bg-lime-50 border-2 border-lime-200 p-4 rounded-lg text-center">
-                      <div className="text-2xl font-bold text-[#84CC16]">30%</div>
+                    <div className="bg-green-50 border-2 border-green-200 p-4 rounded-lg text-center">
+                      <div className="text-2xl font-bold text-[#16a34a]">30%</div>
                       <div className="text-sm text-gray-700 font-medium">Plaisirs</div>
                     </div>
-                    <div className="bg-orange-50 border-2 border-orange-200 p-4 rounded-lg text-center">
-                      <div className="text-2xl font-bold text-[#F97316]">20%</div>
+                    <div className="bg-amber-50 border-2 border-amber-200 p-4 rounded-lg text-center">
+                      <div className="text-2xl font-bold text-[#f59e0b]">20%</div>
                       <div className="text-sm text-gray-700 font-medium">Projets</div>
                     </div>
-                    <div className="bg-yellow-50 border-2 border-yellow-200 p-4 rounded-lg text-center">
-                      <div className="text-2xl font-bold text-[#CA8A04]">0%</div>
+                    <div className="bg-amber-50 border-2 border-amber-200 p-4 rounded-lg text-center">
+                      <div className="text-2xl font-bold text-[#d97706]">0%</div>
                       <div className="text-sm text-gray-700 font-medium">Libération</div>
                     </div>
                   </div>
@@ -271,7 +271,7 @@ const Home = ({ onNavigate, toast, auth }) => {
       {/* ═══════════════════════════════════════════
           TÉMOIGNAGES
       ═══════════════════════════════════════════ */}
-      <div className="py-16 bg-gradient-to-br from-teal-50 to-lime-50">
+      <div className="py-16 bg-gradient-to-br from-green-50 to-green-50">
         <div className="container mx-auto px-4">
           <h2 className="text-3xl font-bold text-center text-gray-900 mb-12">
             Ce que disent ceux qui l'ont essayé
@@ -297,7 +297,7 @@ const Home = ({ onNavigate, toast, auth }) => {
       {/* ═══════════════════════════════════════════
           CTA FINAL
       ═══════════════════════════════════════════ */}
-      <div className="py-16 bg-gradient-to-r from-[#14B8A6] to-[#0F766E]">
+      <div className="py-16 bg-gradient-to-r from-[#16a34a] to-[#166534]">
         <div className="container mx-auto px-4 text-center">
           <h2 className="text-4xl font-bold text-white mb-6">
             Prêt à reprendre le contrôle ?
@@ -309,7 +309,7 @@ const Home = ({ onNavigate, toast, auth }) => {
           {!auth?.isAuthenticated && (
             <button
               onClick={() => onNavigate('register')}
-              className="px-8 py-4 bg-white text-[#14B8A6] rounded-xl font-semibold hover:bg-gray-100 transform hover:scale-105 transition-all duration-200 shadow-lg"
+              className="px-8 py-4 bg-white text-[#16a34a] rounded-xl font-semibold hover:bg-gray-100 transform hover:scale-105 transition-all duration-200 shadow-lg"
             >
               Commencer maintenant - C'est gratuit
             </button>

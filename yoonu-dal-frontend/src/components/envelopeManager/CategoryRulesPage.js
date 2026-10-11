@@ -2,10 +2,10 @@ import React, { useState, useEffect } from 'react';
 import API from '../../services/api';
 
 const ENVELOPE_CONFIG = {
-  essentiels: { label: 'Essentiels', color: 'bg-red-100 text-red-700 border-red-200', dot: 'bg-red-500', emoji: '🏠' },
-  plaisirs:   { label: 'Plaisirs',   color: 'bg-teal-100 text-teal-700 border-teal-200', dot: 'bg-teal-500', emoji: '🎉' },
+  essentiels: { label: 'Essentiels', color: 'bg-green-100 text-green-700 border-green-200', dot: 'bg-green-500', emoji: '🏠' },
+  plaisirs:   { label: 'Plaisirs',   color: 'bg-green-100 text-green-700 border-green-200', dot: 'bg-green-500', emoji: '🎉' },
   projets:    { label: 'Projets',    color: 'bg-green-100 text-green-700 border-green-200', dot: 'bg-green-500', emoji: '🎯' },
-  liberation: { label: 'Libération', color: 'bg-yellow-100 text-yellow-700 border-yellow-200', dot: 'bg-yellow-500', emoji: '🕊️' },
+  liberation: { label: 'Libération', color: 'bg-green-100 text-green-700 border-green-200', dot: 'bg-green-500', emoji: '🕊️' },
 };
 
 const CategoryRulesPage = ({ onNavigate, toast }) => {
@@ -113,16 +113,16 @@ const CategoryRulesPage = ({ onNavigate, toast }) => {
 
         {/* Bandeau personnalisations */}
         {customizedCount > 0 && (
-          <div className="mb-4 bg-blue-50 border border-blue-200 rounded-xl px-4 py-3 flex items-center justify-between">
+          <div className="mb-4 bg-green-50 border border-green-200 rounded-xl px-4 py-3 flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <span className="text-blue-600">✏️</span>
-              <span className="text-sm text-blue-800 font-medium">
+              <span className="text-green-600">✏️</span>
+              <span className="text-sm text-green-800 font-medium">
                 {customizedCount} règle{customizedCount > 1 ? 's' : ''} personnalisée{customizedCount > 1 ? 's' : ''}
               </span>
             </div>
             <button
               onClick={() => setShowResetConfirm(true)}
-              className="text-xs text-blue-600 hover:text-blue-800 font-semibold underline"
+              className="text-xs text-green-600 hover:text-green-800 font-semibold underline"
             >
               Restaurer les règles Yoonu Dal
             </button>
@@ -177,7 +177,7 @@ const CategoryRulesPage = ({ onNavigate, toast }) => {
                   key={cat.category}
                   className={`flex items-center gap-3 px-4 py-3 ${
                     idx < filteredCategories.length - 1 ? 'border-b border-gray-100' : ''
-                  } ${cat.is_customized ? 'bg-blue-50/30' : ''}`}
+                  } ${cat.is_customized ? 'bg-green-50/30' : ''}`}
                 >
                   {/* Label catégorie */}
                   <div className="flex-1 min-w-0">
@@ -186,7 +186,7 @@ const CategoryRulesPage = ({ onNavigate, toast }) => {
                         {cat.label}
                       </span>
                       {cat.is_customized && (
-                        <span className="text-xs text-blue-500 font-medium flex-shrink-0">✏️</span>
+                        <span className="text-xs text-green-500 font-medium flex-shrink-0">✏️</span>
                       )}
                     </div>
                     {cat.is_customized && (

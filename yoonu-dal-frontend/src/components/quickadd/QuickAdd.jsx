@@ -204,10 +204,10 @@ const QuickAdd = ({ type = 'expense', onNavigate, toast, pageParams }) => {
   };
 
   const buttonColor = isSavings
-    ? 'bg-gradient-to-r from-indigo-600 to-purple-700'
+    ? 'bg-gradient-to-r from-green-600 to-green-700'
     : isExpense
-      ? 'bg-gradient-to-r from-red-500 to-rose-600'
-      : 'bg-gradient-to-r from-green-600 to-emerald-600';
+      ? 'bg-gradient-to-r from-red-500 to-red-600'
+      : 'bg-gradient-to-r from-green-600 to-green-600';
 
   const buttonLabel = saving
     ? 'Enregistrement...'
@@ -304,7 +304,7 @@ const QuickAdd = ({ type = 'expense', onNavigate, toast, pageParams }) => {
                   <p className="text-sm text-gray-500 mb-3">Aucune poche disponible.</p>
                   <button
                     onClick={() => onNavigate('pockets')}
-                    className="text-sm bg-indigo-600 text-white px-4 py-2 rounded-xl font-semibold"
+                    className="text-sm bg-green-600 text-white px-4 py-2 rounded-xl font-semibold"
                   >
                     Créer une poche
                   </button>
@@ -319,13 +319,13 @@ const QuickAdd = ({ type = 'expense', onNavigate, toast, pageParams }) => {
                         onClick={() => setDestination(key)}
                         className={`p-3 rounded-2xl border-2 transition-all text-center ${
                           destination === key
-                            ? 'border-indigo-500 bg-indigo-50 scale-105'
+                            ? 'border-green-500 bg-green-50 scale-105'
                             : 'border-gray-100 bg-gray-50 hover:border-gray-300'
                         }`}
                       >
                         <div className="text-2xl mb-1">{p.icon}</div>
                         <div className={`text-[11px] font-semibold leading-tight ${
-                          destination === key ? 'text-indigo-700' : 'text-gray-600'
+                          destination === key ? 'text-green-700' : 'text-gray-600'
                         }`}>
                           {p.name}
                         </div>

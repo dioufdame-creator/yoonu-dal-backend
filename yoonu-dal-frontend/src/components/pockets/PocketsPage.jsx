@@ -225,7 +225,7 @@ const PocketsPage = ({ onNavigate, toast, pageParams }) => {
         </div>
 
         {/* Patrimoine total */}
-        <div className="bg-gradient-to-br from-green-600 to-emerald-700 rounded-3xl p-6 mb-4 text-white shadow-xl">
+        <div className="bg-gradient-to-br from-green-600 to-green-700 rounded-3xl p-6 mb-4 text-white shadow-xl">
           <p className="text-sm opacity-80 mb-1">Patrimoine total</p>
           <p className="text-4xl font-bold">{formatMoney(total)}</p>
           <p className="text-xs opacity-70 mt-2">Toutes vos poches et objectifs réunis</p>
@@ -346,8 +346,8 @@ const PocketsPage = ({ onNavigate, toast, pageParams }) => {
           </div>
         )}
 
-        <div className="bg-blue-50 border border-blue-200 rounded-2xl p-4">
-          <p className="text-xs text-blue-800 leading-relaxed">
+        <div className="bg-green-50 border border-green-200 rounded-2xl p-4">
+          <p className="text-xs text-green-800 leading-relaxed">
             💡 <strong>Vos poches ≠ votre budget du mois.</strong> Vos poches montrent
             tout l'argent que vous possédez, en permanence. Le "reste du mois" sur
             l'accueil montre uniquement ce que vous pouvez encore dépenser dans le
@@ -441,7 +441,7 @@ const PocketsPage = ({ onNavigate, toast, pageParams }) => {
             <div className="p-4 pb-6">
               <button
                 onClick={handleTransfer}
-                className="w-full py-4 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-2xl font-bold shadow-lg"
+                className="w-full py-4 bg-gradient-to-r from-green-600 to-green-600 text-white rounded-2xl font-bold shadow-lg"
               >
                 Effectuer le transfert
               </button>
@@ -549,7 +549,7 @@ const PocketsPage = ({ onNavigate, toast, pageParams }) => {
               <button
                 onClick={handleAllocate}
                 disabled={allocateMode === 'manual' && allocateAmount && Math.abs(manualDiff) >= 1}
-                className="w-full py-4 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-2xl font-bold shadow-lg disabled:opacity-40 disabled:cursor-not-allowed"
+                className="w-full py-4 bg-gradient-to-r from-green-600 to-green-600 text-white rounded-2xl font-bold shadow-lg disabled:opacity-40 disabled:cursor-not-allowed"
               >
                 Confirmer l'affectation
               </button>
@@ -670,7 +670,7 @@ const PocketsPage = ({ onNavigate, toast, pageParams }) => {
             <div className="p-4 pb-6">
               <button
                 onClick={handleCreatePocket}
-                className="w-full py-4 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-2xl font-bold shadow-lg"
+                className="w-full py-4 bg-gradient-to-r from-green-600 to-green-600 text-white rounded-2xl font-bold shadow-lg"
               >
                 Créer la poche
               </button>

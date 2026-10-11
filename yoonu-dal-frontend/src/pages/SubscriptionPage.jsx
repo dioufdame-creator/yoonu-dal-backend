@@ -82,7 +82,7 @@ const SubscriptionPage = ({ onNavigate, user, toast }) => {
         {/* Carte statut */}
         <div className={`rounded-3xl p-6 mb-4 text-white shadow-xl ${
           isPremium || isTrialActive
-            ? 'bg-gradient-to-br from-green-600 to-emerald-700'
+            ? 'bg-gradient-to-br from-green-600 to-green-700'
             : 'bg-gradient-to-br from-gray-500 to-gray-600'
         }`}>
           <div className="flex items-center justify-between mb-4">
@@ -122,7 +122,7 @@ const SubscriptionPage = ({ onNavigate, user, toast }) => {
           {isFreemium && !subscriptionData?.trial_used && (
             <button
               onClick={() => onNavigate('pricing')}
-              className="w-full py-4 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-2xl font-bold shadow-lg"
+              className="w-full py-4 bg-gradient-to-r from-green-600 to-green-600 text-white rounded-2xl font-bold shadow-lg"
             >
               🎁 Essayer 30 jours gratuit
             </button>
@@ -130,7 +130,7 @@ const SubscriptionPage = ({ onNavigate, user, toast }) => {
           {isFreemium && subscriptionData?.trial_used && (
             <button
               onClick={() => onNavigate('pricing')}
-              className="w-full py-4 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-2xl font-bold shadow-lg"
+              className="w-full py-4 bg-gradient-to-r from-green-600 to-green-600 text-white rounded-2xl font-bold shadow-lg"
             >
               💎 Passer en Premium
             </button>
@@ -138,7 +138,7 @@ const SubscriptionPage = ({ onNavigate, user, toast }) => {
           {isTrialActive && (
             <button
               onClick={() => onNavigate('pricing')}
-              className="w-full py-4 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-2xl font-bold shadow-lg"
+              className="w-full py-4 bg-gradient-to-r from-green-600 to-green-600 text-white rounded-2xl font-bold shadow-lg"
             >
               💎 Continuer en Premium
             </button>
@@ -187,7 +187,7 @@ const SubscriptionPage = ({ onNavigate, user, toast }) => {
                     <p className="text-sm font-bold text-gray-900">{t.amount.toLocaleString()} FCFA</p>
                     <p className={`text-xs font-semibold ${
                       t.status === 'completed' ? 'text-green-600' :
-                      t.status === 'pending' ? 'text-orange-600' : 'text-red-600'
+                      t.status === 'pending' ? 'text-amber-600' : 'text-red-600'
                     }`}>
                       {t.status === 'completed' ? '✓ Payé' : t.status === 'pending' ? '⏳ En attente' : '✗ Échoué'}
                     </p>

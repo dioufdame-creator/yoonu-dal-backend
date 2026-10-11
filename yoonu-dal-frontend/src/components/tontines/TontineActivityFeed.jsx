@@ -40,10 +40,10 @@ const TontineActivityFeed = ({ tontineId }) => {
     switch(type) {
       case 'validation': return 'bg-green-50 border-green-200';
       case 'rejection': return 'bg-red-50 border-red-200';
-      case 'contribution': return 'bg-blue-50 border-blue-200';
-      case 'payout': return 'bg-purple-50 border-purple-200';
-      case 'order_change': return 'bg-yellow-50 border-yellow-200';
-      case 'join': return 'bg-teal-50 border-teal-200';
+      case 'contribution': return 'bg-green-50 border-green-200';
+      case 'payout': return 'bg-green-50 border-green-200';
+      case 'order_change': return 'bg-amber-50 border-amber-200';
+      case 'join': return 'bg-green-50 border-green-200';
       default: return 'bg-gray-50 border-gray-200';
     }
   };

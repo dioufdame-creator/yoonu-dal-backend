@@ -48,8 +48,8 @@ const ProjectionWidget = () => {
   return (
     <div className={`rounded-2xl shadow-lg p-6 ${
       is_positive 
-        ? 'bg-gradient-to-br from-green-50 to-emerald-50 border-2 border-green-200' 
-        : 'bg-gradient-to-br from-red-50 to-orange-50 border-2 border-red-200'
+        ? 'bg-gradient-to-br from-green-50 to-green-50 border-2 border-green-200' 
+        : 'bg-gradient-to-br from-red-50 to-amber-50 border-2 border-red-200'
     }`}>
       
       {/* Header */}
@@ -110,7 +110,7 @@ const ProjectionWidget = () => {
         <div className={`rounded-lg p-3 ${
           recommendations[0].type === 'positive' 
             ? 'bg-green-100 border border-green-300' 
-            : 'bg-blue-100 border border-blue-300'
+            : 'bg-green-100 border border-green-300'
         }`}>
           <div className="flex items-start space-x-2">
             <span className="text-lg">

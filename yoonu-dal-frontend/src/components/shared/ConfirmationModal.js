@@ -23,15 +23,15 @@ const ConfirmationModal = ({
       case 'info':
         return {
           icon: 'ℹ️',
-          confirmButton: 'bg-blue-600 hover:bg-blue-700 text-white',
-          iconBg: 'bg-blue-100'
+          confirmButton: 'bg-green-600 hover:bg-green-700 text-white',
+          iconBg: 'bg-green-100'
         };
       case 'warning':
       default:
         return {
           icon: '⚠️',
-          confirmButton: 'bg-yellow-600 hover:bg-yellow-700 text-white',
-          iconBg: 'bg-yellow-100'
+          confirmButton: 'bg-amber-600 hover:bg-amber-700 text-white',
+          iconBg: 'bg-amber-100'
         };
     }
   };

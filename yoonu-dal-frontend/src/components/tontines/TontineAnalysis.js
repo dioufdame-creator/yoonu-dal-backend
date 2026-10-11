@@ -96,22 +96,22 @@ const TontineAnalysis = ({ onNavigate }) => {
 
   const getScoreColor = (score) => {
     if (score >= 80) return 'text-green-600';
-    if (score >= 60) return 'text-blue-600';
-    if (score >= 40) return 'text-yellow-600';
+    if (score >= 60) return 'text-green-600';
+    if (score >= 40) return 'text-amber-600';
     return 'text-red-600';
   };
 
   const getScoreBarColor = (score) => {
     if (score >= 80) return 'bg-green-500';
-    if (score >= 60) return 'bg-blue-500';
-    if (score >= 40) return 'bg-yellow-500';
+    if (score >= 60) return 'bg-green-500';
+    if (score >= 40) return 'bg-amber-500';
     return 'bg-red-500';
   };
 
   const getPriorityColor = (priority) => {
     switch (priority) {
       case 'high': return 'border-red-200 bg-red-50';
-      case 'medium': return 'border-yellow-200 bg-yellow-50';
+      case 'medium': return 'border-amber-200 bg-amber-50';
       case 'low': return 'border-green-200 bg-green-50';
       default: return 'border-gray-200 bg-gray-50';
     }
@@ -120,7 +120,7 @@ const TontineAnalysis = ({ onNavigate }) => {
   const getPriorityBadgeColor = (priority) => {
     switch (priority) {
       case 'high': return 'bg-red-100 text-red-800';
-      case 'medium': return 'bg-yellow-100 text-yellow-800';
+      case 'medium': return 'bg-amber-100 text-amber-800';
       case 'low': return 'bg-green-100 text-green-800';
       default: return 'bg-gray-100 text-gray-800';
     }
@@ -282,7 +282,7 @@ const TontineAnalysis = ({ onNavigate }) => {
                     <span className="text-gray-600">Impact sur le budget</span>
                     <span className={`text-lg font-semibold ${
                       analysisData.summary.budget_impact_percentage > 25 ? 'text-red-600' :
-                      analysisData.summary.budget_impact_percentage > 15 ? 'text-yellow-600' :
+                      analysisData.summary.budget_impact_percentage > 15 ? 'text-amber-600' :
                       'text-green-600'
                     }`}>
                       {analysisData.summary.budget_impact_percentage}%
@@ -290,7 +290,7 @@ const TontineAnalysis = ({ onNavigate }) => {
                   </div>
                   <div className="flex justify-between items-center">
                     <span className="text-gray-600">Tontines actives</span>
-                    <span className="text-lg font-semibold text-blue-600">
+                    <span className="text-lg font-semibold text-green-600">
                       {analysisData.summary.number_of_active_tontines}
                     </span>
                   </div>
@@ -556,7 +556,7 @@ const TontineAnalysis = ({ onNavigate }) => {
             </button>
             <button 
               onClick={() => onNavigate && onNavigate('tontine-simulator')}
-              className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+              className="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
             >
               🧮 Simuler une nouvelle tontine
             </button>

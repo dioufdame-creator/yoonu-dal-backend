@@ -237,8 +237,8 @@ const TontineAdminPanel = ({ tontine, participants, onUpdate, toast }) => {
       {/* Badge mode */}
       <div className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-bold mb-4 ${
         isRandom
-          ? 'bg-purple-100 text-purple-800 border border-purple-300'
-          : 'bg-blue-100 text-blue-800 border border-blue-300'
+          ? 'bg-green-100 text-green-800 border border-green-300'
+          : 'bg-green-100 text-green-800 border border-green-300'
       }`}>
         <span>{isRandom ? '🎲' : '📝'}</span>
         <span>Mode : {isRandom ? 'Tirage aléatoire mensuel' : 'Ordre manuel'}</span>
@@ -309,7 +309,7 @@ const TontineAdminPanel = ({ tontine, participants, onUpdate, toast }) => {
               <button
                 onClick={handleRandomDraw}
                 disabled={loading}
-                className="w-full bg-gradient-to-r from-purple-600 to-pink-600 text-white py-3.5 px-4 rounded-2xl font-bold hover:shadow-lg transition-all transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                className="w-full bg-gradient-to-r from-green-600 to-green-600 text-white py-3.5 px-4 rounded-2xl font-bold hover:shadow-lg transition-all transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
               >
                 <span className="text-xl">🎲</span>
                 <span>{loading ? 'Tirage en cours...' : 'Lancer le tirage du mois'}</span>
@@ -330,7 +330,7 @@ const TontineAdminPanel = ({ tontine, participants, onUpdate, toast }) => {
                         <p className="text-sm font-semibold text-gray-900 truncate">
                           {label}
                           {participant.hand_number > 1 && !participant.display_name && (
-                            <span className="ml-1 text-[10px] text-indigo-500 font-bold">· Main {participant.hand_number}</span>
+                            <span className="ml-1 text-[10px] text-green-500 font-bold">· Main {participant.hand_number}</span>
                           )}
                         </p>
                         <button
@@ -365,7 +365,7 @@ const TontineAdminPanel = ({ tontine, participants, onUpdate, toast }) => {
                     onDragOver={(e) => handleDragOver(e, index)}
                     onDragEnd={handleDragEnd}
                     className={`p-3 bg-gray-50 rounded-2xl border-2 ${
-                      draggedItem === index ? 'border-blue-500 opacity-50' : 'border-gray-200'
+                      draggedItem === index ? 'border-green-500 opacity-50' : 'border-gray-200'
                     } cursor-move hover:bg-gray-100 transition-colors`}
                   >
                     <div className="flex items-center justify-between">
@@ -376,7 +376,7 @@ const TontineAdminPanel = ({ tontine, participants, onUpdate, toast }) => {
                           <button onClick={() => moveDown(index)} disabled={index === manualOrder.length - 1}
                             className="text-gray-400 hover:text-gray-700 disabled:opacity-30 text-xs">▼</button>
                         </div>
-                        <div className="w-8 h-8 bg-blue-500 text-white rounded-full flex items-center justify-center font-bold">
+                        <div className="w-8 h-8 bg-green-500 text-white rounded-full flex items-center justify-center font-bold">
                           {index + 1}
                         </div>
                         <div>
@@ -403,7 +403,7 @@ const TontineAdminPanel = ({ tontine, participants, onUpdate, toast }) => {
               <button
                 onClick={handleManualOrderSave}
                 disabled={loading}
-                className="w-full bg-gradient-to-r from-green-600 to-emerald-600 text-white py-3.5 rounded-2xl font-bold hover:shadow-lg transition-all transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                className="w-full bg-gradient-to-r from-green-600 to-green-600 text-white py-3.5 rounded-2xl font-bold hover:shadow-lg transition-all transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
               >
                 <span>💾</span>
                 <span>{loading ? 'Sauvegarde...' : 'Sauvegarder cet ordre'}</span>
@@ -424,7 +424,7 @@ const TontineAdminPanel = ({ tontine, participants, onUpdate, toast }) => {
             </p>
             <button
               onClick={loadPendingContributions}
-              className="text-xs text-blue-600 hover:underline flex items-center gap-1"
+              className="text-xs text-green-600 hover:underline flex items-center gap-1"
             >
               🔄 Actualiser
             </button>
@@ -435,13 +435,13 @@ const TontineAdminPanel = ({ tontine, participants, onUpdate, toast }) => {
             {!showDeclareForm ? (
               <button
                 onClick={() => setShowDeclareForm(true)}
-                className="w-full py-3 bg-blue-50 text-blue-700 rounded-2xl text-xs font-bold hover:bg-blue-100 transition-all flex items-center justify-center gap-2"
+                className="w-full py-3 bg-green-50 text-green-700 rounded-2xl text-xs font-bold hover:bg-green-100 transition-all flex items-center justify-center gap-2"
               >
                 <span>✍️</span> Déclarer une cotisation pour un participant
               </button>
             ) : (
-              <form onSubmit={handleDeclareContribution} className="bg-blue-50 border border-blue-200 rounded-2xl p-4 space-y-3">
-                <p className="text-xs font-bold text-blue-800">
+              <form onSubmit={handleDeclareContribution} className="bg-green-50 border border-green-200 rounded-2xl p-4 space-y-3">
+                <p className="text-xs font-bold text-green-800">
                   ✍️ Déclarer une cotisation (ex: payée en main propre, non enregistrée par le participant)
                 </p>
                 <div>
@@ -449,7 +449,7 @@ const TontineAdminPanel = ({ tontine, participants, onUpdate, toast }) => {
                   <select
                     value={declareForm.participant_id}
                     onChange={(e) => setDeclareForm({ ...declareForm, participant_id: e.target.value })}
-                    className="w-full mt-1 px-3 py-2.5 bg-white border border-gray-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-400"
+                    className="w-full mt-1 px-3 py-2.5 bg-white border border-gray-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-green-400"
                   >
                     <option value="">Choisir un participant…</option>
                     {manualOrder.map((p) => {
@@ -470,7 +470,7 @@ const TontineAdminPanel = ({ tontine, participants, onUpdate, toast }) => {
                       value={declareForm.amount}
                       onChange={(e) => setDeclareForm({ ...declareForm, amount: e.target.value })}
                       placeholder="0"
-                      className="w-full mt-1 px-3 py-2.5 bg-white border border-gray-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-400"
+                      className="w-full mt-1 px-3 py-2.5 bg-white border border-gray-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-green-400"
                     />
                   </div>
                   <div>
@@ -479,7 +479,7 @@ const TontineAdminPanel = ({ tontine, participants, onUpdate, toast }) => {
                       type="date"
                       value={declareForm.date}
                       onChange={(e) => setDeclareForm({ ...declareForm, date: e.target.value })}
-                      className="w-full mt-1 px-3 py-2.5 bg-white border border-gray-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-400"
+                      className="w-full mt-1 px-3 py-2.5 bg-white border border-gray-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-green-400"
                     />
                   </div>
                 </div>
@@ -490,7 +490,7 @@ const TontineAdminPanel = ({ tontine, participants, onUpdate, toast }) => {
                     value={declareForm.notes}
                     onChange={(e) => setDeclareForm({ ...declareForm, notes: e.target.value })}
                     placeholder="Ex: Reçu en espèces le 1er"
-                    className="w-full mt-1 px-3 py-2.5 bg-white border border-gray-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-400"
+                    className="w-full mt-1 px-3 py-2.5 bg-white border border-gray-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-green-400"
                   />
                 </div>
                 <div className="flex gap-2">
@@ -504,7 +504,7 @@ const TontineAdminPanel = ({ tontine, participants, onUpdate, toast }) => {
                   <button
                     type="submit"
                     disabled={declaring}
-                    className="flex-1 py-2.5 bg-blue-600 text-white rounded-xl text-sm font-semibold hover:bg-blue-700 transition-all disabled:opacity-50"
+                    className="flex-1 py-2.5 bg-green-600 text-white rounded-xl text-sm font-semibold hover:bg-green-700 transition-all disabled:opacity-50"
                   >
                     {declaring ? 'Déclaration...' : 'Déclarer et valider'}
                   </button>
@@ -533,7 +533,7 @@ const TontineAdminPanel = ({ tontine, participants, onUpdate, toast }) => {
                   {/* Header contribution */}
                   <div className="flex items-start justify-between mb-3">
                     <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 bg-orange-100 rounded-full flex items-center justify-center text-xl flex-shrink-0">
+                      <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center text-xl flex-shrink-0">
                         💰
                       </div>
                       <div>
@@ -652,7 +652,7 @@ const TontineAdminPanel = ({ tontine, participants, onUpdate, toast }) => {
                         <p className="text-sm font-semibold text-gray-900 truncate">
                           {label}
                           {participant.hand_number > 1 && (
-                            <span className="ml-1 text-[10px] text-indigo-500 font-bold">· Main {participant.hand_number}</span>
+                            <span className="ml-1 text-[10px] text-green-500 font-bold">· Main {participant.hand_number}</span>
                           )}
                         </p>
                         {participant.received_payout && participant.payout_date && (

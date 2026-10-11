@@ -33,19 +33,19 @@ const ProfileHub = ({ onNavigate, user, onLogout }) => {
       title: 'Mon suivi',
       items: [
         { icon: '🎯', label: 'Mon Score Yoonu Dal', page: 'score', color: 'bg-green-50 text-green-700' },
-        { icon: '💳', label: 'Mes dettes', page: 'debts', color: 'bg-amber-50 text-amber-700' },
-        { icon: '💼', label: 'Mes poches', page: 'pockets', color: 'bg-indigo-50 text-indigo-700' },
-        { icon: '💰', label: 'Historique transactions', page: 'transactions', color: 'bg-purple-50 text-purple-700' },
+        { icon: '💳', label: 'Mes dettes', page: 'debts', color: 'bg-green-50 text-green-700' },
+        { icon: '💼', label: 'Mes poches', page: 'pockets', color: 'bg-green-50 text-green-700' },
+        { icon: '💰', label: 'Historique transactions', page: 'transactions', color: 'bg-green-50 text-green-700' },
         { icon: '📄', label: 'Exporter mes données', page: 'exports', color: 'bg-slate-50 text-slate-700' },
-        { icon: '🔁', label: 'Transactions récurrentes', page: 'recurring', color: 'bg-purple-50 text-purple-700' },
+        { icon: '🔁', label: 'Transactions récurrentes', page: 'recurring', color: 'bg-green-50 text-green-700' },
       ]
     },
     {
       title: 'Personnalisation',
       items: [
-        { icon: '💎', label: 'Mes valeurs personnelles', page: 'values', color: 'bg-indigo-50 text-indigo-700' },
-        { icon: '🗂️', label: 'Mes règles de classement', page: 'category-rules', color: 'bg-teal-50 text-teal-700' },
-        { icon: '📁', label: 'Mes budgets (enveloppes)', page: 'envelopes', color: 'bg-orange-50 text-orange-700' },
+        { icon: '💎', label: 'Mes valeurs personnelles', page: 'values', color: 'bg-green-50 text-green-700' },
+        { icon: '🗂️', label: 'Mes règles de classement', page: 'category-rules', color: 'bg-green-50 text-green-700' },
+        { icon: '📁', label: 'Mes budgets (enveloppes)', page: 'envelopes', color: 'bg-green-50 text-green-700' },
       ]
     },
     {
@@ -63,7 +63,7 @@ const ProfileHub = ({ onNavigate, user, onLogout }) => {
       <div className="max-w-2xl mx-auto px-4 py-6">
 
         {/* Carte profil */}
-        <div className="bg-gradient-to-r from-green-600 to-emerald-600 rounded-3xl p-6 mb-6 text-white shadow-xl">
+        <div className="bg-gradient-to-r from-green-600 to-green-600 rounded-3xl p-6 mb-6 text-white shadow-xl">
           <div className="flex items-center gap-4">
             <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center text-green-600 font-bold text-2xl shadow-lg">
               {getUserDisplayName().charAt(0).toUpperCase()}
@@ -82,7 +82,7 @@ const ProfileHub = ({ onNavigate, user, onLogout }) => {
         {!isPremium && (
           <button
             onClick={() => onNavigate('pricing')}
-            className="w-full mb-6 flex items-center justify-center gap-2 p-4 rounded-2xl bg-gradient-to-r from-orange-500 to-red-500 text-white font-bold shadow-lg hover:shadow-xl transition-all"
+            className="w-full mb-6 flex items-center justify-center gap-2 p-4 rounded-2xl bg-gradient-to-r from-green-600 to-green-700 text-white font-bold shadow-lg hover:shadow-xl transition-all"
           >
             <span className="text-xl">💎</span>
             <span>Passer Premium</span>
@@ -95,7 +95,7 @@ const ProfileHub = ({ onNavigate, user, onLogout }) => {
             onClick={handleInstallClick}
             className="w-full mb-6 flex items-center gap-3 p-4 rounded-2xl bg-white border-2 border-green-200 hover:border-green-400 transition-all shadow-sm"
           >
-            <div className="w-11 h-11 bg-gradient-to-br from-green-500 to-emerald-600 rounded-2xl flex items-center justify-center text-xl flex-shrink-0 shadow-md">
+            <div className="w-11 h-11 bg-gradient-to-br from-green-500 to-green-600 rounded-2xl flex items-center justify-center text-xl flex-shrink-0 shadow-md">
               📱
             </div>
             <div className="flex-1 text-left">

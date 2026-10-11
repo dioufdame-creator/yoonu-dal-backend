@@ -10,10 +10,10 @@ const MONTHS_FR = ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin',
   'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'];
 
 const ENVELOPE_CONFIG = {
-  essentiel:  { label: 'Essentiels', icon: '🏠', color: 'bg-red-500' },
-  plaisir:    { label: 'Plaisirs',   icon: '🎉', color: 'bg-blue-500' },
+  essentiel:  { label: 'Essentiels', icon: '🏠', color: 'bg-green-500' },
+  plaisir:    { label: 'Plaisirs',   icon: '🎉', color: 'bg-green-500' },
   projet:     { label: 'Projets',    icon: '🎯', color: 'bg-green-500' },
-  liberation: { label: 'Libération', icon: '🕊️', color: 'bg-amber-500' },
+  liberation: { label: 'Libération', icon: '🕊️', color: 'bg-green-500' },
 };
 
 const CATEGORY_ICONS = {
@@ -202,7 +202,7 @@ const Dashboard = ({ toast, auth, onNavigate, user }) => {
     if (lateTontine) {
       return {
         icon: '🤝',
-        style: 'bg-orange-50 border-orange-200 text-orange-800',
+        style: 'bg-green-50 border-green-200 text-green-800',
         text: `Votre contribution à la tontine ${lateTontine.name} est en retard.`,
         action: () => onNavigate('tontine-detail', { id: lateTontine.id }),
       };
@@ -221,7 +221,7 @@ const Dashboard = ({ toast, auth, onNavigate, user }) => {
     if (debtDue) {
       return {
         icon: '💳',
-        style: 'bg-orange-50 border-orange-200 text-orange-800',
+        style: 'bg-green-50 border-green-200 text-green-800',
         text: `Pensez au remboursement de ${formatMoney(debtDue.monthly_payment)} pour "${debtDue.name}".`,
         action: () => onNavigate('debts'),
       };
@@ -265,7 +265,7 @@ const Dashboard = ({ toast, auth, onNavigate, user }) => {
       if (suggested >= 5000) {
         return {
           icon: '💡',
-          style: 'bg-blue-50 border-blue-200 text-blue-800',
+          style: 'bg-green-50 border-green-200 text-green-800',
           text: `Vous pouvez transférer ${formatMoney(suggested)} vers votre projet "${activeGoal.title}".`,
           action: () => onNavigate('goals'),
         };
@@ -284,8 +284,8 @@ const Dashboard = ({ toast, auth, onNavigate, user }) => {
   const getScoreInsight = (s) => {
     const total = s.total_score || 0;
     const label =
-      total >= 85 ? { text: 'Excellent', color: '#10b981' } :
-      total >= 70 ? { text: 'Bien', color: '#10b981' } :
+      total >= 85 ? { text: 'Excellent', color: '#16a34a' } :
+      total >= 70 ? { text: 'Bien', color: '#16a34a' } :
       total >= 50 ? { text: 'Moyen', color: '#f59e0b' } :
       total >= 30 ? { text: 'À améliorer', color: '#ef4444' } :
       { text: 'Non évalué', color: '#9ca3af' };
@@ -388,8 +388,8 @@ const Dashboard = ({ toast, auth, onNavigate, user }) => {
         {/* ── CARTE SOLDE ────────────────────────────── */}
         <div className={`rounded-3xl p-6 mb-3 text-white shadow-xl ${
           remaining >= 0
-            ? 'bg-gradient-to-br from-green-600 to-emerald-700'
-            : 'bg-gradient-to-br from-red-500 to-rose-600'
+            ? 'bg-gradient-to-br from-green-600 to-green-700'
+            : 'bg-gradient-to-br from-red-500 to-red-600'
         }`}>
           <p className="text-sm opacity-80 mb-1">
             {isCurrentMonth
@@ -438,7 +438,7 @@ const Dashboard = ({ toast, auth, onNavigate, user }) => {
         {disponible !== null && (
           <button
             onClick={() => onNavigate('pockets')}
-            className="w-full flex items-center justify-between bg-white rounded-2xl border border-gray-200 px-4 py-3 mb-4 shadow-sm hover:border-indigo-300 transition-all"
+            className="w-full flex items-center justify-between bg-white rounded-2xl border border-gray-200 px-4 py-3 mb-4 shadow-sm hover:border-green-300 transition-all"
           >
             <div className="flex items-center gap-2">
               <span className="text-base">💼</span>

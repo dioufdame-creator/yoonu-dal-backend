@@ -2,6 +2,7 @@
 // Desktop : navbar complète | Mobile : barre fine (logo + alertes + IA)
 import React, { useState } from 'react';
 import { SubscriptionBadge } from '../subscription/SubscriptionComponents';
+import Logo from './Logo';
 
 const TUTORIAL_KEY = 'yoonu_tutorial_done';
 
@@ -39,7 +40,7 @@ const Navigation = ({ currentPage, onNavigate, isAuthenticated, user, onLogout, 
 
   return (
     <header
-      className="bg-gradient-to-r from-green-600 to-emerald-600 shadow-xl relative z-40"
+      className="bg-gradient-to-r from-green-600 to-green-600 shadow-xl relative z-40"
       style={{ paddingTop: 'env(safe-area-inset-top, 0px)' }}
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -50,9 +51,7 @@ const Navigation = ({ currentPage, onNavigate, isAuthenticated, user, onLogout, 
             className="flex items-center gap-2 lg:gap-3 hover:opacity-90 transition-opacity"
             onClick={() => handleNavigation(isAuthenticated ? 'dashboard' : 'home')}
           >
-            <div className="w-8 h-8 lg:w-10 lg:h-10 bg-white rounded-full flex items-center justify-center shadow-lg">
-              <span className="text-xl lg:text-2xl">🌱</span>
-            </div>
+            <Logo variant="inverse" className="w-9 h-9 lg:w-11 lg:h-11 shadow-lg rounded-xl" />
             <div className="text-white">
               <div className="font-bold text-lg lg:text-xl">Yoonu Dal</div>
               <div className="text-xs text-green-100 hidden lg:block">Finance consciente</div>
@@ -102,7 +101,7 @@ const Navigation = ({ currentPage, onNavigate, isAuthenticated, user, onLogout, 
                 {!isPremium && (
                   <button
                     onClick={() => handleNavigation('pricing')}
-                    className="hidden lg:flex bg-gradient-to-r from-orange-500 to-red-500 text-white px-4 py-2 rounded-xl font-bold shadow-lg hover:shadow-xl hover:scale-105 transition-all items-center gap-2"
+                    className="hidden lg:flex bg-gradient-to-r from-green-600 to-green-700 text-white px-4 py-2 rounded-xl font-bold shadow-lg hover:shadow-xl hover:scale-105 transition-all items-center gap-2"
                   >
                     <span>💎</span><span>Premium</span>
                   </button>
@@ -137,7 +136,7 @@ const Navigation = ({ currentPage, onNavigate, isAuthenticated, user, onLogout, 
                           {!isPremium && (
                             <button
                               onClick={() => handleNavigation('pricing')}
-                              className="w-full text-left px-4 py-3 bg-gradient-to-r from-orange-50 to-red-50 hover:from-orange-100 hover:to-red-100 flex items-center gap-3 text-orange-700 font-semibold"
+                              className="w-full text-left px-4 py-3 bg-gradient-to-r from-green-50 to-green-100 hover:from-green-100 hover:to-green-200 flex items-center gap-3 text-green-700 font-semibold"
                             >
                               <span>💎</span><span>Passer Premium</span>
                             </button>
@@ -157,7 +156,7 @@ const Navigation = ({ currentPage, onNavigate, isAuthenticated, user, onLogout, 
                           <button onClick={() => handleNavigation('subscription')} className="w-full text-left px-4 py-3 hover:bg-gray-50 flex items-center gap-3">
                             <span>💎</span><span>Mon Abonnement</span>
                           </button>
-                          <button onClick={handleShowTutorial} className="w-full text-left px-4 py-3 hover:bg-blue-50 flex items-center gap-3 text-blue-700">
+                          <button onClick={handleShowTutorial} className="w-full text-left px-4 py-3 hover:bg-green-50 flex items-center gap-3 text-green-700">
                             <span>❓</span><span>Revoir le tutoriel</span>
                           </button>
                         </div>

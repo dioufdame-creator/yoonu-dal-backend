@@ -12,25 +12,25 @@ const DiagnosticQuiz = () => {
     conscience: { 
       name: 'Conscience', 
       description: 'Prise de conscience de votre relation avec l\'argent',
-      color: 'from-red-500 to-orange-500',
+      color: 'from-green-500 to-green-500',
       icon: '🧠'
     },
     clarte: { 
       name: 'Clarté', 
       description: 'Clarification de vos valeurs et priorités',
-      color: 'from-yellow-500 to-orange-500',
+      color: 'from-green-500 to-green-500',
       icon: '💡'
     },
     choix: { 
       name: 'Choix', 
       description: 'Mise en pratique de vos décisions financières',
-      color: 'from-blue-500 to-purple-500',
+      color: 'from-green-500 to-green-500',
       icon: '⚖️'
     },
     controle: { 
       name: 'Contrôle', 
       description: 'Maîtrise totale et transmission aux autres',
-      color: 'from-green-500 to-emerald-500',
+      color: 'from-green-500 to-green-500',
       icon: '👑'
     }
   };
@@ -216,8 +216,8 @@ const DiagnosticQuiz = () => {
 
   const getMasteryLevel = (percentage) => {
     if (percentage < 25) return { label: 'Faible', color: 'text-red-600' };
-    if (percentage < 50) return { label: 'En progression', color: 'text-orange-600' };
-    if (percentage < 75) return { label: 'Solide', color: 'text-blue-600' };
+    if (percentage < 50) return { label: 'En progression', color: 'text-green-600' };
+    if (percentage < 75) return { label: 'Solide', color: 'text-green-600' };
     return { label: 'Avancé', color: 'text-green-600' };
   };
 
@@ -228,7 +228,7 @@ const DiagnosticQuiz = () => {
 
   if (currentPhase === 'intro') {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 flex items-center justify-center p-4">
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-green-50 flex items-center justify-center p-4">
         <div className="max-w-3xl w-full bg-white rounded-2xl shadow-2xl p-8 md:p-12">
           <div className="text-center mb-8">
             <div className="text-6xl mb-4">🎯</div>
@@ -241,7 +241,7 @@ const DiagnosticQuiz = () => {
               <span><span className="font-semibold">15</span> minutes</span>
             </div>
           </div>
-          <div className="bg-gradient-to-br from-blue-50 to-purple-50 rounded-xl p-6 mb-8">
+          <div className="bg-gradient-to-br from-green-50 to-green-50 rounded-xl p-6 mb-8">
             <h2 className="text-lg font-semibold text-gray-900 mb-4">Ce diagnostic se déroule en 4 étapes successives :</h2>
             <div className="space-y-3">
               {steps.map((step, index) => (
@@ -257,7 +257,7 @@ const DiagnosticQuiz = () => {
               ))}
             </div>
           </div>
-          <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-6 mb-8">
+          <div className="bg-green-50 border border-green-200 rounded-xl p-6 mb-8">
             <div className="flex items-start space-x-3">
               <div className="text-2xl">💡</div>
               <div>
@@ -270,7 +270,7 @@ const DiagnosticQuiz = () => {
               </div>
             </div>
           </div>
-          <button onClick={() => setCurrentPhase('diagnostic')} className="w-full bg-gradient-to-r from-green-600 to-emerald-600 text-white py-4 rounded-xl font-semibold text-lg hover:shadow-lg transform hover:scale-105 transition-all">
+          <button onClick={() => setCurrentPhase('diagnostic')} className="w-full bg-gradient-to-r from-green-600 to-green-600 text-white py-4 rounded-xl font-semibold text-lg hover:shadow-lg transform hover:scale-105 transition-all">
             Commencer le diagnostic
           </button>
         </div>
@@ -283,7 +283,7 @@ const DiagnosticQuiz = () => {
     const nextStep = steps[currentStepIndex + 1];
     const remainingSteps = steps.length - currentStepIndex - 1;
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-green-50">
         <div className="bg-white border-b border-gray-200 px-4 py-3">
           <div className="max-w-4xl mx-auto flex items-center justify-between">
             <div className="flex items-center space-x-3">
@@ -300,10 +300,10 @@ const DiagnosticQuiz = () => {
             <div className="text-6xl mb-6">✅</div>
             <h2 className="text-3xl font-bold text-gray-900 mb-4">Mini-diagnostic {stepInfo[completedStep].name} terminé</h2>
             <p className="text-lg text-gray-600 mb-8">{stepInfo[completedStep].description}</p>
-            <div className="bg-blue-50 border border-blue-200 rounded-xl p-6 mb-8">
-              <p className="text-gray-700 font-medium">Il vous reste encore <span className="font-bold text-blue-700">{remainingSteps} {remainingSteps > 1 ? 'étapes' : 'étape'}</span> pour compléter votre diagnostic global.</p>
+            <div className="bg-green-50 border border-green-200 rounded-xl p-6 mb-8">
+              <p className="text-gray-700 font-medium">Il vous reste encore <span className="font-bold text-green-700">{remainingSteps} {remainingSteps > 1 ? 'étapes' : 'étape'}</span> pour compléter votre diagnostic global.</p>
             </div>
-            <div className="bg-gradient-to-br from-purple-50 to-blue-50 rounded-xl p-6 mb-8">
+            <div className="bg-gradient-to-br from-green-50 to-green-50 rounded-xl p-6 mb-8">
               <p className="text-lg text-gray-700 mb-4">Passons maintenant à l'étape suivante :</p>
               <div className="flex items-center justify-center space-x-3">
                 <div className="text-4xl">{stepInfo[nextStep].icon}</div>
@@ -313,7 +313,7 @@ const DiagnosticQuiz = () => {
                 </div>
               </div>
             </div>
-            <button onClick={continueToNextStep} className="w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white py-4 rounded-xl font-semibold text-lg hover:shadow-lg transform hover:scale-105 transition-all">
+            <button onClick={continueToNextStep} className="w-full bg-gradient-to-r from-green-600 to-green-600 text-white py-4 rounded-xl font-semibold text-lg hover:shadow-lg transform hover:scale-105 transition-all">
               Continuer le diagnostic
             </button>
           </div>
@@ -327,7 +327,7 @@ const DiagnosticQuiz = () => {
     const dominantMastery = calculateStepMastery(dominantStep);
     const dominantLevel = getMasteryLevel(dominantMastery);
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 p-4">
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-green-50 p-4">
         <div className="max-w-5xl mx-auto py-8">
           <div className="text-center mb-8">
             <div className="text-6xl mb-4">🎉</div>
@@ -380,7 +380,7 @@ const DiagnosticQuiz = () => {
             </div>
           </div>
           <div className="text-center">
-            <button onClick={() => alert('Retour au dashboard')} className="bg-gradient-to-r from-green-600 to-emerald-600 text-white px-8 py-4 rounded-xl font-semibold text-lg hover:shadow-lg transform hover:scale-105 transition-all">
+            <button onClick={() => alert('Retour au dashboard')} className="bg-gradient-to-r from-green-600 to-green-600 text-white px-8 py-4 rounded-xl font-semibold text-lg hover:shadow-lg transform hover:scale-105 transition-all">
               Entrer dans l'app
             </button>
           </div>
@@ -396,7 +396,7 @@ const DiagnosticQuiz = () => {
   const currentStep = steps[currentStepIndex];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-green-50">
       <div className="bg-white border-b border-gray-200 px-4 py-3 sticky top-0 z-10">
         <div className="max-w-4xl mx-auto">
           <div className="flex items-center justify-between mb-3">
@@ -425,10 +425,10 @@ const DiagnosticQuiz = () => {
           </div>
           <div className="space-y-4">
             {currentQuestion.type === 'choice' && currentQuestion.options.map(option => (
-              <button key={option.value} onClick={() => { handleAnswer(currentQuestion.id, option.value, option.weight); setTimeout(nextQuestion, 300); }} className="w-full text-left p-6 border-2 border-gray-200 rounded-xl hover:border-blue-300 hover:bg-blue-50 transition-all group">
+              <button key={option.value} onClick={() => { handleAnswer(currentQuestion.id, option.value, option.weight); setTimeout(nextQuestion, 300); }} className="w-full text-left p-6 border-2 border-gray-200 rounded-xl hover:border-green-300 hover:bg-green-50 transition-all group">
                 <div className="flex items-center justify-between">
-                  <span className="text-lg font-semibold text-gray-900 group-hover:text-blue-700">{option.label}</span>
-                  <span className="text-blue-400 group-hover:text-blue-600">→</span>
+                  <span className="text-lg font-semibold text-gray-900 group-hover:text-green-700">{option.label}</span>
+                  <span className="text-green-400 group-hover:text-green-600">→</span>
                 </div>
               </button>
             ))}
@@ -439,7 +439,7 @@ const DiagnosticQuiz = () => {
                 </div>
                 <div className="flex justify-between space-x-2">
                   {[1, 2, 3, 4, 5].map(value => (
-                    <button key={value} onClick={() => { handleAnswer(currentQuestion.id, value, value); setTimeout(nextQuestion, 300); }} className="flex-1 p-4 border-2 border-gray-200 rounded-xl hover:border-blue-300 hover:bg-blue-50 transition-all transform hover:scale-105 text-center font-bold text-2xl text-gray-700 hover:text-blue-700">
+                    <button key={value} onClick={() => { handleAnswer(currentQuestion.id, value, value); setTimeout(nextQuestion, 300); }} className="flex-1 p-4 border-2 border-gray-200 rounded-xl hover:border-green-300 hover:bg-green-50 transition-all transform hover:scale-105 text-center font-bold text-2xl text-gray-700 hover:text-green-700">
                       {value}
                     </button>
                   ))}
@@ -450,13 +450,13 @@ const DiagnosticQuiz = () => {
               <div className="space-y-4">
                 <div className="grid md:grid-cols-2 gap-4">
                   {currentQuestion.options.map(option => (
-                    <label key={option.value} className="flex items-center p-4 border-2 border-gray-200 rounded-xl hover:border-blue-300 hover:bg-blue-50 cursor-pointer">
-                      <input type="checkbox" className="w-5 h-5 text-blue-600 rounded" onChange={(e) => { const curr = answers[currentQuestion.id]?.value || []; const newSel = e.target.checked ? [...curr, option.value] : curr.filter(v => v !== option.value); handleAnswer(currentQuestion.id, newSel, newSel.length); }} />
+                    <label key={option.value} className="flex items-center p-4 border-2 border-gray-200 rounded-xl hover:border-green-300 hover:bg-green-50 cursor-pointer">
+                      <input type="checkbox" className="w-5 h-5 text-green-600 rounded" onChange={(e) => { const curr = answers[currentQuestion.id]?.value || []; const newSel = e.target.checked ? [...curr, option.value] : curr.filter(v => v !== option.value); handleAnswer(currentQuestion.id, newSel, newSel.length); }} />
                       <span className="ml-3 text-gray-900 font-medium">{option.label}</span>
                     </label>
                   ))}
                 </div>
-                <button onClick={nextQuestion} disabled={!answers[currentQuestion.id]} className={`w-full py-3 rounded-xl font-semibold ${answers[currentQuestion.id] ? 'bg-blue-600 text-white hover:bg-blue-700' : 'bg-gray-200 text-gray-400 cursor-not-allowed'}`}>
+                <button onClick={nextQuestion} disabled={!answers[currentQuestion.id]} className={`w-full py-3 rounded-xl font-semibold ${answers[currentQuestion.id] ? 'bg-green-600 text-white hover:bg-green-700' : 'bg-gray-200 text-gray-400 cursor-not-allowed'}`}>
                   Continuer
                 </button>
               </div>
@@ -466,7 +466,7 @@ const DiagnosticQuiz = () => {
         <div className="flex justify-center">
           <div className="flex space-x-2">
             {currentStepQuestions.map((_, i) => (
-              <div key={i} className={`w-3 h-3 rounded-full transition-all ${i <= currentQuestionIndex ? 'bg-blue-500' : 'bg-gray-300'} ${i === currentQuestionIndex ? 'scale-125' : ''}`}></div>
+              <div key={i} className={`w-3 h-3 rounded-full transition-all ${i <= currentQuestionIndex ? 'bg-green-500' : 'bg-gray-300'} ${i === currentQuestionIndex ? 'scale-125' : ''}`}></div>
             ))}
           </div>
         </div>

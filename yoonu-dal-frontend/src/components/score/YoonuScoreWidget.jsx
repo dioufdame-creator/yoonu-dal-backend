@@ -37,10 +37,10 @@ const YoonuScoreWidget = ({ onViewDetails, onNavigate }) => {
 
   if (!score || score.total_score === 0) {
     return (
-      <div className="bg-gradient-to-br from-purple-50 via-indigo-50 to-pink-50 rounded-2xl shadow-lg p-6 border-2 border-purple-200">
+      <div className="bg-gradient-to-br from-green-50 via-green-50 to-green-50 rounded-2xl shadow-lg p-6 border-2 border-green-200">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-4">
-            <div className="w-16 h-16 bg-gradient-to-br from-purple-500 to-indigo-500 rounded-full flex items-center justify-center shadow-lg">
+            <div className="w-16 h-16 bg-gradient-to-br from-green-500 to-green-500 rounded-full flex items-center justify-center shadow-lg">
               <span className="text-3xl">🎯</span>
             </div>
             <div>
@@ -52,7 +52,7 @@ const YoonuScoreWidget = ({ onViewDetails, onNavigate }) => {
           </div>
           <button
             onClick={() => onNavigate && onNavigate('diagnostic')}
-            className="bg-gradient-to-r from-purple-600 to-indigo-600 text-white px-6 py-3 rounded-xl font-semibold hover:shadow-lg transform hover:scale-105 transition-all"
+            className="bg-gradient-to-r from-green-600 to-green-600 text-white px-6 py-3 rounded-xl font-semibold hover:shadow-lg transform hover:scale-105 transition-all"
           >
             Faire le diagnostic
           </button>
@@ -64,10 +64,10 @@ const YoonuScoreWidget = ({ onViewDetails, onNavigate }) => {
   const { total_score, score_change, level, emoji } = score;
   
   const getScoreColor = (score) => {
-    if (score >= 81) return 'from-green-500 to-emerald-500';
-    if (score >= 61) return 'from-blue-500 to-cyan-500';
-    if (score >= 41) return 'from-yellow-500 to-orange-500';
-    return 'from-red-500 to-pink-500';
+    if (score >= 81) return 'from-green-500 to-green-500';
+    if (score >= 61) return 'from-green-500 to-green-500';
+    if (score >= 41) return 'from-green-500 to-green-500';
+    return 'from-red-500 to-red-600';
   };
 
   const scoreColor = getScoreColor(total_score);
@@ -76,7 +76,7 @@ const YoonuScoreWidget = ({ onViewDetails, onNavigate }) => {
   return (
     <div 
       onClick={onViewDetails}
-      className="bg-white rounded-2xl shadow-xl p-6 cursor-pointer hover:shadow-2xl transition-all border-2 border-transparent hover:border-purple-300"
+      className="bg-white rounded-2xl shadow-xl p-6 cursor-pointer hover:shadow-2xl transition-all border-2 border-transparent hover:border-green-300"
     >
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center space-x-2">
@@ -140,7 +140,7 @@ const YoonuScoreWidget = ({ onViewDetails, onNavigate }) => {
               {score_change > 0 ? '📈 En progression' : '📉 En baisse'}
             </div>
           )}
-          <button className="text-sm text-purple-600 hover:text-purple-700 font-semibold hover:underline">
+          <button className="text-sm text-green-600 hover:text-green-700 font-semibold hover:underline">
             Voir détails →
           </button>
         </div>

@@ -1,5 +1,6 @@
 // src/components/shared/InstallPrompt.jsx
 // Installation PWA — bannière auto (si Chrome le permet) + bouton permanent
+import Logo from './Logo';
 import React, { useState, useEffect } from 'react';
 
 const DISMISS_KEY = 'yoonu_install_dismissed';
@@ -61,7 +62,7 @@ export const InstallGuide = ({ onClose }) => {
 
   const steps = isIOS
     ? [
-        { n: 1, text: <>Appuyez sur <strong>Partager</strong> <span className="text-blue-500">⬆️</span> en bas de l'écran</> },
+        { n: 1, text: <>Appuyez sur <strong>Partager</strong> <span className="text-green-500">⬆️</span> en bas de l'écran</> },
         { n: 2, text: <>Choisissez <strong>Sur l'écran d'accueil</strong> ➕</> },
       ]
     : isAndroid
@@ -78,9 +79,7 @@ export const InstallGuide = ({ onClose }) => {
     <div className="fixed inset-0 bg-black/60 z-50 flex items-end sm:items-center justify-center p-4">
       <div className="bg-white rounded-3xl p-6 max-w-sm w-full shadow-2xl">
         <div className="text-center mb-5">
-          <div className="w-16 h-16 bg-gradient-to-br from-green-500 to-emerald-600 rounded-2xl flex items-center justify-center text-3xl mx-auto mb-3 shadow-lg">
-            🌱
-          </div>
+          <Logo className="w-16 h-16 mx-auto mb-3 shadow-lg rounded-2xl" />
           <h3 className="text-lg font-bold text-gray-900 mb-1">Installer Yoonu Dal</h3>
           <p className="text-sm text-gray-500">Deux étapes rapides</p>
         </div>
@@ -145,9 +144,7 @@ const InstallPrompt = () => {
     <div className="fixed bottom-20 left-3 right-3 z-50 lg:bottom-6 lg:left-auto lg:right-6 lg:max-w-sm animate-slide-up-install">
       <div className="bg-white rounded-3xl shadow-2xl border border-gray-200 p-4">
         <div className="flex items-start gap-3">
-          <div className="w-12 h-12 bg-gradient-to-br from-green-500 to-emerald-600 rounded-2xl flex items-center justify-center text-2xl flex-shrink-0 shadow-lg">
-            🌱
-          </div>
+          <Logo className="w-12 h-12 flex-shrink-0 shadow-lg rounded-2xl" />
           <div className="flex-1 min-w-0">
             <p className="font-bold text-gray-900 text-sm">Installer Yoonu Dal</p>
             <p className="text-xs text-gray-500 mt-0.5">Accès direct depuis votre écran d'accueil</p>
@@ -170,7 +167,7 @@ const InstallPrompt = () => {
           </button>
           <button
             onClick={handleInstall}
-            className="flex-1 py-2.5 text-sm bg-gradient-to-r from-green-600 to-emerald-600 text-white font-bold rounded-xl shadow-md"
+            className="flex-1 py-2.5 text-sm bg-gradient-to-r from-green-600 to-green-600 text-white font-bold rounded-xl shadow-md"
           >
             Installer
           </button>

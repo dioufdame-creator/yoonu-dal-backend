@@ -69,13 +69,13 @@ const SimpleDiagnostic = ({ onNavigate, toast }) => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-purple-50 to-blue-50">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-green-50 to-green-50">
       <div className="container mx-auto px-4 py-8 max-w-4xl">
         
         {/* Header */}
         <div className="text-center mb-8">
           <div className="text-6xl mb-4">🎯</div>
-          <h1 className="text-4xl font-bold bg-gradient-to-r from-purple-600 to-indigo-600 bg-clip-text text-transparent mb-3">
+          <h1 className="text-4xl font-bold bg-gradient-to-r from-green-600 to-green-600 bg-clip-text text-transparent mb-3">
             Diagnostic Yoonu Dal
           </h1>
           <p className="text-xl text-gray-700 mb-2">
@@ -87,7 +87,7 @@ const SimpleDiagnostic = ({ onNavigate, toast }) => {
         </div>
 
         {/* Sélection compteur */}
-        <div className="bg-white rounded-2xl shadow-lg p-4 mb-8 border-2 border-purple-200">
+        <div className="bg-white rounded-2xl shadow-lg p-4 mb-8 border-2 border-green-200">
           <div className="flex items-center justify-between">
             <span className="text-gray-700 font-medium">
               {selectedValues.length === 0 && "Commence par choisir 3 valeurs"}
@@ -101,7 +101,7 @@ const SimpleDiagnostic = ({ onNavigate, toast }) => {
                   key={i}
                   className={`w-8 h-8 rounded-full flex items-center justify-center font-bold ${
                     selectedValues.length >= i
-                      ? 'bg-gradient-to-br from-purple-600 to-indigo-600 text-white'
+                      ? 'bg-gradient-to-br from-green-600 to-green-600 text-white'
                       : 'bg-gray-200 text-gray-400'
                   }`}
                 >
@@ -124,12 +124,12 @@ const SimpleDiagnostic = ({ onNavigate, toast }) => {
                 onClick={() => toggleValue(value.id)}
                 className={`relative p-6 rounded-2xl border-2 transition-all transform hover:scale-[1.02] text-left ${
                   isSelected
-                    ? 'bg-gradient-to-br from-purple-50 to-indigo-50 border-purple-500 shadow-lg'
-                    : 'bg-white border-gray-200 hover:border-purple-300 hover:shadow-md'
+                    ? 'bg-gradient-to-br from-green-50 to-green-50 border-green-500 shadow-lg'
+                    : 'bg-white border-gray-200 hover:border-green-300 hover:shadow-md'
                 }`}
               >
                 {isSelected && (
-                  <div className="absolute -top-3 -right-3 w-10 h-10 bg-gradient-to-br from-purple-600 to-indigo-600 rounded-full flex items-center justify-center text-white font-bold shadow-lg">
+                  <div className="absolute -top-3 -right-3 w-10 h-10 bg-gradient-to-br from-green-600 to-green-600 rounded-full flex items-center justify-center text-white font-bold shadow-lg">
                     {priority}
                   </div>
                 )}
@@ -140,7 +140,7 @@ const SimpleDiagnostic = ({ onNavigate, toast }) => {
                   </div>
                   <div className="flex-1">
                     <h3 className={`text-xl font-bold mb-1 ${
-                      isSelected ? 'text-purple-900' : 'text-gray-900'
+                      isSelected ? 'text-green-900' : 'text-gray-900'
                     }`}>
                       {value.name}
                     </h3>
@@ -151,7 +151,7 @@ const SimpleDiagnostic = ({ onNavigate, toast }) => {
                 </div>
 
                 {isSelected && (
-                  <div className="mt-3 text-sm text-purple-600 font-semibold">
+                  <div className="mt-3 text-sm text-green-600 font-semibold">
                     Priorité #{priority}
                   </div>
                 )}
@@ -162,14 +162,14 @@ const SimpleDiagnostic = ({ onNavigate, toast }) => {
 
         {/* Ordre sélectionné */}
         {selectedValues.length > 0 && (
-          <div className="bg-white rounded-2xl shadow-lg p-6 mb-8 border-2 border-purple-200">
+          <div className="bg-white rounded-2xl shadow-lg p-6 mb-8 border-2 border-green-200">
             <h3 className="font-bold text-gray-900 mb-4">Ton classement actuel :</h3>
             <div className="space-y-3">
               {selectedValues.map((valueId, index) => {
                 const value = VALUES.find(v => v.id === valueId);
                 return (
-                  <div key={valueId} className="flex items-center space-x-4 p-3 bg-gradient-to-r from-purple-50 to-indigo-50 rounded-lg">
-                    <div className="w-8 h-8 bg-gradient-to-br from-purple-600 to-indigo-600 rounded-full flex items-center justify-center text-white font-bold">
+                  <div key={valueId} className="flex items-center space-x-4 p-3 bg-gradient-to-r from-green-50 to-green-50 rounded-lg">
+                    <div className="w-8 h-8 bg-gradient-to-br from-green-600 to-green-600 rounded-full flex items-center justify-center text-white font-bold">
                       {index + 1}
                     </div>
                     <span className="text-3xl">{value.icon}</span>
@@ -198,7 +198,7 @@ const SimpleDiagnostic = ({ onNavigate, toast }) => {
             disabled={selectedValues.length !== 3 || isSubmitting}
             className={`flex-1 py-4 rounded-xl font-semibold transition-all ${
               selectedValues.length === 3 && !isSubmitting
-                ? 'bg-gradient-to-r from-purple-600 to-indigo-600 text-white hover:shadow-lg transform hover:scale-[1.02]'
+                ? 'bg-gradient-to-r from-green-600 to-green-600 text-white hover:shadow-lg transform hover:scale-[1.02]'
                 : 'bg-gray-200 text-gray-400 cursor-not-allowed'
             }`}
           >

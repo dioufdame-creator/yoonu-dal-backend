@@ -5,38 +5,38 @@ import { PremiumGate } from '../subscription/SubscriptionComponents';
 import { useCurrency } from '../../contexts/CurrencyContext';
 
 const CATEGORIES = [
-  { value: 'loyer',               label: 'Loyer',                 icon: '🏠', color: 'from-orange-500 to-red-500',    bgColor: 'bg-orange-50',  borderColor: 'border-orange-200',  textColor: 'text-orange-700',  group: 'Essentiels' },
-  { value: 'alimentation',        label: 'Alimentation',          icon: '🍽️', color: 'from-red-500 to-rose-500',      bgColor: 'bg-red-50',     borderColor: 'border-red-200',     textColor: 'text-red-700',     group: 'Essentiels' },
-  { value: 'transport',           label: 'Transport',             icon: '🚗', color: 'from-blue-500 to-cyan-500',     bgColor: 'bg-blue-50',    borderColor: 'border-blue-200',    textColor: 'text-blue-700',    group: 'Essentiels' },
-  { value: 'sante_courante',      label: 'Santé courante',        icon: '💊', color: 'from-pink-500 to-rose-500',     bgColor: 'bg-pink-50',    borderColor: 'border-pink-200',    textColor: 'text-pink-700',    group: 'Essentiels' },
-  { value: 'eau_electricite',     label: 'Eau / Électricité',     icon: '💡', color: 'from-yellow-500 to-amber-500',  bgColor: 'bg-yellow-50',  borderColor: 'border-yellow-200',  textColor: 'text-yellow-700',  group: 'Essentiels' },
-  { value: 'telephone_internet',  label: 'Téléphone / Internet',  icon: '📱', color: 'from-indigo-500 to-blue-500',   bgColor: 'bg-indigo-50',  borderColor: 'border-indigo-200',  textColor: 'text-indigo-700',  group: 'Essentiels' },
-  { value: 'aide_menagere',       label: 'Aide ménagère',         icon: '🧹', color: 'from-cyan-500 to-teal-500',     bgColor: 'bg-cyan-50',    borderColor: 'border-cyan-200',    textColor: 'text-cyan-700',    group: 'Essentiels' },
-  { value: 'solidarite_famille',  label: 'Solidarité / Famille',  icon: '👨‍👩‍👧', color: 'from-purple-500 to-pink-500',  bgColor: 'bg-purple-50',  borderColor: 'border-purple-200',  textColor: 'text-purple-700',  group: 'Essentiels' },
-  { value: 'maison_courses',      label: 'Maison / Courses',      icon: '🛒', color: 'from-purple-500 to-pink-500',   bgColor: 'bg-purple-50',  borderColor: 'border-purple-200',  textColor: 'text-purple-700',  group: 'Essentiels' },
-  { value: 'restaurant',          label: 'Restaurant / Café',     icon: '🍜', color: 'from-orange-400 to-amber-500',  bgColor: 'bg-orange-50',  borderColor: 'border-orange-200',  textColor: 'text-orange-700',  group: 'Plaisirs' },
-  { value: 'loisirs',             label: 'Loisirs / Sorties',     icon: '🎬', color: 'from-yellow-500 to-orange-500', bgColor: 'bg-yellow-50',  borderColor: 'border-yellow-200',  textColor: 'text-yellow-700',  group: 'Plaisirs' },
-  { value: 'vetements',           label: 'Vêtements / Mode',      icon: '👔', color: 'from-cyan-500 to-blue-500',     bgColor: 'bg-cyan-50',    borderColor: 'border-cyan-200',    textColor: 'text-cyan-700',    group: 'Plaisirs' },
-  { value: 'beaute',              label: 'Beauté / Coiffure',     icon: '💅', color: 'from-pink-400 to-rose-500',     bgColor: 'bg-pink-50',    borderColor: 'border-pink-200',    textColor: 'text-pink-700',    group: 'Plaisirs' },
-  { value: 'voyage',              label: 'Voyage / Vacances',     icon: '✈️', color: 'from-blue-400 to-indigo-500',   bgColor: 'bg-blue-50',    borderColor: 'border-blue-200',    textColor: 'text-blue-700',    group: 'Plaisirs' },
-  { value: 'education',           label: 'Éducation / Scolarité', icon: '📚', color: 'from-indigo-500 to-blue-500',   bgColor: 'bg-indigo-50',  borderColor: 'border-indigo-200',  textColor: 'text-indigo-700',  group: 'Projets' },
-  { value: 'epargne',             label: 'Épargne / Invest.',     icon: '💰', color: 'from-green-500 to-emerald-500', bgColor: 'bg-green-50',   borderColor: 'border-green-200',   textColor: 'text-green-700',   group: 'Projets' },
-  { value: 'fetes_ceremonies',    label: 'Fêtes & Cérémonies',    icon: '🎊', color: 'from-purple-500 to-violet-500', bgColor: 'bg-purple-50',  borderColor: 'border-purple-200',  textColor: 'text-purple-700',  group: 'Projets' },
-  { value: 'spiritualite',        label: 'Spiritualité / Aumône', icon: '🕌', color: 'from-teal-500 to-emerald-500',  bgColor: 'bg-teal-50',    borderColor: 'border-teal-200',    textColor: 'text-teal-700',    group: 'Projets' },
-  { value: 'sante_exceptionnelle',label: 'Santé exceptionnelle',  icon: '🏥', color: 'from-red-500 to-pink-500',      bgColor: 'bg-red-50',     borderColor: 'border-red-200',     textColor: 'text-red-700',     group: 'Projets' },
+  { value: 'loyer',               label: 'Loyer',                 icon: '🏠', color: 'from-green-500 to-green-500',    bgColor: 'bg-green-50',  borderColor: 'border-green-200',  textColor: 'text-green-700',  group: 'Essentiels' },
+  { value: 'alimentation',        label: 'Alimentation',          icon: '🍽️', color: 'from-green-500 to-green-500',      bgColor: 'bg-green-50',     borderColor: 'border-green-200',     textColor: 'text-green-700',     group: 'Essentiels' },
+  { value: 'transport',           label: 'Transport',             icon: '🚗', color: 'from-green-500 to-green-500',     bgColor: 'bg-green-50',    borderColor: 'border-green-200',    textColor: 'text-green-700',    group: 'Essentiels' },
+  { value: 'sante_courante',      label: 'Santé courante',        icon: '💊', color: 'from-green-500 to-green-500',     bgColor: 'bg-green-50',    borderColor: 'border-green-200',    textColor: 'text-green-700',    group: 'Essentiels' },
+  { value: 'eau_electricite',     label: 'Eau / Électricité',     icon: '💡', color: 'from-green-500 to-green-500',  bgColor: 'bg-green-50',  borderColor: 'border-green-200',  textColor: 'text-green-700',  group: 'Essentiels' },
+  { value: 'telephone_internet',  label: 'Téléphone / Internet',  icon: '📱', color: 'from-green-500 to-green-500',   bgColor: 'bg-green-50',  borderColor: 'border-green-200',  textColor: 'text-green-700',  group: 'Essentiels' },
+  { value: 'aide_menagere',       label: 'Aide ménagère',         icon: '🧹', color: 'from-green-500 to-green-500',     bgColor: 'bg-green-50',    borderColor: 'border-green-200',    textColor: 'text-green-700',    group: 'Essentiels' },
+  { value: 'solidarite_famille',  label: 'Solidarité / Famille',  icon: '👨‍👩‍👧', color: 'from-green-500 to-green-500',  bgColor: 'bg-green-50',  borderColor: 'border-green-200',  textColor: 'text-green-700',  group: 'Essentiels' },
+  { value: 'maison_courses',      label: 'Maison / Courses',      icon: '🛒', color: 'from-green-500 to-green-500',   bgColor: 'bg-green-50',  borderColor: 'border-green-200',  textColor: 'text-green-700',  group: 'Essentiels' },
+  { value: 'restaurant',          label: 'Restaurant / Café',     icon: '🍜', color: 'from-green-400 to-green-500',  bgColor: 'bg-green-50',  borderColor: 'border-green-200',  textColor: 'text-green-700',  group: 'Plaisirs' },
+  { value: 'loisirs',             label: 'Loisirs / Sorties',     icon: '🎬', color: 'from-green-500 to-green-500', bgColor: 'bg-green-50',  borderColor: 'border-green-200',  textColor: 'text-green-700',  group: 'Plaisirs' },
+  { value: 'vetements',           label: 'Vêtements / Mode',      icon: '👔', color: 'from-green-500 to-green-500',     bgColor: 'bg-green-50',    borderColor: 'border-green-200',    textColor: 'text-green-700',    group: 'Plaisirs' },
+  { value: 'beaute',              label: 'Beauté / Coiffure',     icon: '💅', color: 'from-green-400 to-green-500',     bgColor: 'bg-green-50',    borderColor: 'border-green-200',    textColor: 'text-green-700',    group: 'Plaisirs' },
+  { value: 'voyage',              label: 'Voyage / Vacances',     icon: '✈️', color: 'from-green-400 to-green-500',   bgColor: 'bg-green-50',    borderColor: 'border-green-200',    textColor: 'text-green-700',    group: 'Plaisirs' },
+  { value: 'education',           label: 'Éducation / Scolarité', icon: '📚', color: 'from-green-500 to-green-500',   bgColor: 'bg-green-50',  borderColor: 'border-green-200',  textColor: 'text-green-700',  group: 'Projets' },
+  { value: 'epargne',             label: 'Épargne / Invest.',     icon: '💰', color: 'from-green-500 to-green-500', bgColor: 'bg-green-50',   borderColor: 'border-green-200',   textColor: 'text-green-700',   group: 'Projets' },
+  { value: 'fetes_ceremonies',    label: 'Fêtes & Cérémonies',    icon: '🎊', color: 'from-green-500 to-green-500', bgColor: 'bg-green-50',  borderColor: 'border-green-200',  textColor: 'text-green-700',  group: 'Projets' },
+  { value: 'spiritualite',        label: 'Spiritualité / Aumône', icon: '🕌', color: 'from-green-500 to-green-500',  bgColor: 'bg-green-50',    borderColor: 'border-green-200',    textColor: 'text-green-700',    group: 'Projets' },
+  { value: 'sante_exceptionnelle',label: 'Santé exceptionnelle',  icon: '🏥', color: 'from-green-500 to-green-500',      bgColor: 'bg-green-50',     borderColor: 'border-green-200',     textColor: 'text-green-700',     group: 'Projets' },
   { value: 'immobilier',          label: 'Immobilier / Constr.',  icon: '🏗️', color: 'from-stone-500 to-gray-600',    bgColor: 'bg-stone-50',   borderColor: 'border-stone-200',   textColor: 'text-stone-700',   group: 'Projets' },
-  { value: 'tontine_epargne',     label: 'Tontine / Épargne coll.',icon: '🤝', color: 'from-green-600 to-teal-600',  bgColor: 'bg-green-50',   borderColor: 'border-green-200',   textColor: 'text-green-700',   group: 'Projets' },
-  { value: 'remboursement_dette', label: 'Remboursement dette',   icon: '💳', color: 'from-amber-500 to-orange-500',  bgColor: 'bg-amber-50',   borderColor: 'border-amber-200',   textColor: 'text-amber-700',   group: 'Libération' },
+  { value: 'tontine_epargne',     label: 'Tontine / Épargne coll.',icon: '🤝', color: 'from-green-600 to-green-600',  bgColor: 'bg-green-50',   borderColor: 'border-green-200',   textColor: 'text-green-700',   group: 'Projets' },
+  { value: 'remboursement_dette', label: 'Remboursement dette',   icon: '💳', color: 'from-green-500 to-green-500',  bgColor: 'bg-green-50',   borderColor: 'border-green-200',   textColor: 'text-green-700',   group: 'Libération' },
   { value: 'autre',               label: 'Autre',                 icon: '📝', color: 'from-gray-500 to-slate-500',    bgColor: 'bg-gray-50',    borderColor: 'border-gray-200',    textColor: 'text-gray-700',    group: 'Autre' },
 ];
 
 const GROUPS = ['Essentiels', 'Plaisirs', 'Projets', 'Libération', 'Autre'];
 
 const ENVELOPE_CONFIG = [
-  { type: 'essentiel',  name: 'Essentiels', icon: '🏠', color: 'bg-red-500',    bgColor: 'bg-red-50',    textColor: 'text-red-700' },
-  { type: 'plaisir',    name: 'Plaisirs',   icon: '🎉', color: 'bg-blue-500',   bgColor: 'bg-blue-50',   textColor: 'text-blue-700' },
+  { type: 'essentiel',  name: 'Essentiels', icon: '🏠', color: 'bg-green-500',    bgColor: 'bg-green-50',    textColor: 'text-green-700' },
+  { type: 'plaisir',    name: 'Plaisirs',   icon: '🎉', color: 'bg-green-500',   bgColor: 'bg-green-50',   textColor: 'text-green-700' },
   { type: 'projet',     name: 'Projets',    icon: '💎', color: 'bg-green-500', bgColor: 'bg-green-50',  textColor: 'text-green-700' },
-  { type: 'liberation', name: 'Libération', icon: '🔓', color: 'bg-amber-500',  bgColor: 'bg-amber-50', textColor: 'text-amber-700' },
+  { type: 'liberation', name: 'Libération', icon: '🔓', color: 'bg-green-500',  bgColor: 'bg-green-50', textColor: 'text-green-700' },
 ];
 
 const MONTHS_FR_SHORT = ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin',
@@ -264,7 +264,7 @@ const ExpenseTrackerPremium = ({ toast, onNavigate, auth, user }) => {
           </div>
           <button
             onClick={() => setShowScanner(true)}
-            className="w-10 h-10 rounded-full bg-indigo-50 text-indigo-600 flex items-center justify-center text-lg flex-shrink-0"
+            className="w-10 h-10 rounded-full bg-green-50 text-green-600 flex items-center justify-center text-lg flex-shrink-0"
             title="Scanner un reçu"
           >
             📸
@@ -278,7 +278,7 @@ const ExpenseTrackerPremium = ({ toast, onNavigate, auth, user }) => {
         </div>
 
         {/* Carte résumé */}
-        <div className="bg-gradient-to-br from-red-500 to-rose-600 rounded-3xl p-5 mb-4 text-white shadow-xl">
+        <div className="bg-gradient-to-br from-red-500 to-red-600 rounded-3xl p-5 mb-4 text-white shadow-xl">
           <p className="text-sm opacity-80 mb-1">Total dépensé ce mois</p>
           <p className="text-3xl font-bold mb-3">{formatCurrencyFull(totalExpenses)}</p>
           <div className="grid grid-cols-2 gap-2">
@@ -394,7 +394,7 @@ const ExpenseTrackerPremium = ({ toast, onNavigate, auth, user }) => {
                       </div>
                       {isExpanded && (
                         <div className="mt-3 pt-3 border-t border-gray-100 flex gap-2">
-                          <button onClick={() => handleEdit(expense)} className="flex-1 bg-blue-50 text-blue-700 py-2 rounded-xl text-xs font-bold">
+                          <button onClick={() => handleEdit(expense)} className="flex-1 bg-green-50 text-green-700 py-2 rounded-xl text-xs font-bold">
                             ✏️ Modifier
                           </button>
                           <button onClick={() => setConfirmDeleteId(expense.id)} className="flex-1 bg-red-50 text-red-700 py-2 rounded-xl text-xs font-bold">
@@ -484,7 +484,7 @@ const ExpenseTrackerPremium = ({ toast, onNavigate, auth, user }) => {
                   Annuler
                 </button>
                 <button type="submit"
-                  className="flex-1 px-6 py-3 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-2xl font-semibold text-sm">
+                  className="flex-1 px-6 py-3 bg-gradient-to-r from-green-600 to-green-600 text-white rounded-2xl font-semibold text-sm">
                   {editingExpense ? 'Modifier' : 'Ajouter'}
                 </button>
               </div>

@@ -94,7 +94,7 @@ const Register = ({ onNavigate, toast, onRegisterSuccess }) => {
   const labelClass = "block text-xs text-gray-400 font-semibold uppercase tracking-wide mb-2";
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-green-50 via-white to-emerald-50 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-gradient-to-br from-green-50 via-white to-green-50 flex items-center justify-center p-4">
       <div className="max-w-md w-full bg-white rounded-3xl shadow-xl p-6">
 
         <div className="text-center mb-5">
@@ -215,13 +215,13 @@ const Register = ({ onNavigate, toast, onRegisterSuccess }) => {
             )}
             {currentStep < 3 ? (
               <button type="button" onClick={nextStep} disabled={isLoading}
-                className="flex-1 py-3.5 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-2xl font-bold text-sm shadow-lg">
+                className="flex-1 py-3.5 bg-gradient-to-r from-green-600 to-green-600 text-white rounded-2xl font-bold text-sm shadow-lg">
                 Suivant →
               </button>
             ) : (
               <button type="submit" disabled={isLoading || !formData.accept_terms}
                 className={`flex-1 py-3.5 rounded-2xl font-bold text-sm text-white ${
-                  isLoading || !formData.accept_terms ? 'bg-gray-300 cursor-not-allowed' : 'bg-gradient-to-r from-green-600 to-emerald-600 shadow-lg'
+                  isLoading || !formData.accept_terms ? 'bg-gray-300 cursor-not-allowed' : 'bg-gradient-to-r from-green-600 to-green-600 shadow-lg'
                 }`}>
                 {isLoading ? (
                   <span className="flex items-center justify-center gap-2">

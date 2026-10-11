@@ -65,9 +65,9 @@ const AlertsPageV2 = ({ toast, onNavigate }) => {
       case 'critical':
         return { bg: 'bg-red-50', border: 'border-red-200', icon: '🔴', iconBg: 'bg-red-100', label: 'Critique', labelBg: 'bg-red-500', buttonBg: 'from-red-600 to-red-700' };
       case 'warning':
-        return { bg: 'bg-amber-50', border: 'border-amber-200', icon: '⚠️', iconBg: 'bg-amber-100', label: 'Attention', labelBg: 'bg-amber-500', buttonBg: 'from-amber-600 to-orange-600' };
+        return { bg: 'bg-amber-50', border: 'border-amber-200', icon: '⚠️', iconBg: 'bg-amber-100', label: 'Attention', labelBg: 'bg-amber-500', buttonBg: 'from-amber-600 to-amber-600' };
       default:
-        return { bg: 'bg-blue-50', border: 'border-blue-200', icon: 'ℹ️', iconBg: 'bg-blue-100', label: 'Info', labelBg: 'bg-blue-500', buttonBg: 'from-blue-600 to-indigo-600' };
+        return { bg: 'bg-green-50', border: 'border-green-200', icon: 'ℹ️', iconBg: 'bg-green-100', label: 'Info', labelBg: 'bg-green-500', buttonBg: 'from-green-600 to-green-600' };
     }
   };
 
@@ -126,9 +126,9 @@ const AlertsPageV2 = ({ toast, onNavigate }) => {
               <p className="text-xl font-bold text-amber-700">{warningAlerts.length}</p>
               <p className="text-[10px] text-amber-600 font-semibold">Attention</p>
             </div>
-            <div className="bg-blue-50 border border-blue-200 rounded-2xl p-3 text-center">
-              <p className="text-xl font-bold text-blue-700">{infoAlerts.length}</p>
-              <p className="text-[10px] text-blue-600 font-semibold">Infos</p>
+            <div className="bg-green-50 border border-green-200 rounded-2xl p-3 text-center">
+              <p className="text-xl font-bold text-green-700">{infoAlerts.length}</p>
+              <p className="text-[10px] text-green-600 font-semibold">Infos</p>
             </div>
           </div>
         )}

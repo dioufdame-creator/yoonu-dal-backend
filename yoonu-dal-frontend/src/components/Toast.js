@@ -47,10 +47,10 @@ const Toast = ({ toastRef }) => {
       case 'error':
         return `${baseStyles} bg-red-500 text-white border-l-4 border-red-700`;
       case 'warning':
-        return `${baseStyles} bg-yellow-500 text-white border-l-4 border-yellow-700`;
+        return `${baseStyles} bg-amber-500 text-white border-l-4 border-amber-700`;
       case 'info':
       default:
-        return `${baseStyles} bg-blue-500 text-white border-l-4 border-blue-700`;
+        return `${baseStyles} bg-green-500 text-white border-l-4 border-green-700`;
     }
   };
 

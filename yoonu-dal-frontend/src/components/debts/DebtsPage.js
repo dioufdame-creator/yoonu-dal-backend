@@ -117,7 +117,7 @@ const DebtsPage = ({ toast, onNavigate }) => {
     }
   };
 
-  const getStateColor = (pct) => pct >= 100 ? 'bg-green-500' : pct >= 50 ? 'bg-blue-500' : 'bg-amber-500';
+  const getStateColor = (pct) => pct >= 100 ? 'bg-green-500' : pct >= 50 ? 'bg-green-500' : 'bg-amber-500';
 
   const currentStats = stats ? (direction === 'owed_by_me' ? stats.owed_by_me : stats.owed_to_me) : null;
   const counterpartyLabel = direction === 'owed_by_me' ? 'Créancier' : 'Débiteur';
@@ -178,8 +178,8 @@ const DebtsPage = ({ toast, onNavigate }) => {
         {currentStats && (
           <div className={`rounded-3xl p-5 mb-4 text-white shadow-xl ${
             direction === 'owed_by_me'
-              ? 'bg-gradient-to-br from-red-500 to-rose-600'
-              : 'bg-gradient-to-br from-green-600 to-emerald-700'
+              ? 'bg-gradient-to-br from-red-500 to-red-600'
+              : 'bg-gradient-to-br from-green-600 to-green-700'
           }`}>
             <p className="text-sm opacity-80 mb-1">
               {direction === 'owed_by_me' ? 'Reste à payer' : 'Reste à recevoir'}
@@ -287,7 +287,7 @@ const DebtsPage = ({ toast, onNavigate }) => {
                   <div className="flex gap-2">
                     <button
                       onClick={() => onNavigate('debt-detail', { debtId: debt.id })}
-                      className="flex-1 text-xs font-bold py-2.5 rounded-xl bg-blue-50 text-blue-600"
+                      className="flex-1 text-xs font-bold py-2.5 rounded-xl bg-green-50 text-green-600"
                     >
                       Détails
                     </button>
@@ -441,7 +441,7 @@ const DebtsPage = ({ toast, onNavigate }) => {
             <div className="sticky bottom-0 bg-white border-t border-gray-100 p-4">
               <button
                 onClick={handleCreateDebt}
-                className="w-full py-4 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-2xl font-bold shadow-lg"
+                className="w-full py-4 bg-gradient-to-r from-green-600 to-green-600 text-white rounded-2xl font-bold shadow-lg"
               >
                 {direction === 'owed_by_me' ? 'Créer la dette' : 'Créer la créance'}
               </button>
@@ -519,7 +519,7 @@ const DebtsPage = ({ toast, onNavigate }) => {
             <div className="p-4 pb-6">
               <button
                 onClick={handleAddPayment}
-                className="w-full py-4 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-2xl font-bold shadow-lg"
+                className="w-full py-4 bg-gradient-to-r from-green-600 to-green-600 text-white rounded-2xl font-bold shadow-lg"
               >
                 Enregistrer
               </button>

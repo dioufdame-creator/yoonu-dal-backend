@@ -207,7 +207,7 @@ const TontineDetail = ({ tontineId, onNavigate, toast, user }) => {
 
   const getStatusConfig = (status) => {
     const configs = {
-      planning:  { label: 'En préparation', emoji: '📋', badge: 'bg-blue-50 text-blue-600' },
+      planning:  { label: 'En préparation', emoji: '📋', badge: 'bg-green-50 text-green-600' },
       active:    { label: 'Active',         emoji: '🔥', badge: 'bg-green-50 text-green-600' },
       completed: { label: 'Terminée',       emoji: '✅', badge: 'bg-gray-100 text-gray-500' },
       cancelled: { label: 'Annulée',        emoji: '❌', badge: 'bg-red-50 text-red-500' },
@@ -234,7 +234,7 @@ const TontineDetail = ({ tontineId, onNavigate, toast, user }) => {
     if (now < start) {
       return {
         label: `📆 Démarre le ${start.toLocaleDateString('fr-FR')} — premier paiement le ${t.payment_day}`,
-        style: 'bg-blue-50 text-blue-700'
+        style: 'bg-green-50 text-green-700'
       };
     }
 
@@ -242,8 +242,8 @@ const TontineDetail = ({ tontineId, onNavigate, toast, user }) => {
     if (daysLeft < 0) return { label: `Date limite dépassée ce mois (était le ${t.payment_day})`, style: 'bg-gray-50 text-gray-500' };
     if (daysLeft === 0) return { label: "⚠️ Aujourd'hui est la date limite !", style: 'bg-red-50 text-red-700' };
     if (daysLeft <= 2) return { label: `🚨 Plus que ${daysLeft} jour(s) pour contribuer !`, style: 'bg-red-50 text-red-700' };
-    if (daysLeft <= 5) return { label: `⏰ ${daysLeft} jours restants avant la limite`, style: 'bg-orange-50 text-orange-700' };
-    return { label: `📆 Limite : le ${t.payment_day} de chaque mois`, style: 'bg-blue-50 text-blue-700' };
+    if (daysLeft <= 5) return { label: `⏰ ${daysLeft} jours restants avant la limite`, style: 'bg-amber-50 text-amber-700' };
+    return { label: `📆 Limite : le ${t.payment_day} de chaque mois`, style: 'bg-green-50 text-green-700' };
   };
 
   // ✅ Charge "Mes paiements" dès l'arrivée sur la page (pas seulement
@@ -320,7 +320,7 @@ const TontineDetail = ({ tontineId, onNavigate, toast, user }) => {
         </div>
 
         {/* Carte résumé */}
-        <div className="bg-gradient-to-br from-green-600 to-emerald-700 rounded-3xl p-5 mb-4 text-white shadow-xl">
+        <div className="bg-gradient-to-br from-green-600 to-green-700 rounded-3xl p-5 mb-4 text-white shadow-xl">
           <div className="flex items-center justify-between mb-3">
             <div>
               <p className="text-sm opacity-80">Tu reçois à ton tour</p>
@@ -363,8 +363,8 @@ const TontineDetail = ({ tontineId, onNavigate, toast, user }) => {
 
         {/* ✅ Sélecteur de main — visible uniquement si plusieurs mains */}
         {myHands.length > 1 && (
-          <div className="bg-indigo-50 border border-indigo-200 rounded-2xl p-3 mb-4">
-            <p className="text-[11px] text-indigo-600 font-semibold mb-2">
+          <div className="bg-green-50 border border-green-200 rounded-2xl p-3 mb-4">
+            <p className="text-[11px] text-green-600 font-semibold mb-2">
               Vous avez {myHands.length} mains dans cette tontine — laquelle voulez-vous suivre ?
             </p>
             <div className="flex gap-2 overflow-x-auto">
@@ -374,8 +374,8 @@ const TontineDetail = ({ tontineId, onNavigate, toast, user }) => {
                     onClick={() => setSelectedHand(hand)}
                     className={`px-3 py-1.5 rounded-l-xl text-xs font-bold whitespace-nowrap transition-all ${
                       currentUserParticipant?.id === hand.id
-                        ? 'bg-indigo-600 text-white'
-                        : 'bg-white text-indigo-600 border border-indigo-200'
+                        ? 'bg-green-600 text-white'
+                        : 'bg-white text-green-600 border border-green-200'
                     }`}
                   >
                     {hand.display_name || `Main ${hand.hand_number}`}
@@ -384,8 +384,8 @@ const TontineDetail = ({ tontineId, onNavigate, toast, user }) => {
                     onClick={() => openRename(hand)}
                     className={`px-2 py-1.5 rounded-r-xl text-xs transition-all ${
                       currentUserParticipant?.id === hand.id
-                        ? 'bg-indigo-700 text-white'
-                        : 'bg-white text-indigo-400 border border-l-0 border-indigo-200'
+                        ? 'bg-green-700 text-white'
+                        : 'bg-white text-green-400 border border-l-0 border-green-200'
                     }`}
                     title="Renommer cette main"
                   >
@@ -464,7 +464,7 @@ const TontineDetail = ({ tontineId, onNavigate, toast, user }) => {
                       return (
                         <div key={idx} className={`flex items-center justify-between p-3 rounded-xl ${
                           isPaid ? 'bg-green-50' : isPending ? 'bg-amber-50' :
-                          month.isCurrentMonth ? 'bg-blue-50' : 'bg-red-50'
+                          month.isCurrentMonth ? 'bg-green-50' : 'bg-red-50'
                         }`}>
                           <div className="flex items-center gap-2">
                             <span className="text-base">
@@ -497,7 +497,7 @@ const TontineDetail = ({ tontineId, onNavigate, toast, user }) => {
                 {paymentSummary && paymentSummary.status !== 'à_jour' && (
                   <button
                     onClick={() => setShowContributeSheet(true)}
-                    className="w-full mt-4 bg-gradient-to-r from-green-600 to-emerald-600 text-white py-3 rounded-2xl font-bold text-sm shadow-md"
+                    className="w-full mt-4 bg-gradient-to-r from-green-600 to-green-600 text-white py-3 rounded-2xl font-bold text-sm shadow-md"
                   >
                     💰 Payer maintenant
                   </button>
@@ -515,7 +515,7 @@ const TontineDetail = ({ tontineId, onNavigate, toast, user }) => {
           </div>
           <div className="w-full bg-gray-100 rounded-full h-2 overflow-hidden">
             <div
-              className="h-full bg-gradient-to-r from-green-500 to-emerald-500 rounded-full transition-all duration-500"
+              className="h-full bg-gradient-to-r from-green-500 to-green-500 rounded-full transition-all duration-500"
               style={{ width: `${Math.min(progress, 100)}%` }}
             />
           </div>
@@ -575,27 +575,27 @@ const TontineDetail = ({ tontineId, onNavigate, toast, user }) => {
             <div className="divide-y divide-gray-50">
               {tontine.participants.map((participant, index) => (
                 <div key={participant.id} className="flex items-center gap-3 px-4 py-3">
-                  <div className="w-9 h-9 rounded-full bg-gradient-to-br from-green-500 to-emerald-500 flex items-center justify-center text-white font-bold text-sm flex-shrink-0">
+                  <div className="w-9 h-9 rounded-full bg-gradient-to-br from-green-500 to-green-500 flex items-center justify-center text-white font-bold text-sm flex-shrink-0">
                     {index + 1}
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-semibold text-gray-900 truncate">
                       {participant.user?.first_name} {participant.user?.last_name}
                       {participant.display_name && (
-                        <span className="ml-1 text-[10px] text-indigo-500 font-bold">· {participant.display_name}</span>
+                        <span className="ml-1 text-[10px] text-green-500 font-bold">· {participant.display_name}</span>
                       )}
                       {!participant.display_name && participant.hand_number > 1 && (
-                        <span className="ml-1 text-[10px] text-indigo-500 font-bold">· Main {participant.hand_number}</span>
+                        <span className="ml-1 text-[10px] text-green-500 font-bold">· Main {participant.hand_number}</span>
                       )}
                       {participant.user?.id === currentUser?.id && (
-                        <span className="ml-1 text-[10px] bg-blue-500 text-white px-1.5 py-0.5 rounded-full">Vous</span>
+                        <span className="ml-1 text-[10px] bg-green-500 text-white px-1.5 py-0.5 rounded-full">Vous</span>
                       )}
                     </p>
                     <p className="text-[11px] text-gray-400">@{participant.user?.username}</p>
                   </div>
                   <div className="flex flex-col items-end gap-1 flex-shrink-0">
                     {participant.is_admin && (
-                      <span className="px-2 py-0.5 bg-blue-50 text-blue-600 text-[10px] font-bold rounded-full">👑 Admin</span>
+                      <span className="px-2 py-0.5 bg-green-50 text-green-600 text-[10px] font-bold rounded-full">👑 Admin</span>
                     )}
                     {participant.received_payout && (
                       <span className="px-2 py-0.5 bg-green-50 text-green-600 text-[10px] font-bold rounded-full">💰 Payé</span>
@@ -616,7 +616,7 @@ const TontineDetail = ({ tontineId, onNavigate, toast, user }) => {
           <div className="max-w-2xl mx-auto">
             <button
               onClick={() => setShowContributeSheet(true)}
-              className="w-full bg-gradient-to-r from-green-600 to-emerald-600 text-white px-6 py-4 rounded-2xl font-bold shadow-2xl"
+              className="w-full bg-gradient-to-r from-green-600 to-green-600 text-white px-6 py-4 rounded-2xl font-bold shadow-2xl"
             >
               💰 Contribuer à cette tontine
             </button>
@@ -650,7 +650,7 @@ const TontineDetail = ({ tontineId, onNavigate, toast, user }) => {
                   onChange={(e) => setRenameValue(e.target.value)}
                   placeholder="Ex: Maman"
                   autoFocus
-                  className="w-full mt-1 px-4 py-3 bg-gray-50 rounded-2xl text-sm outline-none focus:ring-2 focus:ring-indigo-500"
+                  className="w-full mt-1 px-4 py-3 bg-gray-50 rounded-2xl text-sm outline-none focus:ring-2 focus:ring-green-500"
                 />
               </div>
             </div>
@@ -658,7 +658,7 @@ const TontineDetail = ({ tontineId, onNavigate, toast, user }) => {
             <div className="p-4 pb-6">
               <button
                 onClick={handleRename}
-                className="w-full py-4 bg-gradient-to-r from-indigo-600 to-purple-700 text-white rounded-2xl font-bold shadow-lg"
+                className="w-full py-4 bg-gradient-to-r from-green-600 to-green-700 text-white rounded-2xl font-bold shadow-lg"
               >
                 Enregistrer
               </button>
@@ -688,8 +688,8 @@ const TontineDetail = ({ tontineId, onNavigate, toast, user }) => {
               )}
 
               {paymentSummary && (
-                <div className="bg-blue-50 rounded-2xl px-3 py-2">
-                  <p className="text-xs text-blue-800 font-medium">
+                <div className="bg-green-50 rounded-2xl px-3 py-2">
+                  <p className="text-xs text-green-800 font-medium">
                     📅 Ce paiement concernera :{' '}
                     <strong className="capitalize">
                       {(() => {
@@ -749,7 +749,7 @@ const TontineDetail = ({ tontineId, onNavigate, toast, user }) => {
             <div className="p-4 pb-6">
               <button
                 onClick={handleContribute}
-                className="w-full py-4 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-2xl font-bold shadow-lg"
+                className="w-full py-4 bg-gradient-to-r from-green-600 to-green-600 text-white rounded-2xl font-bold shadow-lg"
               >
                 Envoyer
               </button>

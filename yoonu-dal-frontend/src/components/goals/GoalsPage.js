@@ -241,7 +241,7 @@ const GoalsPage = ({ toast, onNavigate, pageParams }) => {
       }
     });
 
-  const getStateColor = (pct) => pct >= 100 ? 'bg-green-500' : pct >= 50 ? 'bg-blue-500' : 'bg-amber-500';
+  const getStateColor = (pct) => pct >= 100 ? 'bg-green-500' : pct >= 50 ? 'bg-green-500' : 'bg-amber-500';
 
   if (loading) {
     return (
@@ -276,7 +276,7 @@ const GoalsPage = ({ toast, onNavigate, pageParams }) => {
         </div>
 
         {/* Résumé */}
-        <div className="bg-gradient-to-br from-green-600 to-emerald-700 rounded-3xl p-5 mb-4 text-white shadow-xl">
+        <div className="bg-gradient-to-br from-green-600 to-green-700 rounded-3xl p-5 mb-4 text-white shadow-xl">
           <p className="text-sm opacity-80 mb-1">Total épargné</p>
           <p className="text-3xl font-bold mb-3">{formatFull(stats.total_current)}</p>
           <div className="grid grid-cols-2 gap-2">
@@ -397,7 +397,7 @@ const GoalsPage = ({ toast, onNavigate, pageParams }) => {
                     </button>
                     <button
                       onClick={() => { setSelectedGoal(goal); setShowPlanSheet(true); }}
-                      className="text-xs font-bold py-2.5 rounded-xl bg-blue-50 text-blue-600"
+                      className="text-xs font-bold py-2.5 rounded-xl bg-green-50 text-green-600"
                     >
                       📈 Plan
                     </button>
@@ -506,7 +506,7 @@ const GoalsPage = ({ toast, onNavigate, pageParams }) => {
             <div className="p-4 pb-6">
               <button
                 onClick={handleCreateGoal}
-                className="w-full py-4 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-2xl font-bold shadow-lg"
+                className="w-full py-4 bg-gradient-to-r from-green-600 to-green-600 text-white rounded-2xl font-bold shadow-lg"
               >
                 {editingGoal ? 'Enregistrer' : 'Créer l\'objectif'}
               </button>
@@ -536,9 +536,9 @@ const GoalsPage = ({ toast, onNavigate, pageParams }) => {
 
               <button
                 onClick={goToEpargner}
-                className="w-full flex items-center gap-4 p-4 rounded-2xl bg-indigo-50 hover:bg-indigo-100 transition-all text-left"
+                className="w-full flex items-center gap-4 p-4 rounded-2xl bg-green-50 hover:bg-green-100 transition-all text-left"
               >
-                <div className="w-12 h-12 bg-gradient-to-br from-indigo-500 to-purple-500 rounded-2xl flex items-center justify-center text-2xl shadow-lg flex-shrink-0">
+                <div className="w-12 h-12 bg-gradient-to-br from-green-500 to-green-500 rounded-2xl flex items-center justify-center text-2xl shadow-lg flex-shrink-0">
                   💰
                 </div>
                 <div>
@@ -549,9 +549,9 @@ const GoalsPage = ({ toast, onNavigate, pageParams }) => {
 
               <button
                 onClick={goToPockets}
-                className="w-full flex items-center gap-4 p-4 rounded-2xl bg-blue-50 hover:bg-blue-100 transition-all text-left"
+                className="w-full flex items-center gap-4 p-4 rounded-2xl bg-green-50 hover:bg-green-100 transition-all text-left"
               >
-                <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-2xl flex items-center justify-center text-2xl shadow-lg flex-shrink-0">
+                <div className="w-12 h-12 bg-gradient-to-br from-green-500 to-green-500 rounded-2xl flex items-center justify-center text-2xl shadow-lg flex-shrink-0">
                   🔄
                 </div>
                 <div>

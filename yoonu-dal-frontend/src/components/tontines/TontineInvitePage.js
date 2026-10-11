@@ -63,7 +63,7 @@ const TontineInvitePage = ({ inviteCode, onNavigate, toast, isAuthenticated }) =
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-green-50 via-emerald-50 to-teal-50 flex items-center justify-center p-4">
+      <div className="min-h-screen bg-gradient-to-br from-green-50 via-green-50 to-green-50 flex items-center justify-center p-4">
         <div className="text-center">
           <div className="w-16 h-16 border-4 border-green-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
           <p className="text-gray-600 font-medium">Chargement de la tontine...</p>
@@ -74,13 +74,13 @@ const TontineInvitePage = ({ inviteCode, onNavigate, toast, isAuthenticated }) =
 
   if (error) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-green-50 via-emerald-50 to-teal-50 flex items-center justify-center p-4">
+      <div className="min-h-screen bg-gradient-to-br from-green-50 via-green-50 to-green-50 flex items-center justify-center p-4">
         <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-md w-full text-center">
           <div className="text-6xl mb-4">❌</div>
           <h2 className="text-2xl font-bold text-gray-900 mb-2">Lien invalide</h2>
           <p className="text-gray-600 mb-6">{error}</p>
           <button onClick={() => onNavigate?.('home')}
-            className="bg-gradient-to-r from-green-600 to-emerald-600 text-white px-6 py-3 rounded-xl font-semibold hover:shadow-lg transition-all">
+            className="bg-gradient-to-r from-green-600 to-green-600 text-white px-6 py-3 rounded-xl font-semibold hover:shadow-lg transition-all">
             Retour à l'accueil
           </button>
         </div>
@@ -90,14 +90,14 @@ const TontineInvitePage = ({ inviteCode, onNavigate, toast, isAuthenticated }) =
 
   if (joined) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-green-50 via-emerald-50 to-teal-50 flex items-center justify-center p-4">
+      <div className="min-h-screen bg-gradient-to-br from-green-50 via-green-50 to-green-50 flex items-center justify-center p-4">
         <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-md w-full text-center">
           <div className="text-6xl mb-4 animate-bounce">🎉</div>
           <h2 className="text-2xl font-bold text-gray-900 mb-2">Félicitations !</h2>
           <p className="text-gray-600 mb-2">Tu as rejoint la tontine</p>
           <p className="text-xl font-bold text-green-600 mb-6">"{tontine?.name}"</p>
           <button onClick={() => onNavigate?.('tontines')}
-            className="w-full bg-gradient-to-r from-green-600 to-emerald-600 text-white px-6 py-3 rounded-xl font-semibold hover:shadow-lg transition-all">
+            className="w-full bg-gradient-to-r from-green-600 to-green-600 text-white px-6 py-3 rounded-xl font-semibold hover:shadow-lg transition-all">
             Voir mes tontines 🦁
           </button>
         </div>
@@ -111,7 +111,7 @@ const TontineInvitePage = ({ inviteCode, onNavigate, toast, isAuthenticated }) =
   const payoutAmount = (tontine?.monthly_contribution || 0) * (tontine?.max_participants || 0);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-green-50 via-emerald-50 to-teal-50 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-gradient-to-br from-green-50 via-green-50 to-green-50 flex items-center justify-center p-4">
       <div className="max-w-lg w-full">
 
         {/* Brand */}
@@ -124,7 +124,7 @@ const TontineInvitePage = ({ inviteCode, onNavigate, toast, isAuthenticated }) =
         <div className="bg-white rounded-3xl shadow-2xl overflow-hidden">
 
           {/* Header */}
-          <div className="bg-gradient-to-r from-green-600 to-emerald-600 p-6 text-white">
+          <div className="bg-gradient-to-r from-green-600 to-green-600 p-6 text-white">
             <p className="text-green-100 text-sm mb-1">Invitation à rejoindre</p>
             <h1 className="text-2xl font-bold mb-1">{tontine?.name}</h1>
             {tontine?.description && (
@@ -144,17 +144,17 @@ const TontineInvitePage = ({ inviteCode, onNavigate, toast, isAuthenticated }) =
                 <p className="text-xs text-gray-500">/mois</p>
               </div>
 
-              <div className="bg-emerald-50 rounded-2xl p-4 text-center">
+              <div className="bg-green-50 rounded-2xl p-4 text-center">
                 <p className="text-xs text-gray-500 mb-1">🎯 Tu reçois à ton tour</p>
-                <p className="text-lg font-bold text-emerald-700">
+                <p className="text-lg font-bold text-green-700">
                   {formatCurrencyFull(payoutAmount)}
                 </p>
                 <p className="text-xs text-gray-500">= {tontine?.max_participants} × contrib.</p>
               </div>
 
-              <div className="bg-blue-50 rounded-2xl p-4 text-center">
+              <div className="bg-green-50 rounded-2xl p-4 text-center">
                 <p className="text-xs text-gray-500 mb-1">👥 Participants</p>
-                <p className="text-lg font-bold text-blue-700">
+                <p className="text-lg font-bold text-green-700">
                   {tontine?.current_participants}/{tontine?.max_participants}
                 </p>
                 <p className="text-xs text-gray-500">
@@ -162,9 +162,9 @@ const TontineInvitePage = ({ inviteCode, onNavigate, toast, isAuthenticated }) =
                 </p>
               </div>
 
-              <div className="bg-purple-50 rounded-2xl p-4 text-center">
+              <div className="bg-green-50 rounded-2xl p-4 text-center">
                 <p className="text-xs text-gray-500 mb-1">📅 Durée</p>
-                <p className="text-lg font-bold text-purple-700">
+                <p className="text-lg font-bold text-green-700">
                   {tontine?.duration_months} mois
                 </p>
                 <p className="text-xs text-gray-500">dès le {formatDate(tontine?.start_date)}</p>
@@ -173,9 +173,9 @@ const TontineInvitePage = ({ inviteCode, onNavigate, toast, isAuthenticated }) =
 
             {/* ✅ Jour limite de paiement */}
             {tontine?.payment_day && (
-              <div className="bg-orange-50 border border-orange-200 rounded-xl p-3 mb-4 flex items-center gap-2">
+              <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 mb-4 flex items-center gap-2">
                 <span className="text-lg">📆</span>
-                <p className="text-sm text-orange-800 font-medium">
+                <p className="text-sm text-amber-800 font-medium">
                   Paiement avant le <span className="font-bold">{tontine.payment_day}</span> de chaque mois
                 </p>
               </div>
@@ -192,7 +192,7 @@ const TontineInvitePage = ({ inviteCode, onNavigate, toast, isAuthenticated }) =
             {/* Code */}
             <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 mb-6 text-center">
               <p className="text-xs text-gray-500 mb-1">Code d'invitation</p>
-              <p className="text-xl font-mono font-bold text-orange-700">{tontine?.invitation_code}</p>
+              <p className="text-xl font-mono font-bold text-amber-700">{tontine?.invitation_code}</p>
             </div>
 
             {/* CTA */}
@@ -236,7 +236,7 @@ const TontineInvitePage = ({ inviteCode, onNavigate, toast, isAuthenticated }) =
                   </div>
                 )}
                 <button onClick={handleJoin} disabled={joining}
-                  className="w-full bg-gradient-to-r from-green-600 to-emerald-600 text-white px-6 py-4 rounded-xl font-bold text-lg hover:shadow-2xl hover:shadow-green-500/50 transition-all transform hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed">
+                  className="w-full bg-gradient-to-r from-green-600 to-green-600 text-white px-6 py-4 rounded-xl font-bold text-lg hover:shadow-2xl hover:shadow-green-500/50 transition-all transform hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed">
                   {joining ? (
                     <span className="flex items-center justify-center gap-2">
                       <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>

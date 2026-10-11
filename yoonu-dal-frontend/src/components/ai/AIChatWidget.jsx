@@ -264,7 +264,7 @@ if (!isOpen) {
         className="fixed bottom-0 right-0 sm:bottom-6 sm:right-6 z-50 w-full sm:w-[420px] h-screen sm:h-[680px] bg-white sm:rounded-2xl shadow-2xl flex flex-col overflow-hidden border-2 border-gray-200"
       >
         {/* Header */}
-        <div className="bg-gradient-to-r from-green-600 to-emerald-600 text-white p-4 flex items-center justify-between shadow-lg flex-shrink-0">
+        <div className="bg-gradient-to-r from-green-600 to-green-600 text-white p-4 flex items-center justify-between shadow-lg flex-shrink-0">
           <div className="flex items-center gap-3">
             <div className="relative">
               <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center text-xl shadow-md">🤖</div>
@@ -360,7 +360,7 @@ if (!isOpen) {
                   <div className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
                     <div className={`max-w-[85%] rounded-2xl px-4 py-3 shadow-sm ${
                       msg.role === 'user'
-                        ? 'bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-br-none'
+                        ? 'bg-gradient-to-r from-green-600 to-green-600 text-white rounded-br-none'
                         : 'bg-white text-gray-900 rounded-bl-none border border-gray-200'
                     }`}>
                       <p className="text-sm whitespace-pre-wrap leading-relaxed">{msg.content}</p>
@@ -471,7 +471,7 @@ if (!isOpen) {
                   disabled={!input.trim() || isTyping || executingAction}
                   className={`px-5 py-3 rounded-xl font-bold text-lg transition-all ${
                     input.trim() && !isTyping && !executingAction
-                      ? 'bg-gradient-to-r from-green-600 to-emerald-600 text-white hover:shadow-lg transform hover:scale-105'
+                      ? 'bg-gradient-to-r from-green-600 to-green-600 text-white hover:shadow-lg transform hover:scale-105'
                       : 'bg-gray-200 text-gray-400 cursor-not-allowed'
                   }`}
                 >

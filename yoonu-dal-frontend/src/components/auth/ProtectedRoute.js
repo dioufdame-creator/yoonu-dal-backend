@@ -25,7 +25,7 @@ const ProtectedRoute = ({ children, requireAuth = true, requireGuest = false, fa
   // Afficher un loader pendant la vérification de l'authentification
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-green-50 flex items-center justify-center">
         <div className="text-center animate-fade-in">
           <div className="w-16 h-16 border-4 border-green-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
           <h2 className="text-xl font-semibold text-gray-700 mb-2">Chargement...</h2>
@@ -50,7 +50,7 @@ const ProtectedRoute = ({ children, requireAuth = true, requireGuest = false, fa
           <div className="space-y-3">
             <button 
               onClick={() => handleNavigate('login')}
-              className="w-full bg-gradient-to-r from-primary-600 to-blue-600 text-white px-6 py-3 rounded-xl font-semibold hover:shadow-lg transform hover:scale-105 transition-all duration-200"
+              className="w-full bg-gradient-to-r from-primary-600 to-green-600 text-white px-6 py-3 rounded-xl font-semibold hover:shadow-lg transform hover:scale-105 transition-all duration-200"
             >
               🔐 Se connecter
             </button>
@@ -89,7 +89,7 @@ const ProtectedRoute = ({ children, requireAuth = true, requireGuest = false, fa
           </p>
           <button 
             onClick={() => handleNavigate('dashboard')}
-            className="w-full bg-gradient-to-r from-primary-600 to-blue-600 text-white px-6 py-3 rounded-xl font-semibold hover:shadow-lg transform hover:scale-105 transition-all duration-200"
+            className="w-full bg-gradient-to-r from-primary-600 to-green-600 text-white px-6 py-3 rounded-xl font-semibold hover:shadow-lg transform hover:scale-105 transition-all duration-200"
           >
             📊 Aller au tableau de bord
           </button>

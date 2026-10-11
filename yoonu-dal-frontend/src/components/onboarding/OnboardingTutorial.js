@@ -10,13 +10,13 @@ const steps = [
     emoji: '🌿',
     title: 'Bienvenue sur Yoonu Dal !',
     description: 'Ton coach financier personnel est prêt. En 2 minutes, découvre comment tirer le meilleur de l\'app.',
-    color: 'from-green-500 to-emerald-600',
+    color: 'from-green-500 to-green-600',
   },
   {
     emoji: '📊',
     title: 'Budget & Enveloppes',
     description: 'Va dans "Budget" pour voir tes 4 enveloppes : Essentiels, Plaisirs, Projets et Libération. Tu peux ajuster les pourcentages selon ta réalité.',
-    color: 'from-blue-500 to-indigo-600',
+    color: 'from-green-500 to-green-600',
     action: 'envelopes',
     actionLabel: 'Voir mes enveloppes'
   },
@@ -24,7 +24,7 @@ const steps = [
     emoji: '💸',
     title: 'Revenus & Dépenses',
     description: 'Dans "Transactions", enregistre chaque revenu et dépense. L\'app calcule automatiquement ton score d\'alignement avec tes valeurs.',
-    color: 'from-purple-500 to-violet-600',
+    color: 'from-green-500 to-green-600',
     action: 'transactions',
     actionLabel: 'Voir mes transactions'
   },
@@ -32,7 +32,7 @@ const steps = [
     emoji: '🎯',
     title: 'Objectifs financiers',
     description: 'Crée des objectifs concrets — terrain, voyage, fonds d\'urgence. Suis ta progression et reste motivé.',
-    color: 'from-orange-500 to-amber-600',
+    color: 'from-green-500 to-green-600',
     action: 'goals',
     actionLabel: 'Créer un objectif'
   },
@@ -40,7 +40,7 @@ const steps = [
     emoji: '🔓',
     title: 'Gestion des dettes',
     description: 'Dans "Dettes", enregistre tes remboursements. Chaque paiement compte dans ton enveloppe Libération.',
-    color: 'from-red-500 to-rose-600',
+    color: 'from-green-500 to-green-600',
     action: 'debts',
     actionLabel: 'Gérer mes dettes'
   },
@@ -48,7 +48,7 @@ const steps = [
     emoji: '🦁',
     title: 'Tontines digitales',
     description: 'Crée une tontine avec ta famille ou tes amis, partage le code d\'invitation et suivez vos contributions ensemble.',
-    color: 'from-teal-500 to-cyan-600',
+    color: 'from-green-500 to-green-600',
     action: 'tontines',
     actionLabel: 'Voir les tontines'
   },
@@ -56,7 +56,7 @@ const steps = [
     emoji: '🌟',
     title: 'C\'est parti !',
     description: 'Tu as tout ce qu\'il faut. Commence par enregistrer ton premier revenu ou ta première dépense. Ton score Yoonu Dal se mettra à jour automatiquement.',
-    color: 'from-green-500 to-emerald-600',
+    color: 'from-green-500 to-green-600',
   },
 ];
 

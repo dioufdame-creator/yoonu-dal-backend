@@ -150,8 +150,8 @@ const ExportPage = ({ onNavigate, toast, user }) => {
         </div>
 
         {/* Info */}
-        <div className="bg-blue-50 border border-blue-200 rounded-2xl p-4">
-          <p className="text-xs text-blue-800 leading-relaxed">
+        <div className="bg-green-50 border border-green-200 rounded-2xl p-4">
+          <p className="text-xs text-green-800 leading-relaxed">
             <strong>Ce que contient le rapport :</strong> vos revenus, dépenses par catégorie,
             état des enveloppes, objectifs et score du mois sélectionné.
           </p>

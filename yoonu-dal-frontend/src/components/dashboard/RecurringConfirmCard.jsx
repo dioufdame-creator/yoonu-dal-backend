@@ -75,7 +75,7 @@ const RecurringConfirmCard = ({ toast, onProcessed }) => {
   const total = items.reduce((s, i) => s + (i.type === 'expense' ? -i.amount : i.amount), 0);
 
   return (
-    <div className="bg-gradient-to-br from-purple-50 to-indigo-50 border border-purple-200 rounded-3xl p-5 mb-4 shadow-sm">
+    <div className="bg-gradient-to-br from-green-50 to-green-50 border border-green-200 rounded-3xl p-5 mb-4 shadow-sm">
       <div className="flex items-start justify-between gap-2 mb-3">
         <div className="flex items-start gap-2">
           <span className="text-2xl flex-shrink-0">🔁</span>
@@ -88,7 +88,7 @@ const RecurringConfirmCard = ({ toast, onProcessed }) => {
         </div>
         <button
           onClick={() => setExpanded(!expanded)}
-          className="text-xs text-purple-600 font-semibold flex-shrink-0"
+          className="text-xs text-green-600 font-semibold flex-shrink-0"
         >
           {expanded ? 'Réduire' : 'Détails'}
         </button>
@@ -98,7 +98,7 @@ const RecurringConfirmCard = ({ toast, onProcessed }) => {
         <button
           onClick={confirmAll}
           disabled={submitting}
-          className="w-full py-3 bg-purple-600 text-white rounded-2xl font-bold text-sm disabled:opacity-50"
+          className="w-full py-3 bg-green-600 text-white rounded-2xl font-bold text-sm disabled:opacity-50"
         >
           {submitting ? 'Confirmation...' : `✅ Tout confirmer (${items.length})`}
         </button>

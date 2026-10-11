@@ -97,7 +97,7 @@ const PaymentResultPage = ({ onNavigate, toast, status: urlStatus, onPaymentSucc
             </p>
             <button
               onClick={() => onNavigate?.('dashboard')}
-              className="w-full bg-gradient-to-r from-green-600 to-emerald-600 text-white py-3 rounded-xl font-bold hover:shadow-lg transition-all"
+              className="w-full bg-gradient-to-r from-green-600 to-green-600 text-white py-3 rounded-xl font-bold hover:shadow-lg transition-all"
             >
               Voir mon dashboard →
             </button>
@@ -124,7 +124,7 @@ const PaymentResultPage = ({ onNavigate, toast, status: urlStatus, onPaymentSucc
             <div className="flex gap-3">
               <button
                 onClick={() => onNavigate?.('pricing')}
-                className="flex-1 bg-gradient-to-r from-green-600 to-emerald-600 text-white py-3 rounded-xl font-bold hover:shadow-lg transition-all"
+                className="flex-1 bg-gradient-to-r from-green-600 to-green-600 text-white py-3 rounded-xl font-bold hover:shadow-lg transition-all"
               >
                 Réessayer
               </button>
@@ -161,7 +161,7 @@ const PaymentResultPage = ({ onNavigate, toast, status: urlStatus, onPaymentSucc
           <div className="flex gap-3">
             <button
               onClick={() => window.location.reload()}
-              className="flex-1 bg-gradient-to-r from-green-600 to-emerald-600 text-white py-3 rounded-xl font-bold hover:shadow-lg transition-all"
+              className="flex-1 bg-gradient-to-r from-green-600 to-green-600 text-white py-3 rounded-xl font-bold hover:shadow-lg transition-all"
             >
               Vérifier à nouveau
             </button>

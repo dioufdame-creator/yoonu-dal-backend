@@ -130,7 +130,7 @@ const ContextualTutorial = ({ onFinish }) => {
           height={targetRect.height + 16}
           rx="20"
           fill="none"
-          stroke="#10b981"
+          stroke="#16a34a"
           strokeWidth="3"
         />
       </svg>

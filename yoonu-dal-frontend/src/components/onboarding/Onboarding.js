@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import Logo from '../shared/Logo';
 import API from '../../services/api';
 
 // ==========================================
@@ -136,9 +137,9 @@ const Onboarding = ({ toast, onNavigate }) => {
   const getScoreLabel = (s) => {
     if (s === 0) return { label: 'Non évalué ⬜', color: 'bg-gray-100 border-gray-300 text-gray-700' };
     if (s >= 80) return { label: 'Maître Yoonu 🏆', color: 'bg-green-100 border-green-400 text-green-900' };
-    if (s >= 60) return { label: 'Aligné 🌳', color: 'bg-blue-100 border-blue-400 text-blue-900' };
-    if (s >= 40) return { label: 'En chemin 🌿', color: 'bg-amber-100 border-amber-300 text-amber-900' };
-    return { label: 'Débutant 🌱', color: 'bg-red-100 border-red-300 text-red-900' };
+    if (s >= 60) return { label: 'Aligné 🌳', color: 'bg-green-100 border-green-400 text-green-900' };
+    if (s >= 40) return { label: 'En chemin 🌿', color: 'bg-green-100 border-green-300 text-green-900' };
+    return { label: 'Débutant 🌱', color: 'bg-green-100 border-green-300 text-green-900' };
   };
 
   const progress = step === 0 ? 0 : ((step) / 2) * 100;
@@ -153,9 +154,7 @@ const Onboarding = ({ toast, onNavigate }) => {
           <div className="container mx-auto px-4 py-4 max-w-2xl">
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-green-600 rounded-xl flex items-center justify-center shadow-md">
-                  <span className="text-xl">🌿</span>
-                </div>
+                <Logo className="w-10 h-10 shadow-md rounded-xl" />
                 <h1 className="text-xl font-bold text-gray-900">Yoonu Dal</h1>
               </div>
               <div className="text-sm font-medium text-gray-600">
@@ -164,7 +163,7 @@ const Onboarding = ({ toast, onNavigate }) => {
             </div>
             <div className="h-1.5 bg-gray-200 rounded-full overflow-hidden">
               <div
-                className="h-full bg-gradient-to-r from-green-600 to-emerald-600 transition-all duration-500"
+                className="h-full bg-gradient-to-r from-green-600 to-green-600 transition-all duration-500"
                 style={{ width: `${progress}%` }}
               />
             </div>
@@ -178,9 +177,7 @@ const Onboarding = ({ toast, onNavigate }) => {
         {step === 0 && (
           <div className="text-center animate-fadeIn py-12">
             <div className="mb-8">
-              <div className="w-32 h-32 bg-green-600 rounded-3xl mx-auto mb-6 flex items-center justify-center shadow-xl">
-                <span className="text-6xl">🌿</span>
-              </div>
+              <Logo className="w-32 h-32 mx-auto mb-6 shadow-xl rounded-3xl" />
               <h1 className="text-4xl font-bold text-gray-900 mb-3">Yoonu Dal</h1>
               <p className="text-xl text-gray-600 mb-2">Ton coach financier personnel</p>
               <p className="text-sm text-gray-500">En wolof : "Le Chemin de l'Argent"</p>
@@ -344,10 +341,10 @@ const Onboarding = ({ toast, onNavigate }) => {
               </div>
             </div>
 
-            <div className="bg-blue-50 border border-blue-200 rounded-2xl p-4 mb-8">
+            <div className="bg-green-50 border border-green-200 rounded-2xl p-4 mb-8">
               <div className="flex gap-3">
                 <span className="text-xl">💡</span>
-                <p className="text-sm text-blue-900">
+                <p className="text-sm text-green-900">
                   Confidentiel et utilisé uniquement pour tes analyses. Tu pourras ajuster ce montant à tout moment dans ton profil.
                 </p>
               </div>

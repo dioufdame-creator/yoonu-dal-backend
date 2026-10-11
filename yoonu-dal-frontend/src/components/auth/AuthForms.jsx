@@ -73,7 +73,7 @@ export const ForgotPasswordForm = ({ onNavigate, toast }) => {
       <button
         type="submit"
         disabled={loading || !identifier.trim()}
-        className="w-full bg-gradient-to-r from-green-600 to-emerald-600 text-white py-4 rounded-xl font-bold text-lg hover:shadow-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+        className="w-full bg-gradient-to-r from-green-600 to-green-600 text-white py-4 rounded-xl font-bold text-lg hover:shadow-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
       >
         {loading ? 'Envoi en cours...' : 'Envoyer le lien'}
       </button>
@@ -194,7 +194,7 @@ export const ResetPasswordForm = ({ uid, token, onSuccess, onNavigate, toast }) 
       <button
         type="submit"
         disabled={loading || !newPassword || !confirmPassword}
-        className="w-full bg-gradient-to-r from-green-600 to-emerald-600 text-white py-4 rounded-xl font-bold text-lg hover:shadow-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+        className="w-full bg-gradient-to-r from-green-600 to-green-600 text-white py-4 rounded-xl font-bold text-lg hover:shadow-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
       >
         {loading ? 'Mise à jour...' : 'Enregistrer le nouveau mot de passe'}
       </button>
