@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import API from '../services/api';
+import { FREE_AI_LIMIT } from '../config/limits';
 
 const SubscriptionPage = ({ onNavigate, user, toast }) => {
   const [loading, setLoading] = useState(true);
@@ -111,7 +112,7 @@ const SubscriptionPage = ({ onNavigate, user, toast }) => {
             <div className="bg-black/20 rounded-2xl px-3 py-2.5">
               <p className="text-[11px] opacity-75">Messages IA</p>
               <p className="text-sm font-bold">
-                {isPremium ? 'Illimités ✨' : `${subscriptionData?.ai_messages_count || 0} / 50`}
+                {isPremium ? 'Illimités ✨' : `${subscriptionData?.ai_messages_count || 0} / ${FREE_AI_LIMIT}`}
               </p>
             </div>
           </div>

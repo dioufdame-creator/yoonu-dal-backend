@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import API from '../services/api';
+import { FREE_AI_LIMIT } from '../config/limits';
 
 const PricingPage = ({ onNavigate, user, toast, onUserRefresh }) => {
   const [billingCycle, setBillingCycle] = useState('monthly');
@@ -35,7 +36,7 @@ const PricingPage = ({ onNavigate, user, toast, onUserRefresh }) => {
     { icon: '✅', text: 'Enveloppes illimitées', included: true },
     { icon: '✅', text: 'Score Yoonu', included: true },
     { icon: '✅', text: '1 tontine', included: true },
-    { icon: '✅', text: 'Chat IA texte (50/mois)', included: true },
+    { icon: '✅', text: `Chat IA texte (${FREE_AI_LIMIT}/mois)`, included: true },
     { icon: '❌', text: 'Scanner OCR', included: false },
     { icon: '❌', text: 'Tontines illimitées', included: false },
   ];
