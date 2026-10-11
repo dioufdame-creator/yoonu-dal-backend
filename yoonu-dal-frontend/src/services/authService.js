@@ -12,8 +12,9 @@ const api = axios.create({
 
 // Intercepteur pour ajouter le token
 api.interceptors.request.use((config) => {
+  const isAuthCall = /\/(auth\/login|register)\/?$/.test(config.url || '');
   const token = localStorage.getItem('yoonu_dal_token');
-  if (token) config.headers.Authorization = `Bearer ${token}`;
+  if (token && !isAuthCall) config.headers.Authorization = `Bearer ${token}`;
   return config;
 });
 
@@ -22,7 +23,8 @@ api.interceptors.response.use(
   (response) => response,
   async (error) => {
     const originalRequest = error.config;
-    if (error.response?.status === 401 && !originalRequest._retry) {
+    const isAuthCall = /\/(auth\/login|register|token\/refresh)\/?$/.test(originalRequest?.url || '');
+    if (error.response?.status === 401 && !originalRequest._retry && !isAuthCall) {
       originalRequest._retry = true;
       try {
         const refreshToken = localStorage.getItem('yoonu_dal_refresh_token');
@@ -75,6 +77,8 @@ const authService = {
 
   // ── INSCRIPTION ──────────────────────────────────────────────
   register: async (userData) => {
+    // Jetons périmés d'une session précédente : ne pas les envoyer
+    authService.clearTokens();
     try {
       const response = await api.post('/register/', {
         username: userData.username.toLowerCase().trim(),
@@ -90,11 +94,19 @@ const authService = {
       // l'utilisateur juste après la création du compte, sinon toutes
       // les requêtes suivantes (onboarding...) partent sans authentification.
       if (!access || !refresh || !user) {
-        const loginResponse = await api.post('/auth/login/', {
-          username: userData.username.toLowerCase().trim(),
-          password: userData.password,
-        });
-        ({ access, refresh, user } = loginResponse.data);
+        try {
+          const loginResponse = await api.post('/auth/login/', {
+            username: userData.username.toLowerCase().trim(),
+            password: userData.password,
+          });
+          ({ access, refresh, user } = loginResponse.data);
+        } catch (loginError) {
+          const detail = loginError.response?.data?.error || loginError.message;
+          return {
+            success: false,
+            error: `Compte créé, mais la connexion automatique a échoué (${detail}). Connecte-toi avec tes identifiants.`,
+          };
+        }
       }
 
       localStorage.setItem('yoonu_dal_token', access);
