@@ -134,7 +134,7 @@ function App() {
         // Si la page restaurée depuis un refresh est protégée et que
         // l'utilisateur n'est (plus) authentifié, on ne la laisse pas
         // telle quelle — retour à l'accueil/connexion.
-        const stillProtected = PROTECTED_PAGES.includes(currentPage) && !authService.isAuthenticated();
+        const stillProtected = (PROTECTED_PAGES.includes(currentPage) || currentPage === 'onboarding') && !authService.isAuthenticated();
         if (stillProtected) {
           setCurrentPage('home');
           setPageParams({});

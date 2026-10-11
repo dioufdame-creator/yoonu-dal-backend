@@ -39,7 +39,7 @@ const Onboarding = ({ toast, onNavigate }) => {
         return { ...prev, values: prev.values.filter(v => v !== id) };
       }
       if (prev.values.length >= 3) {
-        toast?.error?.('Maximum 3 valeurs — retire une pour en choisir une autre');
+        toast?.showError?.('Maximum 3 valeurs — retire une pour en choisir une autre');
         return prev;
       }
       return { ...prev, values: [...prev.values, id] };
@@ -58,11 +58,11 @@ const Onboarding = ({ toast, onNavigate }) => {
 
   const next = () => {
     if (step === 1 && data.values.length !== 3) {
-      toast?.error?.('Sélectionne exactement 3 valeurs');
+      toast?.showError?.('Sélectionne exactement 3 valeurs');
       return;
     }
     if (step === 2 && !data.income) {
-      toast?.error?.('Entre ton revenu mensuel');
+      toast?.showError?.('Entre ton revenu mensuel');
       return;
     }
     if (step === 2) {
@@ -103,7 +103,8 @@ const Onboarding = ({ toast, onNavigate }) => {
 
     } catch (error) {
       console.error('Error:', error);
-      toast?.error?.('Une erreur est survenue');
+      const detail = error.response?.data?.error || error.response?.data?.detail;
+      toast?.showError?.(detail ? `Une erreur est survenue : ${detail}` : 'Une erreur est survenue, réessaie.');
       setLoading(false);
     }
   };

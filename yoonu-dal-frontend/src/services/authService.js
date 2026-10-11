@@ -84,7 +84,18 @@ const authService = {
         last_name: userData.last_name || userData.lastName || '',
       });
 
-      const { access, refresh, user } = response.data;
+      let { access, refresh, user } = response.data;
+
+      // L'API d'inscription ne renvoie pas de jetons : on connecte
+      // l'utilisateur juste après la création du compte, sinon toutes
+      // les requêtes suivantes (onboarding...) partent sans authentification.
+      if (!access || !refresh || !user) {
+        const loginResponse = await api.post('/auth/login/', {
+          username: userData.username.toLowerCase().trim(),
+          password: userData.password,
+        });
+        ({ access, refresh, user } = loginResponse.data);
+      }
 
       localStorage.setItem('yoonu_dal_token', access);
       localStorage.setItem('yoonu_dal_refresh_token', refresh);
